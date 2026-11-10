@@ -19,7 +19,7 @@ Planning milestone **v3.0 — Playstead-ready play and states** closed on 2026-1
 
 The other two phase goals remain incomplete. Phase 12 is accepted 0/4 with 3/5 roadmap truths; the owner-run diagnostic permission request was denied before preflight or content, and released-core/Playstead evidence plus the measured Windows improvement remain open. Phase 14 is `gaps_found` at 20/27, with actual RetroArch save/load, rewind and run-ahead evidence absent. The nine requirements TUNE-06/07, PLAY-01–04 and FRONT-02–04 remain unchecked in the v3 archive. No host or remote allowance was renewed.
 
-The next planning scope is v4.0: SEED-007 tune-up first, then a browser-consumable WebAssembly build of the existing libretro core with offline deterministic checks. The core remains the product; this scope adds no browser UI or device code. See [the v3 audit](milestones/v3.0-MILESTONE-AUDIT.md) and [rolling product roadmap](PRODUCT-ROADMAP.md).
+The active milestone is v4.0: Phase 15's measured tune-up is verified, fixing relative-root documentation-budget coverage with recurring pass/fault controls and a passing local workflow. Phase 16 now researches a browser-consumable WebAssembly build of the existing libretro core with offline deterministic checks. The core remains the product; this scope adds no browser UI or device code. See [the tune-up evidence](phases/15-measured-milestone-tune-up/15-TUNEUP.md), [v3 audit](milestones/v3.0-MILESTONE-AUDIT.md) and [rolling product roadmap](PRODUCT-ROADMAP.md).
 
 <details>
 <summary>Historical v1.0 and v2.0 phase-position receipts (superseded at milestone close)</summary>
@@ -290,4 +290,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-29 during v3.0 milestone scoping*
+*Last updated: 2026-11-10 after Phase 15 verification*
