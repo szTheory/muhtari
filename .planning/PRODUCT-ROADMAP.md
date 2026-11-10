@@ -15,27 +15,19 @@ At every milestone boundary, reconcile shipped and partial work, keep unresolved
 debt visible, re-rank the horizons, record why the order changed, promote only
 scoped work, and snapshot this file at close.
 
-## Immediate — v4.0 Browser/WebAssembly core readiness
+## Immediate — prepare the verified v4.0 core for shipping
 
-Selected 2026-11-10 after the v3.0 override closeout. The old milestone's state
-API is verified; actual host acceptance for Phase 12 and Phase 14 remains deferred
-with the original stops intact. The owner delegated scope selection and asked to
-keep core development moving despite the denied identity-bound request.
+Phases 15–16 are verified: relative-root budget coverage is corrected, and the
+existing libretro core now builds as a pinned Emscripten ES module plus Wasm.
+A direct offline Node host checks independent native numeric expectations,
+callbacks, state/refusal/replay/isolation and warmed size/throughput reports.
+The required Linux CI step is implemented; hosted execution and publication
+remain ship actions. See the [v4.0 audit](milestones/v4.0-MILESTONE-AUDIT.md).
 
-Phase 15 starts with recurring [SEED-007](seeds/SEED-007-milestone-tune-up.md):
-measure CI and pipeline friction, review the weakest quality dimension, and refresh
-docs and pins using evidence. Phase 16 targets a browser-consumable WebAssembly
-build of the existing libretro core with an offline deterministic host shim that
-compares representative frame/audio/state behavior against native results.
-[SEED-008](seeds/SEED-008-browser.md) motivates the direction; its older canvas,
-input, audio and browser-rate sketch is not an acceptance contract.
-
-Muhtari remains a library, headless runner and libretro core. This scope includes
-no browser page/player, GUI, window, audio-device or input-device code. The test
-harness can prove compilation, imports/callback use and deterministic output; it
-does not prove real-browser UX, device performance or Playstead integration.
-Those need a later explicit scope grounded in evidence. No host permission or
-remote attempt is needed for the offline core slice.
+This closes the offline core portion of [SEED-008](seeds/SEED-008-browser.md).
+Its browser player, device and performance ideas remain deferred. Muhtari still
+ships three deliverables and no browser UI or device handling. Node results
+establish no browser/device UX or performance, Playstead or earlier host claim.
 
 ## Next — host acceptance when evidence and authority are available
 
@@ -75,6 +67,8 @@ example; reproduce sibling lessons locally before adopting them.
 | 2026-10-21 | Promoted v2.0 whole-library scope with tune-up first | Owner approved 27 requirements and seven phases; library breadth preceded browser work. |
 | 2026-10-29 | Promoted v3.0 Playstead-ready play and states | Owner prioritized player access and safe states over AI/TAS; actual paired Playstead proof remained separate. |
 | 2026-11-10 | Closed v3.0 with nine requirements deferred and selected WebAssembly core portability for v4.0 | Phase 13 passed; Phase 12's exact app permission request was denied before any diagnostic and Phase 14 host proof remains absent. Continuing offline core work preserves the evidence stops without freezing independent development. |
+
+| 2026-11-10 | Completed the offline v4.0 core slice; retain ship and real-browser work as distinct next decisions | All five scoped requirements and integration flows passed locally; measured SDK results are explicitly headless and emulated. |
 
 ## Debt and triggers
 
