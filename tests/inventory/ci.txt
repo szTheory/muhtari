@@ -544,6 +544,8 @@ libretro.info_claims.deterministic_missing_proof.self_test	libretro
 libretro.info_claims.missing_state.self_test	libretro
 libretro.info_claims.savestate	libretro
 libretro.info_claims.self_test	libretro
+libretro.observe	libretro,portable
+libretro.observe.controls	libretro,portable
 libretro.rcheevos	libretro,portable
 libretro.rcheevos.expansion	libretro,portable
 libretro.vendored	libretro
