@@ -52,7 +52,7 @@ Playstead-native exact Continue and state history remain later work.
 3. Automated owned-fixture checks using the released libretro core in actual RetroArch demonstrate the expected visible output, delivered input and battery continuity in a fresh process, with their host-readiness scope kept separate from actual Playstead acceptance.
 4. Maintainers can demonstrate at least one shipped small improvement to reproduced pipeline friction, with comparable before/after observations and representative pass/fault behavior preserving every required contract; research or debt dispositions alone do not satisfy this outcome.
 5. Maintainers can distinguish completed nightly-property work from censored/cancelled attempts and find complete evidence supporting any deadline change, or a bounded explicit deferral retaining all cases, oracles and advisory labels.
-**Plans:** 20/25 plans have terminal summaries (12-08 and 12-24 are superseded and excluded from the active count; accepted 0/4).
+**Plans:** 21/25 plans have terminal summaries (12-08 and 12-24 are superseded and excluded from the active count; accepted 0/4).
 
 Plans:
 **Wave 1**
@@ -117,7 +117,7 @@ host test or dependent plan.
 
 - [x] 12-23-PLAN.md — Wave 3, after 12-22: close the local partial-trace cleanup warning through synthetic controls and local gates; does not prove released-core acceptance.
 - [ ] 12-24-PLAN.md — Superseded before execution by 12-25; original text and checkpoint remain preserved as history, excluded from the active plan count.
-- [ ] 12-27-PLAN.md — Wave 5 additive recovery: rebuild the offline mock for a fresh app identity, then offer one owner request and one separately consented bounded diagnostic; no Windows or Phase 12 acceptance claim.
+- [x] 12-27-PLAN.md — Wave 5 additive recovery: offline controls passed; the one owner request was denied, so preflight and diagnostic were not reached. Terminal halt; no retry or Phase 12 acceptance claim.
 
 **Canonical refs:** [owner intent](INTENT.md), [accepted requirements](REQUIREMENTS.md), [research](research/SUMMARY.md#implications-for-roadmap), [feature ownership](research/FEATURES.md), [Playstead handoff](research/PLAYSTEAD-HANDOFF.md), [hosts §3–4](preparation/HOSTS-AND-INTEGRATION.md#3-retroarch-on-apple-silicon), [engineering §11](preparation/ENGINEERING.md#11-docs-standards), [tune-up seed](seeds/SEED-007-milestone-tune-up.md), [maintenance seed](seeds/SEED-009-proportional-maintenance-review.md), [property seed](seeds/SEED-010-nightly-prop-calibration.md), [lessons](LESSONS.md#local-player-onboarding-2026-10-29).
 **UI hint:** no

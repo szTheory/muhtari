@@ -6,15 +6,15 @@ current_phase: 12
 current_phase_name: Player-ready delivery and Playstead bridge
 current_plan: 27
 status: blocked
-stopped_at: Plan 12-27 local preparation passed; waiting at the owner-only permission request checkpoint. No request, app launch, preflight, RetroArch, or content action was made by the agent.
-last_updated: "2026-11-10T06:41:18Z"
+stopped_at: Plan 12-27's one owner-authorized request returned denied. The plan is terminally halted; no preflight, diagnostic choice, RetroArch, or content operation occurred, and the request will not be retried.
+last_updated: "2026-11-10T15:10:39Z"
 last_activity: 2026-11-10
 state_head: dc8bec31e5241272a9c906147092f246e18e7749
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 64
-  completed_plans: 59
+  completed_plans: 60
   percent: 33
 ---
 
@@ -25,20 +25,20 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Continue v3.0 through independent local work. Phase 12 remains accepted 0/4 with refreshed verification at 3/5. Plan 12-26 remains halted after its stale offline mock made one real permission request and returned denied; the new Plan 12-27 app and runner passed offline safety controls, with the exact request and optional diagnostic still at the owner checkpoint. The Terminal can remain open. Released-core proof, paired Playstead evidence and the Windows performance comparison remain open. Windows support and TUNE-06 remain in scope. Phase 13 is complete; Phase 14 remains blocked at 20/27. Host and remote attempt stops remain in force.
+Current focus: Continue v3.0 through independent local work. Phase 12 remains accepted 0/4 with refreshed verification at 3/5. Plans 12-26 and 12-27 are terminally halted; the new app's one owner-authorized request was denied, and read-only audits confirm no preflight or diagnostic followed. Released-core proof, paired Playstead evidence and the Windows performance comparison remain open. Windows support and TUNE-06 remain in scope. Phase 13 is complete; Phase 14 remains blocked at 20/27. Host and remote attempt stops remain in force.
 
 ## Current Position
 
-Phase: 12 (Player-ready delivery and Playstead bridge) — BLOCKED AT OWNER CHECKPOINT
-Current Plan: 27 (local preparation complete; owner request pending)
-Plan: 20 of 25 active plans have terminal summaries; Plan 12-27 is incomplete at its owner checkpoint
-Status: The new app identity, runner hash, offline controls, and exact command are recorded in [Plan 12-27 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-27-LAUNCHER-EVIDENCE.md). Phase acceptance remains 0/4.
-Next action: The owner may run the exact command in that evidence ledger once or decline. After a reported result or decline, the agent audits receipts and completes Plan 12-27 bookkeeping. The optional diagnostic requires a second affirmative choice after a permitted actual-context preflight.
-Boundary: Plan 12-26 remains terminal halted; do not repeat its request. Plan 12-27's fresh request remains owner-controlled, and no content may run after denial, timeout, unknown, or declined permission/preflight. No Terminal restart, Settings/TCC access, remote dispatch, or host attempt is authorized. Windows support remains in scope; TUNE-06's measured comparison remains open under 12-02.
+Phase: 12 (Player-ready delivery and Playstead bridge) — BLOCKED
+Current Plan: 27 (terminally halted after the owner request was denied)
+Plan: 21 of 25 active plans have terminal summaries; four remain unsummarized and none is runnable
+Status: [Plan 12-27 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-27-LAUNCHER-EVIDENCE.md) records one denied request and read-only audits confirming that preflight and diagnostic were not reached. Phase acceptance remains 0/4.
+Next action: No Phase 12 plan is runnable. Plans 12-02/04 remain blocked by 12-01; plans 12-19/16 remain blocked by the spent 12-18 denial. New evidence and a separately authorized scope are required before planning another attempt.
+Boundary: Plans 12-26 and 12-27 are terminal; do not repeat either request. No Terminal restart, Settings/TCC access, remote dispatch, RetroArch, or content operation is authorized. Windows support remains in scope; TUNE-06's measured comparison remains open under 12-02.
 
 ## Current Blockers
 
-- Phase 12 remains accepted 0/4 with refreshed verification at 3/5. Plan 12-26 is terminal halted after one real permission API call escaped from its stale unbundled mock; the result was denied/77, and prompt visibility and TCC attribution remain unknown. Plan 12-27's separate app and runner are now locally qualified: all 11 offline control groups and the actual-binary symbol gate passed, with zero agent permission, app, preflight, RetroArch, or content operations. The owner request and optional diagnostic remain pending; see the [12-27 evidence ledger](phases/12-player-ready-delivery-and-playstead-bridge/12-27-LAUNCHER-EVIDENCE.md). Plans 12-02/04 remain blocked behind halted 12-01, while 12-19/16 remain blocked by the spent 12-18 denial. Published-byte replay, released-core input/DMA/battery/aggregate proof, paired Playstead evidence, and measured Windows improvement remain open. See [Phase 12 verification](phases/12-player-ready-delivery-and-playstead-bridge/12-VERIFICATION.md), [12-26 summary](phases/12-player-ready-delivery-and-playstead-bridge/12-26-SUMMARY.md), [12-26 launcher evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-26-LAUNCHER-EVIDENCE.md), and the existing [host stop](phases/12-player-ready-delivery-and-playstead-bridge/12-01-SUMMARY.md).
+- Phase 12 remains accepted 0/4 with refreshed verification at 3/5. Plan 12-26 is terminally halted after one real permission API call escaped from its stale unbundled mock; the result was denied/77, and prompt visibility and TCC attribution remain unknown. Plan 12-27's separate app and runner passed all 11 offline control groups and the actual-binary symbol gate. The owner-issued request was denied; receipt audits confirm one reservation and no preflight, diagnostic choice, RetroArch, or content operation. Do not retry. Plans 12-02/04 remain blocked behind halted 12-01, while 12-19/16 remain blocked by the spent 12-18 denial. Published-byte replay, released-core input/DMA/battery/aggregate proof, paired Playstead evidence, and measured Windows improvement remain open. See [Phase 12 verification](phases/12-player-ready-delivery-and-playstead-bridge/12-VERIFICATION.md), [12-26 summary](phases/12-player-ready-delivery-and-playstead-bridge/12-26-SUMMARY.md), [12-26 launcher evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-26-LAUNCHER-EVIDENCE.md), and the existing [host stop](phases/12-player-ready-delivery-and-playstead-bridge/12-01-SUMMARY.md).
 - Root-merge reconciliation corrected the Phase 14 `support-report` file path to `tests/common/bmp.c`. The existing `retroarch.states.controls` test now checks both the successful report and a missing-reader failure. Its local pass does not clear the Phase 14 workflow gate or authorize host work.
 - The historical BIOS timeout cause remains unknown. The approved five-test RUN_SERIAL mitigation preserved one-second limits; after it, the independent parent and frozen source passed complete CI and hygiene workflows. This does not attribute the earlier timeouts.
 - Plan 14-13 is complete: the exact five RUN_SERIAL properties and metadata fault controls passed, and the sole focused batch passed 7/7 including both fixture setup tests. That batch is consumed; do not retry it. No deadline or unrelated test metadata changed.

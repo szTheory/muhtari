@@ -1,6 +1,6 @@
 # Plan 12-27 Launcher Evidence
 
-**Status: prepared and locally qualified; owner request and diagnostic choices are pending.**
+**Status: terminal at owner-request denial; no retry, preflight, or diagnostic occurred.**
 
 ## Frozen identity
 
@@ -72,13 +72,25 @@ The runner checks the literal script hash and exact bundle path before dispatch.
 
 Bounds are unchanged: one request up to 60 seconds; actual-context preflight up to 15 seconds; the helper's existing internal pre-fork recheck; then at most one diagnostic through `tests/retroarch/run_retroarch.cmake`, capped at 600 frames, 5-second input acknowledgment, 45-second helper, and 50-second wrapper.
 
-The optional diagnostic reuses `tests/retroarch/keyboard_preflight.c`, the private owned cartridge generated from `tests/input/test_input.c`, pinned cached RetroArch 1.22.2, the cached input-trace core and parser, and the existing trace and screenshot outputs. Existing independent pixel consumers include `tests/input/history_pixels.c`, `tests/input/pixels.c`, and `tests/retroarch/compare.c`; the agent reviews any saved screenshot and trace. No owner-run result exists yet.
+The optional diagnostic reuses `tests/retroarch/keyboard_preflight.c`, the private owned cartridge generated from `tests/input/test_input.c`, pinned cached RetroArch 1.22.2, the cached input-trace core and parser, and the existing trace and screenshot outputs. Existing independent pixel consumers include `tests/input/history_pixels.c`, `tests/input/pixels.c`, and `tests/retroarch/compare.c`; the agent reviews any saved screenshot and trace.
 
 ```yaml
-permission request: `pending`
-actual-context preflight: `pending`
-diagnostic choice: `pending`
-diagnostic result: `pending`
+permission request: `denied` (owner chose yes; one request; terminal; no retry)
+actual-context preflight: `not run` (request denied)
+helper internal pre-fork check: `not run`
+diagnostic choice: `not reached` (the prompt follows a permitted request and preflight)
+diagnostic result: `not run`
+content launches: 0
 ```
+
+## Owner result and read-only audits
+
+The owner ran the exact hash-bound command above once and answered yes to the request for `org.muhtari.inputdiagnostic.gap27`. The runner reported: `request result=denied; no actual-context preflight or content operation will run`. The owner did not provide a numeric process exit status. The request decision is an owner judgment; the denial is the terminal result for this request.
+
+`python3 build/phase12-gap27-evidence/runner.py audit-receipts --readonly` exited 0 (`N/A-local`). It confirmed the request decision is bound to the frozen identity, runner hash, and command hash; the request result is denied; the request reservation count is one; and actual-context preflight, diagnostic choice, and diagnostic reservations are absent. The audit performed zero real operations.
+
+`python3 build/phase12-gap27-evidence/runner.py audit-diagnostic --readonly` exited 0 (`N/A-local`). It reported `pending/skipped`, request `denied`, preflight `pending`, diagnostic choice `pending`, parser `not-run`, pixel review `not-run`, and zero content launches by the audit. The conditional diagnostic question was not presented because the request was denied.
+
+The owner-controlled app request was dispatched once as requested. No actual-context preflight or helper pre-fork check ran, no second diagnostic choice was presented, and no RetroArch host or content was launched. The agent made no permission request or preflight call and did not retry. The identity and hashes bind the saved receipt to the reviewed command; they do not establish TCC attribution.
 
 This preparation and any later local diagnostic can show only current local app/helper behavior. It cannot establish the historical hosted cause, released or published-core acceptance, paired Playstead acceptance, or Windows improvement. The required Windows publication comparison remains with its existing owner plan (12-02); no Mac result is reported and the Windows criterion is unchanged. Phase 12 acceptance and PLAY-03 remain pending.
