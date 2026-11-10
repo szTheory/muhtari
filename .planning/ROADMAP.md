@@ -51,7 +51,10 @@ Plans:
 2. A maintainer can run a pinned offline Node host that loads the emitted core, supplies an owned fixture and scripted input, captures video/audio callbacks, and completes libretro load/run/serialize/unserialize/unload lifecycle operations.
 3. Identical scripted inputs yield independently expected native/WebAssembly frame, audio, input and restored-continuation observations, while representative refusal/fault controls preserve the applicable contracts without new ROM or BIOS bytes.
 4. A maintainer can reproduce same-source artifact-size and warmed headless-throughput reports, with the runtime and measurement limits stated so the results do not imply actual-browser or device acceptance.
-**Plans:** TBD
+**Plans:** 1 plan
+
+Plans:
+- [ ] 16-01-PLAN.md — Deliver the pinned Emscripten module with a direct offline Node host, native numeric parity and required integration.
 
 Phase 16 research must settle the module/loader/link form and pinned toolchain
 before implementation. Keep artifact production, the first offline consumer,
@@ -74,4 +77,4 @@ Execution order: Phase 15 → Phase 16.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 15. Measured milestone tune-up | 1/1 | Complete    | 2026-11-10 |
-| 16. Emscripten libretro core | 0/TBD | Not started | - |
+| 16. Emscripten libretro core | 0/1 | Planned | - |

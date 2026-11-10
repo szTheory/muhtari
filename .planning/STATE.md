@@ -4,8 +4,8 @@ milestone: v4.0
 milestone_name: Browser/WebAssembly core readiness
 current_phase: 16
 current_phase_name: Emscripten libretro core
-status: planning
-stopped_at: Phase 15 complete, ready to plan Phase 16
+status: executing
+stopped_at: Phase 16 reviewed plan ready to execute
 last_updated: "2026-11-10T18:14:10.130Z"
 last_activity: 2026-11-10
 last_activity_desc: Phase 15 complete, transitioned to Phase 16
@@ -29,8 +29,8 @@ See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md
 ## Current Position
 
 Phase: 16 — Emscripten libretro core
-Plan: Not started
-Status: Ready to plan
+Plan: 16-01 reviewed, ready to execute
+Status: Ready to execute
 Last activity: 2026-11-10 — Phase 15 complete, transitioned to Phase 16
 Progress: [█████░░░░░] 50%
 
@@ -97,6 +97,6 @@ At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Sou
 ## Session Continuity
 
 Last session: 2026-11-10T16:22:35Z
-Stopped at: Phase 15 complete, ready to plan Phase 16
+Stopped at: Phase 16 reviewed plan ready to execute
 Resume file: None
 Next command: $gsd-autonomous --from 16
