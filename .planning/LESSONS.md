@@ -2,7 +2,7 @@
 title: "Lesson exchange"
 summary: "Lessons imported from the owner's sibling emulators (hypotheses until reproduced here) and the template for exporting this project's lessons."
 read_when: "At each phase or milestone boundary, when a sibling lesson might apply, or when the owner asks to export lessons."
-updated: 2026-11-07
+updated: 2026-11-10
 ---
 
 # Lesson exchange
@@ -562,3 +562,13 @@ CTest wrote build/ci/build/phase14-gap13-evidence/junit-bios.xml. The initial
 source-root JUnit check exited 1 because that path was absent. Copying the
 exact generated receipt to the evidence directory let the seven-row inventory
 checker pass (exit 0). Run URL N/A-local; no host or CI run occurred.
+
+Lesson MU-DOCS-001 (2026-11-10, muhtari@bd3612e)
+Symptom and reproduction: `cmake -DROOT=. -P tests/cmake/budgets.cmake` exited 0 and reported two files, while the equivalent absolute-root command reported 22. A synthetic CTest control failed on the relative-root exact-limit assertion with CTest exit 8; `gsd-tools check tdd-red-evidence` classified the intended target failure as `RED_EVIDENCE_OK`.
+Root cause / invariant: Resolve a caller-supplied relative root against the caller's working directory once before using it for both `file(GLOB)` and `file(SIZE)`. The checked set must not depend on how the same source root is spelled.
+Fix and evidence (command, exit status, run URL): `cmake -DROOT=. -P tests/cmake/budgets.cmake` and the absolute-root equivalent now both exit 0 and report 22 files. `cmake -DROOT="$PWD" -DWORK="$PWD/build/phase15-evidence/budget-controls" -P tests/policy/budgets.cmake` exits 0 after checking four exact-limit files, eight attributable one-byte over-limit faults, and both missing-root failures through both root forms. The registered `docs.budgets` and `docs.budgets.controls` tests pass 2/2; run URL N/A-local.
+Applies when: A CMake script accepts a relative directory and uses it in globbing or file checks.
+Does not establish: Hosted CI efficiency, queue/job timing, or any Phase 12/14 host acceptance.
+Suggested check: Keep a synthetic source tree with README, public header, regular docs, and hardware docs; verify exact limits and one-byte faults with both absolute and relative roots from a working directory containing spaces.
+Sources: `tests/cmake/budgets.cmake`, `tests/policy/budgets.cmake`, `docs/testing.md`, and `.planning/phases/15-measured-milestone-tune-up/15-TUNEUP.md`.
+Status: reproduced
