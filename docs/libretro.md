@@ -334,10 +334,10 @@ retail playability or complete achievement support.
 
 ## Portable Emscripten bundle
 
-The architecture-independent libretro ZIP is planned for the next release; it has not been published yet. Its
-version-free destination will be
+The architecture-independent libretro ZIP accompanies the native release archives. Its
+version-free download URL is
 `https://github.com/szTheory/muhtari/releases/latest/download/muhtari-libretro-emscripten.zip`.
-After that release is published, download and extract it into an owned directory:
+Download and extract it into an owned directory:
 
 ```sh
 bundle_url=https://github.com/szTheory/muhtari/releases/latest/download/muhtari-libretro-emscripten.zip
