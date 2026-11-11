@@ -1,6 +1,6 @@
 #!/bin/sh
 # Publish steps shared by the release and its rehearsal, each safe to re-run:
-#   publish.sh prepare DIR                 exactly the 18 zips, one commit, no firmware; SHA256SUMS
+#   publish.sh prepare DIR                 exactly 19 zips, one commit, no firmware; SHA256SUMS
 #   publish.sh upload TAG RELEASE_ID DIR   upload to that release, replacing
 #   publish.sh attested DIR                attestations verify; tampered copies do not
 #   publish.sh verify TAG DIR              attested, then the published release
@@ -20,11 +20,14 @@ fail() {
 }
 
 names() {
+  {
   for c in library runner libretro; do
     for o in linux macos windows; do
       for a in x64 arm64; do echo "muhtari-$c-$o-$a.zip"; done
     done
-  done | LC_ALL=C sort
+  done
+  echo muhtari-libretro-emscripten.zip
+  } | LC_ALL=C sort
 }
 
 sha256() {
@@ -33,6 +36,8 @@ sha256() {
 
 # DIR holds the zips at its top and each build leg's commit.txt below it.
 prepare() {
+  # A prior successful run must not leave checksums after a later failure.
+  rm -f "$1/SHA256SUMS"
   [ -n "${EXPECTED_SHA:-}" ] || fail "EXPECTED_SHA is not set"
   bad=0
   for n in $(names); do
@@ -45,7 +50,7 @@ prepare() {
       bad=1
     fi
   done
-  [ "$bad" -eq 0 ] || fail "$1 does not hold exactly the 18 archives"
+  [ "$bad" -eq 0 ] || fail "$1 does not hold exactly the 19 archives"
   commits=$(find "$1" -name commit.txt)
   count=$(printf '%s\n' "$commits" | grep -c . || true)
   [ "$count" -eq 6 ] || fail "$count commit.txt files, expected 6, one per build leg"
@@ -59,8 +64,16 @@ prepare() {
   "${CMAKE:-cmake}" "-DZIPS=${zips%;}" -DFIRMWARE="$root/tests/release/firmware.txt" \
     -DEXPECTED="$root/tests/built/expected.txt" -DCARTDB="$root/src/cartdb.c" \
     -P "$root/tests/cmake/firmware_scan.cmake" || fail "the firmware scan failed"
+  evidence="$1/emscripten-evidence"
+  build="$evidence/emscripten"
+  "${CMAKE:-cmake}" -DMODE=validate -DROOT="$root" -DBUILD="$build" \
+    -DWORK="$build/publish-validation" -DEXPECTED_SHA="$EXPECTED_SHA" \
+    -DARCHIVE="$1/muhtari-libretro-emscripten.zip" \
+    -DNATIVE="$evidence/ci/tests/emscripten/native.json" \
+    -DFIXTURE="$root/tests/roms/manifest.txt" \
+    -P "$root/tests/emscripten/bundle.cmake" || fail "the portable bundle validation failed"
   (cd "$1" && sha256 $(names)) > "$1/SHA256SUMS"
-  echo "publish: 18 archives from $EXPECTED_SHA; SHA256SUMS written"
+  echo "publish: 19 archives from $EXPECTED_SHA; SHA256SUMS written"
 }
 
 # By release ID, because a draft cannot be looked up by its tag; an asset
@@ -125,7 +138,7 @@ verify() {
   until [ "$(gh release view "$1" --repo "$REPO" --json assets \
     --jq '.assets[] | select(.size > 0) | .name' | LC_ALL=C sort)" = "$want" ]; do
     i=$((i + 1))
-    [ "$i" -lt 6 ] || fail "$1 does not list the 18 archives and SHA256SUMS, all non-empty"
+    [ "$i" -lt 6 ] || fail "$1 does not list the 19 archives and SHA256SUMS, all non-empty"
     sleep 10
   done
   # The tag's own URL, never the latest alias: a re-run for an older release

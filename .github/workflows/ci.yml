@@ -187,6 +187,18 @@ jobs:
       - name: Required Emscripten artifact and offline Node checks
         if: matrix.os == 'linux' && matrix.arch == 'x64'
         run: sh scripts/emscripten.sh build/ci
+      - name: Portable publisher production controls
+        if: matrix.os == 'linux' && matrix.arch == 'x64'
+        run: >-
+          cmake -DROOT="$PWD" -DWORK="$PWD/build/ci/policy/publish-emscripten-production"
+          -DPRODUCTION_ARCHIVE="$PWD/build/emscripten/muhtari-libretro-emscripten.zip"
+          "-DEXPECTED_SHA=$(git rev-parse HEAD)" -P tests/policy/publish.cmake
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: matrix.os == 'linux' && matrix.arch == 'x64'
+        with:
+          name: archives-emscripten
+          path: build/emscripten/muhtari-libretro-emscripten.zip
+          if-no-files-found: error
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: matrix.os == 'linux' && matrix.arch == 'x64'
         with:
@@ -194,6 +206,7 @@ jobs:
           path: |
             build/emscripten/libretro/muhtari_libretro.mjs
             build/emscripten/libretro/muhtari_libretro.wasm
+            build/emscripten/libretro/muhtari-source-id.txt
             build/emscripten/junit.xml
             build/ci/tests/emscripten/native.json
             build/ci/tests/emscripten/measurement.json
