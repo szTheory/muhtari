@@ -204,6 +204,6 @@ Both milestones required explicit historical-fingerprint overrides and post-merg
 publication checks. Repeated output/deadline friction favors existing independent
 output paths and measured calibration; aggregate record counts never prove acceptance.
 
-| v4.0 | 2 | 2 plans, 5 tasks | 5/5 scoped | Native and pinned SDK workflows passed; reviews and integration passed | Verified locally; zero new acknowledgments, 50 carried; shipping pending |
+| v4.0 | 2 | 2 plans, 5 tasks | 5/5 scoped | Native and pinned SDK workflows passed; reviews and integration passed | Verified locally; isolated source subsequently shipped through PR47/package v0.12.0; zero new acknowledgments, 50 carried |
 
 | v5.0 | 2 | 3 plans, 7 tasks | 6/6 scoped | Native/release, SDK, extracted package, publisher and one-slot hygiene pass | Verified locally; publication pending; zero new acknowledgments, 50 carried |
