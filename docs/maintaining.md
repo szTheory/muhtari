@@ -10,8 +10,8 @@ Nobody tags or uploads by hand. `.github/workflows/release.yml` does every step:
 1. A pull request is squash-merged into `main`. Its title becomes the commit subject, and release-please reads
    that Conventional Commit to decide the next version: before 1.0, `feat` and a breaking change bump the minor
    version, `fix` and `perf` bump the patch, and `docs`, `chore`, `ci`, `test`, `build`, `refactor` and `style` cut
-   no release. Write `ci:`, not `fix(ci):`, for pipeline work. The owner approved one exception:
-   v0.13.1 recovers the unpublished v0.13.0 Windows replay-bound failure, preserving its failed tag and draft.
+   no release. Write `ci:`, not `fix(ci):`, for pipeline work. The owner-approved exception in
+   [recovery PR #51](https://github.com/szTheory/muhtari/pull/51) applies only to that recovery; preserve its failed tag and draft.
    Milestone names in `.planning/` are planning labels, not release names, so a phase pull request keeps a
    neutral Conventional Commit title and release-please picks the next 0.x version; no `Release-As` override or
    package rename follows from a milestone.
