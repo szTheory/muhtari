@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/szTheory/muhtari/compare/v0.11.1...v0.12.0) (2026-11-10)
+
+
+### Features
+
+* add verified offline WebAssembly libretro core ([#47](https://github.com/szTheory/muhtari/issues/47)) ([2e26f8f](https://github.com/szTheory/muhtari/commit/2e26f8f4dfc8b45fccd61b88c5bacfa0542101b3))
+
 ## [0.11.1](https://github.com/szTheory/muhtari/compare/v0.11.0...v0.11.1) (2026-11-02)
 
 
