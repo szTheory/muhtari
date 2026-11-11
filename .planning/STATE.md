@@ -95,12 +95,17 @@ At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Sou
 ## Session Continuity
 
 Last session: 2026-11-11
-Stopped at: Phase 18 source shipped; release pipeline and exact-source receipt checks remain agent-owned
+Stopped at: Approved v0.13.1 publication recovery; Windows replay correction in PR #51, CI/review/publication agent-owned
 Resume file: None
-Next command: $gsd-new-milestone. The agent first reconciles PR #50, current release/main receipts and the ship receipt automatically; no owner metadata repair, checkout switch or blanket CI confirmation is needed. Do not reopen terminal old attempts.
+Next action: the active agent continues the approved PR #51 recovery through exact-source CI, merge and v0.13.1 publication. If context is cleared before publication, resume with `$gsd-ship 18`; reconcile PR #51 and current release receipts first, without renewing the failed v0.13.0 attempt. `$gsd-new-milestone` becomes valid only after the recovered version is published and verified. No owner metadata repair, checkout switch or routine CI confirmation is needed.
 
 ## Operator Next Steps
 
-- The next owner boundary is `$gsd-new-milestone`. The agent checks current PR #50, main and versioned release receipts before collecting new scope; release verification remains the agent's responsibility.
+- Continue the approved PR #51/v0.13.1 recovery. Do not start `$gsd-new-milestone` until actual publication and exact-source receipts pass; release verification remains the agent's responsibility.
 - The [ship receipt](milestones/v5.0-SHIP.md) records accepted source/merge/rehearsal evidence, prior failures, calibrated Windows cases and the extended Nightly property limitation. The current release status is available from [PR #50](https://github.com/szTheory/muhtari/pull/50) and [releases](https://github.com/szTheory/muhtari/releases).
 - Preserve the original Phase 12/14 denied/spent scopes and nine deferred v3.0 requirements. No old host scope is renewed. No owner directory switch or routine confirmation is needed.
+
+
+### Current publication recovery
+
+v0.13.0 is tagged but unpublished: exact-source Release run43078250838 hits a stale14s Windows fuzz replay limit. A measured Windows x64-only28s correction is prepared on `fix/windows-fuzz-replay-deadline`, with local registration/pass/fault checks complete. The owner explicitly approved the one-time CI-only v0.13.1 recovery exception on2026-11-11. The agent continues PR #51 CI/review/merge and normal patch publication; preserve the failed tag/draft and all older host stops. Do not start another milestone before agent-owned release receipts pass. See [the shipping receipt](milestones/v5.0-SHIP.md#unpublished-tagged-release-replay-deadline-correction).
