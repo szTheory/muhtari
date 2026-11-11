@@ -2,20 +2,20 @@
 gsd_state_version: "1.0"
 milestone: v5.0
 milestone_name: Downloadable WebAssembly core
-current_phase: 17
-current_phase_name: Measured milestone tune-up
-status: executing
-stopped_at: v5.0 roadmap created; Phase 17 ready to plan under authorized autonomous local scope
-last_updated: "2026-11-11T02:15:06.144Z"
+current_phase: 18
+current_phase_name: Source-bound Emscripten release bundle
+status: planning
+stopped_at: Phase 17 complete, ready to plan Phase 18
+last_updated: "2026-11-11T03:05:13.947Z"
 last_activity: 2026-11-10
-last_activity_desc: v5.0 roadmap created; all six requirements mapped
-state_head: 25be7cfcdfc9d0fb360b1af2ad5179bbb0d90a92
+last_activity_desc: Phase 17 complete, transitioned to Phase 18
+state_head: b9c0c121639a1bfd07071b24f1dee46e76c3f8ef
 progress:
   total_phases: 2
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 1
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 50
 ---
 
 # Project State
@@ -24,15 +24,15 @@ progress:
 
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-10.
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** Phase 17 measured milestone tune-up is ready to plan; Phase 18 prepares the source-bound Emscripten release bundle. Six v5.0 requirements are mapped and none is accepted. The owner authorized autonomous local execution; public rehearsal, publication, merge and new host/remote actions retain their boundaries. v4.0 shipped through PR #47/package v0.12.0; its [ship receipt](milestones/v4.0-SHIP.md) preserves source-specific and earlier failed evidence.
+**Current focus:** Phase 17 passed its local measured tune-up; TUNE-09 is accepted. Phase 18 now prepares the source-bound Emscripten release bundle; its five requirements remain pending. The owner authorized autonomous local execution; public rehearsal, publication, merge and new host/remote actions retain their boundaries. v4.0 shipped through PR #47/package v0.12.0; its [ship receipt](milestones/v4.0-SHIP.md) preserves source-specific and earlier failed evidence.
 
 ## Current Position
 
-Phase: 17 (Measured milestone tune-up) — READY TO EXECUTE
-Plan: Not started (plans TBD)
-Status: Ready to execute
-Last activity: 2026-11-10 — v5.0 roadmap created; all six requirements mapped
-Progress: [░░░░░░░░░░] 0%
+Phase: 18 — Source-bound Emscripten release bundle
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-11-10 — Phase 17 complete, transitioned to Phase 18
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
@@ -97,12 +97,12 @@ At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Sou
 ## Session Continuity
 
 Last session: 2026-11-10
-Stopped at: v5.0 roadmap created; Phase 17 ready to plan under authorized autonomous local scope
+Stopped at: Phase 17 complete, ready to plan Phase 18
 Resume file: None
-Next command: $gsd-autonomous — resume the authorized v5.0 local scope; agent reconciles the live plan index and gathers Phase 17 context before planning.
+Next command: $gsd-autonomous --from 18 — resume the authorized local bundle scope; agent reconciles the live plan index.
 
 ## Operator Next Steps
 
-- Agent continues the authorized autonomous v5.0 scope through Phase 17 context/planning and all runnable local work; ordinary in-scope decisions need no routine confirmation. No owner action is needed.
+- Agent continues the authorized autonomous v5.0 scope through Phase 18 context/planning and all runnable local work; ordinary in-scope decisions need no routine confirmation. No owner action is needed.
 - Preserve denied/spent Phase 12/14 host scopes and the nine deferred v3.0 requirements. Public rehearsal, publication, merge, new host/remote actions and material scope changes retain their boundaries.
 - Root is canonical; older dirty worktrees are preserved. Do not import them without ancestry/content reconciliation. The isolated v4.0 candidate shipped; no old ship command needs replaying.

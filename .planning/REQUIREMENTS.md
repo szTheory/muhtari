@@ -7,7 +7,7 @@
 
 ### Measured milestone tune-up
 
-- [ ] **TUNE-09**: Maintainers can begin feature work from current publication/docs and a source-specific quality/efficiency baseline, with one evidenced small correction or an explicit bounded no-change disposition that preserves required checks and historical failures.
+- [x] **TUNE-09**: Maintainers can begin feature work from current publication/docs and a source-specific quality/efficiency baseline, with one evidenced small correction or an explicit bounded no-change disposition that preserves required checks and historical failures.
 
 ### Downloadable Emscripten libretro variant
 
@@ -35,7 +35,7 @@ The nine v3.0 gaps remain deferred: TUNE-06/07, PLAY-01–04 and FRONT-02–04. 
 
 | Requirement | Phase | Status |
 |---|---|---|
-| TUNE-09 | Phase 17 | Pending |
+| TUNE-09 | Phase 17 | Complete |
 | WASM-05 | Phase 18 | Pending |
 | WASM-06 | Phase 18 | Pending |
 | WASM-07 | Phase 18 | Pending |

@@ -131,6 +131,8 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 ### Validated
 
+- ✓ TUNE-09: current v4 publication records and source-specific measured baseline; required checks retained — v5.0, Phase 17.
+
 - ✓ TUNE-08: relative-root document budget coverage and representative controls — v4.0, Phase 15.
 - ✓ WASM-01: pinned Emscripten ES module and Wasm with documented loader/export contract — v4.0, Phase 16.
 - ✓ WASM-02: direct offline Node lifecycle, callbacks and state consumer — v4.0, Phase 16.
@@ -312,4 +314,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-10 after autonomous v5.0 scope selection*
+*Last updated: 2026-11-10 after Phase 17 verification*
