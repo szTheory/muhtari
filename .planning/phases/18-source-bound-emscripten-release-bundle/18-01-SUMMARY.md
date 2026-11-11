@@ -123,7 +123,7 @@ status: complete
 
 **Total deviations:** 1 auto-fixed bug. No scope change or new dependency.
 
-## Verification Evidence
+## Recorded Results
 
 - **Pass, exit 0:** `sh -n scripts/emscripten.sh`; `sh scripts/emscripten.sh --preflight build/ci`; `sh scripts/emscripten.sh build/ci`; and `git diff --check` during Task 1. The full producer run created the ZIP and passed the fresh-extraction Node/native oracle and existing Emscripten checks.
 - **Pass, exit 0:** `cmake -DROOT="$PWD" -DWORK=build/phase18-bundle-controls -DMODE=controls -P tests/emscripten/bundle.cmake`; all synthetic expected failures had their named diagnostics.
