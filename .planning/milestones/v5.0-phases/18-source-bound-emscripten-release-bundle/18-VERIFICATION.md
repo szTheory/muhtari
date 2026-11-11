@@ -6,18 +6,18 @@ score: 6/6 must-haves verified
 covered_files:
   - .github/workflows/ci.yml
   - .github/workflows/release.yml
-  - .planning/phases/18-source-bound-emscripten-release-bundle/18-01-PLAN.md
-  - .planning/phases/18-source-bound-emscripten-release-bundle/18-01-SUMMARY.md
-  - .planning/phases/18-source-bound-emscripten-release-bundle/18-02-PLAN.md
-  - .planning/phases/18-source-bound-emscripten-release-bundle/18-02-SUMMARY.md
-  - .planning/phases/18-source-bound-emscripten-release-bundle/18-CONTEXT.md
-  - .planning/phases/18-source-bound-emscripten-release-bundle/18-LICENSE-RESEARCH.md
-  - .planning/phases/18-source-bound-emscripten-release-bundle/18-RESEARCH.md
-  - .planning/phases/18-source-bound-emscripten-release-bundle/18-REVIEW-DISPOSITION.md
-  - .planning/phases/18-source-bound-emscripten-release-bundle/18-REVIEW-FIX-2.md
-  - .planning/phases/18-source-bound-emscripten-release-bundle/18-REVIEW-FIX.md
-  - .planning/phases/18-source-bound-emscripten-release-bundle/18-REVIEW.md
-  - .planning/phases/18-source-bound-emscripten-release-bundle/deferred-items.md
+  - .planning/milestones/v5.0-phases/18-source-bound-emscripten-release-bundle/18-01-PLAN.md
+  - .planning/milestones/v5.0-phases/18-source-bound-emscripten-release-bundle/18-01-SUMMARY.md
+  - .planning/milestones/v5.0-phases/18-source-bound-emscripten-release-bundle/18-02-PLAN.md
+  - .planning/milestones/v5.0-phases/18-source-bound-emscripten-release-bundle/18-02-SUMMARY.md
+  - .planning/milestones/v5.0-phases/18-source-bound-emscripten-release-bundle/18-CONTEXT.md
+  - .planning/milestones/v5.0-phases/18-source-bound-emscripten-release-bundle/18-LICENSE-RESEARCH.md
+  - .planning/milestones/v5.0-phases/18-source-bound-emscripten-release-bundle/18-RESEARCH.md
+  - .planning/milestones/v5.0-phases/18-source-bound-emscripten-release-bundle/18-REVIEW-DISPOSITION.md
+  - .planning/milestones/v5.0-phases/18-source-bound-emscripten-release-bundle/18-REVIEW-FIX-2.md
+  - .planning/milestones/v5.0-phases/18-source-bound-emscripten-release-bundle/18-REVIEW-FIX.md
+  - .planning/milestones/v5.0-phases/18-source-bound-emscripten-release-bundle/18-REVIEW.md
+  - .planning/milestones/v5.0-phases/18-source-bound-emscripten-release-bundle/deferred-items.md
   - PROVENANCE.md
   - README.md
   - THIRD-PARTY-NOTICES.md
@@ -33,7 +33,7 @@ covered_files:
   - tests/hygiene/tests.cmake
   - tests/inventory/emscripten.txt
   - tests/policy/publish.cmake
-covered_digest: "v4:sha256:b5d4ef7bdba7c4bd2aedadc37cfe378cb566bea46c323a8de027650a5f76cf85"
+covered_digest: "v4:sha256:fd98778cff1cbe15dada542662baebf43440e8900e92f51014721dcabfe5d875"
 behavior_unverified: 0
 overrides_applied: 0
 decision_coverage:

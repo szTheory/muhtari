@@ -5,10 +5,10 @@ status: passed
 score: 6/6 must-haves verified
 covered_files:
   - .planning/milestones/v4.0-SHIP.md
-  - .planning/phases/17-measured-milestone-tune-up/17-01-PLAN.md
-  - .planning/phases/17-measured-milestone-tune-up/17-01-SUMMARY.md
-  - .planning/phases/17-measured-milestone-tune-up/17-REVIEW.md
-  - .planning/phases/17-measured-milestone-tune-up/17-TUNEUP.md
+  - .planning/milestones/v5.0-phases/17-measured-milestone-tune-up/17-01-PLAN.md
+  - .planning/milestones/v5.0-phases/17-measured-milestone-tune-up/17-01-SUMMARY.md
+  - .planning/milestones/v5.0-phases/17-measured-milestone-tune-up/17-REVIEW.md
+  - .planning/milestones/v5.0-phases/17-measured-milestone-tune-up/17-TUNEUP.md
   - build/17-01-hygiene-serial.exit
   - build/17-01-hygiene-serial.log
   - build/17-01-hygiene-tree.exit
@@ -22,7 +22,7 @@ covered_files:
   - build/milestone-preflight/v4-release.json
   - quality.json
   - tools/check_ci_run.cmake
-covered_digest: "v4:sha256:bbb20d809d5564928bc9d60d949610c38e96c50fb5256daa55c20e5c1eca2abd"
+covered_digest: "v4:sha256:43ece49115b90bea80cd0c3d7b282100c35b80fd45c473545579cc2b0a66b6da"
 behavior_unverified: 0
 overrides_applied: 0
 decision_coverage:
@@ -35,8 +35,8 @@ decision_coverage:
 
 **Phase Goal:** Maintainers can begin bundle work from current publication/docs and a source-specific quality/efficiency baseline without weakening required checks or obscuring historical failures.
 
-**Verified:** 2026-11-11T03:03:14Z  
-**Status:** passed  
+**Verified:** 2026-11-11T03:03:14Z
+**Status:** passed
 **Re-verification:** No
 
 ## Goal Achievement
@@ -60,7 +60,7 @@ The plan notes that the SPEC-absent edge probe leaves TUNE-09 unclassified/unres
 
 | Artifact | Expected | Status | Details |
 |---|---|---|---|
-| `.planning/phases/17-measured-milestone-tune-up/17-TUNEUP.md` | Publication correction, six-dimension assessment, source-specific receipts and local baseline | ✓ VERIFIED | Selected CLI `verify.artifacts` found the artifact, no content issues; report links resolve. |
+| `.planning/milestones/v5.0-phases/17-measured-milestone-tune-up/17-TUNEUP.md` | Publication correction, six-dimension assessment, source-specific receipts and local baseline | ✓ VERIFIED | Selected CLI `verify.artifacts` found the artifact, no content issues; report links resolve. |
 
 ### Key Link Verification
 
@@ -118,5 +118,5 @@ No blocking gaps. The saved Nightly property run remains cancelled and unaccepte
 
 ---
 
-_Verified: 2026-11-11T03:03:14Z_  
+_Verified: 2026-11-11T03:03:14Z_
 _Verifier: gsd-verifier_

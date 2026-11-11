@@ -9,7 +9,14 @@
 
 - [x] **v5.0 — Downloadable WebAssembly core** — phases 17–18; verified locally 2026-11-11, publication pending separate ship authority. [Audit](milestones/v5.0-MILESTONE-AUDIT.md) · [Archive](milestones/v5.0-ROADMAP.md) · [Requirements](milestones/v5.0-REQUIREMENTS.md)
 
-## Completed phase records
+## v5.0 — Downloadable WebAssembly core (verified local closeout)
+
+## Phases
+
+- [x] **Phase 17: Measured milestone tune-up** — 1/1 plans complete (completed 2026-11-10)
+- [x] **Phase 18: Source-bound Emscripten release bundle** — 2/2 plans complete (completed 2026-11-11)
+
+## Phase Details
 
 ### Phase 17: Measured milestone tune-up
 
