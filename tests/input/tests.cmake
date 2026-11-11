@@ -29,8 +29,14 @@ foreach(input_case IN ITEMS directions proline_two_button proline_one_button joy
 endforeach()
 # Provisional ceil(2 x 2.70s), complete NTSC/PAL/prefix/wrap workload,
 # macOS x64, run 40227081044. All scenarios and normal lane scaling remain.
+set(input_lightgun_timeout 6)
+if(WIN32)
+  # ceil(2 x 5.68s), Windows current/base cases in runs
+  # 43049895244/43049895310/43057716198; unchanged complete workload.
+  set(input_lightgun_timeout 12)
+endif()
 muhtari_add_test(NAME input.lightgun COMMAND muhtari-test-input lightgun
-  LABELS input portable TIMEOUT 6)
+  LABELS input portable TIMEOUT ${input_lightgun_timeout})
 foreach(input_case IN ITEMS pins protocol wrap recovery)
   muhtari_add_test(NAME input.savekey.${input_case}
     COMMAND muhtari-test-input savekey.${input_case} LABELS input portable TIMEOUT 10)

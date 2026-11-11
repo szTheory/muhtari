@@ -34,12 +34,14 @@ covered_files:
   - tests/emscripten/bundle.cmake
   - tests/emscripten/tests.cmake
   - tests/hygiene/tests.cmake
+  - tests/input/tests.cmake
   - tests/inventory/ci.txt
   - tests/inventory/emscripten.txt
   - tests/policy/publish.cmake
   - tests/policy/tests.cmake
   - tests/policy/ubuntu_apt.sh
-covered_digest: "v4:sha256:c237a7db47b88b41efabe60e8a42776997e97e045208df673fac4eefa7879fb7"
+  - tests/prop/tests.cmake
+covered_digest: "v4:sha256:51c195d3123321380dd53d5c43e108de12052c23b6bf08497ee9c702856eefc1"
 behavior_unverified: 0
 overrides_applied: 0
 decision_coverage:
@@ -172,3 +174,8 @@ The hosted candidate passes the package route, all native current/base checks an
 
 
 The follow-up also passes the complete local WASI portable execution (617 cases in 182.57 seconds) and its exact label-specific JUnit inventory, exit 0 without skips. Native routing and wording/budget controls remain passed. This closes the locally reproduced registration defect; hosted corrected-source acceptance is still required.
+
+
+### Measured Windows timing follow-up (2026-11-11)
+
+The next candidate exposes the already observed Windows isolated-instance timeout. Complete same-behavior Windows samples also demonstrate lost headroom in the lightgun limit. The ship receipt records source equivalence, four completed current/base Windows jobs, the newer complete lightgun sample and both prior timeout failures. Applying DEC.47 changes only Windows isolated-instance/lightgun deadlines to 75/12 seconds; all case counts, inputs, assertions, scaling, other-platform limits and job caps remain. The one-off check of actual registration modules passes both platform branches and unchanged property limits; native/WASI exact configuration and focused native cases pass, exit 0. The independent operations review finds no blocking issue with this measured correction. These are local readiness checks; the prior source is not accepted and the corrected source must pass its hosted gates.
