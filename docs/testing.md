@@ -13,7 +13,7 @@ Needs CMake 4.3+, Ninja and C/C++ compilers:
 1. configure `build/ci` (Release, warnings fatal, macOS deployment target 10.13);
 2. build;
 3. test every test except those labelled `release`, writing `build/ci/junit.xml`;
-4. package the three release zips into `build/ci`;
+4. package the native release ZIPs into `build/ci`; Linux x64 builds the portable ZIP separately.
 5. test the `release` label against those zips, writing `build/ci/junit-release.xml`.
 
 Tests build samples, OpenBIOS and rcheevos' resolver from pins. Fetch them first:
@@ -72,7 +72,7 @@ The matrix fixes order/cardinality. Numeric/CRC/native judgments precede writing
 controls reject wrong numbers, forged identities and missing/extra/duplicate/reordered fields.
 Silent raw stays empty; [PAL](pal-tests.md) keeps601 frames and counters.
 
-CI's `hash-equality` compares lane files:
+CI `hash-equality` compares lane files:
 
 ```sh
 cmake "-DFILES=<file>;<file>;..." -DCOUNT=<n> -DMODE=compare -P tests/cmake/hashes.cmake
@@ -80,12 +80,10 @@ cmake "-DFILES=<file>;<file>;..." -DCOUNT=<n> -DMODE=compare -P tests/cmake/hash
 
 Comparison requires exactly `COUNT` present, byte-identical files with the complete schema.
 
-- **Required files.** PRs compare six native files and compile PowerPC. Nightly/release calls run full native/BE
-  normal and package inventories, then require matching immutable SHA, fixtures and options for two-file hash
-  equality. Architecture/toolchain and timeout scale may differ. Absolute or working-directory-relative evidence
-  paths are canonicalized. Publication requires equality; calls stay read-only.
-- **wasm32.** It reports only, compared with the Linux x64 file outside the required check. Once it is promoted
-  into `hash-equality`, the count goes up by one.
+- **Required files.** PRs compare six native files and compile PowerPC. Nightly/release run full native/BE inventories
+  and require matching immutable SHA, fixtures and options before two-file equality. Architecture, toolchain and
+  timeout may differ; paths are canonicalized. Publication requires equality and is read-only.
+- **wasm32.** Compared with Linux x64 for reporting only; promotion adds one required file.
 
 `ctest --preset ci -R <regex>` reruns part of the suite; `ctest --test-dir build/ci -L <label>` selects by label. `docs/emulation-tests.md` says what each emulation label's tests cover.
 
@@ -154,7 +152,7 @@ output matches the expected message; a crash or a missing file does not count as
 | `hygiene.firmware_scan.self_test` | The same synthetic file tracked in a fixture repository; the tracked-file scan must exit 1 with `matches synthetic (header stripped)`. |
 | `hygiene.history.self_test` | Deleting a listed binary passes; adding an unlisted one fails. |
 | `hygiene.no_float.self_test` | Seven float lines beside three look-alikes, among them an SPDX line naming `CC0-1.0`, and an SPDX line followed by `double`. |
-| `policy.publish_set.self_test` | 17 of the 18 release zips; `publish.sh prepare` must exit 1 naming the missing one. |
+| `policy.publish_set.self_test` | The portable ZIP is missing; prepare must name it and fail. |
 | `policy.no_skip.self_test` | A test file that sets a skip property. |
 | `libretro.info_claims.self_test` | An `.info` file claiming a capability no test covers. |
 | `libretro.info_claims.description.self_test` | A 513-character `.info` description. |
@@ -177,8 +175,8 @@ and at most 512 KiB under `tests/fuzz/`.
 The firmware scan (`tests/cmake/firmware_scan.cmake`) hashes files with SHA-1 and SHA-256, whole and, for an A78
 image, again without its 128-byte header. It fails on a digest in `tests/release/firmware.txt` (BIOS and HSC
 firmware), a built sample's digest in `tests/built/expected.txt`, a 7800 key in `src/cartdb.c`, or a 2600 prefix
-there. `hygiene.firmware_scan` scans every tracked file; `release.firmware_scan` scans the members of the three
-release zips; `publish.sh prepare` runs it over all 18 zips before a release.
+there. `hygiene.firmware_scan` scans every tracked file; `release.firmware_scan` checks native ZIP members;
+`publish.sh prepare` scans all 19 release ZIPs.
 
 ## The core library's symbols
 
@@ -220,7 +218,7 @@ with its lane's inventory and labels.
 | `changes` | `ubuntu-26.04` | `scripts/classify-changes.sh` on the pull request's paths, old and new names, and its changed-file count | none |
 | `hygiene` | `ubuntu-26.04` | preset `hygiene` | `hygiene.txt` |
 | `title` | `ubuntu-26.04` | pull requests only: `scripts/check-title.sh` on the live title and body | none |
-| `build` ×6 | `ubuntu-26.04`, `ubuntu-26.04-arm`, `macos-15`, `macos-15-intel`, `windows-2025`, `windows-11-arm` | fetches its wasmtime and 7800basic, then preset `ci` (`ci-msvc` on Windows); uploads `archives-<os>-<arch>` and `hashes-<os>-<arch>`; `macos-15` also runs the README install line on its zips | `ci.txt` without `release`, then `release` |
+| `build` ×6 | `ubuntu-26.04`, `ubuntu-26.04-arm`, `macos-15`, `macos-15-intel`, `windows-2025`, `windows-11-arm` | fetches wasmtime and 7800basic, then preset `ci` (`ci-msvc` on Windows); uploads `archives-<os>-<arch>` and `hashes-<os>-<arch>`; Linux x64 also uploads the source-bound portable ZIP; `macos-15` checks the README install line | `ci.txt` without `release`, then `release` |
 | `asan` | `ubuntu-26.04` | fetches wasmtime and 7800basic, then preset `asan` | `ci.txt` without `abi` and `release` |
 | `nofp` ×2 | `ubuntu-26.04`, `ubuntu-26.04-arm` | preset `nofp` | `nofp.txt` |
 | `be32` | `ubuntu-26.04` | preset `be32-compile`; full execution/equality runs nightly and on releases | none |
@@ -363,42 +361,50 @@ establish the exercised persistence and optional-firmware behavior, not general 
 
 ## Release archives
 
-`release.archive_contents` unpacks the three zips under `build/ci/release/extract` and requires:
+`release.archive_contents` checks the three native zips under `build/ci/release/extract` and requires:
 
 - the names `muhtari-{library,runner,libretro}-<os>-<arch>.zip`, with no version and no other `muhtari-*.zip`;
 - exactly the expected members at the root, with no top-level folder;
 - `LICENSE` and `THIRD-PARTY-NOTICES.md` byte-identical to the source tree's;
 - no file containing the absolute source or build directory.
 
-The README's install line is checked on macOS arm64 against the locally built zip:
+`muhtari-libretro-emscripten.zip` is another variant of the same three deliverables. `emscripten.bundle` checks its 14
+members, identities, notices and loader/Wasm hashes. Preparation requires 18 native and one portable ZIP before
+writing checksums: 19 ZIPs and 20 release assets including `SHA256SUMS`. Reproduce its pinned-SDK build,
+Node/native comparison and package controls with:
+
+```sh
+sh scripts/emscripten.sh build/ci
+```
+
+JUnit uses `tests/inventory/emscripten.txt`. Offline evidence covers package/core behavior, not browser, mobile,
+performance or physical-input qualification.
+
+On macOS arm64, the README link and install line are checked against the local build:
 
 ```sh
 cmake -DREADME=README.md -DBASE_URL=file://$PWD/build/ci/ -P tests/cmake/install_line.cmake
 ```
 
-It runs the line verbatim under a scratch `HOME`, with only the download base replaced, and requires
-`cores/muhtari_libretro.dylib` and `info/muhtari_libretro.info` under
-`~/Library/Application Support/RetroArch`. After publishing, the same script runs with the release URL as
-`BASE_URL`.
+The checker requires the exact portable ZIP URL and guide link, then runs the native line under a scratch `HOME` and
+checks the core and `.info` paths. After publishing, CI uses the release URL as `BASE_URL`.
 
 ## Release rehearsal
 
-`.github/workflows/release.yml` runs on a pull request from this repository that changes `release.yml`,
-`be-equality.yml`, `scripts/publish.sh`, `release-please-config.json` or `cmake/packaging.cmake`. Its tag is
-`rehearsal-<run id>-<attempt>`, new for every attempt, because a deleted immutable release's tag can never be
-reused.
+`.github/workflows/release.yml` selects pull requests changing release/SDK workflows, publisher/bundle checks or
+host/provenance inputs. Each run gets a new immutable `rehearsal-<run id>-<attempt>` tag.
 
 | Job | Runs |
 |---|---|
 | `ci` | `ci.yml` on the pull request's head commit |
 | `equality` | full native/PowerPC normal and package inventories plus authenticated same-commit hash equality |
-| `rehearsal` | prepare exactly18 archives from the head commit with no firmware; upload and attest; verify with digest-pinned gh>=2.102.0 and full repository/signer/ref constraints, including changed-byte rejection; publish a non-latest prerelease; verify19 assets, downloaded hashes and attestations. Rehearsals use the PR merge ref; real releases require main. [Commands](maintaining.md#the-rehearsal). |
+| `rehearsal` | prepare exactly 19 ZIPs from the head commit with no firmware; upload and attest; verify with digest-pinned gh>=2.102.0 and repository/signer/ref constraints, including changed-byte rejection; publish a non-latest prerelease; verify 20 assets, downloaded hashes and attestations. Rehearsals use the PR merge ref; real releases require main. [Commands](maintaining.md#the-rehearsal). |
 | `install-line` | the README install line on `macos-15` against the rehearsal's download URL |
 | `cleanup` | always, once `rehearsal` has started: `publish.sh rehearsal-delete TAG ID` confirms release absence before tag deletion, then exact-ID/tag and complete-list absence; API errors fail |
 
-Recover a failed rehearsal with "Re-run all jobs" or a new push. For failed cleanup, use
-the retained draft ID and [guarded cleanup](maintaining.md#re-running-a-failed-release). `publish.sh` deletes only
-`rehearsal-*` tags. `docs/maintaining.md` describes the real release, which runs the same steps on `main`.
+Recover with "Re-run all jobs" or a new push. Failed cleanup uses the retained draft ID and
+[guarded cleanup](maintaining.md#re-running-a-failed-release). Only `rehearsal-*` tags are deleted;
+`maintaining.md` covers real releases on `main`.
 
 `policy.publish.controls` tests real-script lifecycle and identity checks, including
 actual workflow output blocks. Hosted rehearsal supplies cryptographic, publication
