@@ -99,10 +99,16 @@ muhtari_add_test(NAME built.samples.self_test
 
 # built.openbios: the CC0 OpenBIOS image from its pinned source with $FF fill
 # (openbios.cmake), the BIOS the BIOS-path tests boot. It sets up built_openbios.
+set(built_openbios_timeout 1)
+if(WIN32)
+  # ceil(2 x 0.79s ARM64 / 0.52s x64), complete current cases,
+  # run43070407554/jobs130696484965/130696485965; fixture and SHA check retained.
+  set(built_openbios_timeout 2)
+endif()
 muhtari_add_test(NAME built.openbios
   COMMAND ${CMAKE_COMMAND} ${built_tools} -DASM=${MUHTARI_OPENBIOS_ASM} -DFILL=FF
     -DOUT=${MUHTARI_BUILT_DIR}/openbios/openbios.bin -P ${CMAKE_CURRENT_LIST_DIR}/openbios.cmake
-  LABELS built portable TIMEOUT 1)  # 2 x 0.40 s, Windows arm64, slowest of 16 runs, run 39381266556
+  LABELS built portable TIMEOUT ${built_openbios_timeout})
 set_tests_properties(built.openbios PROPERTIES FIXTURES_SETUP built_openbios)
 
 # Negative control: a source whose first incbin line occurs twice must fail

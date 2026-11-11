@@ -29,10 +29,13 @@ covered_files:
   - scripts/emscripten.sh
   - scripts/publish.sh
   - scripts/ubuntu-apt.sh
+  - tests/built/tests.cmake
   - tests/cmake/install_line.cmake
+  - tests/compat/tests.cmake
   - tests/emscripten/bundle-members.txt
   - tests/emscripten/bundle.cmake
   - tests/emscripten/tests.cmake
+  - tests/fuzz/tests.cmake
   - tests/hygiene/tests.cmake
   - tests/input/tests.cmake
   - tests/inventory/ci.txt
@@ -41,7 +44,7 @@ covered_files:
   - tests/policy/tests.cmake
   - tests/policy/ubuntu_apt.sh
   - tests/prop/tests.cmake
-covered_digest: "v4:sha256:51c195d3123321380dd53d5c43e108de12052c23b6bf08497ee9c702856eefc1"
+covered_digest: "v4:sha256:a7b1a2dfdcebd1fc78a31599683f6a1138d589c86488c9e50e2fa19903590ee4"
 behavior_unverified: 0
 overrides_applied: 0
 decision_coverage:
@@ -179,3 +182,8 @@ The follow-up also passes the complete local WASI portable execution (617 cases 
 ### Measured Windows timing follow-up (2026-11-11)
 
 The next candidate exposes the already observed Windows isolated-instance timeout. Complete same-behavior Windows samples also demonstrate lost headroom in the lightgun limit. The ship receipt records source equivalence, four completed current/base Windows jobs, the newer complete lightgun sample and both prior timeout failures. Applying DEC.47 changes only Windows isolated-instance/lightgun deadlines to 75/12 seconds; all case counts, inputs, assertions, scaling, other-platform limits and job caps remain. The one-off check of actual registration modules passes both platform branches and unchanged property limits; native/WASI exact configuration and focused native cases pass, exit 0. The independent operations review finds no blocking issue with this measured correction. These are local readiness checks; the prior source is not accepted and the corrected source must pass its hosted gates.
+
+
+## Shipping CI fixture maintenance
+
+The phase's bundle, source binding, SDK notices and consumer behavior are unchanged. Subsequent shipping evidence reproduces a native fixture deadline failure and identifies three Windows cases whose existing headroom has eroded; the bounded class measurements are in the v5 shipping receipt. Actual-module registration/scaling/fixture probes, exact native configuration and focused positive/negative controls pass locally. The covered-input fingerprint includes these owning registration modules. Hosted acceptance of the ordinary non-release maintenance and current-main CI remain tracked in STATE/SHIP until their exact-source receipts complete. The initial local phase-goal status does not assert those later hosted outcomes. Earlier denied/spent physical-host scopes and deferred requirements remain preserved.

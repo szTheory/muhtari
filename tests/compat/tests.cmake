@@ -44,10 +44,15 @@ muhtari_add_test(NAME title.pal.fast
   LABELS portable title TIMEOUT 2)
 # provisional: 4 s, ceil(2 x 1.49 s) is 3 s; macOS arm64 local, slowest of 10 runs alone (0.69 s) and one full ci run (1.49 s)
 # Budget floor 4 s, as for eightysix, the BIOS-path analogue: 1.23 s in run 39529469630 and a 2 s budget ran out twice in run 39530145463.
+set(compat_pal_bios_timeout 4)
+if(WIN32 AND MUHTARI_ARCH STREQUAL "x64")
+  # ceil(2 x 3.60s), complete run43083961768/job130743736846.
+  set(compat_pal_bios_timeout 8)
+endif()
 muhtari_add_test(NAME title.pal.bios
   COMMAND muhtari-test-predicate ${PROJECT_SOURCE_DIR}/tests/diag/pal.a78 boots@120
     --bios ${compat_bios}
-  LABELS portable title TIMEOUT 4)
+  LABELS portable title TIMEOUT ${compat_pal_bios_timeout})
 set_tests_properties(title.pal.bios PROPERTIES FIXTURES_REQUIRED built_openbios)
 
 # Negative control for the pin writer: the linear seed cartridge, filler
