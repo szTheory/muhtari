@@ -18,7 +18,7 @@ Acceptance is local and offline. Public rehearsal, publication, merge, new remot
 ## Phases
 
 - [x] **Phase 17: Measured milestone tune-up** — maintainers have current release/docs and a verified, measured baseline before packaging work. (completed 2026-11-10)
-- [ ] **Phase 18: Source-bound Emscripten release bundle** — integrators have one matched, documented archive exercised from clean extraction and covered by existing release contracts.
+- [x] **Phase 18: Source-bound Emscripten release bundle** — integrators have one matched, documented archive exercised from clean extraction and covered by existing release contracts. (completed 2026-11-11)
 
 ## Phase Details
 
@@ -53,4 +53,4 @@ Execution order: Phase 17 → Phase 18. Plan counts are assigned during phase pl
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 17. Measured milestone tune-up | 1/1 | Complete    | 2026-11-10 |
-| 18. Source-bound Emscripten release bundle | 0/TBD | Not started | - |
+| 18. Source-bound Emscripten release bundle | 2/2 | Complete    | 2026-11-11 |

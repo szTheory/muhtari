@@ -3,19 +3,18 @@ gsd_state_version: "1.0"
 milestone: v5.0
 milestone_name: Downloadable WebAssembly core
 current_phase: 18
-current_phase_name: Source-bound Emscripten release bundle
-status: executing
-stopped_at: Phase 17 complete, ready to plan Phase 18
-last_updated: "2026-11-11T03:46:27.386Z"
-last_activity: 2026-11-10
-last_activity_desc: Phase 17 complete, transitioned to Phase 18
-state_head: 7a1fb9121a49a2f348bb2ddbb9a033392c0a2d99
+status: completed
+stopped_at: Phase 18 complete — all phases complete
+last_updated: "2026-11-11T06:15:24.930Z"
+last_activity: 2026-11-11
+last_activity_desc: Phase 18 complete
+state_head: 28246dbda377ca619958c10e38d454aaa385a330
 progress:
   total_phases: 2
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 3
-  completed_plans: 1
-  percent: 33
+  completed_plans: 3
+  percent: 100
 ---
 
 # Project State
@@ -24,19 +23,19 @@ progress:
 
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-10.
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** Phase 17 passed its local measured tune-up; TUNE-09 is accepted. Phase 18 now prepares the source-bound Emscripten release bundle; its five requirements remain pending. The owner authorized autonomous local execution; public rehearsal, publication, merge and new host/remote actions retain their boundaries. v4.0 shipped through PR #47/package v0.12.0; its [ship receipt](milestones/v4.0-SHIP.md) preserves source-specific and earlier failed evidence.
+**Current focus:** Both v5.0 phases and all six requirements passed local verification. Milestone audit and archive are in progress. The portable ZIP is bound to the final product snapshot; public rehearsal, publication, merge and new host/remote actions remain separate authority boundaries. v4.0 remains the published package v0.12.0; its ship receipt preserves earlier failed evidence.
 
 ## Current Position
 
-Phase: 18 (Source-bound Emscripten release bundle) — READY TO EXECUTE
+Phase: 18
 Plan: Not started
-Status: Ready to execute
-Last activity: 2026-11-10 — Phase 17 complete, transitioned to Phase 18
-Progress: [███░░░░░░░] 33%
+Status: All phases complete
+Last activity: 2026-11-11 — Phase 18 complete
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
-Two plans and five tasks completed. Native and pinned Emscripten workflows passed; phase verification and integration audit passed. Measurements are headless, with Linux amd64 SDK emulation on Darwin arm64 explicitly reported. See the [audit](milestones/v4.0-MILESTONE-AUDIT.md) and phase summaries for source-specific receipts.
+Three plans and seven tasks completed across two verified phases. Final native/release, pinned SDK, extracted package, publisher and hygiene gates passed at the source recorded in the Phase 18 summary. Measurements are headless local evidence; no browser/device or remote release outcome is inferred.
 
 ## Accumulated Context
 
@@ -97,12 +96,12 @@ At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Sou
 ## Session Continuity
 
 Last session: 2026-11-10
-Stopped at: Phase 17 complete, ready to plan Phase 18
+Stopped at: Phase 18 complete — all phases complete
 Resume file: None
-Next command: $gsd-autonomous --from 18 — resume the authorized local bundle scope; agent reconciles the live plan index.
+Next command: $gsd-audit-milestone — agent is continuing the authorized local lifecycle; no owner action is needed.
 
 ## Operator Next Steps
 
-- Agent continues the authorized autonomous v5.0 scope through Phase 18 context/planning and all runnable local work; ordinary in-scope decisions need no routine confirmation. No owner action is needed.
+- Agent continues the authorized v5.0 milestone audit, local archive and cleanup. Both implementation phases are verified; no owner action is needed for this local lifecycle.
 - Preserve denied/spent Phase 12/14 host scopes and the nine deferred v3.0 requirements. Public rehearsal, publication, merge, new host/remote actions and material scope changes retain their boundaries.
 - Root is canonical; older dirty worktrees are preserved. Do not import them without ancestry/content reconciliation. The isolated v4.0 candidate shipped; no old ship command needs replaying.

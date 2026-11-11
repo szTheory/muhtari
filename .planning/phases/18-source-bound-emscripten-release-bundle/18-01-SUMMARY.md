@@ -125,8 +125,8 @@ status: complete
 
 ## Recorded Results
 
-- **Pass, exit 0:** `sh -n scripts/emscripten.sh`; `sh scripts/emscripten.sh --preflight build/ci`; `sh scripts/emscripten.sh build/ci`; and `git diff --check` during Task 1. The full producer run created the ZIP and passed the fresh-extraction Node/native oracle and existing Emscripten checks.
-- **Pass, exit 0:** `cmake -DROOT="$PWD" -DWORK=build/phase18-bundle-controls -DMODE=controls -P tests/emscripten/bundle.cmake`; all synthetic expected failures had their named diagnostics.
+- **Pass, exit 0:** sh -n scripts/emscripten.sh; `sh scripts/emscripten.sh --preflight build/ci`; `sh scripts/emscripten.sh build/ci`; and `git diff --check` during Task 1. The full producer run created the ZIP and passed the fresh-extraction Node/native oracle and existing Emscripten checks.
+- **Pass, exit 0:** cmake -DROOT="$PWD" -DWORK=build/phase18-bundle-controls -DMODE=controls -P tests/emscripten/bundle.cmake; all synthetic expected failures had their named diagnostics.
 - **Pass, exit 0:** With the exact pinned image `emscripten/emsdk@sha256:6bd7aef93408b10bf7b36642cb7c91119b302f720b9ec2d20439f73cf07fe894`, `cmake --preset emscripten` and `ctest --test-dir build/emscripten --output-on-failure -R '^emscripten[.]bundle([.]controls)?$' --no-tests=error`; both package tests passed (2.73s and 17.68s).
 - **Failed invocation, exit 125:** One Docker command used a mistyped image digest and Docker rejected its digest length before starting a container. The digest was checked against the plan and script, then the exact pinned-image command above passed; this was not a product or test failure.
 

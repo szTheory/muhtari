@@ -11,11 +11,11 @@
 
 ### Downloadable Emscripten libretro variant
 
-- [ ] **WASM-05**: A host integrator can obtain one architecture-independent libretro ZIP containing the matching Emscripten loader/Wasm, core metadata, exact commit and core source identity, pinned toolchain identity, loader/Wasm SHA-256 digests, concise host contract and required notices, with exact allowed members and no ROM, BIOS, fixture, save or measurement bytes.
-- [ ] **WASM-06**: A clean extraction of that ZIP passes the existing offline lifecycle and independent native numeric parity consumer without falling back to build outputs; representative missing, mismatched and tampered package controls fail.
-- [ ] **WASM-07**: Maintainers can verify the distribution rights and notice obligations of generated runtime/stdlib code at the exact pinned SDK inputs, and the archive carries the required permissive notices and provenance.
-- [ ] **WASM-08**: The existing release pipeline binds the new ZIP to the exact release source and includes it in exact inventories, checksums, attestations, tamper/download checks and rehearsal selection, while preserving all 18 native ZIPs and their required rejection behavior.
-- [ ] **WASM-09**: Host integrators have reproducible download/extraction/loading instructions for the bundle, including companion-file resolution and explicit offline Node versus real-browser/device evidence limits.
+- [x] **WASM-05**: A host integrator can obtain one architecture-independent libretro ZIP containing the matching Emscripten loader/Wasm, core metadata, exact commit and core source identity, pinned toolchain identity, loader/Wasm SHA-256 digests, concise host contract and required notices, with exact allowed members and no ROM, BIOS, fixture, save or measurement bytes.
+- [x] **WASM-06**: A clean extraction of that ZIP passes the existing offline lifecycle and independent native numeric parity consumer without falling back to build outputs; representative missing, mismatched and tampered package controls fail.
+- [x] **WASM-07**: Maintainers can verify the distribution rights and notice obligations of generated runtime/stdlib code at the exact pinned SDK inputs, and the archive carries the required permissive notices and provenance.
+- [x] **WASM-08**: The existing release pipeline binds the new ZIP to the exact release source and includes it in exact inventories, checksums, attestations, tamper/download checks and rehearsal selection, while preserving all 18 native ZIPs and their required rejection behavior.
+- [x] **WASM-09**: Host integrators have reproducible download/extraction/loading instructions for the bundle, including companion-file resolution and explicit offline Node versus real-browser/device evidence limits.
 
 ## Deferred Requirements
 
@@ -36,10 +36,10 @@ The nine v3.0 gaps remain deferred: TUNE-06/07, PLAY-01–04 and FRONT-02–04. 
 | Requirement | Phase | Status |
 |---|---|---|
 | TUNE-09 | Phase 17 | Complete |
-| WASM-05 | Phase 18 | Pending |
-| WASM-06 | Phase 18 | Pending |
-| WASM-07 | Phase 18 | Pending |
-| WASM-08 | Phase 18 | Pending |
-| WASM-09 | Phase 18 | Pending |
+| WASM-05 | Phase 18 | Complete |
+| WASM-06 | Phase 18 | Complete |
+| WASM-07 | Phase 18 | Complete |
+| WASM-08 | Phase 18 | Complete |
+| WASM-09 | Phase 18 | Complete |
 
 Coverage: 6/6 requirements mapped exactly once; zero accepted until verified. Acceptance is local package/release-contract readiness; actual release outcomes are confirmed only at ship.

@@ -132,6 +132,7 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 ### Validated
 
 - ✓ TUNE-09: current v4 publication records and source-specific measured baseline; required checks retained — v5.0, Phase 17.
+- ✓ WASM-05–09: matched source-bound portable ZIP, clean-extracted offline oracle, pinned runtime notices, existing release contracts and host instructions — v5.0, Phase 18.
 
 - ✓ TUNE-08: relative-root document budget coverage and representative controls — v4.0, Phase 15.
 - ✓ WASM-01: pinned Emscripten ES module and Wasm with documented loader/export contract — v4.0, Phase 16.
@@ -171,12 +172,7 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 ### Active
 
-- [ ] TUNE-09: Current release/docs and measured quality/efficiency dispositions before feature work.
-- [ ] WASM-05: One source-bound, exact-member Emscripten libretro archive.
-- [ ] WASM-06: The cleanly extracted archive passes the offline native/Node oracle and representative fault controls.
-- [ ] WASM-07: Pinned generated-runtime distribution rights and required notices are audited.
-- [ ] WASM-08: Exact release, checksum, attestation, tamper/download and rehearsal contracts cover the new archive while preserving native assets.
-- [ ] WASM-09: Integrators have concise package/loading instructions and explicit evidence limits.
+No unverified v5.0 implementation requirement remains. Milestone audit and local archive are in progress; public shipping retains separate authority.
 
 The nine unmet v3.0 requirements remain deferred, with their original evidence and host/remote stops unchanged.
 
@@ -314,4 +310,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-10 after Phase 17 verification*
+*Last updated: 2026-11-11 after Phase 18 verification*
