@@ -946,6 +946,7 @@ function(_muhtari_bundle_run_production_controls root build work expected_sha ar
     licenses/compiler-rt/CREDITS.TXT)
   foreach(member IN LISTS notice_members)
     set(case_name "notice-${member}")
+    string(REPLACE "/" "-" work_case "${case_name}")
     set(case_root "${work}/${case_name}")
     set(stage "${case_root}/stage")
     file(REMOVE_RECURSE "${case_root}")
@@ -953,7 +954,7 @@ function(_muhtari_bundle_run_production_controls root build work expected_sha ar
     file(APPEND "${stage}/${member}" "changed notice bytes\n")
     set(mutated_archive "${case_root}/package.zip")
     _muhtari_bundle_pack_control_archive("${stage}" "${mutated_archive}" "${members}")
-    _muhtari_bundle_expect_cli_failure("${root}" "${build}" "${production_control_dir}/${case_name}-validate"
+    _muhtari_bundle_expect_cli_failure("${root}" "${build}" "${production_control_dir}/${work_case}-validate"
       "${expected_sha}" "${native_json}" "${fixture}" "${mutated_archive}"
       "runtime notice digest mismatch: ${member}")
   endforeach()
