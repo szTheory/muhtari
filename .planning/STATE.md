@@ -1,13 +1,13 @@
 ---
 gsd_state_version: "1.0"
 milestone: v5.0
-milestone_name: Downloadable WebAssembly core
+milestone_name: Downloadable WebAssembly core (verified local closeout)
 status: Awaiting next milestone
 stopped_at: Phase 18 complete — all phases complete
-last_updated: "2026-11-11T06:25:02.112Z"
+last_updated: "2026-11-11T14:18:02.355Z"
 last_activity: 2026-11-11
-last_activity_desc: Milestone v5.0 completed and archived
-state_head: ade501910582109624ef36bc849fda89344329d6
+last_activity_desc: "Phase 18 shipped as PR #49; hosted CI and release rehearsal pending"
+state_head: d73dd4b5dd1c71b02a53cfe90166918285d84b35
 progress:
   total_phases: 2
   completed_phases: 2
@@ -23,13 +23,13 @@ current_phase: 18
 
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-10.
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** v5.0 is verified and archived locally; all six requirements and both phases passed. The next boundary is separately authorized shipping via `$gsd-ship 18`. The portable archive is source-bound local evidence; v0.12.0 remains the published package. Earlier denied/spent host scopes and the nine v3.0 gaps remain intact.
+**Current focus:** v5.0 is verified and archived locally; all six requirements and both phases passed. The owner invoked `$gsd-ship 18`; PR #49 carries the milestone and awaits exact-head hosted CI/release rehearsal. The agent owns those checks, auto-merge and the resulting release-PR receipt. The portable bundle remains unpublished until the release succeeds. Earlier denied/spent host scopes and nine v3.0 gaps remain intact.
 
 ## Current Position
 
 Milestone: v5.0 complete locally (phases 17–18, three plans, seven tasks)
 Status: Verified local closeout; shipping pending separate authority
-Last activity: 2026-11-11 — audit, archive and cleanup completed
+Last activity: 2026-11-11 -- Phase 18 shipped as PR #49; hosted CI and release rehearsal pending
 Progress: [██████████] 100%
 
 ## Performance Metrics
@@ -95,12 +95,12 @@ At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Sou
 ## Session Continuity
 
 Last session: 2026-11-11
-Stopped at: v5.0 verified local closeout; next action is separately authorized shipping
+Stopped at: PR #49 created; exact-head CI/rehearsal and release checks are agent-owned
 Resume file: None
-Next command: $gsd-ship 18 — run when the owner chooses to authorize remote shipping. Context can be cleared; the agent owns health/receipt preflight and archived-path resolution.
+Next command: $gsd-ship 18 — resume this shipping scope if interrupted; reuse PR #49 and inspect its existing runs before any new action. The agent owns health, receipts and archived-path resolution. After shipping and release checks succeed, the next milestone boundary is $gsd-new-milestone.
 
 ## Operator Next Steps
 
-- The authorized local v5.0 work is complete. The owner acts next only when ready to authorize remote shipping with `$gsd-ship 18`; no acknowledgment is needed to keep existing stops closed.
+- The owner authorized shipping with `$gsd-ship 18`. The agent continues PR #49 through existing required CI, rehearsal, auto-merge and release checks; no routine owner action is needed.
 - The agent owns service/receipt preflight and the documented same-runtime archived-phase adapter. Context can be cleared; the owner stays in the canonical checkout.
-- Preserve original Phase 12/14 denied/spent scopes and the nine deferred v3.0 requirements. Public rehearsal, publication, new remote dispatch and merge remain outside this completed local scope.
+- Preserve original Phase 12/14 denied/spent scopes and the nine deferred v3.0 requirements. This ship invocation authorizes its normal remote CI/rehearsal/merge/release path; it does not renew earlier terminal scopes or authorize unrelated dispatch.
