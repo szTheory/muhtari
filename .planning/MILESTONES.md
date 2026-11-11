@@ -1,6 +1,6 @@
 # Project Milestones: muhtari
 
-## v5.0 Downloadable WebAssembly core (Verified locally: 2026-11-11)
+## v5.0 Downloadable WebAssembly core (Source shipped: 2026-11-11)
 
 **Phases completed:** 2 phases, 3 plans, 7 tasks (actual plan blocks; SDK prose count was 4)
 
@@ -10,9 +10,9 @@
 - The source-bound Emscripten ZIP now travels through the existing exact-source release path with local native, SDK, and hygiene gates passing.
 
 **Closeout type:** `verified_closeout`; all six scoped requirements and both phases pass. Known verification overrides: 0 newly acknowledged, 50 carried forward from prior closes. The nine v3.0 requirement gaps and original host/remote stops remain unchanged.
-**Publication:** Pending separate ship authority; v0.12.0 remains the published package. No public rehearsal, push, dispatch, merge or publication was run.
+**Publication:** [PR #49](https://github.com/szTheory/muhtari/pull/49) merged after full candidate CI and public rehearsal/install/cleanup acceptance. The versioned package is tracked by [release PR #50](https://github.com/szTheory/muhtari/pull/50) and the existing release automation. [Ship receipt](milestones/v5.0-SHIP.md).
 **Archive:** [roadmap](milestones/v5.0-ROADMAP.md), [requirements](milestones/v5.0-REQUIREMENTS.md), [audit](milestones/v5.0-MILESTONE-AUDIT.md), [phase records](milestones/v5.0-phases/).
-**Next:** `$gsd-ship 18` when the owner chooses to authorize remote shipping.
+**Next:** `$gsd-new-milestone`; the agent checks release/main receipts automatically first.
 
 ---
 

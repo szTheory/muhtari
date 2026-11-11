@@ -3,11 +3,11 @@ gsd_state_version: "1.0"
 milestone: v5.0
 milestone_name: Downloadable WebAssembly core (verified local closeout)
 status: Awaiting next milestone
-stopped_at: PR 49 shipping recovery active — alternate signed package route qualified
-last_updated: "2026-11-11T15:30:21.872938Z"
+stopped_at: Phase 18 shipped via PR 49 — release receipts tracked in PR 50
+last_updated: "2026-11-11T17:47:21.514731Z"
 last_activity: 2026-11-11
-last_activity_desc: "PR #49 recovery active: hosted DNS route diagnosed; alternate signed mirror and full local checks passed"
-state_head: 87ddc29c2675765e8a20fcdce6254df91d0c8387
+last_activity_desc: "Phase 18 shipped via PR #49; versioned release tracked in PR #50"
+state_head: e8cc934a6eeb274df18bff690fdb6eb23645b310
 progress:
   total_phases: 2
   completed_phases: 2
@@ -23,13 +23,13 @@ current_phase: 18
 
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-10.
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** The owner explicitly authorized fixing and unblocking v5.0 shipping after the read-only resume. An isolated hosted diagnostic reproduces Ubuntu-owned DNS failure and qualifies kernel.org with authenticated four-suite indexes and a real Valgrind install. The canonical source now uses that mirror ahead of existing fallbacks without changing signing keys, package sets or test/deadline gates. Package routing and the smaller WASI inventory are fixed and locally verified, including the full portable run. The next rehearsal exposes stale Windows isolated-instance/lightgun deadlines; complete comparable samples support applying the existing twice-maximum rule to those two Windows cases only. All workloads/assertions and other limits stay unchanged. The agent is continuing corrected-source shipping without another owner invocation. Earlier failed attempts remain terminal; Phase 12/14 host stops and nine v3.0 gaps remain intact.
+**Current focus:** v5.0 source shipped in PR #49 after exact-source CI, full release rehearsal, install and cleanup passed. Six native outputs and full native/PowerPC equality match. The versioned package is tracked in release PR #50 and the existing release automation; the agent owns its exact-source CI/publication receipt checks. The next owner boundary is `$gsd-new-milestone`, with automatic service/receipt reconciliation first. Earlier Phase 12/14 host stops and nine v3.0 gaps remain intact.
 
 ## Current Position
 
-Milestone: v5.0 complete locally (phases 17–18, three plans, seven tasks)
-Status: Verified local closeout; authorized shipping recovery in progress
-Last activity: 2026-11-11 -- PR #49 recovery active: hosted DNS route diagnosed; alternate signed mirror and full local checks passed
+Milestone: v5.0 complete (phases 17–18); source shipped via PR #49
+Status: Source shipped; versioned release receipts are agent-owned
+Last activity: 2026-11-11 -- Phase 18 shipped via PR #49; release PR #50 tracks the versioned package
 Progress: [██████████] 100%
 
 ## Performance Metrics
@@ -95,12 +95,12 @@ At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Sou
 ## Session Continuity
 
 Last session: 2026-11-11
-Stopped at: Active authorized PR #49 recovery; signed alternate mirror demonstrated, local verification passed; exact-source candidate shipping next
+Stopped at: Phase 18 source shipped; release pipeline and exact-source receipt checks remain agent-owned
 Resume file: None
-Next command: $gsd-ship 18 only for interrupted-session recovery; the current agent continues without another invocation. Reconcile the canonical dirty tree and latest ship receipt, finish affected local checks, and continue exact-source hosted shipping using the demonstrated signed mirror route. Do not rerun terminal old attempts. After shipping/release checks succeed, the next milestone boundary is $gsd-new-milestone.
+Next command: $gsd-new-milestone. The agent first reconciles PR #50, current release/main receipts and the ship receipt automatically; no owner metadata repair, checkout switch or blanket CI confirmation is needed. Do not reopen terminal old attempts.
 
 ## Operator Next Steps
 
-- PR #49 remains unmerged and the portable bundle is unpublished. The owner explicitly authorized bounded diagnosis and evidence-supported recovery; kernel.org is a demonstrated working signed-package route. The agent owns the remaining local and hosted shipping gates without routine handoff. Old failed attempts stay terminal. No owner repair or repeated invocation is needed.
-- The agent owns service/receipt preflight and the documented same-runtime archived-phase adapter. Context can be cleared; the owner stays in the canonical checkout.
-- Preserve original Phase 12/14 denied/spent scopes and the nine deferred v3.0 requirements. This ship invocation authorizes its normal remote CI/rehearsal/merge/release path; it does not renew earlier terminal scopes or authorize unrelated dispatch.
+- The next owner boundary is `$gsd-new-milestone`. The agent checks current PR #50, main and versioned release receipts before collecting new scope; release verification remains the agent's responsibility.
+- The [ship receipt](milestones/v5.0-SHIP.md) records accepted source/merge/rehearsal evidence, prior failures, calibrated Windows cases and the extended Nightly property limitation. The current release status is available from [PR #50](https://github.com/szTheory/muhtari/pull/50) and [releases](https://github.com/szTheory/muhtari/releases).
+- Preserve the original Phase 12/14 denied/spent scopes and nine deferred v3.0 requirements. No old host scope is renewed. No owner directory switch or routine confirmation is needed.
