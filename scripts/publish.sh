@@ -58,12 +58,10 @@ prepare() {
     got=$(tr -d '\r\n' < "$f")
     [ "$got" = "$EXPECTED_SHA" ] || fail "$f records $got, not $EXPECTED_SHA"
   done
-  # No member is firmware, a built sample or a known ROM (ASSET_POLICY.md 5).
   root=$(dirname "$0")/..
   zips=$(names | sed "s|^|$1/|" | tr '\n' ';')
-  "${CMAKE:-cmake}" "-DZIPS=${zips%;}" -DFIRMWARE="$root/tests/release/firmware.txt" \
-    -DEXPECTED="$root/tests/built/expected.txt" -DCARTDB="$root/src/cartdb.c" \
-    -P "$root/tests/cmake/firmware_scan.cmake" || fail "the firmware scan failed"
+  # Bound and validate the portable bundle before the generic firmware scan
+  # extracts every ZIP. That scan still covers all 19 archives below.
   evidence="$1/emscripten-evidence"
   build="$evidence/emscripten"
   "${CMAKE:-cmake}" -DMODE=validate -DROOT="$root" -DBUILD="$build" \
@@ -72,6 +70,10 @@ prepare() {
     -DNATIVE="$evidence/ci/tests/emscripten/native.json" \
     -DFIXTURE="$root/tests/roms/manifest.txt" \
     -P "$root/tests/emscripten/bundle.cmake" || fail "the portable bundle validation failed"
+  # No member is firmware, a built sample or a known ROM (ASSET_POLICY.md 5).
+  "${CMAKE:-cmake}" "-DZIPS=${zips%;}" -DFIRMWARE="$root/tests/release/firmware.txt" \
+    -DEXPECTED="$root/tests/built/expected.txt" -DCARTDB="$root/src/cartdb.c" \
+    -P "$root/tests/cmake/firmware_scan.cmake" || fail "the firmware scan failed"
   (cd "$1" && sha256 $(names)) > "$1/SHA256SUMS"
   echo "publish: 19 archives from $EXPECTED_SHA; SHA256SUMS written"
 }

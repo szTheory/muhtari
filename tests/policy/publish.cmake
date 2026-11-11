@@ -229,6 +229,12 @@ publish_run_prepare("${prepare_valid}" "${synthetic_commit}" 0 prepare_rc prepar
 if(NOT prepare_rc STREQUAL "0" OR NOT prepare_out MATCHES "19 archives from ${synthetic_commit}")
   message(FATAL_ERROR "publish preparation rejected the valid synthetic source-bound set: exit ${prepare_rc}: ${prepare_out}")
 endif()
+file(READ "${WORK}/cmake-calls" prepare_calls)
+string(FIND "${prepare_calls}" "validate\n" validate_index)
+string(FIND "${prepare_calls}" "firmware\n" firmware_index)
+if(validate_index LESS 0 OR firmware_index LESS 0 OR NOT validate_index LESS firmware_index)
+  message(FATAL_ERROR "portable preflight must precede the firmware scan extraction: ${prepare_calls}")
+endif()
 file(STRINGS "${prepare_valid}/SHA256SUMS" checksum_rows)
 list(LENGTH checksum_rows checksum_count)
 if(NOT checksum_count EQUAL 19)
@@ -370,8 +376,9 @@ if(DEFINED PRODUCTION_ARCHIVE AND NOT PRODUCTION_ARCHIVE STREQUAL "")
       "${production_build}" "${production_native}" FALSE)
     file(WRITE "${fault_dir}/SHA256SUMS" "stale checksum receipt\n")
     publish_run_prepare("${fault_dir}" "${EXPECTED_SHA}" 1 production_fault_rc production_fault_out)
+    string(REGEX REPLACE "[ \t\r\n]+" " " normalized_production_fault_out "${production_fault_out}")
     if(production_fault_rc STREQUAL "0"
-       OR NOT production_fault_out MATCHES "runtime notice digest mismatch: ${member}"
+       OR NOT normalized_production_fault_out MATCHES "runtime notice digest mismatch: ${member}"
        OR EXISTS "${fault_dir}/SHA256SUMS")
       message(FATAL_ERROR "publisher did not reject mutated qualified notice ${member}: ${production_fault_rc}: ${production_fault_out}")
     endif()
