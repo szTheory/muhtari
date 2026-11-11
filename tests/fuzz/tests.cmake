@@ -203,8 +203,8 @@ else()
   # The run target's seeds, an empty input among them, and its regressions.
   set(fuzz_run_replay_timeout 14)  # ceil(2 x 6.64s), complete run40414104123/job121892328427; scales retained.
   if(WIN32 AND MUHTARI_ARCH STREQUAL "x64")
-    # ceil(2 x 12.94s), complete run43070407554/job130696485965.
-    set(fuzz_run_replay_timeout 26)
+    # ceil(2 x 13.60s), complete run43078250375/job130723792822.
+    set(fuzz_run_replay_timeout 28)
   endif()
   muhtari_add_test(NAME fuzz.regress.run
     COMMAND muhtari-fuzz-run-replay --seeds ${fuzz_run_regress}
