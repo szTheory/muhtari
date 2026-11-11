@@ -164,16 +164,6 @@ bounded 1200 docker run --rm --name "$container_name" --network none --platform 
       -DJUNIT=build/emscripten/junit.xml \
       -DINVENTORY=tests/inventory/emscripten.txt \
       -P tests/cmake/check_junit.cmake &&
-    sdk_root=$(dirname "$(command -v emcc)") &&
-    PATH="/src/build/pins/cmake/bin:$PATH" cmake \
-      -DROOT=/src -DBUILD=/src/build/emscripten \
-      -DWORK=/src/build/emscripten/bundle-work \
-      -DMODE=create -DEXPECTED_SHA="$MUHTARI_EXPECTED_SHA" \
-      -DSDK_ROOT="$sdk_root" \
-      -DNATIVE=/src/build/ci/tests/emscripten/native.json \
-      -DFIXTURE=/src/build/ci/tests/input-carts/input.a78 \
-      -DNODE="$(command -v node)" \
-      -P tests/emscripten/bundle.cmake &&
     node tests/emscripten/host.mjs \
       --module build/emscripten/libretro/muhtari_libretro.mjs \
       --fixture build/ci/tests/input-carts/input.a78 \

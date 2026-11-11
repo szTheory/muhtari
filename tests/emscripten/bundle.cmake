@@ -125,8 +125,14 @@ function(_muhtari_bundle_hash_equal left right description)
   endif()
 endfunction()
 
-function(_muhtari_bundle_metadata path expected_sha metadata_source native_json)
-  file(STRINGS "${path}" lines)
+function(_muhtari_bundle_metadata path expected_sha metadata_source archive_sidecar native_json)
+  file(READ "${path}" raw_metadata)
+  if(raw_metadata MATCHES "\r" OR NOT raw_metadata MATCHES "\n$"
+     OR raw_metadata MATCHES "\n\n")
+    _muhtari_bundle_fail("muhtari-bundle.txt must be nonempty LF-terminated key/value lines")
+  endif()
+  string(REGEX REPLACE "\n$" "" raw_metadata "${raw_metadata}")
+  string(REPLACE "\n" ";" lines "${raw_metadata}")
   set(expected_keys schema commit core_source_sha256 sdk_image sdk_leaf_sha256 sdk_platform emcc)
   set(seen_keys)
   foreach(line IN LISTS lines)
@@ -186,6 +192,7 @@ function(_muhtari_bundle_metadata path expected_sha metadata_source native_json)
   if(NOT source_id STREQUAL meta_core_source_sha256)
     _muhtari_bundle_fail("bundle source identity does not match the built sidecar")
   endif()
+  _muhtari_bundle_hash_equal("${metadata_source}" "${archive_sidecar}" "source identity sidecar")
   if(NOT EXISTS "${native_json}" OR IS_DIRECTORY "${native_json}")
     _muhtari_bundle_fail("independent native observer receipt is missing")
   endif()
@@ -201,7 +208,13 @@ function(_muhtari_bundle_metadata path expected_sha metadata_source native_json)
 endfunction()
 
 function(_muhtari_bundle_pair_sums path output_paths output_hashes)
-  file(STRINGS "${path}" lines)
+  file(READ "${path}" raw_sums)
+  if(raw_sums MATCHES "\r" OR NOT raw_sums MATCHES "\n$"
+     OR raw_sums MATCHES "\n\n")
+    _muhtari_bundle_fail("SHA256SUMS must be nonempty LF-terminated entries")
+  endif()
+  string(REGEX REPLACE "\n$" "" raw_sums "${raw_sums}")
+  string(REPLACE "\n" ";" lines "${raw_sums}")
   list(LENGTH lines line_count)
   if(NOT line_count EQUAL 2)
     _muhtari_bundle_fail("SHA256SUMS must contain exactly two loader/Wasm entries")
@@ -292,7 +305,8 @@ function(muhtari_bundle_validate archive root build work expected_sha notice_dig
   endforeach()
 
   _muhtari_bundle_metadata("${extract}/muhtari-bundle.txt" "${expected_sha}"
-    "${build}/libretro/muhtari-source-id.txt" "${native_json}")
+    "${build}/libretro/muhtari-source-id.txt"
+    "${extract}/cores/muhtari-source-id.txt" "${native_json}")
   foreach(member IN ITEMS LICENSE THIRD-PARTY-NOTICES.md HOSTING.md info/muhtari_libretro.info)
     if(member STREQUAL "LICENSE")
       set(source "${root}/LICENSE")
@@ -306,10 +320,13 @@ function(muhtari_bundle_validate archive root build work expected_sha notice_dig
     _muhtari_bundle_hash_equal("${source}" "${extract}/${member}" "${member}")
   endforeach()
 
-  list(LENGTH notice_digests notice_count)
-  if(NOT notice_count EQUAL 5)
-    _muhtari_bundle_fail("notice digest table must contain the five qualified runtime texts")
-  endif()
+  set(expected_notice_members
+    licenses/emscripten/LICENSE
+    licenses/emscripten/AUTHORS
+    licenses/musl/COPYRIGHT
+    licenses/compiler-rt/LICENSE.TXT
+    licenses/compiler-rt/CREDITS.TXT)
+  set(actual_notice_members)
   foreach(record IN LISTS notice_digests)
     string(FIND "${record}" "=" separator)
     if(separator LESS 1)
@@ -318,12 +335,27 @@ function(muhtari_bundle_validate archive root build work expected_sha notice_dig
     string(SUBSTRING "${record}" 0 ${separator} member)
     math(EXPR digest_start "${separator} + 1")
     string(SUBSTRING "${record}" ${digest_start} -1 expected)
-    if(NOT member IN_LIST expected_members)
-      _muhtari_bundle_fail("notice digest names a non-member: ${member}")
+    string(LENGTH "${expected}" digest_length)
+    if(NOT digest_length EQUAL 64 OR NOT expected MATCHES "^[0-9a-f]+$")
+      _muhtari_bundle_fail("notice digest is malformed: ${member}")
     endif()
+    list(APPEND actual_notice_members "${member}")
+  endforeach()
+  set(sorted_notice_members ${actual_notice_members})
+  list(SORT sorted_notice_members)
+  set(sorted_expected_notice_members ${expected_notice_members})
+  list(SORT sorted_expected_notice_members)
+  if(NOT sorted_notice_members STREQUAL sorted_expected_notice_members)
+    _muhtari_bundle_fail("notice digest table must name each of the five runtime texts exactly once")
+  endif()
+  foreach(record IN LISTS notice_digests)
+    string(FIND "${record}" "=" separator)
+    string(SUBSTRING "${record}" 0 ${separator} member)
+    math(EXPR digest_start "${separator} + 1")
+    string(SUBSTRING "${record}" ${digest_start} -1 expected)
     file(SHA256 "${extract}/${member}" actual)
     if(NOT actual STREQUAL expected)
-      _muhtari_bundle_fail("qualified runtime notice digest mismatch: ${member}")
+      _muhtari_bundle_fail("runtime notice digest mismatch: ${member}")
     endif()
   endforeach()
 
@@ -424,19 +456,392 @@ function(_muhtari_bundle_create root build work expected_sha notice_digests sdk_
   message(STATUS "emscripten.bundle: created ${archive}")
 endfunction()
 
+function(_muhtari_bundle_control_metadata path commit source_id emcc)
+  file(WRITE "${path}"
+    "schema=1\ncommit=${commit}\ncore_source_sha256=${source_id}\n"
+    "sdk_image=${_muhtari_bundle_image}\nsdk_leaf_sha256=${_muhtari_bundle_leaf}\n"
+    "sdk_platform=${_muhtari_bundle_platform}\nemcc=${emcc}\n")
+endfunction()
+
+function(_muhtari_bundle_pack_control_archive stage archive members)
+  set(paths)
+  foreach(member IN LISTS members)
+    if(EXISTS "${stage}/${member}")
+      list(APPEND paths "${member}")
+    endif()
+  endforeach()
+  file(REMOVE "${archive}")
+  file(ARCHIVE_CREATE OUTPUT "${archive}" PATHS ${paths}
+    FORMAT zip WORKING_DIRECTORY "${stage}")
+endfunction()
+
+function(_muhtari_bundle_expect_internal_failure root build work expected_sha notice_digests native_json archive expected_text)
+  set(driver "${work}/expected-failure.cmake")
+  file(WRITE "${driver}"
+    "include(\"${root}/tests/emscripten/bundle.cmake\")\n"
+    "muhtari_bundle_validate(\"${archive}\" \"${root}\" \"${build}\" \"${work}/validate\" \"${expected_sha}\" \"${notice_digests}\" \"${native_json}\")\n")
+  execute_process(COMMAND "${CMAKE_COMMAND}" -P "${driver}"
+    RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+  set(output "${out}${err}")
+  string(REGEX REPLACE "[ \t\r\n]+" " " normalized_output "${output}")
+  string(FIND "${normalized_output}" "${expected_text}" match_at)
+  if(NOT rc STREQUAL "1" OR match_at EQUAL -1)
+    _muhtari_bundle_fail("control expected exit 1 and '${expected_text}', got exit ${rc}: ${output}")
+  endif()
+  message(STATUS "emscripten.bundle.controls: rejected ${expected_text}")
+endfunction()
+
+function(_muhtari_bundle_expect_cli_failure root build work expected_sha notice_native fixture archive expected_text)
+  execute_process(COMMAND "${CMAKE_COMMAND}"
+    "-DROOT=${root}" "-DBUILD=${build}" "-DWORK=${work}"
+    "-DMODE=validate" "-DEXPECTED_SHA=${expected_sha}"
+    "-DNATIVE=${notice_native}" "-DFIXTURE=${fixture}" "-DARCHIVE=${archive}"
+    -P "${root}/tests/emscripten/bundle.cmake"
+    RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+  set(output "${out}${err}")
+  string(REGEX REPLACE "[ \t\r\n]+" " " normalized_output "${output}")
+  string(FIND "${normalized_output}" "${expected_text}" match_at)
+  if(NOT rc STREQUAL "1" OR match_at EQUAL -1)
+    _muhtari_bundle_fail("production control expected exit 1 and '${expected_text}', got exit ${rc}: ${output}")
+  endif()
+  message(STATUS "emscripten.bundle.controls: production path rejected ${expected_text}")
+endfunction()
+
+function(_muhtari_bundle_expect_cli_success root build work expected_sha native fixture archive)
+  execute_process(COMMAND "${CMAKE_COMMAND}"
+    "-DROOT=${root}" "-DBUILD=${build}" "-DWORK=${work}"
+    "-DMODE=validate" "-DEXPECTED_SHA=${expected_sha}"
+    "-DNATIVE=${native}" "-DFIXTURE=${fixture}" "-DARCHIVE=${archive}"
+    -P "${root}/tests/emscripten/bundle.cmake"
+    RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+  if(NOT rc STREQUAL "0" OR NOT out MATCHES "validated")
+    _muhtari_bundle_fail("production path did not validate the SDK archive: ${out}${err}")
+  endif()
+  message(STATUS "emscripten.bundle.controls: strict production validation passed")
+endfunction()
+
+function(_muhtari_bundle_expect_consumer_failure root node fixture native module expected_text)
+  execute_process(COMMAND "${node}" "${root}/tests/emscripten/host.mjs"
+    --module "${module}" --fixture "${fixture}" --native "${native}" --mode verify
+    RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+  set(output "${out}${err}")
+  string(REGEX REPLACE "[ \t\r\n]+" " " normalized_output "${output}")
+  string(FIND "${normalized_output}" "${expected_text}" match_at)
+  if(rc STREQUAL "0" OR match_at EQUAL -1)
+    _muhtari_bundle_fail("damaged extraction consumer did not refuse '${expected_text}': ${output}")
+  endif()
+  message(STATUS "emscripten.bundle.controls: extracted consumer refused ${expected_text}")
+endfunction()
+
+function(_muhtari_bundle_control_copy_members source destination members)
+  file(MAKE_DIRECTORY "${destination}")
+  foreach(member IN LISTS members)
+    get_filename_component(parent "${destination}/${member}" DIRECTORY)
+    file(MAKE_DIRECTORY "${parent}")
+    file(COPY_FILE "${source}/${member}" "${destination}/${member}")
+  endforeach()
+endfunction()
+
+function(_muhtari_bundle_synthetic_inputs root work output_build output_archive output_commit output_table output_native output_fixture)
+  set(build "${work}/synthetic-build")
+  set(stage "${work}/synthetic-stage")
+  set(archive "${work}/synthetic.zip")
+  set(validate_work "${work}/synthetic-validate")
+  string(REPEAT "b" 40 commit)
+  string(REPEAT "a" 64 source_id)
+  file(MAKE_DIRECTORY "${build}/libretro" "${stage}/cores" "${stage}/info"
+    "${stage}/licenses/emscripten" "${stage}/licenses/musl" "${stage}/licenses/compiler-rt")
+  file(COPY_FILE "${root}/LICENSE" "${stage}/LICENSE")
+  file(COPY_FILE "${root}/THIRD-PARTY-NOTICES.md" "${stage}/THIRD-PARTY-NOTICES.md")
+  file(COPY_FILE "${root}/docs/emscripten-hosting.md" "${stage}/HOSTING.md")
+  file(WRITE "${build}/libretro/muhtari_libretro.mjs" "export default async function () { return {}; }\n")
+  file(WRITE "${build}/libretro/muhtari_libretro.wasm" "synthetic wasm bytes\n")
+  file(WRITE "${build}/libretro/muhtari-source-id.txt" "${source_id}\n")
+  file(WRITE "${build}/libretro/muhtari_libretro.info" "synthetic libretro metadata\n")
+  file(COPY_FILE "${build}/libretro/muhtari_libretro.mjs" "${stage}/cores/muhtari_libretro.mjs")
+  file(COPY_FILE "${build}/libretro/muhtari_libretro.wasm" "${stage}/cores/muhtari_libretro.wasm")
+  file(COPY_FILE "${build}/libretro/muhtari-source-id.txt" "${stage}/cores/muhtari-source-id.txt")
+  file(COPY_FILE "${build}/libretro/muhtari_libretro.info" "${stage}/info/muhtari_libretro.info")
+  set(notice_members
+    licenses/emscripten/LICENSE
+    licenses/emscripten/AUTHORS
+    licenses/musl/COPYRIGHT
+    licenses/compiler-rt/LICENSE.TXT
+    licenses/compiler-rt/CREDITS.TXT)
+  set(notice_table)
+  foreach(member IN LISTS notice_members)
+    set(notice_text "Synthetic control bytes for ${member}\n")
+    file(WRITE "${stage}/${member}" "${notice_text}")
+    string(SHA256 notice_hash "${notice_text}")
+    list(APPEND notice_table "${member}=${notice_hash}")
+  endforeach()
+  _muhtari_bundle_control_metadata("${stage}/muhtari-bundle.txt" "${commit}" "${source_id}" "${_muhtari_bundle_emcc}")
+  foreach(member IN ITEMS cores/muhtari_libretro.mjs cores/muhtari_libretro.wasm)
+    file(SHA256 "${stage}/${member}" pair_hash)
+    file(APPEND "${stage}/SHA256SUMS" "${pair_hash}  ${member}\n")
+  endforeach()
+  file(WRITE "${work}/synthetic-native.json" "{\"source_identity\":\"${source_id}\"}\n")
+  file(WRITE "${work}/synthetic-fixture.a78" "synthetic fixture bytes\n")
+  _muhtari_bundle_members("${root}" members)
+  file(ARCHIVE_CREATE OUTPUT "${archive}" PATHS ${members} FORMAT zip WORKING_DIRECTORY "${stage}")
+  set(${output_build} "${build}" PARENT_SCOPE)
+  set(${output_archive} "${archive}" PARENT_SCOPE)
+  set(${output_commit} "${commit}" PARENT_SCOPE)
+  set(${output_table} "${notice_table}" PARENT_SCOPE)
+  set(${output_native} "${work}/synthetic-native.json" PARENT_SCOPE)
+  set(${output_fixture} "${work}/synthetic-fixture.a78" PARENT_SCOPE)
+endfunction()
+
+function(_muhtari_bundle_run_synthetic_controls root work)
+  set(synthetic_work "${work}/synthetic")
+  _muhtari_bundle_synthetic_inputs("${root}" "${synthetic_work}"
+    synthetic_build synthetic_archive synthetic_commit synthetic_notices synthetic_native synthetic_fixture)
+  _muhtari_bundle_members("${root}" members)
+  string(REPEAT "a" 64 source_id)
+  muhtari_bundle_validate("${synthetic_archive}" "${root}" "${synthetic_build}"
+    "${synthetic_work}/validate" "${synthetic_commit}" "${synthetic_notices}" "${synthetic_native}")
+  message(STATUS "emscripten.bundle.controls: synthetic package pass")
+
+  _muhtari_bundle_expect_cli_failure("${root}" "${synthetic_build}"
+    "${synthetic_build}/strict-synthetic" "${synthetic_commit}" "${synthetic_native}"
+    "${synthetic_fixture}" "${synthetic_archive}" "runtime notice digest mismatch")
+
+  string(REPEAT "c" 40 wrong_commit)
+  set(faults missing_wasm missing_source empty_loader wrong_commit wrong_sdk tampered_wasm changed_notice
+    extra_member bad_checksum duplicate_checksum missing_metadata duplicate_metadata)
+  foreach(fault IN LISTS faults)
+    set(case_root "${synthetic_work}/fault-${fault}")
+    set(stage "${case_root}/stage")
+    set(archive "${case_root}/package.zip")
+    file(REMOVE_RECURSE "${case_root}")
+    _muhtari_bundle_control_copy_members("${synthetic_work}/synthetic-stage" "${stage}" "${members}")
+    if(fault STREQUAL "missing_wasm")
+      file(REMOVE "${stage}/cores/muhtari_libretro.wasm")
+      set(expected_text "archive member set differs from bundle-members.txt")
+    elseif(fault STREQUAL "missing_source")
+      file(REMOVE "${stage}/cores/muhtari-source-id.txt")
+      set(expected_text "archive member set differs from bundle-members.txt")
+    elseif(fault STREQUAL "empty_loader")
+      file(WRITE "${stage}/cores/muhtari_libretro.mjs" "")
+      set(expected_text "archive member cores/muhtari_libretro.mjs is empty")
+    elseif(fault STREQUAL "wrong_commit")
+      _muhtari_bundle_control_metadata("${stage}/muhtari-bundle.txt" "${wrong_commit}" "${source_id}" "${_muhtari_bundle_emcc}")
+      set(expected_text "bundle commit does not match EXPECTED_SHA")
+    elseif(fault STREQUAL "wrong_sdk")
+      _muhtari_bundle_control_metadata("${stage}/muhtari-bundle.txt" "${synthetic_commit}" "${source_id}" "7.1.0")
+      set(expected_text "bundle SDK identity does not match the pinned producer")
+    elseif(fault STREQUAL "tampered_wasm")
+      file(APPEND "${stage}/cores/muhtari_libretro.wasm" "tamper\n")
+      set(expected_text "SHA256SUMS mismatch for cores/muhtari_libretro.wasm")
+    elseif(fault STREQUAL "changed_notice")
+      file(APPEND "${stage}/licenses/emscripten/LICENSE" "changed\n")
+      set(expected_text "runtime notice digest mismatch: licenses/emscripten/LICENSE")
+    elseif(fault STREQUAL "extra_member")
+      file(WRITE "${stage}/extra.bin" "unexpected member\n")
+      set(expected_text "archive member set differs from bundle-members.txt")
+    elseif(fault STREQUAL "bad_checksum")
+      file(WRITE "${stage}/SHA256SUMS" "malformed\n")
+      set(expected_text "SHA256SUMS must contain exactly two loader/Wasm entries")
+    elseif(fault STREQUAL "duplicate_checksum")
+      file(STRINGS "${stage}/SHA256SUMS" checksum_lines)
+      list(GET checksum_lines 0 first_checksum)
+      file(WRITE "${stage}/SHA256SUMS" "${first_checksum}\n${first_checksum}\n")
+      set(expected_text "SHA256SUMS paths must be the two sorted loader/Wasm members")
+    elseif(fault STREQUAL "missing_metadata")
+      file(WRITE "${stage}/muhtari-bundle.txt"
+        "schema=1\ncommit=${synthetic_commit}\ncore_source_sha256=${source_id}\nsdk_image=${_muhtari_bundle_image}\nsdk_leaf_sha256=${_muhtari_bundle_leaf}\nsdk_platform=${_muhtari_bundle_platform}\n")
+      set(expected_text "must contain each of seven keys exactly once")
+    elseif(fault STREQUAL "duplicate_metadata")
+      file(APPEND "${stage}/muhtari-bundle.txt" "commit=${synthetic_commit}\n")
+      set(expected_text "repeated manifest key: commit")
+    endif()
+    _muhtari_bundle_members("${root}" members)
+    if(fault STREQUAL "extra_member")
+      file(ARCHIVE_CREATE OUTPUT "${archive}" PATHS ${members} extra.bin
+        FORMAT zip WORKING_DIRECTORY "${stage}")
+    else()
+      _muhtari_bundle_pack_control_archive("${stage}" "${archive}" "${members}")
+    endif()
+    _muhtari_bundle_expect_internal_failure("${root}" "${synthetic_build}"
+      "${case_root}/driver-work" "${synthetic_commit}" "${synthetic_notices}"
+      "${synthetic_native}" "${archive}" "${expected_text}")
+  endforeach()
+
+  foreach(fault IN ITEMS path_escape duplicate_member)
+    set(case_root "${synthetic_work}/fault-${fault}")
+    set(stage "${case_root}/stage")
+    set(archive "${case_root}/package.zip")
+    file(REMOVE_RECURSE "${case_root}")
+    _muhtari_bundle_control_copy_members("${synthetic_work}/synthetic-stage" "${stage}" "${members}")
+    if(fault STREQUAL "path_escape")
+      file(WRITE "${case_root}/outside.bin" "outside archive root\n")
+      execute_process(COMMAND "${CMAKE_COMMAND}" -E chdir "${stage}"
+        "${CMAKE_COMMAND}" -E tar cf "${archive}" --format=zip ${members} ../outside.bin
+        RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+      set(expected_text "unsafe archive member path")
+    else()
+      execute_process(COMMAND "${CMAKE_COMMAND}" -E chdir "${stage}"
+        "${CMAKE_COMMAND}" -E tar cf "${archive}" --format=zip ${members} LICENSE
+        RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+      set(expected_text "archive contains duplicate members")
+    endif()
+    if(NOT rc STREQUAL "0")
+      _muhtari_bundle_fail("could not construct ${fault} archive control: ${out}${err}")
+    endif()
+    _muhtari_bundle_expect_internal_failure("${root}" "${synthetic_build}"
+      "${case_root}/driver-work" "${synthetic_commit}" "${synthetic_notices}"
+      "${synthetic_native}" "${archive}" "${expected_text}")
+  endforeach()
+
+  set(identity_case "${synthetic_work}/fault-independent-native")
+  set(identity_stage "${identity_case}/stage")
+  set(identity_build "${identity_case}/build")
+  file(REMOVE_RECURSE "${identity_case}")
+  _muhtari_bundle_control_copy_members("${synthetic_work}/synthetic-stage" "${identity_stage}" "${members}")
+  file(MAKE_DIRECTORY "${identity_build}/libretro")
+  file(COPY "${synthetic_build}/libretro/" DESTINATION "${identity_build}/libretro")
+  string(REPEAT "d" 64 changed_source_id)
+  file(WRITE "${identity_build}/libretro/muhtari-source-id.txt" "${changed_source_id}\n")
+  file(WRITE "${identity_stage}/cores/muhtari-source-id.txt" "${changed_source_id}\n")
+  _muhtari_bundle_control_metadata("${identity_stage}/muhtari-bundle.txt"
+    "${synthetic_commit}" "${changed_source_id}" "${_muhtari_bundle_emcc}")
+  _muhtari_bundle_members("${root}" members)
+  set(identity_archive "${identity_case}/package.zip")
+  _muhtari_bundle_pack_control_archive("${identity_stage}" "${identity_archive}" "${members}")
+  _muhtari_bundle_expect_internal_failure("${root}" "${identity_build}"
+    "${identity_case}/driver-work" "${synthetic_commit}" "${synthetic_notices}"
+    "${synthetic_native}" "${identity_archive}"
+    "bundle source identity does not match the independent native receipt")
+endfunction()
+
+function(_muhtari_bundle_run_production_controls root build work expected_sha archive native_json fixture node)
+  foreach(path IN ITEMS "${archive}" "${native_json}" "${fixture}" "${node}"
+      "${build}/libretro/muhtari_libretro.mjs" "${build}/libretro/muhtari_libretro.wasm")
+    if(NOT EXISTS "${path}" OR IS_DIRECTORY "${path}")
+      _muhtari_bundle_fail("production controls input is missing: ${path}")
+    endif()
+  endforeach()
+  get_filename_component(archive_abs "${archive}" ABSOLUTE BASE_DIR "${root}")
+  _muhtari_bundle_expect_cli_success("${root}" "${build}" "${work}/production-validate"
+    "${expected_sha}" "${native_json}" "${fixture}" "${archive_abs}")
+  set(production_extract "${work}/production-validate/extract")
+  _muhtari_bundle_members("${root}" members)
+
+  set(notice_members
+    licenses/emscripten/LICENSE
+    licenses/emscripten/AUTHORS
+    licenses/musl/COPYRIGHT
+    licenses/compiler-rt/LICENSE.TXT
+    licenses/compiler-rt/CREDITS.TXT)
+  foreach(member IN LISTS notice_members)
+    set(case_name "notice-${member}")
+    set(case_root "${work}/${case_name}")
+    set(stage "${case_root}/stage")
+    file(REMOVE_RECURSE "${case_root}")
+    _muhtari_bundle_control_copy_members("${production_extract}" "${stage}" "${members}")
+    file(APPEND "${stage}/${member}" "changed notice bytes\n")
+    set(mutated_archive "${case_root}/package.zip")
+    _muhtari_bundle_pack_control_archive("${stage}" "${mutated_archive}" "${members}")
+    _muhtari_bundle_expect_cli_failure("${root}" "${build}" "${case_root}/validate"
+      "${expected_sha}" "${native_json}" "${fixture}" "${mutated_archive}"
+      "runtime notice digest mismatch: ${member}")
+  endforeach()
+
+  foreach(companion IN ITEMS wasm source-id)
+    set(case_root "${work}/consumer-missing-${companion}")
+    set(damaged_cores "${case_root}/cores")
+    file(REMOVE_RECURSE "${case_root}")
+    file(MAKE_DIRECTORY "${damaged_cores}")
+    file(COPY "${production_extract}/cores/" DESTINATION "${damaged_cores}")
+    if(companion STREQUAL "wasm")
+      file(REMOVE "${damaged_cores}/muhtari_libretro.wasm")
+      set(expected_text "ENOENT")
+    else()
+      file(REMOVE "${damaged_cores}/muhtari-source-id.txt")
+      set(expected_text "muhtari-source-id.txt")
+    endif()
+    _muhtari_bundle_expect_consumer_failure("${root}" "${node}" "${fixture}" "${native_json}"
+      "${damaged_cores}/muhtari_libretro.mjs" "${expected_text}")
+  endforeach()
+
+  set(identity_case "${work}/production-independent-native")
+  set(identity_stage "${identity_case}/stage")
+  set(identity_build "${identity_case}/build")
+  file(REMOVE_RECURSE "${identity_case}")
+  _muhtari_bundle_control_copy_members("${production_extract}" "${identity_stage}" "${members}")
+  file(MAKE_DIRECTORY "${identity_build}/libretro")
+  file(COPY "${build}/libretro/" DESTINATION "${identity_build}/libretro")
+  string(REPEAT "d" 64 changed_source_id)
+  file(WRITE "${identity_build}/libretro/muhtari-source-id.txt" "${changed_source_id}\n")
+  file(WRITE "${identity_stage}/cores/muhtari-source-id.txt" "${changed_source_id}\n")
+  _muhtari_bundle_control_metadata("${identity_stage}/muhtari-bundle.txt"
+    "${expected_sha}" "${changed_source_id}" "${_muhtari_bundle_emcc}")
+  set(identity_archive "${identity_case}/package.zip")
+  _muhtari_bundle_pack_control_archive("${identity_stage}" "${identity_archive}" "${members}")
+  _muhtari_bundle_expect_cli_failure("${root}" "${identity_build}"
+    "${identity_build}/validate" "${expected_sha}" "${native_json}" "${fixture}"
+    "${identity_archive}" "bundle source identity does not match the independent native receipt")
+
+  if(NOT EXISTS "${build}/libretro/muhtari_libretro.mjs"
+     OR NOT EXISTS "${build}/libretro/muhtari_libretro.wasm"
+     OR NOT EXISTS "${build}/libretro/muhtari-source-id.txt")
+    _muhtari_bundle_fail("missing-companion controls modified the intact build outputs")
+  endif()
+endfunction()
+
+function(_muhtari_bundle_controls root work build expected_sha archive native_json fixture node)
+  if("${root}" STREQUAL "" OR "${work}" STREQUAL "")
+    _muhtari_bundle_fail("MODE=controls requires -DROOT and -DWORK")
+  endif()
+  get_filename_component(root_abs "${root}" ABSOLUTE BASE_DIR "${CMAKE_CURRENT_LIST_DIR}/../..")
+  get_filename_component(work_abs "${work}" ABSOLUTE BASE_DIR "${root_abs}")
+  set(allowed_parent "${root_abs}/build")
+  cmake_path(IS_PREFIX allowed_parent "${work_abs}" NORMALIZE work_is_owned)
+  if(NOT work_is_owned OR work_abs STREQUAL allowed_parent)
+    _muhtari_bundle_fail("control WORK must be a dedicated directory under repository build/")
+  endif()
+  file(REMOVE_RECURSE "${work_abs}")
+  file(MAKE_DIRECTORY "${work_abs}")
+  _muhtari_bundle_run_synthetic_controls("${root_abs}" "${work_abs}")
+  if("${build}" STREQUAL "" AND "${expected_sha}" STREQUAL ""
+     AND "${archive}" STREQUAL "" AND "${native_json}" STREQUAL ""
+     AND "${fixture}" STREQUAL "" AND "${node}" STREQUAL "")
+    message(STATUS "emscripten.bundle.controls: synthetic contract controls passed")
+    return()
+  endif()
+  foreach(required IN ITEMS build expected_sha archive native_json fixture node)
+    if("${${required}}" STREQUAL "")
+      _muhtari_bundle_fail("production controls require BUILD, EXPECTED_SHA, ARCHIVE, NATIVE, FIXTURE and NODE")
+    endif()
+  endforeach()
+  get_filename_component(build_abs "${build}" ABSOLUTE BASE_DIR "${root_abs}")
+  get_filename_component(archive_abs "${archive}" ABSOLUTE BASE_DIR "${root_abs}")
+  get_filename_component(native_abs "${native_json}" ABSOLUTE BASE_DIR "${root_abs}")
+  get_filename_component(fixture_abs "${fixture}" ABSOLUTE BASE_DIR "${root_abs}")
+  get_filename_component(node_abs "${node}" ABSOLUTE BASE_DIR "${root_abs}")
+  _muhtari_bundle_run_production_controls("${root_abs}" "${build_abs}" "${work_abs}"
+    "${expected_sha}" "${archive_abs}" "${native_abs}" "${fixture_abs}" "${node_abs}")
+  message(STATUS "emscripten.bundle.controls: production package controls passed")
+endfunction()
+
 get_filename_component(_muhtari_bundle_self "${CMAKE_CURRENT_LIST_FILE}" REALPATH)
 get_filename_component(_muhtari_bundle_script "${CMAKE_SCRIPT_MODE_FILE}" REALPATH)
 if(_muhtari_bundle_self STREQUAL _muhtari_bundle_script)
   if(NOT DEFINED MODE OR MODE STREQUAL "")
     _muhtari_bundle_fail("-DMODE=create|validate|licenses is required")
   endif()
-  _muhtari_bundle_normalize("${ROOT}" "${BUILD}" "${WORK}"
-    root_abs build_abs work_abs)
-  if(MODE STREQUAL "licenses")
+  if(MODE STREQUAL "controls")
+    _muhtari_bundle_controls("${ROOT}" "${WORK}" "${BUILD}" "${EXPECTED_SHA}"
+      "${ARCHIVE}" "${NATIVE}" "${FIXTURE}" "${NODE}")
+  elseif(MODE STREQUAL "licenses")
+    _muhtari_bundle_normalize("${ROOT}" "${BUILD}" "${WORK}"
+      root_abs build_abs work_abs)
     muhtari_bundle_qualified_notice_digests(notice_digests)
     _muhtari_bundle_check_sdk_notices("${SDK_ROOT}" "${notice_digests}")
     message(STATUS "emscripten.bundle: all five pinned SDK notice digests match")
   elseif(MODE STREQUAL "create" OR MODE STREQUAL "validate")
+    _muhtari_bundle_normalize("${ROOT}" "${BUILD}" "${WORK}"
+      root_abs build_abs work_abs)
     foreach(required IN ITEMS EXPECTED_SHA NATIVE FIXTURE)
       if(NOT DEFINED ${required} OR "${${required}}" STREQUAL "")
         _muhtari_bundle_fail("-D${required} is required for ${MODE}")
