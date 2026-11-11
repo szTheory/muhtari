@@ -127,3 +127,35 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+## Emscripten release bundle
+
+- **Applies to:** the generated `.mjs` and `.wasm` members of
+  `muhtari-libretro-emscripten.zip`; the following five archive-only files carry the full notices:
+  `licenses/emscripten/LICENSE`, `licenses/emscripten/AUTHORS`,
+  `licenses/musl/COPYRIGHT`, `licenses/compiler-rt/LICENSE.TXT`, and
+  `licenses/compiler-rt/CREDITS.TXT`. These SDK notices are not part of native archives.
+- **Upstream:** Emscripten 7.0.0, source commit
+  `777e6e5db7b4990bcaeb1b9998ed642cc84e6629`, from
+  `emscripten/emsdk@sha256:6bd7aef93408b10bf7b36642cb7c91119b302f720b9ec2d20439f73cf07fe894`,
+  selected platform `linux/amd64`, leaf
+  `sha256:3803e37bf748ddee14d31cf712fcab09ca367fca83bbefeb78ce4c1f284e6f3f`.
+- **Source files and SHA-256:**
+  - `emscripten/LICENSE` → `licenses/emscripten/LICENSE` —
+    `620a78084fc7ca97c0b5dea9abf891f3ffcadfdbf305276f099c9c4e12fc1d86`
+  - `emscripten/AUTHORS` → `licenses/emscripten/AUTHORS` —
+    `3fb38cc87b2b57a2a1aae3ad2e984c3bc23cf7441d20e6897739fbc3f96414c4`
+  - `emscripten/system/lib/libc/musl/COPYRIGHT` → `licenses/musl/COPYRIGHT` —
+    `b870108ec5e7790e9f9919064f1b9421d62d5f9b0e6c230c6adf7ea2da62e97b`
+  - `emscripten/system/lib/compiler-rt/LICENSE.TXT` →
+    `licenses/compiler-rt/LICENSE.TXT` —
+    `1a8f1058753f1ba890de984e48f0242a3a5c29a6a8f2ed9fd813f36985387e8d`
+  - `emscripten/system/lib/compiler-rt/CREDITS.TXT` →
+    `licenses/compiler-rt/CREDITS.TXT` —
+    `a9901f47a089da41e4690682d00ce4cedaa2baf41fedbe79beee366d43ac2461`
+- **Changes:** the five notice files are copied byte-for-byte from the pinned SDK image. The bundle manifest
+  also records `emcc 7.0.0 (777e6e5db7b4990bcaeb1b9998ed642cc84e6629)`. The compiler-rt texts identify the
+  LLVM 23.1.3 base at `0d261d1ca552c95a8f007e061c787ac7132fbcbc` and its Emscripten patches.
+- **Licences:** Emscripten and its Node helper grant MIT and UIUC terms; the bundled musl libc functions are
+  under MIT; compiler-rt includes Apache-2.0 with LLVM exceptions and its explicit MIT/UIUC grants. The full
+  applicable texts and attributions travel in the five named ZIP members.

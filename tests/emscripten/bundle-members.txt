@@ -1,0 +1,14 @@
+HOSTING.md
+LICENSE
+SHA256SUMS
+THIRD-PARTY-NOTICES.md
+cores/muhtari-source-id.txt
+cores/muhtari_libretro.mjs
+cores/muhtari_libretro.wasm
+info/muhtari_libretro.info
+licenses/compiler-rt/CREDITS.TXT
+licenses/compiler-rt/LICENSE.TXT
+licenses/emscripten/AUTHORS
+licenses/emscripten/LICENSE
+licenses/musl/COPYRIGHT
+muhtari-bundle.txt
