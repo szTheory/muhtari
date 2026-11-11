@@ -13,13 +13,13 @@ Maintain current publication/docs and a source-specific quality/efficiency basel
 ## Implementation Decisions
 
 ### Evidence and correction
-- D-01: Reuse the kickoff correction of stale v4.0 shipping records as the one small evidenced improvement; validate current source-specific links and claims rather than inventing another change.
-- D-02: Score the six SEED-007 quality dimensions from current files, the fresh saved preflight receipts and existing required local checks. Distinguish observed measurements from judgments and censored results.
-- D-03: Retain existing cache, timeout, job topology and advisory/required policy: the reviewed hosted series supports no safe structural optimization. Record queue-measurement limits, critical path, job durations and cancelled advisory work.
+- **D-01:** Reuse the kickoff correction of stale v4.0 shipping records as the one small evidenced improvement; validate current source-specific links and claims rather than inventing another change.
+- **D-02:** Score the six SEED-007 quality dimensions from current files, the fresh saved preflight receipts and existing required local checks. Distinguish observed measurements from judgments and censored results.
+- **D-03:** Retain existing cache, timeout, job topology and advisory/required policy: the reviewed hosted series supports no safe structural optimization. Record queue-measurement limits, critical path, job durations and cancelled advisory work.
 
 ### Scope and verification
-- D-04: Reuse the ordinary native workflow, exact-source receipt audits, hygiene and small one-off documentation assertions. Add recurring tests only if an implementation fault justifies them.
-- D-05: Keep all nine deferred v3.0 requirements and original denied/spent Phase 12/14 host/remote stops intact. Local preparation does not renew any of them.
+- **D-04:** Reuse the ordinary native workflow, exact-source receipt audits, hygiene and small one-off documentation assertions. Add recurring tests only if an implementation fault justifies them.
+- **D-05:** Keep all nine deferred v3.0 requirements and original denied/spent Phase 12/14 host/remote stops intact. Local preparation does not renew any of them.
 
 ### the agent's Discretion
 - Choose the smallest executable plan and useful early checks. Reuse the existing temporary two-worker FIFO jobserver helper if resource contention warrants it; do not change presets or deadlines.
@@ -31,7 +31,7 @@ Maintain current publication/docs and a source-specific quality/efficiency basel
 
 ### Reusable Assets
 - `.planning/milestones/v4.0-SHIP.md` and ignored `build/milestone-preflight/` hold exact-source hosted receipts.
-- `scripts/ship-local-gate.py`, CMake presets, `scripts/hygiene.sh`, quality inventories and source-specific CMake audits already cover required baseline checks.
+- Ignored `build/ship-local-gate.py`, CMake presets, `scripts/hygiene.sh`, quality inventories and source-specific CMake audits already cover required baseline checks.
 
 ### Established Patterns
 - Prior Phase 15 tune-up uses one compact evidence report with six dimensions, before/after, command/exit/run URL and bounded no-change dispositions.
