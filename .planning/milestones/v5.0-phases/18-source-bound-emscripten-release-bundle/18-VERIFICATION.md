@@ -4,7 +4,9 @@ verified: 2026-11-11T14:54:27Z
 status: passed
 score: 6/6 must-haves verified
 covered_files:
+  - .github/workflows/be-equality.yml
   - .github/workflows/ci.yml
+  - .github/workflows/nightly.yml
   - .github/workflows/release.yml
   - .planning/milestones/v5.0-phases/18-source-bound-emscripten-release-bundle/18-01-PLAN.md
   - .planning/milestones/v5.0-phases/18-source-bound-emscripten-release-bundle/18-01-SUMMARY.md
@@ -26,14 +28,18 @@ covered_files:
   - docs/testing.md
   - scripts/emscripten.sh
   - scripts/publish.sh
+  - scripts/ubuntu-apt.sh
   - tests/cmake/install_line.cmake
   - tests/emscripten/bundle-members.txt
   - tests/emscripten/bundle.cmake
   - tests/emscripten/tests.cmake
   - tests/hygiene/tests.cmake
+  - tests/inventory/ci.txt
   - tests/inventory/emscripten.txt
   - tests/policy/publish.cmake
-covered_digest: "v4:sha256:4c396412c05e4e8fe20712251f4c02d5ac4f3fe7d31cb2374cd0416d4f716b39"
+  - tests/policy/tests.cmake
+  - tests/policy/ubuntu_apt.sh
+covered_digest: "v4:sha256:1854184ecb1847262aeb336e140dc43bbea2ada31cee4af8942abb05ee6829e0"
 behavior_unverified: 0
 overrides_applied: 0
 decision_coverage:
@@ -151,3 +157,10 @@ Only `tests/emscripten/tests.cmake` and the synthetic-fixture block of `tests/em
 ### Artifact-transfer follow-up (2026-11-11)
 
 The actual downloaded rehearsal artifact lacks the independently compared libretro metadata file, despite producer-workspace SDK/publisher passes. The uploader now includes that file. The native publisher fixture follows the actual upload declaration; deleting the metadata entry reproduces the missing-file failure, and the corrected registered control passes within its unchanged deadline. A prospective corrected downloaded layout passes exact-source package validation and clean-extracted Node/native parity. Existing required checks and runtime/notice/source guards are unchanged. The inline verifier rechecked the changed workflow and publisher fixture and refreshed this local fingerprint. These working-tree checks do not establish a hosted upload or rehearsal pass; see the ship receipt for the separate runner DNS stop and failed history.
+
+
+### Authorized hosted-package recovery (2026-11-11)
+
+The isolated hosted diagnostic reproduces the actual Ubuntu-owned DNS failure while an alternate kernel.org mirror authenticates all four existing Resolute suites and installs real Valgrind. The production helper changes only the existing image mirror-list order; source suites, components, Ubuntu keyring and required package names remain intact. Native offline pass/fault controls exercise the actual list transformation, exact package arguments and failure propagation. The original setup fails those controls (exit 1); the corrected registered test and a qualified real Ubuntu 26.04 container install pass (exit 0). The independent operations review found no blocking issue after checking the actual source stanzas and helper.
+
+`python3 build/ship-local-gate.py` passes the full native and release workflows, exit 0 (423.81 seconds native). Both canonical JUnit inventory consumers pass, exit 0, confirming all expected tests exactly once without skips. Shellcheck, workflow actionlint (only its unsupported current runner labels ignored), document budgets and `git diff --check` pass, exit 0. No emulator, ABI, state, bundle, SDK, publisher or native release implementation changes are part of this recovery. The inline verifier rechecked the affected workflow/helper/test/document fields and adds those covered inputs through the selected runtime fingerprint command. This preserves local readiness; exact-source hosted CI, rehearsal, publication and cleanup remain separate gates documented in the ship receipt. The earlier failed attempts and unrelated host stops remain unchanged.

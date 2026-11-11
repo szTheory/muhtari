@@ -3,10 +3,10 @@ gsd_state_version: "1.0"
 milestone: v5.0
 milestone_name: Downloadable WebAssembly core (verified local closeout)
 status: Awaiting next milestone
-stopped_at: Phase 18 complete — all phases complete
-last_updated: "2026-11-11T15:00:20.840Z"
+stopped_at: PR 49 shipping recovery active — alternate signed package route qualified
+last_updated: "2026-11-11T15:30:21.872938Z"
 last_activity: 2026-11-11
-last_activity_desc: "PR #49 shipping held: hosted Ubuntu DNS failure repeated; local transfer correction verified"
+last_activity_desc: "PR #49 recovery active: hosted DNS route diagnosed; alternate signed mirror and full local checks passed"
 state_head: 87ddc29c2675765e8a20fcdce6254df91d0c8387
 progress:
   total_phases: 2
@@ -23,13 +23,13 @@ current_phase: 18
 
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-10.
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** v5.0 remains locally verified and archived. PR #49 is open; shipping is blocked by hosted Ubuntu package-mirror DNS resolution. The single targeted fresh-runner check repeated that failure before tests. The clean-build and Windows fixture corrections passed local and hosted checks; the further artifact-transfer correction passes locally and is pushed with CI skipped. Do not start another remote matrix, retry the spent probe, enable merge or infer publication until new runner recovery evidence is available. The agent owns read-only health/receipt checks on resumption. Earlier Phase 12/14 stops and nine v3.0 gaps remain intact.
+**Current focus:** The owner explicitly authorized fixing and unblocking v5.0 shipping after the read-only resume. An isolated hosted diagnostic reproduces Ubuntu-owned DNS failure and qualifies kernel.org with authenticated four-suite indexes and a real Valgrind install. The canonical source now uses that mirror ahead of existing fallbacks without changing signing keys, package sets or test/deadline gates. The full local native/release workflows and no-skip inventories pass. The agent is pushing the corrected candidate and continuing exact-source CI/rehearsal/merge/release checks. Earlier failed attempts remain terminal; Phase 12/14 host stops and nine v3.0 gaps remain intact.
 
 ## Current Position
 
 Milestone: v5.0 complete locally (phases 17–18, three plans, seven tasks)
-Status: Verified local closeout; shipping blocked by hosted package-mirror DNS
-Last activity: 2026-11-11 -- PR #49 shipping held: hosted Ubuntu DNS failure repeated; local transfer correction verified
+Status: Verified local closeout; authorized shipping recovery in progress
+Last activity: 2026-11-11 -- PR #49 recovery active: hosted DNS route diagnosed; alternate signed mirror and full local checks passed
 Progress: [██████████] 100%
 
 ## Performance Metrics
@@ -95,12 +95,12 @@ At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Sou
 ## Session Continuity
 
 Last session: 2026-11-11
-Stopped at: PR #49 held after repeated hosted DNS failure; verified transfer fix saved without launching another matrix
+Stopped at: Active authorized PR #49 recovery; signed alternate mirror demonstrated, local verification passed; exact-source candidate shipping next
 Resume file: None
-Next command: $gsd-ship 18 — reuse PR #49 and perform read-only health/receipt preflight first. The agent must establish new hosted package-mirror DNS recovery evidence before a new matrix; do not auto-trigger the CI-skip recovery path while this stop remains. Context can be cleared; no owner metadata repair or checkout switch is needed. After shipping and release checks succeed, the next milestone boundary is $gsd-new-milestone.
+Next command: $gsd-ship 18 only for interrupted-session recovery; the current agent continues without another invocation. Reconcile the canonical dirty tree and latest ship receipt, finish affected local checks, and continue exact-source hosted shipping using the demonstrated signed mirror route. Do not rerun terminal old attempts. After shipping/release checks succeed, the next milestone boundary is $gsd-new-milestone.
 
 ## Operator Next Steps
 
-- PR #49 remains unmerged and the new portable bundle is unpublished. Hosted package-mirror DNS recovery is the next external prerequisite; the agent owns fresh read-only service/runner receipt checks before resuming. The one targeted health attempt is terminal and must not be silently renewed. No owner repair or routine confirmation is needed.
+- PR #49 remains unmerged and the portable bundle is unpublished. The owner explicitly authorized bounded diagnosis and evidence-supported recovery; kernel.org is a demonstrated working signed-package route. The agent owns the remaining local and hosted shipping gates without routine handoff. Old failed attempts stay terminal. No owner repair or repeated invocation is needed.
 - The agent owns service/receipt preflight and the documented same-runtime archived-phase adapter. Context can be cleared; the owner stays in the canonical checkout.
 - Preserve original Phase 12/14 denied/spent scopes and the nine deferred v3.0 requirements. This ship invocation authorizes its normal remote CI/rehearsal/merge/release path; it does not renew earlier terminal scopes or authorize unrelated dispatch.

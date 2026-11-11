@@ -29,7 +29,7 @@ jobs:
           EXPECTED_SHA: ${{ inputs.ref }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
       - name: Cross compiler and qemu-user
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gcc-powerpc-linux-gnu g++-powerpc-linux-gnu qemu-user
+        run: sh scripts/ubuntu-apt.sh gcc-powerpc-linux-gnu g++-powerpc-linux-gnu qemu-user
       - name: Fetch identical pinned fixture tools
         run: |
           scripts/fetch-pin.sh wasmtime-x86_64-linux build/pins/wasmtime

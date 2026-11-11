@@ -230,8 +230,8 @@ with its lane's inventory and labels.
 | `quality` | `ubuntu-26.04` | [trusted bounds and exact producer evidence](quality.md) | validated by producers |
 | `CI required` | `ubuntu-26.04` | the roll-up below | none |
 
-Windows legs load the native MSVC environment with `vswhere` and `vcvarsall`.
-Actions are pinned by full commit SHA.
+Windows loads MSVC via `vswhere` and `vcvarsall`; actions use SHA pins.
+`scripts/ubuntu-apt.sh` prefers kernel.org's signed mirror, preserving Ubuntu fallbacks and keys.
 
 **The roll-up.** The ruleset requires one check, `CI required`. It always runs and passes only when every job it
 needs succeeded, with three exceptions: the heavy jobs may be skipped when `changes` says `heavy=false`, which

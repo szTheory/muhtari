@@ -3,6 +3,7 @@
 ## Communication and workflow preferences
 
 - Keep isolated Git checkouts inside the repository under `.worktrees/`, using an ignored directory, so they stay together without cluttering the parent projects folder.
+- Owner correction (2026-11-11): do not hand back the shipping command the owner just invoked as a substitute for diagnosing its blocker. The explicit instruction to fix and unblock v5.0 shipping authorizes bounded hosted package-route diagnosis, evidence-supported corrections and the dependent shipping checks. Preserve the earlier failed attempts and unrelated Phase 12/14 host stops; do not require repeated routine invocations within this recovery scope.
 
 - Speak to the user as a software engineer and colleague. Use plain, direct language. Keep necessary technical terms and explain unfamiliar workflow language through its practical consequence.
 - End with the actual outcome, what remains broken or blocked, and the next useful action. Usually one short paragraph or at most three short bullets is enough. State clearly when no user action is needed.

@@ -68,7 +68,7 @@ jobs:
           persist-credentials: false
       - name: GNU time
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends time
+        run: sh scripts/ubuntu-apt.sh time
       - run: cmake --workflow --preset bench
       - name: Bench 300,000 frames
         env:
@@ -108,7 +108,7 @@ jobs:
           persist-credentials: false
       - name: WASI sysroot and runtime
         run: |
-          sudo apt-get update && sudo apt-get install -y --no-install-recommends wasi-libc libclang-rt-21-dev-wasm32
+          sh scripts/ubuntu-apt.sh wasi-libc libclang-rt-21-dev-wasm32
           scripts/fetch-pin.sh wasmtime-x86_64-linux build/pins/wasmtime
       # MUHTARI_TESTS OFF: the runner only, so configure needs no test tool.
       - name: Build the runner
@@ -158,7 +158,7 @@ jobs:
           persist-credentials: false
       # clang-21 is on the image; its linker and sanitizer runtimes may not be.
       - name: Clang 21, lld and the sanitizer runtimes
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends clang-21 lld-21 libclang-rt-21-dev
+        run: sh scripts/ubuntu-apt.sh clang-21 lld-21 libclang-rt-21-dev
       - run: cmake --workflow --preset fuzz
       - name: Every test ran
         if: always()

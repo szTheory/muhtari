@@ -269,7 +269,7 @@ jobs:
           fetch-depth: 0
       # clang-21 is on the image; its sanitizer runtimes may not be.
       - name: Sanitizer runtimes
-        run: dpkg -s libclang-rt-21-dev > /dev/null 2>&1 || { sudo apt-get update && sudo apt-get install -y libclang-rt-21-dev; }
+        run: dpkg -s libclang-rt-21-dev > /dev/null 2>&1 || { sh scripts/ubuntu-apt.sh libclang-rt-21-dev; }
       - name: Fetch wasmtime, 7800basic, OpenBIOS and rcheevos
         run: |
           scripts/fetch-pin.sh wasmtime-x86_64-linux build/pins/wasmtime
@@ -335,7 +335,7 @@ jobs:
           scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios
           scripts/fetch-pin.sh rcheevos build/pins/rcheevos
       - name: Cross compiler and qemu-user
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gcc-powerpc-linux-gnu g++-powerpc-linux-gnu qemu-user
+        run: sh scripts/ubuntu-apt.sh gcc-powerpc-linux-gnu g++-powerpc-linux-gnu qemu-user
       - run: cmake --workflow --preset be32-compile
 
   # Exactly six native runtime files, including all three numeric board
@@ -372,7 +372,7 @@ jobs:
           ref: ${{ inputs.ref || '' }}
       - name: WASI sysroot and runtime
         run: |
-          sudo apt-get update && sudo apt-get install -y --no-install-recommends wasi-libc libclang-rt-21-dev-wasm32
+          sh scripts/ubuntu-apt.sh wasi-libc libclang-rt-21-dev-wasm32
           scripts/fetch-pin.sh wasmtime-x86_64-linux build/pins/wasmtime
           scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
           scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios
@@ -596,7 +596,7 @@ jobs:
           persist-credentials: false
           fetch-depth: 2
       - name: Cachegrind
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends valgrind
+        run: sh scripts/ubuntu-apt.sh valgrind
       # Both runners are installed under paths of equal length, so the path
       # Cachegrind and the loader see costs the same instructions. NO_BASE is
       # decided from the base tree's contents only: a base that has presets
