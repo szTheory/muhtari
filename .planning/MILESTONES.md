@@ -1,8 +1,24 @@
 # Project Milestones: muhtari
 
-## v4.0 — Browser/WebAssembly core readiness (Completed locally: 2026-11-10)
+## v5.0 Downloadable WebAssembly core (Verified locally: 2026-11-11)
 
-**Closeout type:** `verified_closeout`; all five scoped requirements pass. Planning completion is separate from package release; no publication, hosted dispatch, merge or tag occurred.
+**Phases completed:** 2 phases, 3 plans, 7 tasks (actual plan blocks; SDK prose count was 4)
+
+**Key accomplishments:**
+- Current publication records and original CI receipts are qualified alongside six measured quality dimensions and a reproducible local baseline.
+- A pinned, source-bound libretro ZIP now carries exact runtime notices and passes clean-extraction lifecycle checks.
+- The source-bound Emscripten ZIP now travels through the existing exact-source release path with local native, SDK, and hygiene gates passing.
+
+**Closeout type:** `verified_closeout`; all six scoped requirements and both phases pass. Known verification overrides: 0 newly acknowledged, 50 carried forward from prior closes. The nine v3.0 requirement gaps and original host/remote stops remain unchanged.
+**Publication:** Pending separate ship authority; v0.12.0 remains the published package. No public rehearsal, push, dispatch, merge or publication was run.
+**Archive:** [roadmap](milestones/v5.0-ROADMAP.md), [requirements](milestones/v5.0-REQUIREMENTS.md), [audit](milestones/v5.0-MILESTONE-AUDIT.md), [phase records](milestones/v5.0-phases/).
+**Next:** `$gsd-ship 18` when the owner chooses to authorize remote shipping.
+
+---
+
+## v4.0 — Browser/WebAssembly core readiness (Shipped: 2026-11-10)
+
+**Closeout type:** `verified_closeout`; all five scoped requirements pass. Planning completion is separate from package release. The approved isolated source subsequently shipped through PR #47 and package v0.12.0; see the ship receipt.
 **Scope:** Phases 15–16, two plans and five tasks. Task totals are reconciled from the actual plan task blocks; the CLI's summary parser counted only two.
 
 **Delivered:**
@@ -14,7 +30,7 @@
 **Evidence:** Native and pinned Emscripten workflows, packaging/release checks, hygiene, independent source reviews, both phase verifications and milestone integration passed. One review-fix round resolved all five Phase 16 findings. Windows execution remains a ship check; Node results establish no browser/device acceptance.
 **Carried scope:** 50 previously acknowledged artifacts, zero newly acknowledged; nine unmet v3.0 requirements and all Phase 12/14 host/remote stops remain unchanged.
 **Archive:** [roadmap](milestones/v4.0-ROADMAP.md), [requirements](milestones/v4.0-REQUIREMENTS.md), [audit](milestones/v4.0-MILESTONE-AUDIT.md), [phase records](milestones/v4.0-phases/).
-**Ship checkpoint:** Combined PR #46 passes hosted native/Emscripten checks but fails inherited held-input capture; no merge or release occurred. The owner approved the [v4.0-only publication scope](milestones/v4.0-SHIP-SCOPE.md); the agent is carrying it through candidate-specific CI, merge and release checks.
+**Publication:** [PR #47](https://github.com/szTheory/muhtari/pull/47) and [release PR #48](https://github.com/szTheory/muhtari/pull/48) merged; [v0.12.0](https://github.com/szTheory/muhtari/releases/tag/v0.12.0) is published. Candidate CI, release-PR CI and release succeed. [Ship receipt](milestones/v4.0-SHIP.md) preserves source-specific checks and earlier failed combined-source history. No old host retry is authorized.
 
 ---
 

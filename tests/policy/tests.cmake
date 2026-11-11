@@ -156,6 +156,14 @@ muhtari_add_test(NAME policy.compat_ratchet.controls
   LABELS policy TIMEOUT 30)  # provisional, n=1, local
 
 if(MUHTARI_INVENTORY STREQUAL "ci")
+  # Package setup is a native CI control, not a WASI runtime test. Incomplete
+  # updates and installation failures must remain failures.
+  find_program(policy_apt_sh sh REQUIRED)
+  muhtari_add_test(NAME policy.ubuntu_apt.controls
+    COMMAND ${policy_apt_sh} ${CMAKE_CURRENT_LIST_DIR}/ubuntu_apt.sh
+      ${CMAKE_SOURCE_DIR}/scripts/ubuntu-apt.sh ${CMAKE_BINARY_DIR}/policy/ubuntu_apt
+    LABELS policy TIMEOUT 10)
+
   set(publish_timeout 130)
   if(WIN32)
     set(publish_timeout 1450)

@@ -1,39 +1,40 @@
 ---
 gsd_state_version: "1.0"
-milestone: v4.0
-status: milestone_completed
-stopped_at: Approved v4.0-only shipping tracked by PR 47; agent owns exact-source CI and release checks
-last_updated: "2026-11-10T22:49:04.667Z"
-last_activity: 2026-11-10
-last_activity_desc: "Approved v4.0-only milestone shipped through PR #47"
-state_head: 0a79e1ed403d6e00f185f48abada50a09de6e3e8
+milestone: v5.0
+milestone_name: Downloadable WebAssembly core (verified local closeout)
+status: Awaiting next milestone
+stopped_at: PR 49 shipping recovery active — alternate signed package route qualified
+last_updated: "2026-11-11T15:30:21.872938Z"
+last_activity: 2026-11-11
+last_activity_desc: "PR #49 recovery active: hosted DNS route diagnosed; alternate signed mirror and full local checks passed"
+state_head: 87ddc29c2675765e8a20fcdce6254df91d0c8387
 progress:
   total_phases: 2
   completed_phases: 2
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 3
+  completed_plans: 3
   percent: 100
-milestone_name: Browser/WebAssembly core readiness
+current_phase: 18
 ---
 
 # Project State
 
 ## Project Reference
 
-See [PROJECT.md](PROJECT.md), [v4.0 requirements](milestones/v4.0-REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-10.
+See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-10.
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** The owner-approved v4.0-only publication is tracked in [PR #47](https://github.com/szTheory/muhtari/pull/47). The combined source and failed host evidence remain preserved under superseded PR #46.
+**Current focus:** The owner explicitly authorized fixing and unblocking v5.0 shipping after the read-only resume. An isolated hosted diagnostic reproduces Ubuntu-owned DNS failure and qualifies kernel.org with authenticated four-suite indexes and a real Valgrind install. The canonical source now uses that mirror ahead of existing fallbacks without changing signing keys, package sets or test/deadline gates. Package routing and the smaller WASI inventory are fixed and locally verified, including the full portable run. The next rehearsal exposes stale Windows isolated-instance/lightgun deadlines; complete comparable samples support applying the existing twice-maximum rule to those two Windows cases only. All workloads/assertions and other limits stay unchanged. The agent is continuing corrected-source shipping without another owner invocation. Earlier failed attempts remain terminal; Phase 12/14 host stops and nine v3.0 gaps remain intact.
 
 ## Current Position
 
-Phase: Milestone v4.0 complete
-Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-11-10 -- Approved v4.0-only milestone shipped through PR #47
+Milestone: v5.0 complete locally (phases 17–18, three plans, seven tasks)
+Status: Verified local closeout; authorized shipping recovery in progress
+Last activity: 2026-11-11 -- PR #49 recovery active: hosted DNS route diagnosed; alternate signed mirror and full local checks passed
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
-Two plans and five tasks completed. Native and pinned Emscripten workflows passed; phase verification and integration audit passed. Measurements are headless, with Linux amd64 SDK emulation on Darwin arm64 explicitly reported. See the [audit](milestones/v4.0-MILESTONE-AUDIT.md) and phase summaries for source-specific receipts.
+Three plans and seven tasks completed across two verified phases. Final native/release, pinned SDK, extracted package, publisher and hygiene gates passed at the source recorded in the Phase 18 summary. Measurements are headless local evidence; no browser/device or remote release outcome is inferred.
 
 ## Accumulated Context
 
@@ -44,7 +45,7 @@ Inherited todos and optional seeds retain their dispositions; no extra v4.0 requ
 
 ### Blockers/Concerns
 
-- No local v4.0 acceptance gap remains. PR #46’s combined-source hosted native/Emscripten checks passed, but its inherited input capture gate failed. PR #47 carries only the approved v4.0 source and preserves main’s existing checks. Candidate-specific hosted acceptance is owned by the agent. No old host retry is authorized. Phase 12's exact diagnostic-app request was denied before preflight/content and must not be retried; its host/remote stops and Phase 14's spent host scope remain binding. This milestone renews none of them.
+- No local v4.0 acceptance gap remains. PR #46’s combined-source hosted native/Emscripten checks passed, but its inherited input capture gate failed. PR #47 carries only the approved v4.0 source and preserves main’s existing checks. Candidate-specific hosted acceptance passed; PR #47 and release PR #48 merged, and v0.12.0 is published. No old host retry is authorized. Phase 12's exact diagnostic-app request was denied before preflight/content and must not be retried; its host/remote stops and Phase 14's spent host scope remain binding. This milestone renews none of them.
 - The loader contract is settled and verified offline. Browser/device behavior, Playstead and prior host scopes remain outside acceptance; hosted Windows native/quality execution passed at the exact source recorded in the ship receipt.
 
 ## Deferred Items
@@ -93,20 +94,13 @@ At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Sou
 
 ## Session Continuity
 
-Last session: 2026-11-10
-Stopped at: v4.0-only publication tracked by PR #47; all earlier host stops preserved
+Last session: 2026-11-11
+Stopped at: Active authorized PR #49 recovery; signed alternate mirror demonstrated, local verification passed; exact-source candidate shipping next
 Resume file: None
-Next command: $gsd-new-milestone after the agent confirms PR #47 and release-PR health. Resume $gsd-ship 16 only to finish that already approved ship scope.
+Next command: $gsd-ship 18 only for interrupted-session recovery; the current agent continues without another invocation. Reconcile the canonical dirty tree and latest ship receipt, finish affected local checks, and continue exact-source hosted shipping using the demonstrated signed mirror route. Do not rerun terminal old attempts. After shipping/release checks succeed, the next milestone boundary is $gsd-new-milestone.
 
 ## Operator Next Steps
 
-- No owner input is needed; the narrower publication scope is approved.
-- Agent: preserve all host stops, reconcile the chosen source/verification and carry the chosen scope through CI and ship. Do not blindly rerun $gsd-ship 16 on the combined branch.
-
-Context can be cleared. The agent owns source/receipt and service-health preflight on resumption. No host or remote allowance is renewed by this handoff.
-
-Ship 16 selected the archived final phase and created PR #46 for the entire canonical milestone branch, including Phase 15 and retained v3.0 tooling. The agent owns exact-source CI, service-health and release checks. See milestones/v4.0-SHIP.md for local receipts.
-
-Archive compatibility: OpenGSD 1.20.0 phase-op may return a null directory for archived Phase 16. Resolve it with the same runtime’s `query find-phase 16 --raw` before ship preflight, as GSD-HANDOFF documents; canonical verification and roadmap completion remain mandatory. No owner repair is needed.
-
-The locally verified candidate is phase/16-offline-webassembly-core in .worktrees/phase-16-ship, based on origin/main, with no remote run or PR. The agent selects that worktree internally if authorized. Root remains canonical and its source is preserved.
+- PR #49 remains unmerged and the portable bundle is unpublished. The owner explicitly authorized bounded diagnosis and evidence-supported recovery; kernel.org is a demonstrated working signed-package route. The agent owns the remaining local and hosted shipping gates without routine handoff. Old failed attempts stay terminal. No owner repair or repeated invocation is needed.
+- The agent owns service/receipt preflight and the documented same-runtime archived-phase adapter. Context can be cleared; the owner stays in the canonical checkout.
+- Preserve original Phase 12/14 denied/spent scopes and the nine deferred v3.0 requirements. This ship invocation authorizes its normal remote CI/rehearsal/merge/release path; it does not renew earlier terminal scopes or authorize unrelated dispatch.

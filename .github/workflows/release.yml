@@ -14,8 +14,19 @@ on:
   pull_request:
     paths:
       - .github/workflows/release.yml
+      - .github/workflows/ci.yml
       - .github/workflows/be-equality.yml
       - scripts/publish.sh
+      - scripts/emscripten.sh
+      - tests/emscripten/**
+      - tests/inventory/emscripten.txt
+      - tests/policy/publish.cmake
+      - tests/cmake/install_line.cmake
+      - docs/emscripten-hosting.md
+      - docs/libretro.md
+      - LICENSE
+      - THIRD-PARTY-NOTICES.md
+      - PROVENANCE.md
       - release-please-config.json
       - cmake/packaging.cmake
 
@@ -89,6 +100,10 @@ jobs:
         with:
           pattern: hashes-*-*
           path: dist/legs
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: emscripten-libretro-evidence
+          path: dist/emscripten-evidence
       - name: Use verified GitHub CLI
         run: |
           sh scripts/fetch-pin.sh gh-linux-x86_64 "$RUNNER_TEMP/gh"
@@ -236,6 +251,10 @@ jobs:
         with:
           pattern: hashes-*-*
           path: dist/legs
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: emscripten-libretro-evidence
+          path: dist/emscripten-evidence
       - name: Use verified GitHub CLI
         run: |
           sh scripts/fetch-pin.sh gh-linux-x86_64 "$RUNNER_TEMP/gh"

@@ -170,6 +170,27 @@ Hash implementation headers and generated compile inputs, preserve signal failur
 
 No reliable model-cost or hosted pipeline-cost series was collected. Local workload receipts support correctness, not global speedup or browser/device performance. Existing v3.0 acknowledgments and denied/spent scopes remain unchanged.
 
+## Milestone: v5.0 — Downloadable WebAssembly core
+
+**Verified locally:** 2026-11-11; publication pending separate ship authority.
+**Phases:** 2 | **Plans:** 3 | **Tasks:** 7
+
+### What Was Built
+
+One source-bound portable libretro ZIP with exact members, digests, identities, pinned runtime notices and a clean-extracted Node/native oracle. The existing publisher and integrity controls cover nineteen ZIPs/twenty assets; native and host-scope boundaries are preserved.
+
+### What Worked
+
+Early primary-source notice qualification and concrete synthetic controls narrowed faults before full gates. Overlapping finished-code review with disjoint documentation work caught extraction ownership/bounds and an older hygiene fixture before the final full batch. A qualified one-slot FIFO limited hygiene scheduling without changing checks or deadlines.
+
+### What Needs Improvement
+
+Routine report/commit closeouts consumed excessive elapsed time, and summary parsers repeatedly mistook command text for file claims. Reuse the known positive-only self-check/Recorded Results pattern and let the orchestrator finish small metadata repairs. Map all exact inventory consumers, including hygiene fixtures, before extending a release set. Keep the optional Markdown-wrapper checker seed visible without expanding into a new parser.
+
+### Evidence and Limits
+
+Final native/release, pinned SDK/extracted consumer, real publisher controls and hygiene passed at the recorded product snapshot. Native notice-path and SDK control-name failures were diagnosed and retained. No reliable hosted optimization series, browser/device evidence or new remote allowance was produced; older failures and fifty carried acknowledgments remain distinct.
+
 ## Cross-Milestone Trends
 
 | Milestone | Phases | Plans | Requirements | Test evidence | Closeout |
@@ -183,4 +204,6 @@ Both milestones required explicit historical-fingerprint overrides and post-merg
 publication checks. Repeated output/deadline friction favors existing independent
 output paths and measured calibration; aggregate record counts never prove acceptance.
 
-| v4.0 | 2 | 2 plans, 5 tasks | 5/5 scoped | Native and pinned SDK workflows passed; reviews and integration passed | Verified locally; zero new acknowledgments, 50 carried; shipping pending |
+| v4.0 | 2 | 2 plans, 5 tasks | 5/5 scoped | Native and pinned SDK workflows passed; reviews and integration passed | Verified locally; isolated source subsequently shipped through PR47/package v0.12.0; zero new acknowledgments, 50 carried |
+
+| v5.0 | 2 | 3 plans, 7 tasks | 6/6 scoped | Native/release, SDK, extracted package, publisher and one-slot hygiene pass | Verified locally; publication pending; zero new acknowledgments, 50 carried |

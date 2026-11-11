@@ -2,7 +2,7 @@
 title: "Product roadmap (rolling)"
 summary: "Immediate / Near / Mid / Long direction for muhtari with evidence and promotion triggers."
 read_when: "At every new-milestone and complete-milestone step, and when a finding changes priorities."
-updated: 2026-11-10
+updated: 2026-11-11
 ---
 
 # Product roadmap (rolling)
@@ -15,19 +15,17 @@ At every milestone boundary, reconcile shipped and partial work, keep unresolved
 debt visible, re-rank the horizons, record why the order changed, promote only
 scoped work, and snapshot this file at close.
 
-## Immediate — prepare the verified v4.0 core for shipping
+## Immediate — ship the verified portable core
 
-Phases 15–16 are verified: relative-root budget coverage is corrected, and the
-existing libretro core now builds as a pinned Emscripten ES module plus Wasm.
-A direct offline Node host checks independent native numeric expectations,
-callbacks, state/refusal/replay/isolation and warmed size/throughput reports.
-The required Linux CI step is implemented; hosted execution and publication
-remain ship actions. See the [v4.0 audit](milestones/v4.0-MILESTONE-AUDIT.md).
+v4.0's isolated source shipped in PR #47 and package v0.12.0 after candidate,
+release-PR and release checks passed. Its loader/Wasm remain CI artifacts; published
+assets contain the 18 native ZIPs plus checksums. See the [ship receipt](milestones/v4.0-SHIP.md).
 
-This closes the offline core portion of [SEED-008](seeds/SEED-008-browser.md).
-Its browser player, device and performance ideas remain deferred. Muhtari still
-ships three deliverables and no browser UI or device handling. Node results
-establish no browser/device UX or performance, Playstead or earlier host claim.
+v5.0 is verified locally: the measured tune-up, matched source-bound Emscripten ZIP, five pinned runtime notices, clean-extracted offline parity and existing release integrity contracts passed. [The audit](milestones/v5.0-MILESTONE-AUDIT.md) records all six requirements. The next action is `$gsd-ship 18` under separate remote shipping authority; no new implementation milestone is selected. The relevant-role research and autonomous recommendation follow-through are retained in [the synthesis](research/v5.0/SUMMARY.md).
+
+No browser player, device code, UI, real-browser performance, power or prior host
+acceptance is included. Muhtari still has three deliverables. Use the existing
+producer and add no dependency; no measured cache/timeout/topology change is justified.
 
 ## Next — host acceptance when evidence and authority are available
 
@@ -81,3 +79,7 @@ example; reproduce sibling lessons locally before adopting them.
   source dispositions in the archived v3.0 audit and earlier milestone records.
 - SEED-003 accuracy, SEED-005 low-power ports, SEED-002/004 tooling, and SEED-006
   Atari 2600 keep their existing promotion triggers.
+
+| 2026-11-10 | Promoted v5.0 downloadable Emscripten libretro packaging after successful v4.0 publication | Three specialist reviews and an adversarial synthesis identified the concrete CI-artifact-only gap; local package/release integrity preparation advances browser integrators without UI or renewed host authority. |
+
+| 2026-11-11 | Verified and archived v5.0 locally; prioritize shipping the concrete bundle | All six requirements and integration flows pass. Existing public package remains v0.12.0 until separately authorized shipping; browser/player and prior host claims remain outside scope. |

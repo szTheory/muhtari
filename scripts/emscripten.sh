@@ -107,6 +107,22 @@ pinned_cmake=$(docker run --rm --network none --platform "$platform" \
   'PATH="/src/build/pins/cmake/bin:$PATH" cmake --version | head -1') || fail 'pinned CMake cannot run in the selected container'
 printf '%s\n' "$pinned_cmake" | grep -q '4\.4\.3' || fail 'existing CMake pin is not version 4.4.3'
 
+# Qualify the exact upstream notices before compiling or running tests. The
+# checker owns the literal expected hashes used again when creating/validating
+# the archive, so a caller cannot replace the production digest table.
+mkdir -p build/emscripten
+bounded 1200 docker run --rm --network none --platform "$platform" \
+  -v "$root_dir:/src:ro" \
+  -v "$root_dir/build/emscripten:/src/build/emscripten:rw" \
+  -w /src "$image" sh -c '
+    sdk_root=$(dirname "$(command -v emcc)")
+    PATH="/src/build/pins/cmake/bin:$PATH" cmake \
+      -DROOT=/src -DBUILD=/src/build/emscripten \
+      -DWORK=/src/build/emscripten/notice-preflight \
+      -DSDK_ROOT="$sdk_root" -DMODE=licenses \
+      -P tests/emscripten/bundle.cmake
+  ' || fail 'pinned SDK notice qualification failed'
+
 if [ "$mode" = 'preflight' ]; then
   echo 'Emscripten preflight passed: exact SDK index, amd64 leaf, bundled Node, pinned CMake, fixture and native evidence are available.'
   exit 0
@@ -121,6 +137,7 @@ build/ci/tests/muhtari-test-libretro-observe \
   --output build/ci/tests/emscripten/native.json
 
 host_description="$(uname -sm); Docker daemon ${daemon_os}/$(docker info --format '{{.Architecture}}'); selected container leaf linux/amd64"
+expected_sha=$(git -C "$root_dir" rev-parse --verify HEAD) || fail 'cannot resolve the exact checkout commit'
 container_name="muhtari-emscripten-$$"
 mkdir -p build/emscripten build/ci/tests/emscripten
 rm -f build/emscripten/junit.xml \
@@ -130,6 +147,7 @@ cleanup_container() { docker rm -f "$container_name" >/dev/null 2>&1 || true; }
 trap cleanup_container 0 HUP INT TERM
 bounded 1200 docker run --rm --name "$container_name" --network none --platform "$platform" \
   -e "MUHTARI_HOST_DESCRIPTION=$host_description" \
+  -e "MUHTARI_EXPECTED_SHA=$expected_sha" \
   -v "$root_dir:/src:ro" \
   -v "$root_dir/build/emscripten:/src/build/emscripten:rw" \
   -v "$root_dir/build/ci/tests/emscripten:/src/build/ci/tests/emscripten:rw" \

@@ -22,6 +22,23 @@ endforeach()
 if(NOT TARGET muhtari_libretro)
   message(FATAL_ERROR "Emscripten inventory requires the production muhtari_libretro target")
 endif()
+
+if(DEFINED ENV{MUHTARI_EXPECTED_SHA} AND NOT "$ENV{MUHTARI_EXPECTED_SHA}" STREQUAL "")
+  set(MUHTARI_EMSCRIPTEN_EXPECTED_SHA "$ENV{MUHTARI_EXPECTED_SHA}")
+else()
+  execute_process(COMMAND git -C "${PROJECT_SOURCE_DIR}" rev-parse --verify HEAD
+    RESULT_VARIABLE git_rc OUTPUT_VARIABLE MUHTARI_EMSCRIPTEN_EXPECTED_SHA
+    ERROR_VARIABLE git_error OUTPUT_STRIP_TRAILING_WHITESPACE)
+  if(NOT git_rc STREQUAL "0")
+    message(FATAL_ERROR "Emscripten package tests cannot resolve the checkout commit: ${git_error}")
+  endif()
+endif()
+string(LENGTH "${MUHTARI_EMSCRIPTEN_EXPECTED_SHA}" commit_length)
+if(NOT commit_length EQUAL 40 OR NOT MUHTARI_EMSCRIPTEN_EXPECTED_SHA MATCHES "^[0-9a-f]+$")
+  message(FATAL_ERROR "Emscripten package tests require the full lowercase checkout commit")
+endif()
+find_program(MUHTARI_EMSCRIPTEN_EMCC emcc REQUIRED)
+get_filename_component(MUHTARI_EMSCRIPTEN_SDK_ROOT "${MUHTARI_EMSCRIPTEN_EMCC}" DIRECTORY)
 set(host "${PROJECT_SOURCE_DIR}/tests/emscripten/host.mjs")
 muhtari_add_test(NAME emscripten.artifact
   COMMAND "${MUHTARI_EMSCRIPTEN_NODE}" "${host}"
@@ -37,3 +54,33 @@ muhtari_add_test(NAME emscripten.controls
     --native "${MUHTARI_EMSCRIPTEN_NATIVE_JSON}"
     --mode controls
   LABELS emscripten portable TIMEOUT 30)
+
+set(bundle_script "${PROJECT_SOURCE_DIR}/tests/emscripten/bundle.cmake")
+set(bundle_archive "${PROJECT_BINARY_DIR}/muhtari-libretro-emscripten.zip")
+muhtari_add_test(NAME emscripten.bundle
+  COMMAND "${CMAKE_COMMAND}"
+    "-DROOT=${PROJECT_SOURCE_DIR}"
+    "-DBUILD=${PROJECT_BINARY_DIR}"
+    "-DWORK=${PROJECT_BINARY_DIR}/bundle-create"
+    "-DMODE=create"
+    "-DEXPECTED_SHA=${MUHTARI_EMSCRIPTEN_EXPECTED_SHA}"
+    "-DSDK_ROOT=${MUHTARI_EMSCRIPTEN_SDK_ROOT}"
+    "-DNATIVE=${MUHTARI_EMSCRIPTEN_NATIVE_JSON}"
+    "-DFIXTURE=${MUHTARI_EMSCRIPTEN_FIXTURE}"
+    "-DNODE=${MUHTARI_EMSCRIPTEN_NODE}"
+    -P "${bundle_script}"
+  LABELS emscripten portable TIMEOUT 30)
+muhtari_add_test(NAME emscripten.bundle.controls
+  COMMAND "${CMAKE_COMMAND}"
+    "-DROOT=${PROJECT_SOURCE_DIR}"
+    "-DWORK=${PROJECT_BINARY_DIR}/bundle-controls"
+    "-DMODE=controls"
+    "-DBUILD=${PROJECT_BINARY_DIR}"
+    "-DEXPECTED_SHA=${MUHTARI_EMSCRIPTEN_EXPECTED_SHA}"
+    "-DARCHIVE=${bundle_archive}"
+    "-DNATIVE=${MUHTARI_EMSCRIPTEN_NATIVE_JSON}"
+    "-DFIXTURE=${MUHTARI_EMSCRIPTEN_FIXTURE}"
+    "-DNODE=${MUHTARI_EMSCRIPTEN_NODE}"
+    -P "${bundle_script}"
+  LABELS emscripten portable TIMEOUT 30)
+set_tests_properties(emscripten.bundle.controls PROPERTIES DEPENDS emscripten.bundle)

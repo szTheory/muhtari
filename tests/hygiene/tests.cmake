@@ -233,10 +233,10 @@ muhtari_add_test(NAME hygiene.timeout_comments.self_test
     -P ${hygiene_scripts}/expect_fail.cmake
   LABELS hygiene TIMEOUT 30)
 
-# The release's asset set. scripts/publish.sh prepare runs on 18 zips that
-# each hold LICENSE, so its firmware scan has a member to read, and six build
-# legs' commit.txt; SHA256SUMS must list the 18 in C-locale name order. The
-# self test leaves one zip out, which must fail naming it.
+# The release's asset set. The native ZIPs each hold LICENSE; the portable ZIP
+# is a valid synthetic source-bound package with matching producer evidence.
+# Keep the real firmware scan and six build legs' commit.txt receipts in the
+# required positive path. The self test omits one native ZIP and must report it.
 set(hygiene_publish ${CMAKE_BINARY_DIR}/hygiene/publish_set)
 file(REMOVE_RECURSE ${hygiene_publish})
 file(COPY ${CMAKE_SOURCE_DIR}/LICENSE DESTINATION ${hygiene_publish}/stage)
@@ -261,13 +261,83 @@ foreach(leg RANGE 1 6)
   file(WRITE ${hygiene_publish}/full/legs/${leg}/commit.txt "fixture\n")
   file(WRITE ${hygiene_publish}/short/legs/${leg}/commit.txt "fixture\n")
 endforeach()
+
+include("${CMAKE_SOURCE_DIR}/tests/emscripten/bundle.cmake")
+_muhtari_bundle_synthetic_inputs("${CMAKE_SOURCE_DIR}" "${hygiene_publish}/portable-control"
+  hygiene_bundle_build hygiene_bundle_archive hygiene_bundle_commit hygiene_bundle_notices
+  hygiene_bundle_native hygiene_bundle_fixture)
+foreach(leg RANGE 1 6)
+  file(WRITE "${hygiene_publish}/full/legs/${leg}/commit.txt" "${hygiene_bundle_commit}\n")
+  file(WRITE "${hygiene_publish}/short/legs/${leg}/commit.txt" "${hygiene_bundle_commit}\n")
+endforeach()
+foreach(dist IN ITEMS full short)
+  set(evidence "${hygiene_publish}/${dist}/emscripten-evidence")
+  file(MAKE_DIRECTORY "${evidence}/emscripten" "${evidence}/ci/tests/emscripten")
+  file(COPY "${hygiene_bundle_build}/libretro" DESTINATION "${evidence}/emscripten")
+  file(COPY_FILE "${hygiene_bundle_native}" "${evidence}/ci/tests/emscripten/native.json")
+  file(COPY_FILE "${hygiene_bundle_archive}"
+    "${hygiene_publish}/${dist}/muhtari-libretro-emscripten.zip")
+endforeach()
+
+set(hygiene_publish_driver "${hygiene_publish}/validator-driver.cmake")
+set(hygiene_notice_lines "")
+foreach(record IN LISTS hygiene_bundle_notices)
+  string(APPEND hygiene_notice_lines "  \"${record}\"\n")
+endforeach()
+file(WRITE "${hygiene_publish_driver}"
+  "include(\"${CMAKE_SOURCE_DIR}/tests/emscripten/bundle.cmake\")\n"
+  "set(notice_digests\n${hygiene_notice_lines})\n"
+  "muhtari_bundle_validate(\"\${ARCHIVE}\" \"\${ROOT}\" \"\${BUILD}\" \"\${WORK}\" \"\${EXPECTED_SHA}\" \"\${notice_digests}\" \"\${NATIVE}\")\n")
+file(WRITE "${hygiene_publish}/cmake" [=[#!/bin/sh
+set -eu
+if [ "$#" -eq 10 ]; then
+  [ "$1" = "-DMODE=validate" ] || exit 91
+  [ "$2" = "-DROOT=$PUBLISH_EXPECTED_ROOT" ] || exit 91
+  [ "$3" = "-DBUILD=$PUBLISH_EXPECTED_BUILD" ] || exit 91
+  [ "$4" = "-DWORK=$PUBLISH_EXPECTED_WORK" ] || exit 91
+  [ "$5" = "-DEXPECTED_SHA=$PUBLISH_EXPECTED_SHA" ] || exit 91
+  [ "$6" = "-DARCHIVE=$PUBLISH_EXPECTED_ARCHIVE" ] || exit 91
+  [ "$7" = "-DNATIVE=$PUBLISH_EXPECTED_NATIVE" ] || exit 91
+  [ "$8" = "-DFIXTURE=$PUBLISH_EXPECTED_FIXTURE" ] || exit 91
+  [ "$9" = "-P" ] || exit 91
+  [ "${10}" = "$PUBLISH_EXPECTED_CHECKER" ] || exit 91
+  printf 'validate\n' >> "$PUBLISH_WORK/calls"
+  exec "$PUBLISH_REAL_CMAKE" "-DARCHIVE=${6#-DARCHIVE=}" \
+    "-DROOT=${2#-DROOT=}" "-DBUILD=${3#-DBUILD=}" \
+    "-DWORK=${4#-DWORK=}" "-DEXPECTED_SHA=$PUBLISH_EXPECTED_SHA" \
+    "-DNATIVE=${7#-DNATIVE=}" -P "$PUBLISH_VALIDATOR_DRIVER"
+fi
+if [ "$#" -eq 6 ] && [ "${1#-DZIPS=}" != "$1" ]; then
+  [ "$2" = "-DFIRMWARE=$PUBLISH_EXPECTED_ROOT/tests/release/firmware.txt" ] || exit 92
+  [ "$3" = "-DEXPECTED=$PUBLISH_EXPECTED_ROOT/tests/built/expected.txt" ] || exit 92
+  [ "$4" = "-DCARTDB=$PUBLISH_EXPECTED_ROOT/src/cartdb.c" ] || exit 92
+  [ "$5" = "-P" ] || exit 92
+  [ "$6" = "$PUBLISH_EXPECTED_ROOT/tests/cmake/firmware_scan.cmake" ] || exit 92
+  actual=$(printf '%s\n' "${1#-DZIPS=}" | tr ';' '\n' | sed "s|^$PUBLISH_EXPECTED_DIST/||" | LC_ALL=C sort)
+  expected=$(
+    for c in library runner libretro; do
+      for o in linux macos windows; do
+        for a in x64 arm64; do printf 'muhtari-%s-%s-%s.zip\n' "$c" "$o" "$a"; done
+      done
+    done
+    echo muhtari-libretro-emscripten.zip
+  )
+  expected=$(printf '%s\n' "$expected" | LC_ALL=C sort)
+  [ "$actual" = "$expected" ] || { echo "firmware scan did not receive exact 19 ZIPs" >&2; exit 93; }
+  printf 'firmware\n' >> "$PUBLISH_WORK/calls"
+  exec "$PUBLISH_REAL_CMAKE" "$@"
+fi
+echo "unexpected cmake call: $*" >&2
+exit 94
+]=])
+file(CHMOD "${hygiene_publish}/cmake" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
 set(hygiene_publish_check [=[
-EXPECTED_SHA=fixture sh "$1" prepare "$2" || exit 1
+EXPECTED_SHA="$PUBLISH_EXPECTED_SHA" sh "$1" prepare "$2" || exit 1
 names=$(awk '{ print $2 }' "$2/SHA256SUMS")
-count=$(printf '%s\n' "$names" | grep -c '^muhtari-[a-z]*-[a-z]*-[a-z0-9]*\.zip$')
-if [ "$count" -ne 18 ]
+count=$(printf '%s\n' "$names" | grep -c '^muhtari-.*\.zip$')
+if [ "$count" -ne 19 ]
 then
-  echo "policy.publish_set: $count archives in SHA256SUMS, want 18"
+  echo "policy.publish_set: $count archives in SHA256SUMS, want 19"
   exit 1
 fi
 if ! printf '%s\n' "$names" | LC_ALL=C sort -c -u
@@ -275,13 +345,38 @@ then
   echo "policy.publish_set: SHA256SUMS is not in C-locale name order"
   exit 1
 fi
-echo "policy.publish_set: 18 archives in C-locale name order"
+echo "policy.publish_set: 19 archives in C-locale name order"
 ]=])
+set(hygiene_publish_expected_root "${CMAKE_SOURCE_DIR}/scripts/..")
+set(hygiene_publish_expected_build "${hygiene_publish}/full/emscripten-evidence/emscripten")
 muhtari_add_test(NAME policy.publish_set
-  COMMAND ${CMAKE_COMMAND} -E env CMAKE=${CMAKE_COMMAND} ${MUHTARI_SH} -c "${hygiene_publish_check}" sh ${CMAKE_SOURCE_DIR}/scripts/publish.sh
+  COMMAND ${CMAKE_COMMAND} -E env
+    "CMAKE=${hygiene_publish}/cmake" "PUBLISH_WORK=${hygiene_publish}"
+    "PUBLISH_EXPECTED_SHA=${hygiene_bundle_commit}"
+    "PUBLISH_REAL_CMAKE=${CMAKE_COMMAND}" "PUBLISH_VALIDATOR_DRIVER=${hygiene_publish_driver}"
+    "PUBLISH_EXPECTED_ROOT=${hygiene_publish_expected_root}"
+    "PUBLISH_EXPECTED_BUILD=${hygiene_publish_expected_build}"
+    "PUBLISH_EXPECTED_WORK=${hygiene_publish_expected_build}/publish-validation"
+    "PUBLISH_EXPECTED_ARCHIVE=${hygiene_publish}/full/muhtari-libretro-emscripten.zip"
+    "PUBLISH_EXPECTED_NATIVE=${hygiene_publish}/full/emscripten-evidence/ci/tests/emscripten/native.json"
+    "PUBLISH_EXPECTED_FIXTURE=${CMAKE_SOURCE_DIR}/scripts/../tests/roms/manifest.txt"
+    "PUBLISH_EXPECTED_CHECKER=${CMAKE_SOURCE_DIR}/scripts/../tests/emscripten/bundle.cmake"
+    "PUBLISH_EXPECTED_DIST=${hygiene_publish}/full"
+    ${MUHTARI_SH} -c "${hygiene_publish_check}" sh ${CMAKE_SOURCE_DIR}/scripts/publish.sh
     ${hygiene_publish}/full
   LABELS hygiene policy TIMEOUT 30)
-set(hygiene_cmd ${CMAKE_COMMAND} -E env EXPECTED_SHA=fixture CMAKE=${CMAKE_COMMAND}
+set(hygiene_cmd ${CMAKE_COMMAND} -E env "EXPECTED_SHA=${hygiene_bundle_commit}"
+  "PUBLISH_EXPECTED_SHA=${hygiene_bundle_commit}"
+  "CMAKE=${hygiene_publish}/cmake" "PUBLISH_WORK=${hygiene_publish}"
+  "PUBLISH_REAL_CMAKE=${CMAKE_COMMAND}" "PUBLISH_VALIDATOR_DRIVER=${hygiene_publish_driver}"
+  "PUBLISH_EXPECTED_ROOT=${hygiene_publish_expected_root}"
+  "PUBLISH_EXPECTED_BUILD=${hygiene_publish}/short/emscripten-evidence/emscripten"
+  "PUBLISH_EXPECTED_WORK=${hygiene_publish}/short/emscripten-evidence/emscripten/publish-validation"
+  "PUBLISH_EXPECTED_ARCHIVE=${hygiene_publish}/short/muhtari-libretro-emscripten.zip"
+  "PUBLISH_EXPECTED_NATIVE=${hygiene_publish}/short/emscripten-evidence/ci/tests/emscripten/native.json"
+  "PUBLISH_EXPECTED_FIXTURE=${CMAKE_SOURCE_DIR}/scripts/../tests/roms/manifest.txt"
+  "PUBLISH_EXPECTED_CHECKER=${CMAKE_SOURCE_DIR}/scripts/../tests/emscripten/bundle.cmake"
+  "PUBLISH_EXPECTED_DIST=${hygiene_publish}/short"
   ${MUHTARI_SH} ${CMAKE_SOURCE_DIR}/scripts/publish.sh prepare ${hygiene_publish}/short)
 string(REPLACE ";" "$<SEMICOLON>" hygiene_cmd "${hygiene_cmd}")
 muhtari_add_test(NAME policy.publish_set.self_test

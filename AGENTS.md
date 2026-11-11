@@ -3,6 +3,7 @@
 ## Communication and workflow preferences
 
 - Keep isolated Git checkouts inside the repository under `.worktrees/`, using an ignored directory, so they stay together without cluttering the parent projects folder.
+- Owner correction (2026-11-11): do not hand back the shipping command the owner just invoked as a substitute for diagnosing its blocker. The explicit instruction to fix and unblock v5.0 shipping authorizes bounded hosted package-route diagnosis, evidence-supported corrections and the dependent shipping checks. Preserve the earlier failed attempts and unrelated Phase 12/14 host stops; do not require repeated routine invocations within this recovery scope.
 
 - Speak to the user as a software engineer and colleague. Use plain, direct language. Keep necessary technical terms and explain unfamiliar workflow language through its practical consequence.
 - End with the actual outcome, what remains broken or blocked, and the next useful action. Usually one short paragraph or at most three short bullets is enough. State clearly when no user action is needed.
@@ -130,6 +131,10 @@ evidence.
 11. **Lessons.** Before planning a phase or changing a subsystem, read relevant entries in `.planning/LESSONS.md`;
     record newly reproduced lessons there with evidence. Inbound lessons remain hypotheses until reproduced here.
     Keep lessons in project memory by default; export from the ledger's template only when explicitly requested.
+
+Milestone scoping and phase discussion use `.planning/research/fan-out/prompt.txt`;
+the owner's research, autonomous follow-through and useful early verification
+defaults are recorded in `.planning/INTENT.md` under "Retain useful understanding".
 
 ## GSD summaries
 

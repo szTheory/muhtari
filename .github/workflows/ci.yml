@@ -187,6 +187,18 @@ jobs:
       - name: Required Emscripten artifact and offline Node checks
         if: matrix.os == 'linux' && matrix.arch == 'x64'
         run: sh scripts/emscripten.sh build/ci
+      - name: Portable publisher production controls
+        if: matrix.os == 'linux' && matrix.arch == 'x64'
+        run: >-
+          cmake -DROOT="$PWD" -DWORK="$PWD/build/ci/policy/publish-emscripten-production"
+          -DPRODUCTION_ARCHIVE="$PWD/build/emscripten/muhtari-libretro-emscripten.zip"
+          "-DEXPECTED_SHA=$(git rev-parse HEAD)" -P tests/policy/publish.cmake
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: matrix.os == 'linux' && matrix.arch == 'x64'
+        with:
+          name: archives-emscripten
+          path: build/emscripten/muhtari-libretro-emscripten.zip
+          if-no-files-found: error
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: matrix.os == 'linux' && matrix.arch == 'x64'
         with:
@@ -194,6 +206,8 @@ jobs:
           path: |
             build/emscripten/libretro/muhtari_libretro.mjs
             build/emscripten/libretro/muhtari_libretro.wasm
+            build/emscripten/libretro/muhtari_libretro.info
+            build/emscripten/libretro/muhtari-source-id.txt
             build/emscripten/junit.xml
             build/ci/tests/emscripten/native.json
             build/ci/tests/emscripten/measurement.json
@@ -255,7 +269,7 @@ jobs:
           fetch-depth: 0
       # clang-21 is on the image; its sanitizer runtimes may not be.
       - name: Sanitizer runtimes
-        run: dpkg -s libclang-rt-21-dev > /dev/null 2>&1 || { sudo apt-get update && sudo apt-get install -y libclang-rt-21-dev; }
+        run: dpkg -s libclang-rt-21-dev > /dev/null 2>&1 || { sh scripts/ubuntu-apt.sh libclang-rt-21-dev; }
       - name: Fetch wasmtime, 7800basic, OpenBIOS and rcheevos
         run: |
           scripts/fetch-pin.sh wasmtime-x86_64-linux build/pins/wasmtime
@@ -321,7 +335,7 @@ jobs:
           scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios
           scripts/fetch-pin.sh rcheevos build/pins/rcheevos
       - name: Cross compiler and qemu-user
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gcc-powerpc-linux-gnu g++-powerpc-linux-gnu qemu-user
+        run: sh scripts/ubuntu-apt.sh gcc-powerpc-linux-gnu g++-powerpc-linux-gnu qemu-user
       - run: cmake --workflow --preset be32-compile
 
   # Exactly six native runtime files, including all three numeric board
@@ -358,7 +372,7 @@ jobs:
           ref: ${{ inputs.ref || '' }}
       - name: WASI sysroot and runtime
         run: |
-          sudo apt-get update && sudo apt-get install -y --no-install-recommends wasi-libc libclang-rt-21-dev-wasm32
+          sh scripts/ubuntu-apt.sh wasi-libc libclang-rt-21-dev-wasm32
           scripts/fetch-pin.sh wasmtime-x86_64-linux build/pins/wasmtime
           scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
           scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios
@@ -582,7 +596,7 @@ jobs:
           persist-credentials: false
           fetch-depth: 2
       - name: Cachegrind
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends valgrind
+        run: sh scripts/ubuntu-apt.sh valgrind
       # Both runners are installed under paths of equal length, so the path
       # Cachegrind and the loader see costs the same instructions. NO_BASE is
       # decided from the base tree's contents only: a base that has presets

@@ -270,13 +270,17 @@ All on 2026-10-15, against `@opengsd/gsd-core` 1.17.0.
 | GH.02 | T1 | nesturbator `.planning/preparation/GSD-HANDOFF.md`, `RETROSPECTIVE.md`, `MILESTONES.md` | main, read 2026-10-15 | Kickoff text, routine, closeout overrides |
 | GH.03 | T1 | gabbaboy `.planning/context/LESSONS.md`, `DECISIONS.md` (D-025, D-069) | main, read 2026-10-15 | Verification default, confidence-qualified models, release PR blocking |
 
-### Archived phase selection at ship (verified 2026-11-10)
+### Archived phase selection at ship (verified 2026-11-11)
 
 OpenGSD 1.20.0 `init.phase-op` can deliberately replace an archived phase's directory with null when the same number remains in ROADMAP. Ship must not interpret that projection as missing implementation or create a new phase. For the completed v4.0 branch, run `$gsd-ship 16`; the agent resolves its existing directory with the same runtime's `query find-phase 16 --raw`, checks that it is the expected `milestones/v4.0-phases/16-emscripten-libretro-core`, and uses that directory for the normal verification, artifact and PR-body reads. The canonical verification must still return `passed`, and `roadmap.analyze` must still record Phase 16 complete. This is an archive-path adapter, never a waiver of a ship gate. The PR covers both phases on the milestone branch.
 
 Keep compact completed phase records and detail sections for roadmap consumers. Archive fingerprint relocation is verifier-owned and requires byte-equivalence with the pre-archive files. The owner does not repair metadata or switch checkouts; the agent owns this preflight on resumption. No host/remote allowance or publication authority is inferred from the adapter.
 
+For the verified v5.0 branch, the next command is `$gsd-ship 18` only when remote shipping is separately authorized. Resolve `.planning/milestones/v5.0-phases/18-source-bound-emscripten-release-bundle` with the selected runtime's `query find-phase 18 --raw` when `init.phase-op 18` masks the archive. Use that path for normal ship artifact/verification reads; `verification.status` must return passed and `roadmap.analyze` must mark both 17 and 18 complete. The local bundle receipt belongs to product snapshot `f400a76`; subsequent milestone/summary commits are metadata only and are not hosted CI or publication evidence. The agent owns current service/receipt checks and targets the canonical milestone branch internally; no owner metadata repair or checkout switch is required. The adapter grants no remote or host authority.
+
 ### Approved isolated v4.0 publication (2026-11-10)
+
+Historical receipt: this isolated v4.0 publication completed in PR #47/package v0.12.0. The original decision below is preserved as history, not a current resume instruction.
 
 The owner approved publishing the verified v4.0-only candidate after combined PR #46 failed its inherited held-input gate. Resume `$gsd-ship 16` by selecting `.worktrees/phase-16-ship` internally; do not republish or rerun the combined source. The candidate keeps main's existing checks and adds only the offline Emscripten lane. Historical v3.0 planning records describe preserved, unmerged source; they do not imply that source ships in the isolated PR. All host stops remain binding.
 

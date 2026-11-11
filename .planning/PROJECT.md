@@ -15,9 +15,20 @@ that any host can embed.
 
 ## Current State
 
-Planning milestone **v4.0 — Browser/WebAssembly core readiness** is verified and archived locally on 2026-11-10. All five requirements passed: one measured budget-check improvement and the pinned Emscripten core with direct offline Node lifecycle, deterministic native parity, refusal/replay/isolation and bounded reporting. Both local workflows, source reviews and the independent integration audit passed. Shipping, hosted Windows evidence, merge and package release remain pending; no browser/device behavior or performance is claimed. See the [v4.0 audit](milestones/v4.0-MILESTONE-AUDIT.md) and [rolling roadmap](PRODUCT-ROADMAP.md).
+v5.0 Downloadable WebAssembly core is verified locally and archived on 2026-11-11: all six requirements, two phases and the independent integration audit passed. The source-bound fourteen-member portable ZIP carries matched loader/Wasm, source/toolchain identities, qualified runtime notices and reproducible instructions. Existing release contracts now include nineteen ZIPs/twenty assets while preserving all eighteen native archives. This is local readiness; publication and its external checks retain separate authority.
 
-v3.0 remains closed with deferred scope: Phase 13 passed, Phase 12 remains accepted 0/4 and Phase 14 remains gaps_found at 20/27. Its nine unmet requirements and original denied/spent host scopes are unchanged. The root checkout remains canonical and older dirty worktrees are preserved.
+v4.0 shipped through PR #47 and package v0.12.0, which remains the published package. The nine v3.0 gaps and original denied/spent host/remote scopes are unchanged. Root remains canonical and older dirty worktrees remain preserved.
+
+## Latest Verified Milestone: v5.0 Downloadable WebAssembly core
+
+**Goal:** Host integrators can obtain a source-bound Emscripten libretro bundle, verified from its extracted contents and ready for the existing release pipeline.
+
+**Target features:**
+- Measured milestone tune-up with current release/docs and evidence-specific efficiency dispositions.
+- One matched loader/Wasm archive with identity, integration instructions and audited notices.
+- Extracted offline lifecycle/parity checks and strict existing release security contracts extended to the new variant.
+
+The owner authorized autonomous local execution and ordinary recommendation following. Public rehearsal, publication, merge, new host/remote actions and the prior v3.0 stops keep their separate boundaries.
 
 <details>
 <summary>Historical v1.0 and v2.0 phase-position receipts (superseded at milestone close)</summary>
@@ -120,6 +131,9 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 ### Validated
 
+- ✓ TUNE-09: current v4 publication records and source-specific measured baseline; required checks retained — v5.0, Phase 17.
+- ✓ WASM-05–09: matched source-bound portable ZIP, clean-extracted offline oracle, pinned runtime notices, existing release contracts and host instructions — v5.0, Phase 18.
+
 - ✓ TUNE-08: relative-root document budget coverage and representative controls — v4.0, Phase 15.
 - ✓ WASM-01: pinned Emscripten ES module and Wasm with documented loader/export contract — v4.0, Phase 16.
 - ✓ WASM-02: direct offline Node lifecycle, callbacks and state consumer — v4.0, Phase 16.
@@ -158,7 +172,9 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 ### Active
 
-No next milestone is started. v4.0 requirements are validated in the [archive](milestones/v4.0-REQUIREMENTS.md); preparing and confirming shipping is the next action. The nine unmet v3.0 requirements remain deferred in their archive and are not represented as completed.
+No unverified v5.0 implementation requirement remains. Local archive and cleanup are complete; public shipping retains separate authority.
+
+The nine unmet v3.0 requirements remain deferred, with their original evidence and host/remote stops unchanged.
 
 ### Out of Scope
 
@@ -294,4 +310,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-10 after v4.0 local milestone completion*
+*Last updated: 2026-11-11 after v5.0 local milestone closeout*
