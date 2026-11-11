@@ -130,8 +130,8 @@ SOFTWARE.
 
 ## Emscripten release bundle
 
-- **Applies to:** the generated `.mjs` and `.wasm` members of
-  `muhtari-libretro-emscripten.zip`; the following five archive-only files carry the full notices:
+- **Applies to:** the generated Emscripten loader and companion Wasm in the portable ZIP. The following five
+  archive-only files carry the full notices:
   `licenses/emscripten/LICENSE`, `licenses/emscripten/AUTHORS`,
   `licenses/musl/COPYRIGHT`, `licenses/compiler-rt/LICENSE.TXT`, and
   `licenses/compiler-rt/CREDITS.TXT`. These SDK notices are not part of native archives.
