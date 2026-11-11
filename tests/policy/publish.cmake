@@ -90,6 +90,20 @@ set(cmd "${CMAKE_COMMAND}" -E env --modify "PATH=path_list_prepend:${WORK}/bin"
   "PUBLISH_WORK=${WORK}" "RUNNER_TEMP=${WORK}/temp"
   GITHUB_REPOSITORY=example/public SOURCE_REF=refs/heads/main)
 
+# Model the producer's actual upload, rather than copying unuploaded build files.
+file(READ "${ROOT}/.github/workflows/ci.yml" producer_ci)
+string(FIND "${producer_ci}" "name: emscripten-libretro-evidence\n" evidence_at)
+if(evidence_at LESS 0)
+  message(FATAL_ERROR "publish controls: portable evidence upload is missing")
+endif()
+string(SUBSTRING "${producer_ci}" ${evidence_at} -1 evidence_upload)
+string(FIND "${evidence_upload}" "if-no-files-found:" evidence_end)
+if(evidence_end LESS 0)
+  message(FATAL_ERROR "publish controls: portable evidence upload has no file policy")
+endif()
+string(SUBSTRING "${evidence_upload}" 0 ${evidence_end} evidence_upload)
+string(REGEX MATCHALL "build/emscripten/libretro/[A-Za-z0-9_.-]+" evidence_files "${evidence_upload}")
+
 function(publish_make_prepare_fixture destination portable_archive expected_sha evidence_build native reverse)
   file(REMOVE_RECURSE "${destination}")
   file(MAKE_DIRECTORY "${destination}/legs" "${destination}/emscripten-evidence/ci/tests/emscripten"
@@ -103,7 +117,12 @@ function(publish_make_prepare_fixture destination portable_archive expected_sha 
     file(COPY_FILE "${archive}" "${destination}/${name}")
   endforeach()
   file(COPY_FILE "${portable_archive}" "${destination}/muhtari-libretro-emscripten.zip")
-  file(COPY "${evidence_build}/libretro" DESTINATION "${destination}/emscripten-evidence/emscripten")
+  file(MAKE_DIRECTORY "${destination}/emscripten-evidence/emscripten/libretro")
+  foreach(evidence_file IN LISTS evidence_files)
+    string(REPLACE "build/emscripten/" "" evidence_relative "${evidence_file}")
+    file(COPY_FILE "${evidence_build}/${evidence_relative}"
+      "${destination}/emscripten-evidence/emscripten/${evidence_relative}")
+  endforeach()
   file(COPY_FILE "${native}"
     "${destination}/emscripten-evidence/ci/tests/emscripten/native.json")
   foreach(index RANGE 1 6)

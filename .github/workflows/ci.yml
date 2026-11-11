@@ -206,6 +206,7 @@ jobs:
           path: |
             build/emscripten/libretro/muhtari_libretro.mjs
             build/emscripten/libretro/muhtari_libretro.wasm
+            build/emscripten/libretro/muhtari_libretro.info
             build/emscripten/libretro/muhtari-source-id.txt
             build/emscripten/junit.xml
             build/ci/tests/emscripten/native.json

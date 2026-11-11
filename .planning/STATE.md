@@ -4,10 +4,10 @@ milestone: v5.0
 milestone_name: Downloadable WebAssembly core (verified local closeout)
 status: Awaiting next milestone
 stopped_at: Phase 18 complete — all phases complete
-last_updated: "2026-11-11T14:18:02.355Z"
+last_updated: "2026-11-11T15:00:20.840Z"
 last_activity: 2026-11-11
-last_activity_desc: "Phase 18 shipped as PR #49; hosted CI and release rehearsal pending"
-state_head: d73dd4b5dd1c71b02a53cfe90166918285d84b35
+last_activity_desc: "PR #49 shipping held: hosted Ubuntu DNS failure repeated; local transfer correction verified"
+state_head: 87ddc29c2675765e8a20fcdce6254df91d0c8387
 progress:
   total_phases: 2
   completed_phases: 2
@@ -23,13 +23,13 @@ current_phase: 18
 
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-10.
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** v5.0 is verified and archived locally; all six requirements and both phases passed. The owner invoked `$gsd-ship 18`; PR #49 carries the milestone and awaits exact-head hosted CI/release rehearsal. The agent owns those checks, auto-merge and the resulting release-PR receipt. The portable bundle remains unpublished until the release succeeds. Earlier denied/spent host scopes and nine v3.0 gaps remain intact.
+**Current focus:** v5.0 remains locally verified and archived. PR #49 is open; shipping is blocked by hosted Ubuntu package-mirror DNS resolution. The single targeted fresh-runner check repeated that failure before tests. The clean-build and Windows fixture corrections passed local and hosted checks; the further artifact-transfer correction passes locally and is pushed with CI skipped. Do not start another remote matrix, retry the spent probe, enable merge or infer publication until new runner recovery evidence is available. The agent owns read-only health/receipt checks on resumption. Earlier Phase 12/14 stops and nine v3.0 gaps remain intact.
 
 ## Current Position
 
 Milestone: v5.0 complete locally (phases 17–18, three plans, seven tasks)
-Status: Verified local closeout; shipping pending separate authority
-Last activity: 2026-11-11 -- Phase 18 shipped as PR #49; hosted CI and release rehearsal pending
+Status: Verified local closeout; shipping blocked by hosted package-mirror DNS
+Last activity: 2026-11-11 -- PR #49 shipping held: hosted Ubuntu DNS failure repeated; local transfer correction verified
 Progress: [██████████] 100%
 
 ## Performance Metrics
@@ -95,12 +95,12 @@ At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Sou
 ## Session Continuity
 
 Last session: 2026-11-11
-Stopped at: PR #49 created; exact-head CI/rehearsal and release checks are agent-owned
+Stopped at: PR #49 held after repeated hosted DNS failure; verified transfer fix saved without launching another matrix
 Resume file: None
-Next command: $gsd-ship 18 — resume this shipping scope if interrupted; reuse PR #49 and inspect its existing runs before any new action. The agent owns health, receipts and archived-path resolution. After shipping and release checks succeed, the next milestone boundary is $gsd-new-milestone.
+Next command: $gsd-ship 18 — reuse PR #49 and perform read-only health/receipt preflight first. The agent must establish new hosted package-mirror DNS recovery evidence before a new matrix; do not auto-trigger the CI-skip recovery path while this stop remains. Context can be cleared; no owner metadata repair or checkout switch is needed. After shipping and release checks succeed, the next milestone boundary is $gsd-new-milestone.
 
 ## Operator Next Steps
 
-- The owner authorized shipping with `$gsd-ship 18`. The agent continues PR #49 through existing required CI, rehearsal, auto-merge and release checks; no routine owner action is needed.
+- PR #49 remains unmerged and the new portable bundle is unpublished. Hosted package-mirror DNS recovery is the next external prerequisite; the agent owns fresh read-only service/runner receipt checks before resuming. The one targeted health attempt is terminal and must not be silently renewed. No owner repair or routine confirmation is needed.
 - The agent owns service/receipt preflight and the documented same-runtime archived-phase adapter. Context can be cleared; the owner stays in the canonical checkout.
 - Preserve original Phase 12/14 denied/spent scopes and the nine deferred v3.0 requirements. This ship invocation authorizes its normal remote CI/rehearsal/merge/release path; it does not renew earlier terminal scopes or authorize unrelated dispatch.

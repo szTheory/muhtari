@@ -1,6 +1,6 @@
 ---
 phase: 18-source-bound-emscripten-release-bundle
-verified: 2026-11-11T14:31:04Z
+verified: 2026-11-11T14:54:27Z
 status: passed
 score: 6/6 must-haves verified
 covered_files:
@@ -33,7 +33,7 @@ covered_files:
   - tests/hygiene/tests.cmake
   - tests/inventory/emscripten.txt
   - tests/policy/publish.cmake
-covered_digest: "v4:sha256:bb7c503f08757e826c62d840562afc02794386f70d08f80d63990839f1efa9ea"
+covered_digest: "v4:sha256:4c396412c05e4e8fe20712251f4c02d5ac4f3fe7d31cb2374cd0416d4f716b39"
 behavior_unverified: 0
 overrides_applied: 0
 decision_coverage:
@@ -147,3 +147,7 @@ _Verifier: the agent (gsd-verifier)_
 The first hosted candidate exposed two local-readiness defects hidden by a warm SDK tree and POSIX-only fixture bytes. The bounded ship correction keeps production notice hashes and physical-containment validation intact: callers now use distinct direct BUILD children, and synthetic notices use explicit CRLF with hashes derived from packed file bytes. A fresh SDK reproduction failed before the work-path correction and the clean pinned workflow now passes all four cases without skips. The Windows notice error was reproduced locally with CRLF (old string hash exit 1); the file-byte hash passes the full publisher control, including strict production rejection of synthetic notices. The registered native publisher test passes within its unchanged deadline, and the real SDK archive plus all five notice mutations pass the production publisher branch. All local commands exit 0 after correction; URLs N/A-local.
 
 Only `tests/emscripten/tests.cmake` and the synthetic-fixture block of `tests/emscripten/bundle.cmake` changed. The other covered artifacts and six local must-haves remain valid. The existing CLI fingerprint was regenerated after rechecking these changes. [The ship receipt](../../v5.0-SHIP.md) preserves original local timing failures, first hosted failures/cancellations, source distinctions and pending hosted gates. Local acceptance remains passed; no hosted, rehearsal, merge or release pass is inferred.
+
+### Artifact-transfer follow-up (2026-11-11)
+
+The actual downloaded rehearsal artifact lacks the independently compared libretro metadata file, despite producer-workspace SDK/publisher passes. The uploader now includes that file. The native publisher fixture follows the actual upload declaration; deleting the metadata entry reproduces the missing-file failure, and the corrected registered control passes within its unchanged deadline. A prospective corrected downloaded layout passes exact-source package validation and clean-extracted Node/native parity. Existing required checks and runtime/notice/source guards are unchanged. The inline verifier rechecked the changed workflow and publisher fixture and refreshed this local fingerprint. These working-tree checks do not establish a hosted upload or rehearsal pass; see the ship receipt for the separate runner DNS stop and failed history.
