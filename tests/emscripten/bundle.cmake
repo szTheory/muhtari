@@ -701,8 +701,9 @@ function(_muhtari_bundle_synthetic_inputs root work output_build output_archive 
   set(notice_table)
   foreach(member IN LISTS notice_members)
     set(notice_text "Synthetic control bytes for ${member}\n")
-    file(WRITE "${stage}/${member}" "${notice_text}")
-    string(SHA256 notice_hash "${notice_text}")
+    # Exercise Windows text-file bytes on every platform; hash the file as packed.
+    file(CONFIGURE OUTPUT "${stage}/${member}" CONTENT "${notice_text}" NEWLINE_STYLE CRLF)
+    file(SHA256 "${stage}/${member}" notice_hash)
     list(APPEND notice_table "${member}=${notice_hash}")
   endforeach()
   _muhtari_bundle_control_metadata("${stage}/muhtari-bundle.txt" "${commit}" "${source_id}" "${_muhtari_bundle_emcc}")

@@ -1,6 +1,6 @@
 ---
 phase: 18-source-bound-emscripten-release-bundle
-verified: 2026-11-11T06:12:26Z
+verified: 2026-11-11T14:31:04Z
 status: passed
 score: 6/6 must-haves verified
 covered_files:
@@ -33,7 +33,7 @@ covered_files:
   - tests/hygiene/tests.cmake
   - tests/inventory/emscripten.txt
   - tests/policy/publish.cmake
-covered_digest: "v4:sha256:fd98778cff1cbe15dada542662baebf43440e8900e92f51014721dcabfe5d875"
+covered_digest: "v4:sha256:bb7c503f08757e826c62d840562afc02794386f70d08f80d63990839f1efa9ea"
 behavior_unverified: 0
 overrides_applied: 0
 decision_coverage:
@@ -141,3 +141,9 @@ No blocking gaps remain. The validated local artifact is bound to product snapsh
 
 _Verified: 2026-11-11T06:12:26Z_
 _Verifier: the agent (gsd-verifier)_
+
+## Shipping-source local recheck (2026-11-11)
+
+The first hosted candidate exposed two local-readiness defects hidden by a warm SDK tree and POSIX-only fixture bytes. The bounded ship correction keeps production notice hashes and physical-containment validation intact: callers now use distinct direct BUILD children, and synthetic notices use explicit CRLF with hashes derived from packed file bytes. A fresh SDK reproduction failed before the work-path correction and the clean pinned workflow now passes all four cases without skips. The Windows notice error was reproduced locally with CRLF (old string hash exit 1); the file-byte hash passes the full publisher control, including strict production rejection of synthetic notices. The registered native publisher test passes within its unchanged deadline, and the real SDK archive plus all five notice mutations pass the production publisher branch. All local commands exit 0 after correction; URLs N/A-local.
+
+Only `tests/emscripten/tests.cmake` and the synthetic-fixture block of `tests/emscripten/bundle.cmake` changed. The other covered artifacts and six local must-haves remain valid. The existing CLI fingerprint was regenerated after rechecking these changes. [The ship receipt](../../v5.0-SHIP.md) preserves original local timing failures, first hosted failures/cancellations, source distinctions and pending hosted gates. Local acceptance remains passed; no hosted, rehearsal, merge or release pass is inferred.

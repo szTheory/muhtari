@@ -61,7 +61,7 @@ muhtari_add_test(NAME emscripten.bundle
   COMMAND "${CMAKE_COMMAND}"
     "-DROOT=${PROJECT_SOURCE_DIR}"
     "-DBUILD=${PROJECT_BINARY_DIR}"
-    "-DWORK=${PROJECT_BINARY_DIR}/tests/emscripten/bundle-create"
+    "-DWORK=${PROJECT_BINARY_DIR}/bundle-create"
     "-DMODE=create"
     "-DEXPECTED_SHA=${MUHTARI_EMSCRIPTEN_EXPECTED_SHA}"
     "-DSDK_ROOT=${MUHTARI_EMSCRIPTEN_SDK_ROOT}"
@@ -73,7 +73,7 @@ muhtari_add_test(NAME emscripten.bundle
 muhtari_add_test(NAME emscripten.bundle.controls
   COMMAND "${CMAKE_COMMAND}"
     "-DROOT=${PROJECT_SOURCE_DIR}"
-    "-DWORK=${PROJECT_BINARY_DIR}/tests/emscripten/bundle-controls"
+    "-DWORK=${PROJECT_BINARY_DIR}/bundle-controls"
     "-DMODE=controls"
     "-DBUILD=${PROJECT_BINARY_DIR}"
     "-DEXPECTED_SHA=${MUHTARI_EMSCRIPTEN_EXPECTED_SHA}"
