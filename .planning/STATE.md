@@ -101,5 +101,6 @@ Next command: $gsd-ship 18 — run when the owner chooses to authorize remote sh
 
 ## Operator Next Steps
 
-
-- Start the next milestone with $gsd-new-milestone
+- The authorized local v5.0 work is complete. The owner acts next only when ready to authorize remote shipping with `$gsd-ship 18`; no acknowledgment is needed to keep existing stops closed.
+- The agent owns service/receipt preflight and the documented same-runtime archived-phase adapter. Context can be cleared; the owner stays in the canonical checkout.
+- Preserve original Phase 12/14 denied/spent scopes and the nine deferred v3.0 requirements. Public rehearsal, publication, new remote dispatch and merge remain outside this completed local scope.
