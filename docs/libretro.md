@@ -332,6 +332,42 @@ empty while PCM sample count and bytes are still compared. These checks
 establish selected board semantics and partial descriptor visibility, not
 retail playability or complete achievement support.
 
+## Portable Emscripten bundle
+
+The architecture-independent libretro ZIP is planned for the next release; it has not been published yet. Its
+version-free destination will be
+`https://github.com/szTheory/muhtari/releases/latest/download/muhtari-libretro-emscripten.zip`.
+After that release is published, download and extract it into an owned directory:
+
+```sh
+bundle_url=https://github.com/szTheory/muhtari/releases/latest/download/muhtari-libretro-emscripten.zip
+mkdir -p "$HOME/muhtari-web"
+curl -fsSL "$bundle_url" -o "$HOME/muhtari-libretro-emscripten.zip"
+unzip -q "$HOME/muhtari-libretro-emscripten.zip" -d "$HOME/muhtari-web"
+```
+
+The extraction has `cores/` and `info/` at its root. Keep
+`cores/muhtari_libretro.mjs`, its adjacent `muhtari_libretro.wasm`, and
+`cores/muhtari-source-id.txt` together. Copy `cores/` and `info/` into the directories used by a libretro frontend.
+The root `muhtari-bundle.txt` records commit and toolchain identity, `SHA256SUMS` checks the loader/Wasm pair, and
+`HOSTING.md` contains the packaged host contract. The full root notices and five SDK runtime notices travel in the ZIP.
+
+For Node, save this as `host.mjs` beside the extracted `muhtari-web/` directory. The generated factory needs the
+companion Wasm bytes explicitly; the URL for those bytes is resolved beside the loader:
+
+```js
+import { readFile } from 'node:fs/promises';
+
+const loaderUrl = new URL('./muhtari-web/cores/muhtari_libretro.mjs', import.meta.url);
+const { default: createCore } = await import(loaderUrl);
+const wasmBinary = await readFile(new URL('./muhtari_libretro.wasm', loaderUrl));
+const core = await createCore({ wasmBinary });
+```
+
+Use the ordinary libretro callbacks and content/state ownership described in this guide. The local Node lifecycle and
+independent native comparison establish offline package/core behavior only; they do not qualify a browser, mobile
+device, performance, physical input, or other actual frontend.
+
 ## WebAssembly build and offline host
 
 The production libretro adapter can also be built as a no-entry ES module and

@@ -75,6 +75,33 @@ Licence terms: BSD-3 clause 1 (keep the notice, conditions and disclaimer with s
 - `release.notices` (CMake `-P`, untested), run in `cmake --workflow --preset ci` and in release.yml before attestation: each zip must hold exactly one root `LICENSE` and one `THIRD-PARTY-NOTICES.md`, byte-identical to the release commit's. Its self-test builds a zip without them and must fail, naming the missing file. It extends nesturbator's per-component archive allowlist (`tests/cmake/check_archives.cmake`) [PV.12].
 - `policy.notices` (untested): every SPDX expression in a tracked source is `MIT`, or `MIT AND` one of the licences in §1. Each derived file is listed in a notices section, every listed path exists, and the libretro `.info` `license` field names the same licences.
 
+**(d) Emscripten-generated runtime.** The architecture-independent
+`muhtari-libretro-emscripten.zip` is another variant of the existing libretro
+deliverable. It carries the exact SDK notices below, copied byte-for-byte and
+kept only in this ZIP. Its producer uses Emscripten 7.0.0 at commit
+`777e6e5db7b4990bcaeb1b9998ed642cc84e6629`, with `emcc 7.0.0` from
+`emscripten/emsdk@sha256:6bd7aef93408b10bf7b36642cb7c91119b302f720b9ec2d20439f73cf07fe894`
+on `linux/amd64`; the image leaf is
+`sha256:3803e37bf748ddee14d31cf712fcab09ca367fca83bbefeb78ce4c1f284e6f3f`.
+The vendored compiler-rt base is LLVM 23.1.3 at
+`0d261d1ca552c95a8f007e061c787ac7132fbcbc`.
+
+| Pinned SDK source path | Portable ZIP member | SHA-256 |
+|---|---|---|
+| `emscripten/LICENSE` | `licenses/emscripten/LICENSE` | `620a78084fc7ca97c0b5dea9abf891f3ffcadfdbf305276f099c9c4e12fc1d86` |
+| `emscripten/AUTHORS` | `licenses/emscripten/AUTHORS` | `3fb38cc87b2b57a2a1aae3ad2e984c3bc23cf7441d20e6897739fbc3f96414c4` |
+| `emscripten/system/lib/libc/musl/COPYRIGHT` | `licenses/musl/COPYRIGHT` | `b870108ec5e7790e9f9919064f1b9421d62d5f9b0e6c230c6adf7ea2da62e97b` |
+| `emscripten/system/lib/compiler-rt/LICENSE.TXT` | `licenses/compiler-rt/LICENSE.TXT` | `1a8f1058753f1ba890de984e48f0242a3a5c29a6a8f2ed9fd813f36985387e8d` |
+| `emscripten/system/lib/compiler-rt/CREDITS.TXT` | `licenses/compiler-rt/CREDITS.TXT` | `a9901f47a089da41e4690682d00ce4cedaa2baf41fedbe79beee366d43ac2461` |
+
+Emscripten and its Node helper carry MIT and UIUC grants; the bundled musl
+functions carry MIT terms; compiler-rt carries Apache-2.0 with LLVM exceptions
+and its explicit MIT/UIUC grants. The full texts, attribution scope, and
+immutable upstream source URLs are in
+[`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md#emscripten-release-bundle).
+In particular, keep `CREDITS.TXT` archive-only; do not copy its upstream
+attributions into source or widen hygiene's personal-email rules.
+
 ## 6. BIOS, HSC ROM and the RIOT-RAM loader
 - The Atari BIOS (NTSC, PAL, prototype), the HSC ROM and every byte of the loader the BIOS leaves in RIOT RAM are **user-supplied only**. They are never committed, packaged, typed into C arrays or reconstructed. Their identifying digests are in ASSET_POLICY.md §4.
 - **HLE fast boot** (the default, redistributable) sets the post-BIOS state from measured facts in MiSTer's licensor-only files and the BIOS behaviour documented in A7800-SYSTEM: registers (S = X = $16, D = 1, I = 1), INPTCTRL `$16`, CTRL `$60`, the hand-off DPP and beam position (`video_sync.sv` L146–152, `control.sv` L143–149) [PV.03]. It writes **no loader** into RIOT RAM `$0480–$04FF`, which keeps the RAM fill: no known 7800 title reads it; the loader only matters to 2600 games (SEED-006).

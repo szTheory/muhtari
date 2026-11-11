@@ -20,6 +20,10 @@ On other systems, download `muhtari-libretro-<os>-<arch>.zip` from the
 `<arch>` is `x64` or `arm64`) and copy its `cores` and `info` folders into the folders RetroArch lists under
 Settings → Directory → Cores and Core Info.
 
+The architecture-independent Emscripten libretro ZIP is planned for the next release and is not public yet.
+Its [version-free download URL](https://github.com/szTheory/muhtari/releases/latest/download/muhtari-libretro-emscripten.zip)
+will be active after publication; see the [portable host instructions](docs/libretro.md#portable-emscripten-bundle).
+
 ## Requirements
 
 - Linux x64/arm64: glibc 2.17+ for the core, 2.34+ for `muhtari-run`; musl: build from source.
