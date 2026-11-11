@@ -7,7 +7,7 @@
 - [x] **v3.0 — Playstead-ready play and states** — phases 12–14; closed 2026-11-10 with deferred scope (`override_closeout`). Phase 13 passed; Phase 12 remains accepted 0/4 and Phase 14 remains `gaps_found` at 20/27. Nine requirements remain unchecked. [Audit](milestones/v3.0-MILESTONE-AUDIT.md) · [Archive](milestones/v3.0-ROADMAP.md)
 - [x] **v4.0 — Browser/WebAssembly core readiness** — phases 15–16; shipped through PR #47 and package v0.12.0. [Audit](milestones/v4.0-MILESTONE-AUDIT.md) · [Archive](milestones/v4.0-ROADMAP.md) · [Ship receipt](milestones/v4.0-SHIP.md). Earlier failed combined-source evidence and host stops remain preserved.
 
-- [x] **v5.0 — Downloadable WebAssembly core** — phases 17–18; verified locally 2026-11-11, publication pending separate ship authority. [Audit](milestones/v5.0-MILESTONE-AUDIT.md) · [Archive](milestones/v5.0-ROADMAP.md) · [Requirements](milestones/v5.0-REQUIREMENTS.md)
+- [x] **v5.0 — Downloadable WebAssembly core** — phases 17–18; source shipped through PR #49 on 2026-11-11; versioned release tracked in PR #50. [Audit](milestones/v5.0-MILESTONE-AUDIT.md) · [Archive](milestones/v5.0-ROADMAP.md) · [Requirements](milestones/v5.0-REQUIREMENTS.md)
 
 ## v5.0 — Downloadable WebAssembly core (verified local closeout)
 
@@ -32,4 +32,4 @@
 
 ## Next boundary
 
-All six v5.0 requirements passed local acceptance. `$gsd-ship 18` is the next useful command when remote shipping is authorized. Public rehearsal, publication and merge were not run. The agent owns service/receipt checks and resolves archived phase paths with the selected runtime's `find-phase`; no owner directory switch is needed. Prior denied/spent host scopes and nine deferred v3.0 requirements remain unchanged.
+All six v5.0 requirements passed local acceptance; exact-source hosted CI and the complete public rehearsal/install/cleanup also passed before PR #49 merged. [Ship receipt](milestones/v5.0-SHIP.md). Versioned release automation is tracked in [PR #50](https://github.com/szTheory/muhtari/pull/50). The next command is `$gsd-new-milestone`; the agent first checks release/main receipts automatically. No owner metadata repair or directory switch is needed. Earlier denied/spent host scopes and nine deferred v3.0 requirements remain unchanged.

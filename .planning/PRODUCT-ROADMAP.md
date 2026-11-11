@@ -15,17 +15,13 @@ At every milestone boundary, reconcile shipped and partial work, keep unresolved
 debt visible, re-rank the horizons, record why the order changed, promote only
 scoped work, and snapshot this file at close.
 
-## Immediate — ship the verified portable core
+## Immediate — confirm the release and select the next milestone
 
-v4.0's isolated source shipped in PR #47 and package v0.12.0 after candidate,
-release-PR and release checks passed. Its loader/Wasm remain CI artifacts; published
-assets contain the 18 native ZIPs plus checksums. See the [ship receipt](milestones/v4.0-SHIP.md).
+v4.0's isolated source shipped in PR #47 and package v0.12.0 with the native archive set. See its [ship receipt](milestones/v4.0-SHIP.md).
 
-v5.0 is verified locally: the measured tune-up, matched source-bound Emscripten ZIP, five pinned runtime notices, clean-extracted offline parity and existing release integrity contracts passed. [The audit](milestones/v5.0-MILESTONE-AUDIT.md) records all six requirements. The next action is `$gsd-ship 18` under separate remote shipping authority; no new implementation milestone is selected. The relevant-role research and autonomous recommendation follow-through are retained in [the synthesis](research/v5.0/SUMMARY.md).
+v5.0 source shipped through PR #49 after exact-source native/SDK, full PowerPC equality, public release rehearsal, install and cleanup checks passed. Its matched Emscripten ZIP, five pinned runtime notices, clean-extracted offline parity and release integrity contracts cover all six requirements in [the audit](milestones/v5.0-MILESTONE-AUDIT.md). The versioned release is tracked in PR #50 and [the current ship receipt](milestones/v5.0-SHIP.md). The next command is `$gsd-new-milestone`; the agent first reconciles current release/main receipts automatically. No new implementation scope has been selected. The research and autonomous follow-through defaults remain in [the synthesis](research/v5.0/SUMMARY.md).
 
-No browser player, device code, UI, real-browser performance, power or prior host
-acceptance is included. Muhtari still has three deliverables. Use the existing
-producer and add no dependency; no measured cache/timeout/topology change is justified.
+No browser player, device code, UI, real-browser performance, power or earlier host acceptance is included. Muhtari still has three deliverables. Shipping uses the existing producer and no new dependency. Two Windows case deadlines were corrected from complete measured workloads; no cache or workflow topology change was introduced.
 
 ## Next — host acceptance when evidence and authority are available
 

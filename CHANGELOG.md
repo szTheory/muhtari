@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.0](https://github.com/szTheory/muhtari/compare/v0.12.0...v0.13.0) (2026-11-11)
+
+
+### Features
+
+* publish source-bound Emscripten libretro bundle ([#49](https://github.com/szTheory/muhtari/issues/49)) ([d30e512](https://github.com/szTheory/muhtari/commit/d30e5124ff8b417d3da078cc3f51dd55761b1edc))
+
 ## [0.12.0](https://github.com/szTheory/muhtari/compare/v0.11.1...v0.12.0) (2026-11-10)
 
 
