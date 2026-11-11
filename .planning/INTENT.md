@@ -3,7 +3,7 @@
 **Source:** owner direction in the 2026-10-29 milestone/onboarding conversation,
 combined with the standing contracts linked below. These are product preferences
 and accepted instructions; technical research and observed behavior have separate
-evidence. Updated 2026-10-29.
+evidence. Updated 2026-11-10.
 
 ## Gamer value comes first
 
@@ -63,7 +63,17 @@ conditions that would change a recommendation. Use the [fan-out brief](research/
 to investigate independent decisions through relevant roles, prefer primary sources,
 perform one adversarial synthesis and stop when more work would not change a choice.
 Follow approved recommendations without routine reconfirmation inside the active
-GSD step; preserve [the one-step limit](../AGENTS.md).
+GSD scope. An explicitly requested autonomous milestone continues through dependent
+steps under [AGENTS rule 8](../AGENTS.md); other work keeps its normal step boundary.
+
+Owner reaffirmation, 2026-11-10: apply this brief at milestone scoping and phase
+discussion, with relevant specialist fan-out and an adversarial synthesis. Adopt
+ordinary recommendations during an authorized autonomous run; ask only at a real
+scope, authority, risk, cost or irreversible-action boundary. Start useful automated
+verification early, including integration, end-to-end, smoke and seam checks. A
+throwaway local check is valid; retain a check in CI only for recurring regression
+value. Inspect each CI/release run for measured iteration-time improvements while
+preserving its required coverage. This is standing guidance, not another UAT gate.
 
 ## Shared emulator family: learning flows both ways
 

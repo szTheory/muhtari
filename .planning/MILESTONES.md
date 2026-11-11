@@ -1,8 +1,8 @@
 # Project Milestones: muhtari
 
-## v4.0 — Browser/WebAssembly core readiness (Completed locally: 2026-11-10)
+## v4.0 — Browser/WebAssembly core readiness (Shipped: 2026-11-10)
 
-**Closeout type:** `verified_closeout`; all five scoped requirements pass. Planning completion is separate from package release; no publication, hosted dispatch, merge or tag occurred.
+**Closeout type:** `verified_closeout`; all five scoped requirements pass. Planning completion is separate from package release. The approved isolated source subsequently shipped through PR #47 and package v0.12.0; see the ship receipt.
 **Scope:** Phases 15–16, two plans and five tasks. Task totals are reconciled from the actual plan task blocks; the CLI's summary parser counted only two.
 
 **Delivered:**
@@ -14,7 +14,7 @@
 **Evidence:** Native and pinned Emscripten workflows, packaging/release checks, hygiene, independent source reviews, both phase verifications and milestone integration passed. One review-fix round resolved all five Phase 16 findings. Windows execution remains a ship check; Node results establish no browser/device acceptance.
 **Carried scope:** 50 previously acknowledged artifacts, zero newly acknowledged; nine unmet v3.0 requirements and all Phase 12/14 host/remote stops remain unchanged.
 **Archive:** [roadmap](milestones/v4.0-ROADMAP.md), [requirements](milestones/v4.0-REQUIREMENTS.md), [audit](milestones/v4.0-MILESTONE-AUDIT.md), [phase records](milestones/v4.0-phases/).
-**Ship checkpoint:** Combined PR #46 passes hosted native/Emscripten checks but fails inherited held-input capture; no merge or release occurred. The owner approved the [v4.0-only publication scope](milestones/v4.0-SHIP-SCOPE.md); the agent is carrying it through candidate-specific CI, merge and release checks.
+**Publication:** [PR #47](https://github.com/szTheory/muhtari/pull/47) and [release PR #48](https://github.com/szTheory/muhtari/pull/48) merged; [v0.12.0](https://github.com/szTheory/muhtari/releases/tag/v0.12.0) is published. Candidate CI, release-PR CI and release succeed. [Ship receipt](milestones/v4.0-SHIP.md) preserves source-specific checks and earlier failed combined-source history. No old host retry is authorized.
 
 ---
 

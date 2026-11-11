@@ -131,6 +131,10 @@ evidence.
     record newly reproduced lessons there with evidence. Inbound lessons remain hypotheses until reproduced here.
     Keep lessons in project memory by default; export from the ledger's template only when explicitly requested.
 
+Milestone scoping and phase discussion use `.planning/research/fan-out/prompt.txt`;
+the owner's research, autonomous follow-through and useful early verification
+defaults are recorded in `.planning/INTENT.md` under "Retain useful understanding".
+
 ## GSD summaries
 
 Every plan SUMMARY carries `requirements-completed:` and a block-style `coverage:` list. Each entry has `id`,

@@ -1,35 +1,33 @@
 ---
 gsd_state_version: "1.0"
-milestone: v4.0
-status: milestone_completed
-stopped_at: Approved v4.0-only shipping tracked by PR 47; agent owns exact-source CI and release checks
-last_updated: "2026-11-10T22:49:04.667Z"
+milestone: v5.0
+milestone_name: Downloadable WebAssembly core
+status: planning
+last_updated: "2026-11-11T01:50:30.726Z"
 last_activity: 2026-11-10
-last_activity_desc: "Approved v4.0-only milestone shipped through PR #47"
-state_head: 0a79e1ed403d6e00f185f48abada50a09de6e3e8
 progress:
   total_phases: 2
-  completed_phases: 2
-  total_plans: 2
-  completed_plans: 2
-  percent: 100
-milestone_name: Browser/WebAssembly core readiness
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See [PROJECT.md](PROJECT.md), [v4.0 requirements](milestones/v4.0-REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-10.
+See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-10.
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** The owner-approved v4.0-only publication is tracked in [PR #47](https://github.com/szTheory/muhtari/pull/47). The combined source and failed host evidence remain preserved under superseded PR #46.
+**Current focus:** Phase 17 measured milestone tune-up is ready to plan; Phase 18 prepares the source-bound Emscripten release bundle. Six v5.0 requirements are mapped and none is accepted. The owner authorized autonomous local execution; public rehearsal, publication, merge and new host/remote actions retain their boundaries. v4.0 shipped through PR #47/package v0.12.0; its [ship receipt](milestones/v4.0-SHIP.md) preserves source-specific and earlier failed evidence.
 
 ## Current Position
 
-Phase: Milestone v4.0 complete
-Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-11-10 -- Approved v4.0-only milestone shipped through PR #47
+Phase: 17 of 18 (Measured milestone tune-up); 0/2 milestone phases complete
+Plan: Not started (plans TBD)
+Status: Ready to plan
+Last activity: 2026-11-10 — v5.0 roadmap created; all six requirements mapped
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -44,7 +42,7 @@ Inherited todos and optional seeds retain their dispositions; no extra v4.0 requ
 
 ### Blockers/Concerns
 
-- No local v4.0 acceptance gap remains. PR #46’s combined-source hosted native/Emscripten checks passed, but its inherited input capture gate failed. PR #47 carries only the approved v4.0 source and preserves main’s existing checks. Candidate-specific hosted acceptance is owned by the agent. No old host retry is authorized. Phase 12's exact diagnostic-app request was denied before preflight/content and must not be retried; its host/remote stops and Phase 14's spent host scope remain binding. This milestone renews none of them.
+- No local v4.0 acceptance gap remains. PR #46’s combined-source hosted native/Emscripten checks passed, but its inherited input capture gate failed. PR #47 carries only the approved v4.0 source and preserves main’s existing checks. Candidate-specific hosted acceptance passed; PR #47 and release PR #48 merged, and v0.12.0 is published. No old host retry is authorized. Phase 12's exact diagnostic-app request was denied before preflight/content and must not be retried; its host/remote stops and Phase 14's spent host scope remain binding. This milestone renews none of them.
 - The loader contract is settled and verified offline. Browser/device behavior, Playstead and prior host scopes remain outside acceptance; hosted Windows native/quality execution passed at the exact source recorded in the ship receipt.
 
 ## Deferred Items
@@ -94,19 +92,12 @@ At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Sou
 ## Session Continuity
 
 Last session: 2026-11-10
-Stopped at: v4.0-only publication tracked by PR #47; all earlier host stops preserved
+Stopped at: v5.0 roadmap created; Phase 17 ready to plan under authorized autonomous local scope
 Resume file: None
-Next command: $gsd-new-milestone after the agent confirms PR #47 and release-PR health. Resume $gsd-ship 16 only to finish that already approved ship scope.
+Next command: $gsd-autonomous — resume the authorized v5.0 local scope; agent reconciles the live plan index and gathers Phase 17 context before planning.
 
 ## Operator Next Steps
 
-- No owner input is needed; the narrower publication scope is approved.
-- Agent: preserve all host stops, reconcile the chosen source/verification and carry the chosen scope through CI and ship. Do not blindly rerun $gsd-ship 16 on the combined branch.
-
-Context can be cleared. The agent owns source/receipt and service-health preflight on resumption. No host or remote allowance is renewed by this handoff.
-
-Ship 16 selected the archived final phase and created PR #46 for the entire canonical milestone branch, including Phase 15 and retained v3.0 tooling. The agent owns exact-source CI, service-health and release checks. See milestones/v4.0-SHIP.md for local receipts.
-
-Archive compatibility: OpenGSD 1.20.0 phase-op may return a null directory for archived Phase 16. Resolve it with the same runtime’s `query find-phase 16 --raw` before ship preflight, as GSD-HANDOFF documents; canonical verification and roadmap completion remain mandatory. No owner repair is needed.
-
-The locally verified candidate is phase/16-offline-webassembly-core in .worktrees/phase-16-ship, based on origin/main, with no remote run or PR. The agent selects that worktree internally if authorized. Root remains canonical and its source is preserved.
+- Agent continues the authorized autonomous v5.0 scope through Phase 17 context/planning and all runnable local work; ordinary in-scope decisions need no routine confirmation. No owner action is needed.
+- Preserve denied/spent Phase 12/14 host scopes and the nine deferred v3.0 requirements. Public rehearsal, publication, merge, new host/remote actions and material scope changes retain their boundaries.
+- Root is canonical; older dirty worktrees are preserved. Do not import them without ancestry/content reconciliation. The isolated v4.0 candidate shipped; no old ship command needs replaying.

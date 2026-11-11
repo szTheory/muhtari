@@ -15,9 +15,20 @@ that any host can embed.
 
 ## Current State
 
-Planning milestone **v4.0 — Browser/WebAssembly core readiness** is verified and archived locally on 2026-11-10. All five requirements passed: one measured budget-check improvement and the pinned Emscripten core with direct offline Node lifecycle, deterministic native parity, refusal/replay/isolation and bounded reporting. Both local workflows, source reviews and the independent integration audit passed. Shipping, hosted Windows evidence, merge and package release remain pending; no browser/device behavior or performance is claimed. See the [v4.0 audit](milestones/v4.0-MILESTONE-AUDIT.md) and [rolling roadmap](PRODUCT-ROADMAP.md).
+Planning milestone **v4.0 — Browser/WebAssembly core readiness** is verified and archived locally on 2026-11-10. All five requirements passed: one measured budget-check improvement and the pinned Emscripten core with direct offline Node lifecycle, deterministic native parity, refusal/replay/isolation and bounded reporting. Both local workflows, source reviews and the independent integration audit passed. The approved isolated core shipped in PR #47 and package v0.12.0 after successful candidate and release-PR CI; no browser/device behavior or performance is claimed. See the [v4.0 audit](milestones/v4.0-MILESTONE-AUDIT.md) and [rolling roadmap](PRODUCT-ROADMAP.md).
 
 v3.0 remains closed with deferred scope: Phase 13 passed, Phase 12 remains accepted 0/4 and Phase 14 remains gaps_found at 20/27. Its nine unmet requirements and original denied/spent host scopes are unchanged. The root checkout remains canonical and older dirty worktrees are preserved.
+
+## Current Milestone: v5.0 Downloadable WebAssembly core
+
+**Goal:** Host integrators can obtain a source-bound Emscripten libretro bundle, verified from its extracted contents and ready for the existing release pipeline.
+
+**Target features:**
+- Measured milestone tune-up with current release/docs and evidence-specific efficiency dispositions.
+- One matched loader/Wasm archive with identity, integration instructions and audited notices.
+- Extracted offline lifecycle/parity checks and strict existing release security contracts extended to the new variant.
+
+The owner authorized autonomous local execution and ordinary recommendation following. Public rehearsal, publication, merge, new host/remote actions and the prior v3.0 stops keep their separate boundaries.
 
 <details>
 <summary>Historical v1.0 and v2.0 phase-position receipts (superseded at milestone close)</summary>
@@ -158,7 +169,14 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 ### Active
 
-No next milestone is started. v4.0 requirements are validated in the [archive](milestones/v4.0-REQUIREMENTS.md); preparing and confirming shipping is the next action. The nine unmet v3.0 requirements remain deferred in their archive and are not represented as completed.
+- [ ] TUNE-09: Current release/docs and measured quality/efficiency dispositions before feature work.
+- [ ] WASM-05: One source-bound, exact-member Emscripten libretro archive.
+- [ ] WASM-06: The cleanly extracted archive passes the offline native/Node oracle and representative fault controls.
+- [ ] WASM-07: Pinned generated-runtime distribution rights and required notices are audited.
+- [ ] WASM-08: Exact release, checksum, attestation, tamper/download and rehearsal contracts cover the new archive while preserving native assets.
+- [ ] WASM-09: Integrators have concise package/loading instructions and explicit evidence limits.
+
+The nine unmet v3.0 requirements remain deferred, with their original evidence and host/remote stops unchanged.
 
 ### Out of Scope
 
@@ -294,4 +312,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-10 after v4.0 local milestone completion*
+*Last updated: 2026-11-10 after autonomous v5.0 scope selection*
