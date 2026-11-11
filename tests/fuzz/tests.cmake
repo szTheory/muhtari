@@ -201,9 +201,14 @@ else()
     LABELS fuzz portable TIMEOUT 10)
 
   # The run target's seeds, an empty input among them, and its regressions.
+  set(fuzz_run_replay_timeout 14)  # ceil(2 x 6.64s), complete run40414104123/job121892328427; scales retained.
+  if(WIN32)
+    # ceil(2 x 12.94s), complete run43070407554/job130696485965.
+    set(fuzz_run_replay_timeout 26)
+  endif()
   muhtari_add_test(NAME fuzz.regress.run
     COMMAND muhtari-fuzz-run-replay --seeds ${fuzz_run_regress}
-    LABELS fuzz portable TIMEOUT 14)  # ceil(2 x 6.64s), complete Windows x64 run40414104123/job121892328427; scales retained.
+    LABELS fuzz portable TIMEOUT ${fuzz_run_replay_timeout})
   # Fault prevented: the run replay passing having run nothing.
   set(fuzz_cmd ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:muhtari-fuzz-run-replay>)
   string(REPLACE ";" "$<SEMICOLON>" fuzz_cmd "${fuzz_cmd}")

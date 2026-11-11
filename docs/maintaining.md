@@ -10,7 +10,8 @@ Nobody tags or uploads by hand. `.github/workflows/release.yml` does every step:
 1. A pull request is squash-merged into `main`. Its title becomes the commit subject, and release-please reads
    that Conventional Commit to decide the next version: before 1.0, `feat` and a breaking change bump the minor
    version, `fix` and `perf` bump the patch, and `docs`, `chore`, `ci`, `test`, `build`, `refactor` and `style` cut
-   no release. Write `ci:`, not `fix(ci):`, for pipeline work.
+   no release. Write `ci:`, not `fix(ci):`, for pipeline work, except an owner-approved patch release
+   recovering an unpublished tagged version blocked by a measured CI-bound defect; preserve the failed tag and draft.
    Milestone names in `.planning/` are planning labels, not release names, so a phase pull request keeps a
    neutral Conventional Commit title and release-please picks the next 0.x version; no `Release-As` override or
    package rename follows from a milestone.
@@ -24,13 +25,13 @@ Nobody tags or uploads by hand. `.github/workflows/release.yml` does every step:
 5. `release-ci` runs the whole of CI again on the release's commit, the `sha` release-please reports, never the
    commit that started the run.
 6. `publish` runs `scripts/publish.sh` on the draft, found by its release ID:
-   - `prepare`: exactly the 18 zips, every build leg's recorded commit equal to the release commit, no firmware or
+   - `prepare`: exactly the 19 zips, every build leg's recorded commit equal to the release commit, no firmware or
      known ROM in any zip (`tests/cmake/firmware_scan.cmake`), `SHA256SUMS`;
    - `upload`, then `actions/attest` over `SHA256SUMS`;
    - `attested`: each zip's attestation verifies from `refs/heads/main` and a copy with its last byte flipped does
      not;
    - publish the draft as the latest release;
-   - `verify`: `attested` again, `gh release verify`, 19 non-empty assets, and every zip downloaded from the
+   - `verify`: `attested` again, `gh release verify`, 20 non-empty assets, and every zip downloaded from the
      release's own `releases/download/<tag>/` URL matches `SHA256SUMS` and verifies as signed by `release.yml` from
      `refs/heads/main`.
 7. `install-line-latest` runs the README's install line verbatim on `macos-15` against the latest release.
@@ -81,7 +82,7 @@ prerelease.
 
 - **A real release:** open the failed run and choose "Re-run failed jobs". `publish` is safe to re-run: uploads
   replace the draft's assets, and on a release already published it only runs `verify`, which exits 0 when the
-  release has its 19 verified assets. Do not choose "Re-run all jobs": release-please then sees the release pull
+  release has its 20 verified assets. Do not choose "Re-run all jobs": release-please then sees the release pull
   request already tagged and skips `publish`.
 - **A failed rehearsal:** choose "Re-run all jobs", which takes a fresh `rehearsal-<run id>-<attempt>` tag, or push
   a new commit. A published tag that was deleted can never be reused under immutable releases. If `cleanup` itself
@@ -105,10 +106,10 @@ Before a phase or milestone is called done:
 
 - no pull request labelled `autorelease: pending` is open (`gh pr list --label 'autorelease: pending'` prints
   nothing), so no release is stuck behind a red check;
-- the latest release is the expected version with 19 assets:
+- the latest release is the expected version with 20 assets:
   `gh release view --json tagName,assets --jq '.tagName, (.assets | length)'`.
 
-Run local workflows in the foreground. An outer command deadline must cover the
+Run local workflows in the background by default. An outer command deadline must cover the
 whole workflow, including its longest permitted test; a 60s wrapper cannot cover
 the publisher controls' 130s allowance. Measure complete expanded work before
 reusing a deadline. The full lightgun NTSC/PAL/prefix/wrap matrix measured 2.1942s

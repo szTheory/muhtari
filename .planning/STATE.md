@@ -104,3 +104,8 @@ Next command: $gsd-new-milestone. The agent first reconciles PR #50, current rel
 - The next owner boundary is `$gsd-new-milestone`. The agent checks current PR #50, main and versioned release receipts before collecting new scope; release verification remains the agent's responsibility.
 - The [ship receipt](milestones/v5.0-SHIP.md) records accepted source/merge/rehearsal evidence, prior failures, calibrated Windows cases and the extended Nightly property limitation. The current release status is available from [PR #50](https://github.com/szTheory/muhtari/pull/50) and [releases](https://github.com/szTheory/muhtari/releases).
 - Preserve the original Phase 12/14 denied/spent scopes and nine deferred v3.0 requirements. No old host scope is renewed. No owner directory switch or routine confirmation is needed.
+
+
+### Current publication recovery
+
+v0.13.0 is tagged but unpublished: exact-source Release run43078250838 hits a stale14s Windows fuzz replay limit. A measured Windows-only26s correction is prepared on `fix/windows-fuzz-replay-deadline`, with local registration/pass/fault checks complete. The agent continues draft-PR CI/review. Publication requires an owner decision on the proposed CI-only patch-release exception in docs/maintaining.md; preserve the failed tag/draft and all older host stops. Do not start another milestone before the publication decision and agent-owned release receipts are reconciled. See [the shipping receipt](milestones/v5.0-SHIP.md#unpublished-tagged-release-replay-deadline-correction).
