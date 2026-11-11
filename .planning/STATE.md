@@ -95,13 +95,13 @@ At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Sou
 ## Session Continuity
 
 Last session: 2026-11-11
-Stopped at: Approved v0.13.1 publication recovery; Windows replay correction in PR #51, CI/review/publication agent-owned
+Stopped at: Immutable v0.13.1 publication in progress; non-release fixture-margin maintenance and current-main CI closure agent-owned
 Resume file: None
-Next action: the active agent continues the approved PR #51 recovery through exact-source CI, merge and v0.13.1 publication. If context is cleared before publication, resume with `$gsd-ship 18`; reconcile PR #51 and current release receipts first, without renewing the failed v0.13.0 attempt. `$gsd-new-milestone` becomes valid only after the recovered version is published and verified. No owner metadata repair, checkout switch or routine CI confirmation is needed.
+Next action: the active agent completes v0.13.1 publication/public-byte verification and the non-release fixture-margin correction on `phase/18-ci-fixture-margins`, including exact-source PR/main CI. If context is cleared before those receipts pass, resume with `$gsd-ship 18`; the agent reconciles service health, PR #52 and the maintenance branch itself, preserving closed attempts. `$gsd-new-milestone` becomes valid after publication and current-main CI closure. No owner metadata repair, checkout switch or routine CI confirmation is needed.
 
 ## Operator Next Steps
 
-- Continue the approved PR #51/v0.13.1 recovery. Do not start `$gsd-new-milestone` until actual publication and exact-source receipts pass; release verification remains the agent's responsibility.
+- Continue v0.13.1 publication and ordinary non-release fixture-margin maintenance. Do not start `$gsd-new-milestone` until public-byte verification and current-main CI receipts pass; the agent owns all checks.
 - The [ship receipt](milestones/v5.0-SHIP.md) records accepted source/merge/rehearsal evidence, prior failures, calibrated Windows cases and the extended Nightly property limitation. The current release status is available from [PR #50](https://github.com/szTheory/muhtari/pull/50) and [releases](https://github.com/szTheory/muhtari/releases).
 - Preserve the original Phase 12/14 denied/spent scopes and nine deferred v3.0 requirements. No old host scope is renewed. No owner directory switch or routine confirmation is needed.
 
@@ -109,3 +109,6 @@ Next action: the active agent continues the approved PR #51 recovery through exa
 ### Current publication recovery
 
 v0.13.0 is tagged but unpublished: exact-source Release run43078250838 hits a stale14s Windows fuzz replay limit. A measured Windows x64-only28s correction is prepared on `fix/windows-fuzz-replay-deadline`, with local registration/pass/fault checks complete. The owner explicitly approved the one-time CI-only v0.13.1 recovery exception on2026-11-11. The agent continues PR #51 CI/review/merge and normal patch publication; preserve the failed tag/draft and all older host stops. Do not start another milestone before agent-owned release receipts pass. See [the shipping receipt](milestones/v5.0-SHIP.md#unpublished-tagged-release-replay-deadline-correction).
+
+
+The fresh qualification of PR #52 passes after the artifact-service outage; the patch merges as f62a74819985513cbed70259747607d4a5069c21 and runs the normal immutable-source publisher. Direct main CI separately reproduces a1s OpenBIOS fixture timeout with15 dependent tests unrun. The actual release build passes that fixture. A bounded non-release maintenance branch restores the measured Windows fixture/PAL/directions margins without changing product behavior, version files, tags, assertions, scales or job caps. This work remains inside the approved shipping recovery; the earlier one-time patch exception is not generalized.

@@ -22,6 +22,10 @@ foreach(input_case IN ITEMS directions proline_two_button proline_one_button joy
   if(input_case STREQUAL "directions")
     # Provisional ceil(2 x 0.98s), macOS x64, run 40227151344.
     set(input_timeout 2)
+    if(WIN32 AND MUHTARI_ARCH STREQUAL "x64")
+      # ceil(2 x 1.73s), complete run43078250375/job130723792822.
+      set(input_timeout 4)
+    endif()
   endif()
   # Other cases: 2 x 0.20s, macOS x64, run 39382016958.
   muhtari_add_test(NAME input.${input_case} COMMAND muhtari-test-input ${input_case}
