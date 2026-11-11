@@ -72,6 +72,43 @@ if command -v sha256sum > /dev/null 2>&1; then sha256sum -- "$@"; else shasum -a
 set(cmd "${CMAKE_COMMAND}" -E env --modify "PATH=path_list_prepend:${WORK}/bin"
   "PUBLISH_WORK=${WORK}" "RUNNER_TEMP=${WORK}/temp"
   GITHUB_REPOSITORY=example/public SOURCE_REF=refs/heads/main)
+
+# A missing portable archive must fail before the publisher can leave a fresh
+# checksum file behind. Keep the native set and six build-leg receipts intact.
+set(prepare_missing "${WORK}/prepare-missing")
+file(MAKE_DIRECTORY "${prepare_missing}/native")
+file(WRITE "${WORK}/bin/cmake" [=[#!/bin/sh
+set -eu
+for arg do
+  case "$arg" in
+    */tests/cmake/firmware_scan.cmake) exit 0 ;;
+  esac
+done
+echo "unexpected cmake call: $*" >&2
+exit 91
+]=])
+file(CHMOD "${WORK}/bin/cmake" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
+file(GLOB native_archives "${WORK}/dist/*.zip")
+foreach(archive IN LISTS native_archives)
+  get_filename_component(name "${archive}" NAME)
+  file(COPY_FILE "${archive}" "${prepare_missing}/${name}")
+endforeach()
+foreach(index RANGE 1 6)
+  file(MAKE_DIRECTORY "${prepare_missing}/native/${index}")
+  file(WRITE "${prepare_missing}/native/${index}/commit.txt" "fixture-sha\n")
+endforeach()
+execute_process(COMMAND ${CMAKE_COMMAND} -E env
+  --modify "PATH=path_list_prepend:${WORK}/bin"
+  "PUBLISH_WORK=${WORK}" "PUBLISH_ROOT=${ROOT}" "CMAKE=${WORK}/bin/cmake"
+  EXPECTED_SHA=fixture-sha sh "${ROOT}/scripts/publish.sh" prepare "${prepare_missing}"
+  RESULT_VARIABLE prepare_rc OUTPUT_VARIABLE prepare_out ERROR_VARIABLE prepare_err)
+if(prepare_rc STREQUAL "0"
+   OR NOT "${prepare_out}${prepare_err}" MATCHES "missing muhtari-libretro-emscripten[.]zip"
+   OR EXISTS "${prepare_missing}/SHA256SUMS")
+  message(FATAL_ERROR "publish preparation must reject an omitted portable ZIP before writing SHA256SUMS; exit ${prepare_rc}: ${prepare_out}${prepare_err}")
+endif()
+message(STATUS "publish: missing portable ZIP is rejected before checksums")
+
 file(WRITE "${WORK}/calls" "")
 execute_process(COMMAND ${cmd} PUBLISH_CASE=unavailable sh "${ROOT}/scripts/publish.sh" rehearsal-delete rehearsal-fixture
   RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE out)
