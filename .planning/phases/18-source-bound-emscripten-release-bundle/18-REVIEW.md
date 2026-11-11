@@ -1,11 +1,11 @@
 ---
 phase: 18-source-bound-emscripten-release-bundle
-reviewed: 2026-11-11T05:04:23Z
+reviewed: 2026-11-11T05:35:33Z
 depth: standard
-review_scope: interim_code
-snapshot_commit: 082a7fbac36bf446473a4e3b0d716c720b1f9783
+review_scope: round1_recheck_plus_unreviewed_delta
+snapshot_commit: c590569ccac329a70a593d49d07286445cae2674
 diff_base: 744c499
-files_reviewed: 11
+files_reviewed: 17
 files_reviewed_list:
   - scripts/emscripten.sh
   - tests/emscripten/bundle-members.txt
@@ -18,49 +18,60 @@ files_reviewed_list:
   - tests/policy/publish.cmake
   - .github/workflows/ci.yml
   - .github/workflows/release.yml
+  - tests/hygiene/tests.cmake
+  - README.md
+  - docs/libretro.md
+  - PROVENANCE.md
+  - tests/cmake/install_line.cmake
+  - docs/testing.md
 findings:
-  critical: 3
-  warning: 0
+  critical: 0
+  warning: 1
   info: 0
-  total: 3
+  total: 1
   necessity: 0
 status: issues_found
 ---
 
 # Phase 18: Code Review Report
 
-**Reviewed:** 2026-11-11T05:04:23Z  
+**Reviewed:** 2026-11-11T05:35:33Z  
 **Depth:** standard  
-**Files Reviewed:** 11  
-**Status:** issues_found  
-**Review scope:** interim code review of committed snapshot `082a7fb`; integrator documentation/checker review is still pending. This is not phase acceptance or the final review.
+**Files Reviewed:** 17  
+**Status:** issues_found
 
 ## Summary
 
-The publisher now requires a nineteenth ZIP and validates the portable bundle, but the existing required hygiene publisher fixture still constructs and expects the former eighteen-ZIP contract. The new archive path also needs bounded, contained extraction before any scan extracts it. The remaining integrator documentation/checker review is pending; this report covers only the listed committed source snapshot.
+Rechecked the first-round fixes and the remaining release, test, provenance, and integrator-documentation delta at `c590569`. The publisher now validates and bounds the portable ZIP before the generic firmware scan extracts any archive. The validator's per-member 8 MiB and aggregate 16 MiB uncompressed limits have a stated scratch-disk objective, use the measured 321,034-byte current package (191,040-byte Wasm) as their basis, and have pass plus over-limit controls that assert rejection before extraction. WORK and extraction symlink controls preserve outside sentinels. The packaged paths and the Node example in `docs/libretro.md` agree, and its evidence claims stop at offline Node/native behavior.
 
-## Critical Issues
+The prior interim blockers CR-01 through CR-03 are fixed and rechecked below. One warning remains: the README checker looks for URL text, so it does not prove that the URL and guide remain clickable Markdown links. This is a code-review disposition only; the final current-source native and SDK gates remain with the executor.
 
-### CR-01: [BLOCKER] Required publisher hygiene fixture still targets 18 archives
+## Warnings
 
-**File:** `scripts/publish.sh:29,53,64-74`; affected existing test `tests/hygiene/tests.cmake:236-291`  
-**Issue:** `names()` adds `muhtari-libretro-emscripten.zip`, `prepare()` now requires 19 archives and invokes the bundle validator with the Emscripten evidence tree. The existing `policy.publish_set` fixture still creates 18 ZIPs and expects `prepare` to succeed with 18 checksums; it now fails first because the portable ZIP is missing. Its negative control still expects the missing `muhtari-runner-windows-x64.zip` diagnostic, but `prepare` reports the newly missing portable ZIP instead. This makes the required hygiene test suite fail on the reviewed change.
-**Fix:** Update the hygiene fixture to include a valid synthetic portable ZIP and matching evidence/native receipt, assert 19 sorted checksums, and target an omission whose expected diagnostic is still the first failure.
+### WR-01: README contract check accepts plain text in place of links
 
-### CR-02: [BLOCKER] Portable ZIP is extracted without a pre-extraction size bound
+**File:** `tests/cmake/install_line.cmake:36,44`  
+**Issue:** The checker uses `string(FIND)` for the expected URL and guide path anywhere in the README section. A change from Markdown links to plain text, or to a fenced example containing the expected text, still passes even though the README no longer provides the required clickable download and guide links. The current README has both links; the recurring check does not protect that contract.  
+**Fix:** Match the Markdown link forms (for example, `[version-free download URL](${portable_url})` and `[portable host instructions](${portable_guide})`) and exercise a copy with link markup removed through the existing checker, expecting a named failure.
 
-**File:** `scripts/publish.sh:64-74`; `tests/emscripten/bundle.cmake:245-296`; existing scan extraction at `tests/cmake/firmware_scan.cmake:198-199`  
-**Issue:** `prepare` sends all ZIPs, including the new portable archive, through `firmware_scan.cmake` before invoking the new bundle validator. That scan extracts the archive before the portable member checks run. The bundle validator also calls `file(ARCHIVE_EXTRACT)` after checking paths and file types, without checking per-member or aggregate uncompressed sizes. A crafted ZIP with the required member names but an extreme declared expansion can consume runner disk before hash and source-identity checks reject its contents; path checks in the later validator cannot protect the earlier extraction.
-**Fix:** Run strict portable-bundle preflight before the portable ZIP reaches the existing scan, and reject excessive per-member/aggregate uncompressed sizes before either extraction. Derive the accepted sizes from the measured build outputs and fixed notice/document inputs, and cover the bound with an over-limit fault control.
+## Resolved Interim Findings
 
-### CR-03: [BLOCKER] Lexical WORK containment permits extraction cleanup through a symlink
+These IDs and descriptions are retained from the interim report at snapshot `082a7fb` for auditability; they are not active findings in this recheck.
 
-**File:** `tests/emscripten/bundle.cmake:25-39,293-296`  
-**Issue:** `_muhtari_bundle_normalize` checks that `WORK` is lexically below `BUILD` using normalized path strings, but does not resolve or reject symlinked path components. `muhtari_bundle_validate` then removes `${WORK}/extract` and extracts into it. If a `WORK` path below `BUILD` is a symlink to an outside directory, the prefix check passes and the cleanup/extraction path resolves outside the claimed build-owned area, risking deletion or overwrite of unrelated files.
-**Fix:** Resolve the existing `BUILD` and `WORK` path components before the containment check, reject symlinked `WORK`/extraction paths, and create/use only a fresh private extraction directory whose resolved path is inside the resolved build directory.
+### CR-01: Required publisher hygiene fixture still targets 18 archives — fixed
+
+`tests/hygiene/tests.cmake` now constructs a valid synthetic source-bound portable ZIP and matching producer evidence, retains six native commit receipts, asserts 19 ordered checksums, and runs the real firmware scan over all 19 ZIPs. The omission control still targets a missing native ZIP and checks its diagnostic.
+
+### CR-02: Portable ZIP was extracted before validation and lacked expansion bounds — fixed
+
+`scripts/publish.sh` calls strict bundle validation before the firmware scan. `tests/emscripten/bundle.cmake` reads the uncompressed sizes before `file(ARCHIVE_EXTRACT)`, rejects a member above 8 MiB or a total above 16 MiB, and tests both faults before an extraction directory is created. This is an uncompressed expansion bound; it does not reintroduce the retired compressed archive quota.
+
+### CR-03: Lexical WORK containment permitted cleanup through a symlink — fixed
+
+The validator rejects symlinked WORK path components, verifies physical containment, and checks the existing extraction tree before cleanup. Controls exercise both an outside WORK symlink and an outside extraction symlink and verify their outside sentinels remain unchanged.
 
 ---
 
-_Reviewed: 2026-11-11T05:04:23Z_  
+_Reviewed: 2026-11-11T05:35:33Z_  
 _Reviewer: the agent (gsd-code-reviewer)_  
 _Depth: standard_
