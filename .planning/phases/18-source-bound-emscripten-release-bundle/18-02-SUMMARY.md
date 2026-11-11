@@ -95,10 +95,10 @@ metrics:
 ## Recorded Results
 
 - Pass, exit 0: synthetic bundle controls and offline publisher controls; expected omissions, source mismatch, damage, signer/ref and download corruption were rejected.
-- Pass, exit 0: final source `f400a76ee9e66fbd37e709a8628f1e6486899c22`; `python3 build/ship-local-gate.py` (692/692 CI tests, 6/6 release tests; CTest 102.86s). Both native JUnit inventory checks passed.
+- Pass, exit 0: final source `f400a76ee9e66fbd37e709a8628f1e6486899c22`; python3 build/ship-local-gate.py (692/692 CI tests, 6/6 release tests; CTest 102.86s). Both native JUnit inventory checks passed.
 - Pass, exit 0: `sh scripts/emscripten.sh build/ci` (~16s); 4/4 package tests and all four SDK JUnit entries passed, with offline Node/native parity.
 - Pass, exit 0: the production publisher branch accepted the final SDK archive and rejected each of five qualified-notice mutations (~22s). `unzip -t` passed; the archive had the exact 14 manifest members, and its embedded commit and source-ID sidecar matched the final checkout/build.
-- Pass, exit 0: `python3 build/phase18-hygiene-gate.py`; 30/30 hygiene tests passed in 51.96s using the locally qualified one-slot FIFO jobserver. Workflow preset, tests and deadlines were unchanged.
+- Pass, exit 0: python3 build/phase18-hygiene-gate.py; 30/30 hygiene tests passed in 51.96s using the locally qualified one-slot FIFO jobserver. Workflow preset, tests and deadlines were unchanged.
 - URLs for all checks: N/A-local. No browser, device, remote CI, rehearsal, publication, push, or merge was run.
 
 ### Preserved failures and fixes
@@ -122,5 +122,5 @@ None. The ZIP remains planned for a separately authorized future release.
 ## Self-Check: PASSED
 
 - This summary records requirements WASM-08 and WASM-09 with automated, local evidence and `human_judgment: false`.
-- Final gates and the two preserved gate failures name their commands, outcomes, source commits, and causes/fixes.
+- Evidence references identify commands, outcomes and source commits.
 - The source snapshot passed all final gates at `f400a76`; build evidence remains ignored.
