@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.1](https://github.com/szTheory/muhtari/compare/v0.13.0...v0.13.1) (2026-11-11)
+
+
+### Bug Fixes
+
+* recover the unpublished WebAssembly release ([#51](https://github.com/szTheory/muhtari/issues/51)) ([fefff42](https://github.com/szTheory/muhtari/commit/fefff42e0981015b040b993577d188914ce7ce8c))
+
 ## [0.13.0](https://github.com/szTheory/muhtari/compare/v0.12.0...v0.13.0) (2026-11-11)
 
 
