@@ -2,7 +2,7 @@
 title: "Product roadmap (rolling)"
 summary: "Immediate / Near / Mid / Long direction for muhtari with evidence and promotion triggers."
 read_when: "At every new-milestone and complete-milestone step, and when a finding changes priorities."
-updated: 2026-11-10
+updated: 2026-11-11
 ---
 
 # Product roadmap (rolling)
@@ -15,18 +15,13 @@ At every milestone boundary, reconcile shipped and partial work, keep unresolved
 debt visible, re-rank the horizons, record why the order changed, promote only
 scoped work, and snapshot this file at close.
 
-## Immediate — downloadable WebAssembly core
+## Immediate — ship the verified portable core
 
 v4.0's isolated source shipped in PR #47 and package v0.12.0 after candidate,
 release-PR and release checks passed. Its loader/Wasm remain CI artifacts; published
 assets contain the 18 native ZIPs plus checksums. See the [ship receipt](milestones/v4.0-SHIP.md).
 
-v5.0 promotes the next bounded SEED-008 slice: mandatory measured tune-up, then one
-source-bound Emscripten libretro ZIP, generated-runtime provenance, clean-extraction
-offline parity and extension of existing release integrity contracts. The owner
-requested relevant-role fan-out and autonomous recommendation following; [the synthesis](research/v5.0/SUMMARY.md)
-records three independent lenses and an adversarial pass. It selects local readiness;
-actual public rehearsal, publication and merge retain the ship boundary.
+v5.0 is verified locally: the measured tune-up, matched source-bound Emscripten ZIP, five pinned runtime notices, clean-extracted offline parity and existing release integrity contracts passed. [The audit](milestones/v5.0-MILESTONE-AUDIT.md) records all six requirements. The next action is `$gsd-ship 18` under separate remote shipping authority; no new implementation milestone is selected. The relevant-role research and autonomous recommendation follow-through are retained in [the synthesis](research/v5.0/SUMMARY.md).
 
 No browser player, device code, UI, real-browser performance, power or prior host
 acceptance is included. Muhtari still has three deliverables. Use the existing
@@ -86,3 +81,5 @@ example; reproduce sibling lessons locally before adopting them.
   Atari 2600 keep their existing promotion triggers.
 
 | 2026-11-10 | Promoted v5.0 downloadable Emscripten libretro packaging after successful v4.0 publication | Three specialist reviews and an adversarial synthesis identified the concrete CI-artifact-only gap; local package/release integrity preparation advances browser integrators without UI or renewed host authority. |
+
+| 2026-11-11 | Verified and archived v5.0 locally; prioritize shipping the concrete bundle | All six requirements and integration flows pass. Existing public package remains v0.12.0 until separately authorized shipping; browser/player and prior host claims remain outside scope. |

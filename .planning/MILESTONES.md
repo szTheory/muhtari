@@ -1,5 +1,21 @@
 # Project Milestones: muhtari
 
+## v5.0 Downloadable WebAssembly core (Verified locally: 2026-11-11)
+
+**Phases completed:** 2 phases, 3 plans, 7 tasks (actual plan blocks; SDK prose count was 4)
+
+**Key accomplishments:**
+- Current publication records and original CI receipts are qualified alongside six measured quality dimensions and a reproducible local baseline.
+- A pinned, source-bound libretro ZIP now carries exact runtime notices and passes clean-extraction lifecycle checks.
+- The source-bound Emscripten ZIP now travels through the existing exact-source release path with local native, SDK, and hygiene gates passing.
+
+**Closeout type:** `verified_closeout`; all six scoped requirements and both phases pass. Known verification overrides: 0 newly acknowledged, 50 carried forward from prior closes. The nine v3.0 requirement gaps and original host/remote stops remain unchanged.
+**Publication:** Pending separate ship authority; v0.12.0 remains the published package. No public rehearsal, push, dispatch, merge or publication was run.
+**Archive:** [roadmap](milestones/v5.0-ROADMAP.md), [requirements](milestones/v5.0-REQUIREMENTS.md), [audit](milestones/v5.0-MILESTONE-AUDIT.md), [phase records](milestones/v5.0-phases/).
+**Next:** `$gsd-ship 18` when the owner chooses to authorize remote shipping.
+
+---
+
 ## v4.0 — Browser/WebAssembly core readiness (Shipped: 2026-11-10)
 
 **Closeout type:** `verified_closeout`; all five scoped requirements pass. Planning completion is separate from package release. The approved isolated source subsequently shipped through PR #47 and package v0.12.0; see the ship receipt.

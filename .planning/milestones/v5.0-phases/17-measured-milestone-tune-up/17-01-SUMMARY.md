@@ -74,7 +74,7 @@ status: complete
 
 ## Files Created/Modified
 
-- [17-TUNEUP.md](./17-TUNEUP.md) — publication correction, six-dimensional assessment, source-specific CI timings, cancellation limits, and local baseline.
+- [17-TUNEUP.md](17-TUNEUP.md) — publication correction, six-dimensional assessment, source-specific CI timings, cancellation limits, and local baseline.
 - `17-01-SUMMARY.md` — execution evidence and requirement coverage.
 
 ## Decisions Made

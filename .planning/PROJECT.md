@@ -15,11 +15,11 @@ that any host can embed.
 
 ## Current State
 
-Planning milestone **v4.0 — Browser/WebAssembly core readiness** is verified and archived locally on 2026-11-10. All five requirements passed: one measured budget-check improvement and the pinned Emscripten core with direct offline Node lifecycle, deterministic native parity, refusal/replay/isolation and bounded reporting. Both local workflows, source reviews and the independent integration audit passed. The approved isolated core shipped in PR #47 and package v0.12.0 after successful candidate and release-PR CI; no browser/device behavior or performance is claimed. See the [v4.0 audit](milestones/v4.0-MILESTONE-AUDIT.md) and [rolling roadmap](PRODUCT-ROADMAP.md).
+v5.0 Downloadable WebAssembly core is verified locally and archived on 2026-11-11: all six requirements, two phases and the independent integration audit passed. The source-bound fourteen-member portable ZIP carries matched loader/Wasm, source/toolchain identities, qualified runtime notices and reproducible instructions. Existing release contracts now include nineteen ZIPs/twenty assets while preserving all eighteen native archives. This is local readiness; publication and its external checks retain separate authority.
 
-v3.0 remains closed with deferred scope: Phase 13 passed, Phase 12 remains accepted 0/4 and Phase 14 remains gaps_found at 20/27. Its nine unmet requirements and original denied/spent host scopes are unchanged. The root checkout remains canonical and older dirty worktrees are preserved.
+v4.0 shipped through PR #47 and package v0.12.0, which remains the published package. The nine v3.0 gaps and original denied/spent host/remote scopes are unchanged. Root remains canonical and older dirty worktrees remain preserved.
 
-## Current Milestone: v5.0 Downloadable WebAssembly core
+## Latest Verified Milestone: v5.0 Downloadable WebAssembly core
 
 **Goal:** Host integrators can obtain a source-bound Emscripten libretro bundle, verified from its extracted contents and ready for the existing release pipeline.
 
@@ -172,7 +172,7 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 ### Active
 
-No unverified v5.0 implementation requirement remains. Milestone audit and local archive are in progress; public shipping retains separate authority.
+No unverified v5.0 implementation requirement remains. Local archive and cleanup are complete; public shipping retains separate authority.
 
 The nine unmet v3.0 requirements remain deferred, with their original evidence and host/remote stops unchanged.
 
@@ -310,4 +310,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-11 after Phase 18 verification*
+*Last updated: 2026-11-11 after v5.0 local milestone closeout*

@@ -2,19 +2,19 @@
 gsd_state_version: "1.0"
 milestone: v5.0
 milestone_name: Downloadable WebAssembly core
-current_phase: 18
-status: completed
+status: Awaiting next milestone
 stopped_at: Phase 18 complete — all phases complete
-last_updated: "2026-11-11T06:15:24.930Z"
+last_updated: "2026-11-11T06:25:02.112Z"
 last_activity: 2026-11-11
-last_activity_desc: Phase 18 complete
-state_head: 28246dbda377ca619958c10e38d454aaa385a330
+last_activity_desc: Milestone v5.0 completed and archived
+state_head: ade501910582109624ef36bc849fda89344329d6
 progress:
   total_phases: 2
   completed_phases: 2
   total_plans: 3
   completed_plans: 3
   percent: 100
+current_phase: 18
 ---
 
 # Project State
@@ -23,14 +23,13 @@ progress:
 
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-10.
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** Both v5.0 phases and all six requirements passed local verification. Milestone audit and archive are in progress. The portable ZIP is bound to the final product snapshot; public rehearsal, publication, merge and new host/remote actions remain separate authority boundaries. v4.0 remains the published package v0.12.0; its ship receipt preserves earlier failed evidence.
+**Current focus:** v5.0 is verified and archived locally; all six requirements and both phases passed. The next boundary is separately authorized shipping via `$gsd-ship 18`. The portable archive is source-bound local evidence; v0.12.0 remains the published package. Earlier denied/spent host scopes and the nine v3.0 gaps remain intact.
 
 ## Current Position
 
-Phase: 18
-Plan: Not started
-Status: All phases complete
-Last activity: 2026-11-11 — Phase 18 complete
+Milestone: v5.0 complete locally (phases 17–18, three plans, seven tasks)
+Status: Verified local closeout; shipping pending separate authority
+Last activity: 2026-11-11 — audit, archive and cleanup completed
 Progress: [██████████] 100%
 
 ## Performance Metrics
@@ -95,13 +94,12 @@ At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Sou
 
 ## Session Continuity
 
-Last session: 2026-11-10
-Stopped at: Phase 18 complete — all phases complete
+Last session: 2026-11-11
+Stopped at: v5.0 verified local closeout; next action is separately authorized shipping
 Resume file: None
-Next command: $gsd-audit-milestone — agent is continuing the authorized local lifecycle; no owner action is needed.
+Next command: $gsd-ship 18 — run when the owner chooses to authorize remote shipping. Context can be cleared; the agent owns health/receipt preflight and archived-path resolution.
 
 ## Operator Next Steps
 
-- Agent continues the authorized v5.0 milestone audit, local archive and cleanup. Both implementation phases are verified; no owner action is needed for this local lifecycle.
-- Preserve denied/spent Phase 12/14 host scopes and the nine deferred v3.0 requirements. Public rehearsal, publication, merge, new host/remote actions and material scope changes retain their boundaries.
-- Root is canonical; older dirty worktrees are preserved. Do not import them without ancestry/content reconciliation. The isolated v4.0 candidate shipped; no old ship command needs replaying.
+
+- Start the next milestone with $gsd-new-milestone
