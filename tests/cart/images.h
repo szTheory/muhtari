@@ -74,4 +74,7 @@ size_t images_bankset(uint8_t *buf, uint32_t half_kib, uint8_t ram);
 /* A public-path XM/YM note program with valid v4 YM IRQ wiring. */
 size_t images_ym2151(uint8_t *buf);
 
+/* The same legal YM workload with sustained register traffic. */
+size_t images_ym2151_worst(uint8_t *buf);
+
 #endif /* MUHTARI_TEST_IMAGES_H */

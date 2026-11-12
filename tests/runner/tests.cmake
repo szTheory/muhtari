@@ -9,6 +9,111 @@
 # EMULATOR is the build's CMAKE_CROSSCOMPILING_EMULATOR, so an emulated lane
 # runs its own guest binary.
 if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
+  if(CASE STREQUAL "ym.public_runner")
+    if(NOT EXISTS "${DIR}/ym2151.a78" OR NOT EXISTS "${DIR}/ym2151-worst.a78")
+      message(FATAL_ERROR "YM fixture setup did not produce both build-local images")
+    endif()
+    file(MAKE_DIRECTORY "${WORK}")
+    foreach(region IN ITEMS ntsc pal)
+      set(image "${DIR}/ym2151.a78")
+      file(SHA256 "${image}" fixture_sha256)
+      set(state2_public "${WORK}/ym-${region}-state2-public.bin")
+      set(state2 "${WORK}/ym-${region}-state2-runner.bin")
+      set(state6 "${WORK}/ym-${region}-state6.bin")
+      set(state_resume "${WORK}/ym-${region}-state-resume.bin")
+      execute_process(COMMAND ${EMULATOR} "${DRIVER}" --public-fixture "${image}"
+        "${state2_public}" "${region}" RESULT_VARIABLE rc OUTPUT_VARIABLE public
+        ERROR_VARIABLE err TIMEOUT 30)
+      if(NOT rc STREQUAL "0")
+        message(FATAL_ERROR "public YM ${region} run failed: ${rc}\n${public}${err}")
+      endif()
+      if(NOT public MATCHES "fixture_sha256 ${fixture_sha256}\n")
+        message(FATAL_ERROR "public YM ${region} did not read the generated fixture bytes")
+      endif()
+      execute_process(COMMAND ${EMULATOR} "${RUN}" --frames 6 --region "${region}"
+        --info --hash-audio --diagnostic --hash-frame 6 --hash-state 2 --hash-state 6
+        --state-at-frame "2:${state2}" --state-at-frame "6:${state6}" "${image}"
+        RESULT_VARIABLE rc OUTPUT_VARIABLE uninterrupted ERROR_VARIABLE err TIMEOUT 30)
+      if(NOT rc STREQUAL "0")
+        message(FATAL_ERROR "runner YM ${region} run failed: ${rc}\n${uninterrupted}${err}")
+      endif()
+      foreach(key IN ITEMS "frame 6 sha256" "state 2 sha256" "audio_pcm_sha256"
+          "audio_frames" "audio_samples" "audio_rate" "audio_behaviour_revision"
+          "audio_synthesis" "diagnostic")
+        string(REGEX MATCH "${key} [^\n\r]*" public_line "${public}")
+        string(REGEX MATCH "${key} [^\n\r]*" runner_line "${uninterrupted}")
+        if(public_line STREQUAL "" OR NOT public_line STREQUAL runner_line)
+          message(FATAL_ERROR "public/runner YM ${region} ${key} differs:\n"
+            "public: ${public_line}\nrunner: ${runner_line}")
+        endif()
+      endforeach()
+      if(NOT uninterrupted MATCHES "region ${region}\n" OR
+          NOT uninterrupted MATCHES "requested_sound [^\n]*ym2151" OR
+          NOT uninterrupted MATCHES "requested_devices savekey,xm\n" OR
+          NOT uninterrupted MATCHES "expansion xm\n")
+        message(FATAL_ERROR "runner did not report the declared YM profile for ${region}:\n${uninterrupted}")
+      endif()
+      string(REGEX MATCH "diagnostic ([0-9a-f]+)" _ "${uninterrupted}")
+      set(mailbox "${CMAKE_MATCH_1}")
+      if(NOT mailbox MATCHES "^[0-9a-f]+$" OR NOT mailbox MATCHES "^8001[0-9a-f][0-9a-f]02")
+        message(FATAL_ERROR "runner YM ${region} timer/busy mailbox is wrong: ${mailbox}")
+      endif()
+
+      execute_process(COMMAND ${EMULATOR} "${RUN}" --frames 4 --region "${region}"
+        --load-state "${state2}" --hash-frame 4 --hash-state 4
+        --state-at-frame "4:${state_resume}" --diagnostic "${image}"
+        RESULT_VARIABLE rc OUTPUT_VARIABLE resumed ERROR_VARIABLE err TIMEOUT 30)
+      if(NOT rc STREQUAL "0")
+        message(FATAL_ERROR "runner YM ${region} state continuation failed: ${rc}\n${resumed}${err}")
+      endif()
+      string(REGEX MATCH "frame 6 sha256 [0-9a-f]+" full_frame "${uninterrupted}")
+      string(REGEX MATCH "frame 4 sha256 [0-9a-f]+" resumed_frame "${resumed}")
+      string(REPLACE "frame 6" "frame 4" full_frame "${full_frame}")
+      string(REGEX MATCH "state 6 sha256 [0-9a-f]+" full_state "${uninterrupted}")
+      string(REGEX MATCH "state 4 sha256 [0-9a-f]+" resumed_state "${resumed}")
+      string(REPLACE "state 6" "state 4" full_state "${full_state}")
+      string(REGEX MATCH "diagnostic [0-9a-f]+" full_mailbox "${uninterrupted}")
+      string(REGEX MATCH "diagnostic [0-9a-f]+" resumed_mailbox "${resumed}")
+      if(full_frame STREQUAL "" OR NOT full_frame STREQUAL resumed_frame OR
+          full_state STREQUAL "" OR NOT full_state STREQUAL resumed_state OR
+          full_mailbox STREQUAL "" OR NOT full_mailbox STREQUAL resumed_mailbox)
+        message(FATAL_ERROR "runner YM ${region} fresh-process continuation differs:\n"
+          "full: ${full_frame} ${full_state} ${full_mailbox}\n"
+          "resume: ${resumed_frame} ${resumed_state} ${resumed_mailbox}")
+      endif()
+      execute_process(COMMAND ${EMULATOR} "${RUN}" --probe "${image}"
+        RESULT_VARIABLE rc OUTPUT_VARIABLE probe ERROR_VARIABLE err TIMEOUT 10)
+      if(NOT rc STREQUAL "0" OR NOT probe MATCHES "sha256 ${fixture_sha256}\n" OR
+          NOT probe MATCHES "sound [^\n]*ym2151" OR
+          NOT probe MATCHES "a78_xm 0x01\n" OR
+          NOT probe MATCHES "a78_audio 0x0008\n" OR
+          NOT probe MATCHES "a78_irq 0x04\n")
+        message(FATAL_ERROR "runner YM probe did not identify the supported declared profile: ${rc}\n${probe}${err}")
+      endif()
+    endforeach()
+    return()
+  endif()
+  if(CASE STREQUAL "runner.ym")
+    set(image "${DIR}/ym2151.a78")
+    if(NOT EXISTS "${image}")
+      message(FATAL_ERROR "YM fixture setup did not produce ${image}")
+    endif()
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --frames 1 --expansion xm --info "${image}"
+      RESULT_VARIABLE rc OUTPUT_VARIABLE accepted ERROR_VARIABLE err TIMEOUT 10)
+    if(NOT rc STREQUAL "0" OR NOT accepted MATCHES "requested_sound [^\n]*ym2151" OR
+        NOT accepted MATCHES "expansion xm\n")
+      message(FATAL_ERROR "explicit selected XM/YM profile was not accepted: ${rc}\n${accepted}${err}")
+    endif()
+    foreach(topology IN ITEMS off xboard)
+      execute_process(COMMAND ${EMULATOR} "${RUN}" --frames 1 --expansion "${topology}" "${image}"
+        RESULT_VARIABLE rc OUTPUT_VARIABLE refused ERROR_VARIABLE err TIMEOUT 10)
+      if(NOT rc STREQUAL "77" OR NOT refused STREQUAL "" OR
+          NOT err MATCHES "unavailable sound configuration: ym2151")
+        message(FATAL_ERROR "unsupported YM topology ${topology} was not refused: ${rc}\n${refused}${err}")
+      endif()
+    endforeach()
+    return()
+  endif()
   if(CASE STREQUAL "hashes_control")
     set(HASHES_FUNCTIONS_ONLY ON)
     include("${HASHES}")
@@ -1462,6 +1567,12 @@ foreach(case IN ITEMS hash hash.repeat help usage.no_args usage.unknown usage.po
     COMMAND ${runner_check} -DCASE=${case} -DFRAMES=${MUHTARI_LONG_RUN} -P ${CMAKE_CURRENT_LIST_FILE}
     LABELS runner portable TIMEOUT 10)
 endforeach()
+
+muhtari_add_test(NAME runner.ym
+  COMMAND ${runner_check} -DDRIVER=$<TARGET_FILE:muhtari-test-ym2151>
+    -DDIR=${PROJECT_BINARY_DIR}/tests/ym2151 -DCASE=runner.ym -P ${CMAKE_CURRENT_LIST_FILE}
+  LABELS audio portable runner TIMEOUT 15)
+set_tests_properties(runner.ym PROPERTIES FIXTURES_REQUIRED ym_carts)
 
 muhtari_add_test(NAME runner.dump_png
   COMMAND ${runner_check} -DCASE=dump_png -DOUT=${PROJECT_BINARY_DIR}/tests/dump.png

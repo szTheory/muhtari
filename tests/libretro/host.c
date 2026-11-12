@@ -2643,6 +2643,241 @@ static void case_audio(void)
     muhtari_destroy(m);
 }
 
+static void check_ym_public_numbers(unsigned region)
+{
+    static uint8_t video_bytes[W * 292u];
+    static int16_t audio_samples[962u];
+    static uint8_t first_video[W * 292u];
+    static int16_t first_audio[962u];
+    muhtari_config config = {0};
+    muhtari *machine = NULL;
+    muhtari_media media = {0};
+    config.size = (uint32_t)sizeof config;
+    config.allocator.alloc = host_alloc;
+    config.allocator.free = host_free;
+    CHECK_EQ_U64(muhtari_create(&config, &machine), MUHTARI_STATUS_OK);
+    if (machine == NULL)
+        return;
+    media.size = (uint32_t)sizeof media;
+    media.image = files[0];
+    media.image_size = file_sizes[0];
+    media.expansion = MUHTARI_EXPANSION_XM;
+    media.region = region == RETRO_REGION_PAL ? MUHTARI_REGION_PAL : MUHTARI_REGION_NTSC;
+    CHECK_EQ_U64(muhtari_load(machine, &media), MUHTARI_STATUS_OK);
+
+    int16_t minimum = INT16_MAX;
+    int16_t maximum = INT16_MIN;
+    uint64_t nonzero = 0u;
+    size_t total = 0u;
+    uint32_t height = region == RETRO_REGION_PAL ? 292u : 242u;
+    for (unsigned frame_index = 0u; frame_index < 6u; frame_index++) {
+        muhtari_frame frame_io = {0};
+        frame_io.size = (uint32_t)sizeof frame_io;
+        frame_io.video = video_bytes;
+        frame_io.video_pitch = W;
+        frame_io.audio = audio_samples;
+        frame_io.audio_capacity = (uint32_t)(sizeof audio_samples / sizeof audio_samples[0]);
+        CHECK_EQ_U64(muhtari_run_frame(machine, &frame_io), MUHTARI_STATUS_OK);
+        uint32_t expected_frame_count =
+            frame_index == 0u ? (region == RETRO_REGION_PAL ? 960u : 54u)
+                              : (region == RETRO_REGION_PAL
+                                     ? 961u + (frame_index & 1u)
+                                     : frame_index <= 2u ? 801u
+                                                         : 800u + ((frame_index + 1u) & 1u));
+        if (frame_io.audio_count != expected_frame_count)
+            fprintf(stderr, "%s YM frame %u sample count: %u (expected %u)\n",
+                    region == RETRO_REGION_PAL ? "pal" : "ntsc", frame_index,
+                    frame_io.audio_count, expected_frame_count);
+        CHECK(frame_io.audio_count == expected_frame_count);
+        total += frame_io.audio_count;
+        for (uint32_t i = 0u; i < frame_io.audio_count; i++) {
+            int16_t sample_value = audio_samples[i];
+            if (sample_value < minimum)
+                minimum = sample_value;
+            if (sample_value > maximum)
+                maximum = sample_value;
+            nonzero += sample_value != 0;
+        }
+        if (frame_index == 0u) {
+            memcpy(first_video, video_bytes, W * height);
+            memcpy(first_audio, audio_samples, frame_io.audio_count * sizeof audio_samples[0]);
+        }
+    }
+    CHECK(total == (region == RETRO_REGION_PAL ? 5768u : 4057u));
+    CHECK(minimum < 0 && maximum > 0 && nonzero != 0u);
+
+    muhtari_span ram = {0};
+    ram.size = (uint32_t)sizeof ram;
+    CHECK_EQ_U64(muhtari_get_memory(machine, MUHTARI_MEMORY_SYSTEM_RAM, &ram),
+                 MUHTARI_STATUS_OK);
+    CHECK(ram.data != NULL && ram.bytes >= 0xB00u);
+    if (ram.data != NULL && ram.bytes >= 0xB00u) {
+        const uint8_t *mailbox = ram.data + 0xA00u;
+        CHECK_EQ_U64(mailbox[0], 0x80u);
+        CHECK_EQ_U64(mailbox[1], 0x01u);
+        CHECK(mailbox[2] != 0u);
+        CHECK_EQ_U64(mailbox[3], 0x02u);
+    }
+    CHECK_EQ_U64(muhtari_power_cycle(machine), MUHTARI_STATUS_OK);
+    muhtari_frame after_reset = {0};
+    after_reset.size = (uint32_t)sizeof after_reset;
+    after_reset.video = video_bytes;
+    after_reset.video_pitch = W;
+    after_reset.audio = audio_samples;
+    after_reset.audio_capacity = (uint32_t)(sizeof audio_samples / sizeof audio_samples[0]);
+    CHECK_EQ_U64(muhtari_run_frame(machine, &after_reset), MUHTARI_STATUS_OK);
+    CHECK(after_reset.audio_count == (region == RETRO_REGION_PAL ? 960u : 54u));
+    CHECK(memcmp(video_bytes, first_video, W * height) == 0);
+    CHECK(memcmp(audio_samples, first_audio, after_reset.audio_count * sizeof audio_samples[0]) == 0);
+    muhtari_destroy(machine);
+}
+
+static void set_ym_reference_input(muhtari *machine)
+{
+    muhtari_input_ex input = {0};
+    input.size = (uint32_t)sizeof input;
+    for (unsigned port = 0u; port < 2u; port++)
+        input.port[port].device = muhtari__ports_device(machine, port);
+    CHECK_EQ_U64(muhtari_set_input_ex(machine, &input), MUHTARI_STATUS_OK);
+}
+
+static void case_ym(void)
+{
+    muhtari_cart_info cart = {0};
+    cart.size = (uint32_t)sizeof cart;
+    CHECK_EQ_U64(muhtari_probe(files[0], file_sizes[0], &cart), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(cart.a78_xm, 1u);
+    CHECK_EQ_U64(cart.a78_audio, 0x08u);
+    CHECK_EQ_U64(cart.a78_irq, 0x04u);
+
+    for (unsigned region_index = 0u; region_index < 2u; region_index++) {
+        unsigned region = region_index == 0u ? RETRO_REGION_NTSC : RETRO_REGION_PAL;
+        const char *region_name = region == RETRO_REGION_PAL ? "pal" : "ntsc";
+        uint32_t native_region = region == RETRO_REGION_PAL ? MUHTARI_REGION_PAL
+                                                            : MUHTARI_REGION_NTSC;
+        unsigned height = region == RETRO_REGION_PAL ? 292u : 242u;
+        check_ym_public_numbers(region);
+
+        set_var("muhtari_region", region_name);
+        set_var("muhtari_expansion", "xm");
+        p_set_controller_port_device(0u, RETRO_DEVICE_JOYPAD);
+        p_set_controller_port_device(1u, RETRO_DEVICE_JOYPAD);
+        start(0);
+        session_av(region);
+
+        muhtari_config config = {0};
+        muhtari *reference = NULL;
+        config.size = (uint32_t)sizeof config;
+        config.allocator.alloc = host_alloc;
+        config.allocator.free = host_free;
+        CHECK_EQ_U64(muhtari_create(&config, &reference), MUHTARI_STATUS_OK);
+        if (reference == NULL) {
+            stop();
+            continue;
+        }
+        muhtari_media media = {0};
+        media.size = (uint32_t)sizeof media;
+        media.image = files[0];
+        media.image_size = file_sizes[0];
+        media.expansion = MUHTARI_EXPANSION_XM;
+        media.region = native_region;
+        CHECK_EQ_U64(muhtari_load(reference, &media), MUHTARI_STATUS_OK);
+
+        uint8_t first_frame[W * 292u * 4u];
+        int16_t first_audio_frame[962u];
+        size_t first_frame_bytes = (size_t)W * height * 4u;
+        size_t first_audio_count = 0u;
+        for (unsigned frame_index = 0u; frame_index < 4u; frame_index++) {
+            unsigned before_polls = poll_calls;
+            set_ym_reference_input(reference);
+            session_frame(reference, height, native_region, frame_index);
+            CHECK_EQ_U64(poll_calls, before_polls + 1u);
+            if (frame_index == 0u) {
+                memcpy(first_frame, frame, first_frame_bytes);
+                first_audio_count = sample_frames + batch_frames;
+                memcpy(first_audio_frame, expected_audio,
+                       first_audio_count * sizeof first_audio_frame[0]);
+            }
+        }
+
+        size_t state_bytes = muhtari_state_size(reference);
+        CHECK(state_bytes > 0u && p_serialize_size() == state_bytes);
+        uint8_t *saved = (uint8_t *)malloc(state_bytes);
+        uint8_t *module_state = (uint8_t *)malloc(state_bytes);
+        uint8_t *oversize = (uint8_t *)malloc(state_bytes + 16u);
+        uint8_t *invalid = (uint8_t *)malloc(state_bytes);
+        uint8_t *after_invalid = (uint8_t *)malloc(state_bytes);
+        CHECK(saved != NULL && module_state != NULL && oversize != NULL && invalid != NULL &&
+              after_invalid != NULL);
+        if (saved != NULL && module_state != NULL && oversize != NULL && invalid != NULL &&
+            after_invalid != NULL) {
+            CHECK_EQ_U64(muhtari_save_state(reference, saved, state_bytes), MUHTARI_STATUS_OK);
+            CHECK(p_serialize(module_state, state_bytes));
+            CHECK(memcmp(saved, module_state, state_bytes) == 0);
+            memset(oversize, 0xA5, state_bytes + 16u);
+            CHECK(p_serialize(oversize, state_bytes + 16u));
+            CHECK(memcmp(oversize, saved, state_bytes) == 0);
+            for (size_t i = state_bytes; i < state_bytes + 16u; i++)
+                CHECK_EQ_U64(oversize[i], 0xA5u);
+
+            memcpy(invalid, saved, state_bytes);
+            invalid[state_bytes - 1u] ^= 1u;
+            CHECK(!p_unserialize(invalid, state_bytes));
+            CHECK(p_serialize(after_invalid, state_bytes));
+            CHECK(memcmp(after_invalid, saved, state_bytes) == 0);
+
+            uint8_t *refusal = (uint8_t *)malloc(file_sizes[0]);
+            CHECK(refusal != NULL);
+            if (refusal != NULL) {
+                memcpy(refusal, files[0], file_sizes[0]);
+                refusal[67] |= 0x10u; /* YM plus unsupported Covox. */
+                struct retro_game_info rejected = {0};
+                rejected.data = refusal;
+                rejected.size = file_sizes[0];
+                CHECK(!p_load_game(&rejected));
+                CHECK_EQ_U64(p_serialize_size(), state_bytes);
+                CHECK(p_serialize(after_invalid, state_bytes));
+                CHECK(memcmp(after_invalid, saved, state_bytes) == 0);
+                free(refusal);
+            }
+
+            uint8_t next_frame[W * 292u * 4u];
+            int16_t next_audio[962u];
+            set_ym_reference_input(reference);
+            session_frame(reference, height, native_region, 0u);
+            memcpy(next_frame, frame, first_frame_bytes);
+            size_t next_count = batch_frames + sample_frames;
+            memcpy(next_audio, expected_audio, next_count * sizeof next_audio[0]);
+            CHECK_EQ_U64(muhtari_load_state(reference, saved, state_bytes), MUHTARI_STATUS_OK);
+            CHECK(p_unserialize(saved, state_bytes));
+            set_ym_reference_input(reference);
+            session_frame(reference, height, native_region, 0u);
+            CHECK(memcmp(frame, next_frame, first_frame_bytes) == 0);
+            CHECK_EQ_U64(batch_frames + sample_frames, next_count);
+            CHECK(memcmp(expected_audio, next_audio, next_count * sizeof next_audio[0]) == 0);
+        }
+        free(saved);
+        free(module_state);
+        free(oversize);
+        free(invalid);
+        free(after_invalid);
+
+        p_reset();
+        CHECK_EQ_U64(muhtari_power_cycle(reference), MUHTARI_STATUS_OK);
+        set_ym_reference_input(reference);
+        session_frame(reference, height, native_region, 0u);
+        CHECK(memcmp(frame, first_frame, first_frame_bytes) == 0);
+        CHECK_EQ_U64(batch_frames + sample_frames, first_audio_count);
+        CHECK(memcmp(expected_audio, first_audio_frame,
+                     first_audio_count * sizeof first_audio_frame[0]) == 0);
+
+        muhtari_destroy(reference);
+        stop();
+    }
+    set_var("muhtari_region", "auto");
+    set_var("muhtari_expansion", "auto");
+}
+
 /* A second, independent library instance is the serialization and continuation
    oracle for the module that a frontend actually loads. */
 static uint8_t state_reference_native[2][W * 292u];
@@ -3042,6 +3277,7 @@ int main(int argc, char **argv)
         void (*run)(void);
         int files;
     } cases[] = {
+        {"ym", case_ym, 1},
         {"audio", case_audio, 1},
         {"input", case_input, 1},
         {"layout", case_layout, 1},

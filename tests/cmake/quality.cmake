@@ -226,6 +226,19 @@ function(quality_sample_identity out candidate trusted)
   set(${out} "${identity}" PARENT_SCOPE)
 endfunction()
 
+# YM is additive capability evidence. A kickoff base refuses it; never invent
+# an old YM output to normalize. Validate current named identities separately.
+function(quality_ym_identity out content)
+  set(HASHES_FUNCTIONS_ONLY ON)
+  include("${CMAKE_CURRENT_FUNCTION_LIST_DIR}/hashes.cmake")
+  hashes_ym_validate("${content}" valid)
+  if(NOT valid)
+    message(FATAL_ERROR "quality: incomplete or wrong-fixture YM evidence")
+  endif()
+  string(SHA256 identity "${content}")
+  set(${out} "${identity}" PARENT_SCOPE)
+endfunction()
+
 if(QUALITY_FUNCTIONS_ONLY)
   return()
 endif()

@@ -111,6 +111,17 @@ if(TARGET muhtari_libretro)
         ${PROJECT_BINARY_DIR}/tests/input-carts/input.a78 --output ${observer_output_dir}/native.json
       LABELS libretro portable TIMEOUT 30)
     set_tests_properties(libretro.observe PROPERTIES FIXTURES_REQUIRED input_carts)
+    muhtari_add_test(NAME libretro.observe.ym
+      COMMAND ${CMAKE_COMMAND}
+        "-DOBSERVER=$<TARGET_FILE:muhtari-test-libretro-observe>"
+        "-DFIXTURE_DIR=${PROJECT_BINARY_DIR}/tests/ym2151"
+        "-DOUT=${observer_output_dir}"
+        -P ${PROJECT_SOURCE_DIR}/tests/libretro/ym_observe.cmake
+      LABELS libretro portable TIMEOUT 30)
+    set_tests_properties(libretro.observe.ym PROPERTIES FIXTURES_REQUIRED ym_carts)
+    muhtari_add_test(NAME libretro.observe.ym.controls
+      COMMAND muhtari-test-libretro-observe --ym-self-test
+      LABELS libretro portable TIMEOUT 2)
     muhtari_add_test(NAME libretro.observe.controls
       COMMAND muhtari-test-libretro-observe --self-test
       LABELS libretro portable TIMEOUT 2)
@@ -175,6 +186,14 @@ if(TARGET muhtari_libretro)
   # runs in batches of four; native Linux arm64 0.90 s, run 40152879574.
   # The Linux 1 s / sanitizer 2 s timeouts are censored, not measurements.
   set_tests_properties(libretro.host.input PROPERTIES FIXTURES_REQUIRED input_carts)
+  # Runs the generated XM/YM diagnostic through the actual built module and
+  # compares its duplicated mono callbacks with independent public PCM.
+  set(libretro_ym_fixture_dir ${PROJECT_BINARY_DIR}/tests/ym2151)
+  muhtari_add_test(NAME libretro.host.ym
+    COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> ym
+      ${libretro_ym_fixture_dir}/ym2151.a78
+    LABELS audio libretro portable TIMEOUT 30)
+  set_tests_properties(libretro.host.ym PROPERTIES FIXTURES_REQUIRED ym_carts)
   # Fault prevented: a control, device, option or Restart that behaves
   # otherwise than the RetroPad layout and options docs/libretro.md lists.
   foreach(libretro_case IN ITEMS layout devices reset options)

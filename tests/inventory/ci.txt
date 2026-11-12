@@ -536,6 +536,7 @@ libretro.host.reset	libretro,portable
 libretro.host.rgb565	libretro,portable
 libretro.host.state	libretro,portable
 libretro.host.xrgb8888	libretro,portable
+libretro.host.ym	audio,libretro,portable
 libretro.info_claims	libretro
 libretro.info_claims.description.self_test	libretro
 libretro.info_claims.missing_state.self_test	libretro
@@ -543,6 +544,8 @@ libretro.info_claims.savestate	libretro
 libretro.info_claims.self_test	libretro
 libretro.observe	libretro,portable
 libretro.observe.controls	libretro,portable
+libretro.observe.ym	libretro,portable
+libretro.observe.ym.controls	libretro,portable
 libretro.rcheevos	libretro,portable
 libretro.rcheevos.expansion	libretro,portable
 libretro.vendored	libretro
@@ -689,6 +692,7 @@ runner.usage.port	portable,runner
 runner.usage.positional	portable,runner
 runner.usage.unknown	portable,runner
 runner.version	portable,runner
+runner.ym	audio,portable,runner
 sally.irq	pokey,portable,sally
 tia.logic	portable,tia
 title.local.fixture	portable,title
@@ -702,6 +706,7 @@ title.simple.bios	portable,title
 title.simple.fast	portable,title
 ym.clock	audio,portable
 ym.controls	audio,portable
+ym.fixture	audio
 ym.hostile	audio,portable
 ym.irq	audio,portable
 ym.lifecycle	audio,portable
@@ -709,5 +714,6 @@ ym.mix	audio,portable
 ym.numeric	audio,portable
 ym.observer	audio,portable
 ym.profile	audio,portable
+ym.public_runner	audio,portable,runner
 ym.synthesis	audio,portable
 ym.tracer	audio,portable

@@ -155,10 +155,102 @@ static void ym_program_write(uint8_t *program, size_t *length, uint8_t reg, uint
     *length += sizeof data;
 }
 
-size_t images_ym2151(uint8_t *buf)
+static void ym_program_branch(uint8_t *program, size_t *length, uint8_t opcode, size_t target)
+{
+    program[*length] = opcode;
+    (*length)++;
+    int32_t displacement = (int32_t)target - (int32_t)(*length + 1u);
+    program[*length] = (uint8_t)(int8_t)displacement;
+    (*length)++;
+}
+
+static void ym_program_wait(uint8_t *program, size_t *length)
+{
+    size_t poll = *length;
+    program[(*length)++] = 0xADu; /* LDA $0461: YM status */
+    program[(*length)++] = 0x61u;
+    program[(*length)++] = 0x04u;
+    ym_program_branch(program, length, 0x30u, poll); /* BMI while busy. */
+}
+
+static void ym_program_store(uint8_t *program, size_t *length, uint8_t value,
+                             uint16_t address)
+{
+    program[(*length)++] = 0xA9u; /* LDA #value */
+    program[(*length)++] = value;
+    program[(*length)++] = 0x8Du; /* STA absolute */
+    program[(*length)++] = (uint8_t)address;
+    program[(*length)++] = (uint8_t)(address >> 8);
+}
+
+static void ym_program_timer_diagnostic(uint8_t *program, size_t *length)
+{
+    for (uint16_t address = 0x2200u; address < 0x2204u; address++)
+        ym_program_store(program, length, 0u, address);
+
+    /* A=1023 expires after one output step; B=255 after sixteen. */
+    ym_program_write(program, length, 0x10u, 0xFFu);
+    ym_program_wait(program, length);
+    ym_program_write(program, length, 0x11u, 0x03u);
+    ym_program_wait(program, length);
+    ym_program_write(program, length, 0x12u, 0xFFu);
+    ym_program_wait(program, length);
+    ym_program_write(program, length, 0x14u, 0x0Fu);
+    program[(*length)++] = 0xADu; /* Save immediate busy/status sample. */
+    program[(*length)++] = 0x61u;
+    program[(*length)++] = 0x04u;
+    program[(*length)++] = 0x8Du;
+    program[(*length)++] = 0x00u;
+    program[(*length)++] = 0x22u;
+
+    size_t poll_a = *length;
+    program[(*length)++] = 0xADu;
+    program[(*length)++] = 0x61u;
+    program[(*length)++] = 0x04u;
+    program[(*length)++] = 0x29u; /* AND #$01: wait for timer A's flag. */
+    program[(*length)++] = 0x01u;
+    ym_program_branch(program, length, 0xF0u, poll_a); /* BEQ until timer A expires. */
+    program[(*length)++] = 0xADu;
+    program[(*length)++] = 0x61u;
+    program[(*length)++] = 0x04u;
+    program[(*length)++] = 0x8Du; /* Store timer A's independently timed status. */
+    program[(*length)++] = 0x01u;
+    program[(*length)++] = 0x22u;
+    program[(*length)++] = 0x58u; /* CLI: admit the v4-qualified timer IRQ. */
+    program[(*length)++] = 0x78u; /* SEI until timer B's flag is copied to the mailbox. */
+
+    size_t poll_b = *length;
+    program[(*length)++] = 0xADu; /* LDA $0461 */
+    program[(*length)++] = 0x61u;
+    program[(*length)++] = 0x04u;
+    program[(*length)++] = 0x29u; /* AND #$02 */
+    program[(*length)++] = 0x02u;
+    ym_program_branch(program, length, 0xF0u, poll_b); /* BEQ until timer B expires. */
+    program[(*length)++] = 0xADu;
+    program[(*length)++] = 0x61u;
+    program[(*length)++] = 0x04u;
+    program[(*length)++] = 0x8Du;
+    program[(*length)++] = 0x03u;
+    program[(*length)++] = 0x22u;
+    program[(*length)++] = 0x58u; /* CLI after preserving the timer B status sample. */
+}
+
+static void ym_program_irq_handler(uint8_t *body)
+{
+    static const uint8_t handler[] = {0x48u,                   /* PHA */
+                                      0xEEu, 0x02u, 0x22u,     /* INC $2202 */
+                                      0xA9u, 0x14u,             /* LDA #$14 */
+                                      0x8Du, 0x60u, 0x04u,     /* STA $0460 */
+                                      0xA9u, 0x3Au,             /* LDA #$3A: keep B; stop A; clear both flags. */
+                                      0x8Du, 0x61u, 0x04u,     /* STA $0461 */
+                                      0x68u, 0x40u};            /* PLA; RTI */
+    memcpy(body + 0x3F00u, handler, sizeof handler);
+}
+
+static size_t images_ym2151_build(uint8_t *buf, int worst)
 {
     const uint32_t body_size = 16u * IMAGES_KIB;
-    images_header(buf, 4u, "XM YM tracer", body_size, 0u);
+    images_header(buf, 4u, worst ? "XM YM worst traffic" : "XM YM tracer", body_size, 0u);
     buf[58] = 0x02u; /* a persistent SaveKey, for state-refusal immutability */
     buf[63] = 1u;    /* installed XM device */
     buf[66] = 0u;
@@ -168,7 +260,10 @@ size_t images_ym2151(uint8_t *buf)
 
     uint8_t *body = buf + IMAGES_HEADER;
     memset(body, 0xEA, body_size);
-    size_t length = 0u;
+    body[0] = 0xA2u; /* LDX #$FD: keep the diagnostic IRQ stack in system RAM. */
+    body[1] = 0xFDu;
+    body[2] = 0x9Au; /* TXS */
+    size_t length = 3u;
     static const uint8_t enable[] = {0xA9u, 0x80u, 0x8Du, 0x70u, 0x04u};
     memcpy(body + length, enable, sizeof enable);
     length += sizeof enable;
@@ -186,10 +281,39 @@ size_t images_ym2151(uint8_t *buf)
         }
     }
     ym_program_write(body, &length, 0x08u, 0x78u); /* key on all four channel-zero operators */
+    ym_program_timer_diagnostic(body, &length);
     uint16_t loop = (uint16_t)(0xC000u + length);
-    body[length++] = 0x4Cu;
-    body[length++] = (uint8_t)loop;
-    body[length++] = (uint8_t)(loop >> 8);
+    if (worst) {
+        /* Keep a small, legal address/data sequence hot in the CPU bus loop. */
+        loop = (uint16_t)(0xC000u + length);
+        for (unsigned i = 0u; i < 256u; i++) {
+            static const uint8_t regs[] = {0x28u, 0x30u, 0x40u, 0x60u, 0x80u, 0xA0u,
+                                           0xC0u, 0xE0u};
+            ym_program_write(body, &length, regs[i % (sizeof regs / sizeof regs[0])],
+                             (uint8_t)(0x20u + (i & 0x1fu)));
+        }
+        body[length++] = 0x4Cu;
+        body[length++] = (uint8_t)loop;
+        body[length++] = (uint8_t)(loop >> 8);
+    } else {
+        loop = (uint16_t)(0xC000u + length);
+        body[length++] = 0x4Cu;
+        body[length++] = (uint8_t)loop;
+        body[length++] = (uint8_t)(loop >> 8);
+    }
     images_footer(body, body_size);
+    ym_program_irq_handler(body);
+    body[body_size - 2u] = 0x00u;
+    body[body_size - 1u] = 0xFFu; /* YM timer IRQ handler at $FF00. */
     return IMAGES_HEADER + body_size;
+}
+
+size_t images_ym2151(uint8_t *buf)
+{
+    return images_ym2151_build(buf, 0);
+}
+
+size_t images_ym2151_worst(uint8_t *buf)
+{
+    return images_ym2151_build(buf, 1);
 }

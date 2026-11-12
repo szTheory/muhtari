@@ -7,6 +7,7 @@
 #include "internal.h"
 #include "../check.h"
 #include "../cart/images.h"
+#include "../runner/sha256.h"
 #include "ym_vectors.h"
 
 #define YM_BODY (16u * IMAGES_KIB)
@@ -20,6 +21,276 @@ struct ym_allocations {
 static uint8_t ym_image[YM_IMAGE_BYTES];
 static uint8_t old_image[YM_IMAGE_BYTES];
 static uint8_t irq_image[YM_IMAGE_BYTES];
+
+static muhtari *make_machine(void);
+static muhtari_media media_for(const uint8_t *image, size_t bytes, uint32_t expansion);
+
+static void ym_digest(const void *bytes, size_t size, char hex[65])
+{
+    muhtari__sha256 hash;
+    uint8_t digest[32];
+    muhtari__sha256_init(&hash);
+    muhtari__sha256_update(&hash, bytes, size);
+    muhtari__sha256_final(&hash, digest);
+    muhtari__sha256_hex(digest, hex);
+}
+
+static void ym_hex(const uint8_t *bytes, size_t size, char *hex)
+{
+    static const char digits[] = "0123456789abcdef";
+    for (size_t i = 0u; i < size; i++) {
+        hex[2u * i] = digits[bytes[i] >> 4];
+        hex[2u * i + 1u] = digits[bytes[i] & 15u];
+    }
+    hex[2u * size] = '\0';
+}
+
+static int ym_lane_mode;
+static void ym_lane_raw(void *user, uint64_t tick, uint8_t source, uint16_t raw)
+{
+    uint8_t record[11];
+    for (unsigned i = 0u; i < 8u; i++)
+        record[i] = (uint8_t)(tick >> (i * 8u));
+    record[8] = source;
+    record[9] = (uint8_t)raw;
+    record[10] = (uint8_t)(raw >> 8);
+    muhtari__sha256_update(user, record, sizeof record);
+}
+
+static int ym_public_fixture(const char *image_path, const char *state_path, uint32_t region)
+{
+    FILE *image_file = fopen(image_path, "rb");
+    if (image_file == NULL) {
+        fprintf(stderr, "could not open YM fixture\n");
+        return 1;
+    }
+    size_t image_size = fread(ym_image, 1u, sizeof ym_image, image_file);
+    int image_failed = ferror(image_file) != 0;
+    if (fclose(image_file) != 0)
+        image_failed = 1;
+    if (image_failed || image_size != sizeof ym_image) {
+        fprintf(stderr, "YM fixture has an unexpected length\n");
+        return 1;
+    }
+
+    char fixture_hash[65];
+    ym_digest(ym_image, image_size, fixture_hash);
+    muhtari_cart_info probe;
+    memset(&probe, 0, sizeof probe);
+    probe.size = (uint32_t)sizeof probe;
+    CHECK_EQ_U64(muhtari_probe(ym_image, image_size, &probe), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(probe.sound, MUHTARI_SOUND_YM2151);
+    CHECK_EQ_U64(probe.devices & MUHTARI_DEVICE_XM, MUHTARI_DEVICE_XM);
+    CHECK_EQ_U64(probe.a78_xm, 1u);
+    CHECK_EQ_U64(probe.a78_audio, 0x08u);
+    CHECK_EQ_U64(probe.a78_irq, 0x04u);
+
+    muhtari *machine = make_machine();
+    CHECK(machine != NULL);
+    if (machine == NULL)
+        return 1;
+    muhtari__sha256 raw_hash;
+    muhtari__sha256_init(&raw_hash);
+    if (ym_lane_mode)
+        CHECK_EQ_U64(muhtari__synth_observe(machine, ym_lane_raw, &raw_hash), MUHTARI_STATUS_OK);
+    muhtari_media media = media_for(ym_image, image_size, MUHTARI_EXPANSION_XM);
+    media.region = region;
+    CHECK_EQ_U64(muhtari_load(machine, &media), MUHTARI_STATUS_OK);
+
+    muhtari_info info;
+    memset(&info, 0, sizeof info);
+    info.size = (uint32_t)sizeof info;
+    CHECK_EQ_U64(muhtari_get_info(machine, &info), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(info.width, 320u);
+    CHECK_EQ_U64(info.height, region == MUHTARI_REGION_PAL ? 292u : 242u);
+    CHECK_EQ_U64(info.sample_rate_num, 48000u);
+    CHECK_EQ_U64(info.sample_rate_den, 1u);
+    size_t video_bytes = (size_t)info.width * info.height;
+    uint8_t *video = malloc(video_bytes);
+    CHECK(video != NULL);
+    if (video == NULL) {
+        muhtari_destroy(machine);
+        return 1;
+    }
+    int16_t audio[1024];
+    muhtari__sha256 pcm_hash;
+    muhtari__sha256_init(&pcm_hash);
+    size_t sample_total = 0u;
+    uint64_t nonzero = 0u;
+    int16_t minimum = INT16_MAX;
+    int16_t maximum = INT16_MIN;
+    uint8_t *state = NULL;
+    size_t state_size = 0u;
+    char frame_hash[65] = "";
+    char state_hash[65] = "";
+    for (unsigned frame_index = 1u; frame_index <= 6u; frame_index++) {
+        muhtari_input_ex input;
+        memset(&input, 0, sizeof input);
+        input.size = (uint32_t)sizeof input;
+        CHECK_EQ_U64(muhtari_set_input_ex(machine, &input), MUHTARI_STATUS_OK);
+        muhtari_frame io;
+        memset(&io, 0, sizeof io);
+        io.size = (uint32_t)sizeof io;
+        io.video = video;
+        io.video_pitch = info.width;
+        io.audio = audio;
+        io.audio_capacity = (uint32_t)(sizeof audio / sizeof audio[0]);
+        CHECK_EQ_U64(muhtari_run_frame(machine, &io), MUHTARI_STATUS_OK);
+        if (frame_index == 1u) {
+            if (region == MUHTARI_REGION_PAL)
+                CHECK_EQ_U64(io.audio_count, 960u);
+            else
+                CHECK(io.audio_count == 54u || io.audio_count == 55u);
+        } else if (region == MUHTARI_REGION_PAL) {
+            CHECK(io.audio_count == 961u || io.audio_count == 962u);
+        } else {
+            CHECK(io.audio_count == 800u || io.audio_count == 801u);
+        }
+        sample_total += io.audio_count;
+        for (uint32_t i = 0u; i < io.audio_count; i++) {
+            int16_t sample = audio[i];
+            uint16_t bits = (uint16_t)sample;
+            uint8_t little_endian[2] = {(uint8_t)bits, (uint8_t)(bits >> 8)};
+            muhtari__sha256_update(&pcm_hash, little_endian, sizeof little_endian);
+            if (sample < minimum)
+                minimum = sample;
+            if (sample > maximum)
+                maximum = sample;
+            nonzero += sample != 0;
+        }
+        if (frame_index == 2u) {
+            state_size = muhtari_state_size(machine);
+            state = malloc(state_size);
+            CHECK(state != NULL);
+            if (state != NULL) {
+                CHECK_EQ_U64(muhtari_save_state(machine, state, state_size), MUHTARI_STATUS_OK);
+                ym_digest(state, state_size, state_hash);
+                FILE *state_file = fopen(state_path, "wb");
+                int state_failed = state_file == NULL;
+                if (state_file != NULL) {
+                    if (fwrite(state, 1u, state_size, state_file) != state_size)
+                        state_failed = 1;
+                    if (fclose(state_file) != 0)
+                        state_failed = 1;
+                }
+                if (state_failed) {
+                    fprintf(stderr, "could not write YM state checkpoint\n");
+                    free(state);
+                    free(video);
+                    muhtari_destroy(machine);
+                    return 1;
+                }
+            }
+        }
+        if (frame_index == 6u)
+            ym_digest(video, video_bytes, frame_hash);
+    }
+
+    uint8_t pcm_digest[32];
+    muhtari__sha256_final(&pcm_hash, pcm_digest);
+
+    muhtari_span ram;
+    memset(&ram, 0, sizeof ram);
+    ram.size = (uint32_t)sizeof ram;
+    CHECK_EQ_U64(muhtari_get_memory(machine, MUHTARI_MEMORY_SYSTEM_RAM, &ram),
+                 MUHTARI_STATUS_OK);
+    CHECK(ram.data != NULL && ram.bytes >= 0xB00u);
+    uint8_t mailbox[256] = {0u};
+    if (ram.data != NULL && ram.bytes >= 0xB00u)
+        memcpy(mailbox, ram.data + 0xA00u, sizeof mailbox);
+    CHECK_EQ_U64(mailbox[0], 0x80u);
+    CHECK_EQ_U64(mailbox[1], 0x01u);
+    CHECK(mailbox[2] != 0u);
+    CHECK_EQ_U64(mailbox[3], 0x02u);
+    CHECK(minimum < 0 && maximum > 0 && nonzero != 0u);
+    if (region == MUHTARI_REGION_PAL) {
+        CHECK_EQ_U64(sample_total, 5768u);
+        CHECK(minimum == -4742);
+        CHECK_EQ_U64(maximum, 4582u);
+        CHECK_EQ_U64(nonzero, 5755u);
+    } else {
+        CHECK_EQ_U64(sample_total, 4057u);
+        CHECK(minimum == -4741);
+        CHECK_EQ_U64(maximum, 4577u);
+        CHECK_EQ_U64(nonzero, 4045u);
+    }
+
+    char pcm_hex[65], diagnostic[513];
+    muhtari__sha256_hex(pcm_digest, pcm_hex);
+    ym_hex(mailbox, sizeof mailbox, diagnostic);
+    printf("fixture_sha256 %s\nframe 6 sha256 %s\nstate 2 sha256 %s\n"
+           "audio_pcm_sha256 %s\n"
+           "audio_frames 6\naudio_samples %lu\naudio_rate 48000/1\n"
+           "audio_behaviour_revision 7\naudio_synthesis exact-q23-16x64-dc20\n"
+           "audio_min %d\naudio_max %d\naudio_nonzero %llu\ndiagnostic %s\n",
+           fixture_hash, frame_hash, state_hash, pcm_hex, (unsigned long)sample_total,
+           (int)minimum, (int)maximum, (unsigned long long)nonzero, diagnostic);
+    if (ym_lane_mode && state != NULL) {
+        uint8_t raw_digest[32];
+        char raw_hex[65], end_hex[65], resumed_hex[65];
+        muhtari__sha256_final(&raw_hash, raw_digest);
+        muhtari__sha256_hex(raw_digest, raw_hex);
+        size_t ending_size = muhtari_state_size(machine);
+        uint8_t *ending = malloc(ending_size);
+        uint8_t *resumed = malloc(ending_size);
+        CHECK(ending != NULL && resumed != NULL);
+        if (ending != NULL && resumed != NULL) {
+            CHECK_EQ_U64(muhtari_save_state(machine, ending, ending_size), MUHTARI_STATUS_OK);
+            ym_digest(ending, ending_size, end_hex);
+            CHECK_EQ_U64(muhtari_load_state(machine, state, state_size), MUHTARI_STATUS_OK);
+            for (unsigned i = 0u; i < 4u; i++) {
+                muhtari_input_ex input = {0};
+                input.size = (uint32_t)sizeof input;
+                CHECK_EQ_U64(muhtari_set_input_ex(machine, &input), MUHTARI_STATUS_OK);
+                muhtari_frame io = {0};
+                io.size = (uint32_t)sizeof io;
+                io.audio = audio;
+                io.audio_capacity = 1024u;
+                CHECK_EQ_U64(muhtari_run_frame(machine, &io), MUHTARI_STATUS_OK);
+            }
+            CHECK_EQ_U64(muhtari_save_state(machine, resumed, ending_size), MUHTARI_STATUS_OK);
+            ym_digest(resumed, ending_size, resumed_hex);
+            CHECK(memcmp(ending, resumed, ending_size) == 0);
+            printf("audio_transitions_sha256 %s\nending_state_sha256 %s\nresumed_state_sha256 %s\n",
+                   raw_hex, end_hex, resumed_hex);
+        }
+        free(ending);
+        free(resumed);
+    }
+    free(state);
+    free(video);
+    muhtari_destroy(machine);
+    return 0;
+}
+
+static int ym_write_fixture(const char *dir, const char *name, const uint8_t *bytes, size_t size)
+{
+    char path[1024];
+    int length = snprintf(path, sizeof path, "%s/%s.a78", dir, name);
+    if (length < 0 || (size_t)length >= sizeof path)
+        return 1;
+    FILE *file = fopen(path, "wb");
+    if (file == NULL)
+        return 1;
+    int failed = fwrite(bytes, 1u, size, file) != size;
+    if (fclose(file) != 0)
+        failed = 1;
+    return failed;
+}
+
+static int ym_fixture_out(const char *dir)
+{
+    size_t ordinary = images_ym2151(ym_image);
+    size_t worst = images_ym2151_worst(old_image);
+    if (ym_write_fixture(dir, "ym2151", ym_image, ordinary) != 0 ||
+        ym_write_fixture(dir, "ym2151-worst", old_image, worst) != 0) {
+        fprintf(stderr, "could not write YM fixture files\n");
+        return 1;
+    }
+    printf("YM fixtures written: %lu, %lu bytes\n", (unsigned long)ordinary,
+           (unsigned long)worst);
+    return 0;
+}
 
 static void *test_alloc(void *user, size_t bytes)
 {
@@ -1582,6 +1853,33 @@ static void ym_hostile(void)
 
 int main(int argc, char **argv)
 {
+    if (argc == 3 && strcmp(argv[1], "--fixture-out") == 0)
+        return ym_fixture_out(argv[2]);
+    if (argc == 4 && strcmp(argv[1], "--lane-report") == 0) {
+        char image_path[1024], state_path[1024];
+        if (ym_fixture_out(argv[2]) != 0)
+            return 1;
+        if (snprintf(image_path, sizeof image_path, "%s/ym2151.a78", argv[2]) < 0 ||
+            snprintf(state_path, sizeof state_path, "%s/lane.state", argv[2]) < 0)
+            return 1;
+        ym_lane_mode = 1;
+        uint32_t region = strcmp(argv[3], "pal") == 0 ? MUHTARI_REGION_PAL : MUHTARI_REGION_NTSC;
+        int result = ym_public_fixture(image_path, state_path, region);
+        return result == 0 && check_failures == 0 ? 0 : 1;
+    }
+    if (argc == 5 && strcmp(argv[1], "--public-fixture") == 0) {
+        uint32_t region;
+        if (strcmp(argv[4], "ntsc") == 0)
+            region = MUHTARI_REGION_NTSC;
+        else if (strcmp(argv[4], "pal") == 0)
+            region = MUHTARI_REGION_PAL;
+        else
+            return 2;
+        int status = ym_public_fixture(argv[2], argv[3], region);
+        if (status != 0)
+            return status;
+        CHECK_DONE();
+    }
     if (argc != 2)
         return 2;
     if (strcmp(argv[1], "tracer") == 0)

@@ -52,6 +52,7 @@ muhtari-run --help | --version
 | `[--rom] FILE` | Load and run one cartridge image, with or without `--rom`. Automatic PAL selection is supported. A refused image prints `muhtari-run: FILE: <message>` on standard error and runs no frame: a 2600 image or unsupported board exits 77; malformed, truncated or oversized images exit1. |
 | `--movie FILE` | Replay the movie in FILE, described under [Movies](#movies). The whole file is checked before the first frame runs. |
 | `--port1 D`, `--port2 D` | `auto` (the cartridge's, the default), or an explicit movie2 device below. A value other than `auto` that differs from the movie header is a usage error. Storage attaches before import; moving or adding it requires another load. AtariVox provides EEPROM only, without speech. |
+| `--expansion E` | `auto`, `off`, `xboard` or `xm`. Auto selects XM for an XM-declared image. The qualified YM2151 request is accepted only with its supported XM topology; selecting Off or XBoard for that request exits 77 as an unsupported sound configuration. |
 | `--region R` | `auto` (the cartridge's, the default), `ntsc` or `pal`. An explicit value overrides cartridge metadata; a conflicting movie region is a usage error. Without content the test card remains NTSC. |
 | `--info` | Print effective region, geometry, exact frame rate, pixel aspect ratio, palette and hardware selection before frame output. Repeat use is a usage error; this is a run option, not an addition to `--probe`. |
 | `--boot B` | `fast` (the default) starts the cartridge from the fast-boot hand-off; `bios` boots it through the BIOS given by `--bios`, from power-on. `bios` without `--bios`, or `--bios` without `bios`, is a usage error. With a movie, the movie's `boot` key decides, and a different `--boot` is a usage error. |
@@ -128,12 +129,14 @@ run can therefore replace newer disk bytes with the restored timeline's bytes. A
 does not flush those rolled-back bytes. State I/O and state refusals exit 1, command-line conflicts exit 2, and
 the existing unsupported-media refusal remains exit 77.
 
-`--expansion auto|off|xboard|xm` selects hardware at load. Auto follows any nonzero A78 XM request, otherwise Off; XBoard requires explicit selection. Off suppresses expansion only. Declared YM2151, Covox and ADPCM still refuse execution with exit77 and a named sound message.
+`--expansion auto|off|xboard|xm` selects hardware at load. Auto follows any nonzero A78 XM request, otherwise Off; XBoard requires explicit selection. Off suppresses expansion only. This release accepts the qualified declared YM2151 profile with its installed XM topology; other YM topologies, Covox and ADPCM still refuse execution with exit 77 and a named sound message. `--probe` reports the cartridge request, while `--info` reports the selected expansion and requested sound.
 
 XM is a RAM/POKEY/HSC subset with medium physical confidence, without internal BIOS/top-slot switching, flash, PIA, flat48KiB mode, write protection, sticky locks, ROF aliases, PAL firmware selection or full-XM services. HSC firmware is read only for attached storage on an image the core accepts; a refused image keeps exit 77 without its firmware file being read, and a firmware request with detached HSC otherwise exits 1 before the firmware file is read. No gameplay compatibility is implied.
 
 ```sh
+muhtari-run --probe game.a78
 muhtari-run --expansion xm --frames 12 --diagnostic game.a78
+muhtari-run --region pal --frames 12 --hash-audio --diagnostic game.a78
 ```
 
 For an XM-declared image, Auto chooses the same hardware. Use `--expansion xboard`

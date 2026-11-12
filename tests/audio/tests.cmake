@@ -86,6 +86,19 @@ target_link_libraries(muhtari-test-ym2151 PRIVATE muhtari::muhtari)
 set_target_properties(muhtari-test-ym2151 PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-test-ym2151)
+set(ym_fixture_dir ${PROJECT_BINARY_DIR}/tests/ym2151)
+file(MAKE_DIRECTORY ${ym_fixture_dir})
+muhtari_add_test(NAME ym.fixture COMMAND muhtari-test-ym2151 --fixture-out ${ym_fixture_dir}
+  LABELS audio TIMEOUT 5)
+set_tests_properties(ym.fixture PROPERTIES FIXTURES_SETUP ym_carts)
+string(REPLACE ";" "$<SEMICOLON>" ym_runner_emulator "${CMAKE_CROSSCOMPILING_EMULATOR}")
+muhtari_add_test(NAME ym.public_runner COMMAND ${CMAKE_COMMAND}
+  "-DRUN=$<TARGET_FILE:muhtari-run>" "-DDRIVER=$<TARGET_FILE:muhtari-test-ym2151>"
+  "-DEMULATOR=${ym_runner_emulator}" "-DDIR=${ym_fixture_dir}"
+  "-DWORK=${PROJECT_BINARY_DIR}/tests/ym-public-runner" -DCASE=ym.public_runner
+  -P ${PROJECT_SOURCE_DIR}/tests/runner/tests.cmake
+  LABELS audio portable runner TIMEOUT 60)
+set_tests_properties(ym.public_runner PROPERTIES FIXTURES_REQUIRED ym_carts)
 muhtari_add_test(NAME ym.tracer COMMAND muhtari-test-ym2151 tracer
   LABELS audio portable TIMEOUT 30)
 muhtari_add_test(NAME ym.numeric COMMAND muhtari-test-ym2151 numeric
