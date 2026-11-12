@@ -12,8 +12,8 @@
 
 ## Completed phases
 
-- [x] **Phase 19: Measured milestone tune-up** — 1/1 plans; verified complete2026-11-11.
-- [x] **Phase 20: Complete YM2151 homebrew sound** — 7/7 plans; verified complete2026-11-12.
+- [x] **Phase 19** (Measured milestone tune-up) — 1/1 plans; verified complete2026-11-11.
+- [x] **Phase 20** (Complete YM2151 homebrew sound) — 7/7 plans; verified complete2026-11-12.
 
 ## Next boundary
 

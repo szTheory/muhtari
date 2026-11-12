@@ -205,7 +205,7 @@ Numeric expectations before hashes, an unchanged frozen seed and genuine kickoff
 
 ### What Needs Improvement
 
-The runner hash inventory retained a stale literal count after additive YM rows. Verification bookkeeping also stalled after checks were established; a concise evidence draft and a persistence/fingerprint-only handoff completed it. Persist a minimal evidence outline early and keep later report expansion bounded. The archive moved paths without rebasing verification fingerprints; preserve byte identities, repair links and use the verification owner to refresh only relocation metadata. Collapsing the roadmap also erased the phase-completion record required by shipping. Retain a compact checked phase list and validate the actual next command's read-only admission fields after archival.
+The runner hash inventory retained a stale literal count after additive YM rows. Verification bookkeeping also stalled after checks were established; a concise evidence draft and a persistence/fingerprint-only handoff completed it. Persist a minimal evidence outline early and keep later report expansion bounded. The archive moved paths without rebasing verification fingerprints; preserve byte identities, repair links and use the verification owner to refresh only relocation metadata. Collapsing the roadmap also erased the phase-completion record required by shipping. Named checklist declarations then made runtime1.20.0 expect a new live directory. Checked archive identifiers with names in parentheses preserve completion without redeclaring an active phase. Validate both init.phase-op's actual directory and roadmap.analyze's completion record before recommending shipping.
 
 ### Evidence and Limits
 
