@@ -702,7 +702,9 @@ title.simple.fast	portable,title
 ym.clock	audio,portable
 ym.controls	audio,portable
 ym.irq	audio,portable
+ym.mix	audio,portable
 ym.numeric	audio,portable
+ym.observer	audio,portable
 ym.profile	audio,portable
 ym.synthesis	audio,portable
 ym.tracer	audio,portable

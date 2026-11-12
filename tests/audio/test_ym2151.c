@@ -853,6 +853,346 @@ static void ym_irq(void)
     }
 }
 
+struct ym_mix_pair {
+    int16_t left;
+    int16_t right;
+};
+
+static int32_t ym_decode_word(uint16_t bits)
+{
+    return (bits & 0x8000u) != 0u ? (int32_t)bits - 65536 : (int32_t)bits;
+}
+
+static int32_t ym_expected_level(int32_t base, int16_t left, int16_t right)
+{
+    int32_t mono = ((int32_t)left + (int32_t)right) / 2;
+    return base / 2 + (mono * 4590) / 32768;
+}
+
+static void ym_synth_base(muhtari *m, int maximum)
+{
+    if (maximum == 0)
+        return;
+    for (unsigned source = 0u; source < 2u; source++)
+        muhtari__synth_level(m, 0u, source, 15u);
+    for (unsigned source = 2u; source < 10u; source++)
+        muhtari__synth_level(m, 0u, source, 206u);
+}
+
+static void ym_mix_extrema(void)
+{
+    static const struct ym_mix_pair pairs[] = {
+        {-32768, -32768}, {32767, 32767}, {-32768, 32767},
+        {-32768, -32767}, {32767, 32766}, {-1, 0},
+    };
+    for (unsigned region_index = 0u; region_index < 2u; region_index++) {
+        uint32_t region = region_index == 0u ? MUHTARI_REGION_NTSC : MUHTARI_REGION_PAL;
+        struct muhtari__timing timing = muhtari__timing_for_region(region);
+        for (unsigned maximum = 0u; maximum < 2u; maximum++) {
+            for (size_t pair = 0u; pair < sizeof pairs / sizeof pairs[0]; pair++) {
+                muhtari *m = calloc(1u, sizeof *m);
+                CHECK(m != NULL);
+                if (m == NULL)
+                    continue;
+                m->effective_region = region;
+                muhtari__synth_reset(m, 0u, 2u);
+                m->synth.ym_installed = 1u;
+                ym_synth_base(m, (int)maximum);
+                muhtari__synth_level(m, 0u, 10u, (uint16_t)pairs[pair].left);
+                muhtari__synth_level(m, 0u, 11u, (uint16_t)pairs[pair].right);
+
+                /* This is the production event flush, mixer, kernel, Q23
+                   integrator, Q30 blocker, and PCM output path. */
+                int16_t pcm[AUDIO_CAPACITY];
+                uint32_t count = muhtari__synth_render(m, timing.frame_ticks, pcm);
+                int32_t base = maximum != 0 ? 18360 : 0;
+                int32_t want = ym_expected_level(base, pairs[pair].left, pairs[pair].right);
+                CHECK_EQ_U64(m->synth.mixed_level, (uint64_t)(int64_t)want);
+                CHECK(want >= -4590 && want <= 13769);
+                CHECK(count <= timing.max_samples);
+                CHECK_EQ_U64(m->synth.clipped_samples, 0u);
+                CHECK(m->synth.pre_clip_peak <= INT16_MAX);
+                for (uint32_t i = 0u; i < count; i++)
+                    CHECK(pcm[i] >= INT16_MIN && pcm[i] <= INT16_MAX);
+                if (maximum == 0u) {
+                    CHECK(want >= -4590 && want <= 4589);
+                } else {
+                    CHECK(want >= 4590 && want <= 13769);
+                }
+                free(m);
+            }
+        }
+    }
+
+    /* The signed YM words are ignored unless the topology was installed;
+       PCM and mixer state therefore retain the old no-YM result. */
+    for (unsigned region_index = 0u; region_index < 2u; region_index++) {
+        uint32_t region = region_index == 0u ? MUHTARI_REGION_NTSC : MUHTARI_REGION_PAL;
+        struct muhtari__timing timing = muhtari__timing_for_region(region);
+        for (unsigned maximum = 0u; maximum < 2u; maximum++) {
+            muhtari *plain = calloc(1u, sizeof *plain);
+            muhtari *ignored = calloc(1u, sizeof *ignored);
+            CHECK(plain != NULL && ignored != NULL);
+            if (plain == NULL || ignored == NULL) {
+                free(plain);
+                free(ignored);
+                continue;
+            }
+            plain->effective_region = ignored->effective_region = region;
+            muhtari__synth_reset(plain, 0u, 2u);
+            muhtari__synth_reset(ignored, 0u, 2u);
+            ym_synth_base(plain, (int)maximum);
+            ym_synth_base(ignored, (int)maximum);
+            muhtari__synth_level(ignored, 0u, 10u, 0x8000u);
+            muhtari__synth_level(ignored, 0u, 11u, 0x7fffu);
+            int16_t expected[AUDIO_CAPACITY];
+            int16_t actual[AUDIO_CAPACITY];
+            uint32_t a = muhtari__synth_render(plain, timing.frame_ticks, expected);
+            uint32_t b = muhtari__synth_render(ignored, timing.frame_ticks, actual);
+            CHECK_EQ_U64(a, b);
+            CHECK(memcmp(expected, actual, a * sizeof expected[0]) == 0);
+            CHECK_EQ_U64(plain->synth.mixed_level, ignored->synth.mixed_level);
+            free(ignored);
+            free(plain);
+        }
+    }
+
+    /* Actual OPM output samples enter the production mixer as signed values.
+       Check every output edge against an independent widened formula. */
+    muhtari *m = ym_test_chip();
+    CHECK(m != NULL);
+    if (m == NULL)
+        return;
+    m->synth.ym_installed = 1u;
+    for (size_t i = 0u; i < sizeof ym_common / sizeof ym_common[0]; i++)
+        ym_write_reg(m, ym_common[i].reg, ym_common[i].value, 0u);
+    int32_t minimum[2] = {INT32_MAX, INT32_MAX};
+    int32_t maximum[2] = {INT32_MIN, INT32_MIN};
+    for (uint64_t sample = 1u; sample <= 256u; sample++) {
+        uint64_t edge = sample * 128u + 1u;
+        ym_advance_and_discard(m, edge);
+        (void)muhtari__synth_render(m, edge + 1u, NULL);
+        for (unsigned channel = 0u; channel < 2u; channel++) {
+            int32_t output = m->ym.output[channel];
+            if (output < minimum[channel])
+                minimum[channel] = output;
+            if (output > maximum[channel])
+                maximum[channel] = output;
+        }
+        CHECK_EQ_U64(m->synth.raw[10], (uint16_t)m->ym.output[0]);
+        CHECK_EQ_U64(m->synth.raw[11], (uint16_t)m->ym.output[1]);
+        CHECK_EQ_U64(m->synth.mixed_level,
+                     (uint64_t)(int64_t)ym_expected_level(0, m->ym.output[0], m->ym.output[1]));
+        CHECK(m->synth.mixed_level >= -4590 && m->synth.mixed_level <= 4589);
+    }
+    for (unsigned channel = 0u; channel < 2u; channel++) {
+        CHECK(minimum[channel] < 0);
+        CHECK(maximum[channel] > 0);
+    }
+    CHECK_EQ_U64(m->synth.clipped_samples, 0u);
+    CHECK(m->synth.pre_clip_peak <= INT16_MAX);
+    free(m);
+}
+
+struct ym_observed_event {
+    uint64_t tick;
+    uint16_t raw;
+    uint8_t source;
+};
+struct ym_observed_events {
+    uint32_t count;
+    uint32_t source_count[2];
+    uint32_t negative[2];
+    uint32_t positive[2];
+    uint8_t have_previous;
+    struct ym_observed_event previous;
+    uint8_t first_count;
+    struct ym_observed_event first[4];
+};
+
+static void ym_observe_collect(void *user, uint64_t tick, uint8_t source, uint16_t raw)
+{
+    struct ym_observed_events *events = user;
+    if (events->have_previous != 0u) {
+        CHECK(tick >= events->previous.tick);
+        if (tick == events->previous.tick)
+            CHECK(source >= events->previous.source);
+    }
+    if (events->first_count < sizeof events->first / sizeof events->first[0])
+        events->first[events->first_count++] = (struct ym_observed_event){tick, raw, source};
+    if (source == 10u || source == 11u) {
+        unsigned channel = source - 10u;
+        int32_t value = ym_decode_word(raw);
+        events->source_count[channel]++;
+        events->negative[channel] += value < 0;
+        events->positive[channel] += value > 0;
+    }
+    events->count++;
+    events->previous = (struct ym_observed_event){tick, raw, source};
+    events->have_previous = 1u;
+}
+
+static uint32_t ym_frame_sample_count(muhtari *m)
+{
+    struct muhtari__timing timing = muhtari__timing(m);
+    uint64_t elapsed = m->loaded != 0u ? m->frame_deadline - m->frame_start : timing.frame_ticks;
+    return (uint32_t)(((uint64_t)m->audio_rem + elapsed * timing.sample_num) / timing.sample_den);
+}
+
+static void ym_observer_extrema(void)
+{
+    struct ym_observed_events events = {0};
+    muhtari *m = make_machine();
+    CHECK(m != NULL);
+    if (m == NULL)
+        return;
+    CHECK_EQ_U64(muhtari__synth_observe(m, ym_observe_collect, &events), MUHTARI_STATUS_OK);
+    muhtari__observe_begin(m, 10u);
+    muhtari__synth_raw(m, 2u, 10u, 0x8000u);
+    muhtari__synth_raw(m, 2u, 11u, 0x7fffu);
+    muhtari__observe_end(m);
+    CHECK_EQ_U64(events.count, 2u);
+    CHECK_EQ_U64(events.first[0].source, 10u);
+    CHECK_EQ_U64(events.first[0].raw, 0x8000u);
+    CHECK_EQ_U64(ym_decode_word(events.first[0].raw), -32768);
+    CHECK_EQ_U64(events.first[1].source, 11u);
+    CHECK_EQ_U64(events.first[1].raw, 0x7fffu);
+    CHECK_EQ_U64(ym_decode_word(events.first[1].raw), 32767);
+
+    /* A future half-open event is retained with its signed word intact and
+       delivered at the next frame start in canonical source order. */
+    memset(&events, 0, sizeof events);
+    muhtari__observe_begin(m, 10u);
+    muhtari__synth_raw(m, 12u, 10u, 0xffffu);
+    muhtari__synth_raw(m, 12u, 11u, 0x8001u);
+    muhtari__observe_end(m);
+    CHECK_EQ_U64(events.count, 0u);
+    muhtari__observe_begin(m, 13u);
+    CHECK_EQ_U64(events.count, 2u);
+    CHECK_EQ_U64(events.first[0].tick, 12u);
+    CHECK_EQ_U64(events.first[0].source, 10u);
+    CHECK_EQ_U64(events.first[0].raw, 0xffffu);
+    CHECK_EQ_U64(events.first[1].tick, 12u);
+    CHECK_EQ_U64(events.first[1].source, 11u);
+    CHECK_EQ_U64(events.first[1].raw, 0x8001u);
+
+    /* Fill the complete derived carry bound using twelve changing sources
+       on each overshoot tick, then drain through the same callback path. */
+    memset(&events, 0, sizeof events);
+    const uint64_t carry_ticks = MUHTARI__SYNTH_OVERSHOOT_TICKS + 1u;
+    const uint64_t carry_records = 12u * carry_ticks;
+    const uint64_t carry_start = 100u;
+    CHECK_EQ_U64(MUHTARI__SYNTH_OVERSHOOT_TICKS, 20730u);
+    muhtari__observe_begin(m, carry_start);
+    for (uint64_t offset = 0u; offset < carry_ticks; offset++) {
+        uint64_t tick = carry_start + offset;
+        uint16_t level = (uint16_t)((tick & 1u) + 1u);
+        for (unsigned source = 0u; source < 10u; source++)
+            muhtari__synth_raw(m, tick, source, level);
+        muhtari__synth_raw(m, tick, 10u, (uint16_t)(0x8000u | (tick & 1u)));
+        muhtari__synth_raw(m, tick, 11u, (uint16_t)(0x7fffu - (tick & 1u)));
+    }
+    muhtari__observe_end(m);
+    CHECK_EQ_U64(events.count, 0u);
+    muhtari__observe_begin(m, carry_start + carry_ticks);
+    CHECK_EQ_U64(events.count, carry_records);
+    CHECK_EQ_U64(events.source_count[0], carry_ticks);
+    CHECK_EQ_U64(events.source_count[1], carry_ticks);
+    CHECK_EQ_U64(events.previous.tick, carry_start + carry_ticks - 1u);
+    CHECK_EQ_U64(events.previous.source, 11u);
+    muhtari_destroy(m);
+}
+
+static void ym_observer_public_region(uint32_t region)
+{
+    struct ym_allocations allocations = {0u, 0u};
+    struct ym_observed_events events = {0};
+    size_t bytes = images_ym2151(ym_image);
+    muhtari_media media = media_for(ym_image, bytes, MUHTARI_EXPANSION_XM);
+    media.region = region;
+    muhtari *m = make_machine_counted(&allocations);
+    CHECK(m != NULL);
+    if (m == NULL)
+        return;
+    CHECK_EQ_U64(muhtari__synth_observe(m, ym_observe_collect, &events), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(m->synth.ym_installed, 1u);
+    muhtari_info info;
+    memset(&info, 0, sizeof info);
+    info.size = (uint32_t)sizeof info;
+    CHECK_EQ_U64(muhtari_get_info(m, &info), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(info.sample_rate_num, 48000u);
+    CHECK_EQ_U64(info.sample_rate_den, 1u);
+    m->cart.expansion.control = 0x80u;
+    for (size_t i = 0u; i < sizeof ym_common / sizeof ym_common[0]; i++)
+        ym_write_reg(m, ym_common[i].reg, ym_common[i].value, m->bus.ticks);
+
+    uint32_t allocated_after_load = allocations.allocs;
+    uint32_t freed_after_load = allocations.frees;
+    muhtari_frame io;
+    memset(&io, 0, sizeof io);
+    io.size = (uint32_t)sizeof io;
+    io.audio = NULL;
+    io.audio_capacity = 0u;
+    CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+    CHECK(io.audio_count <= muhtari__timing(m).max_samples);
+    CHECK_EQ_U64(allocations.allocs, allocated_after_load);
+    CHECK_EQ_U64(allocations.frees, freed_after_load);
+
+    int16_t guarded[AUDIO_CAPACITY + 8u];
+    uint32_t required = ym_frame_sample_count(m);
+    CHECK(required > 0u && required <= muhtari__timing(m).max_samples);
+    for (size_t i = 0u; i < sizeof guarded / sizeof guarded[0]; i++)
+        guarded[i] = (int16_t)0x5a5a;
+    io.audio = guarded;
+    io.audio_capacity = required - 1u;
+    uint64_t ticks_before = m->bus.ticks;
+    uint32_t events_before = events.count;
+    CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_ERR_BUFFER_TOO_SMALL);
+    CHECK_EQ_U64(io.audio_count, 0u);
+    CHECK_EQ_U64(m->bus.ticks, ticks_before);
+    CHECK_EQ_U64(events.count, events_before);
+    for (size_t i = 0u; i < sizeof guarded / sizeof guarded[0]; i++)
+        CHECK_EQ_U64((uint16_t)guarded[i], 0x5a5au);
+
+    uint32_t ym_count_before[2] = {events.source_count[0], events.source_count[1]};
+    int16_t pcm_min = INT16_MAX, pcm_max = INT16_MIN;
+    for (unsigned frame_index = 0u; frame_index < 3u; frame_index++) {
+        required = ym_frame_sample_count(m);
+        for (size_t i = 0u; i < sizeof guarded / sizeof guarded[0]; i++)
+            guarded[i] = (int16_t)0x5a5a;
+        io.audio_capacity = required;
+        uint64_t audio_end = m->frame_deadline;
+        CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(io.audio_count, required);
+        for (uint32_t i = io.audio_count; i < sizeof guarded / sizeof guarded[0]; i++)
+            CHECK_EQ_U64((uint16_t)guarded[i], 0x5a5au);
+        for (uint32_t i = 0u; i < io.audio_count; i++) {
+            if (guarded[i] < pcm_min)
+                pcm_min = guarded[i];
+            if (guarded[i] > pcm_max)
+                pcm_max = guarded[i];
+        }
+        CHECK(events.previous.tick < audio_end);
+        CHECK_EQ_U64(allocations.allocs, allocated_after_load);
+        CHECK_EQ_U64(allocations.frees, freed_after_load);
+    }
+    CHECK(events.source_count[0] > ym_count_before[0]);
+    CHECK(events.source_count[1] > ym_count_before[1]);
+    CHECK(events.negative[0] > 0u && events.positive[0] > 0u);
+    CHECK(events.negative[1] > 0u && events.positive[1] > 0u);
+    CHECK(pcm_min < 0 && pcm_max > 0);
+    muhtari_destroy(m);
+    CHECK_EQ_U64(allocations.allocs, allocations.frees);
+}
+
+static void ym_observer(void)
+{
+    ym_observer_extrema();
+    ym_observer_public_region(MUHTARI_REGION_NTSC);
+    ym_observer_public_region(MUHTARI_REGION_PAL);
+}
+
 int main(int argc, char **argv)
 {
     if (argc != 2)
@@ -871,6 +1211,10 @@ int main(int argc, char **argv)
         ym_clock();
     else if (strcmp(argv[1], "irq") == 0)
         ym_irq();
+    else if (strcmp(argv[1], "mix") == 0)
+        ym_mix_extrema();
+    else if (strcmp(argv[1], "observer") == 0)
+        ym_observer();
     else
         return 2;
     CHECK_DONE();

@@ -686,7 +686,11 @@ static void ym_engine_sample(muhtari *m, uint64_t tick)
     }
     ym->output[0] = ym_roundtrip_dac(output[0]);
     ym->output[1] = ym_roundtrip_dac(output[1]);
+    /* Preserve the signed DAC word as an explicit two's-complement bit
+       pattern for the private observer; the mixer decodes it separately. */
+    muhtari__synth_raw(m, tick, 10u, (uint16_t)ym->output[0]);
     muhtari__synth_level(m, tick, 10u, (uint16_t)ym->output[0]);
+    muhtari__synth_raw(m, tick, 11u, (uint16_t)ym->output[1]);
     muhtari__synth_level(m, tick, 11u, (uint16_t)ym->output[1]);
 }
 
