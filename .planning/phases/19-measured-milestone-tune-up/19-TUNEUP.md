@@ -67,8 +67,9 @@ jobs are excluded.
 Windows ARM64 is the longest observed final job. The current-main advisory
 wasm32 lane finishes after the required aggregate; the release publisher adds a
 341s verification segment and the install-line job adds 7s. The final
-`build/v5-final-efficiency.json` records run-level queue `0.0s`; active job
-queues are 0–4s for release and 0–6s for current main. These few runs have
+`build/v5-final-efficiency.json` records run-level queue `0.0s`. Recalculation
+from the original `created_at` and `started_at` job timestamps gives active-job
+waits of 1–4s for release and 1–6s for current main. These few runs have
 whole-second timestamp precision and establish neither a queue trend nor a
 30-day/40-run or billed-minutes profile.
 
