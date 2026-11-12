@@ -16,6 +16,7 @@
 #define STATE_FIXED_BYTES 10908u
 #define STATE_EXPANSION_BYTES 131072u
 #define STATE_MAX_BYTES 307932u
+#define STATE_YM_BYTES 2470u
 
 enum state_fixture {
     STATE_LINEAR,
@@ -47,6 +48,7 @@ static int16_t public_audio_b[962u];
 static int16_t public_audio_reference[3u][962u];
 static uint8_t invalid_image[4] = {0u, 0u, 0u, 0u};
 static uint8_t battery_control[34816u];
+static uint8_t state_ym_expansion[131072u];
 static muhtari snapshot;
 
 enum boundary_mode { BOUNDARY_AFTER_INSTANCE, BOUNDARY_AFTER_CART };
@@ -368,6 +370,295 @@ static uint32_t state_run_frame(muhtari *m, uint8_t *video, int16_t *audio)
     frame.audio_capacity = 962u;
     CHECK_EQ_U64(muhtari_run_frame(m, &frame), MUHTARI_STATUS_OK);
     return frame.audio_count;
+}
+
+static void state_ym_observe(void *user, uint64_t tick, uint8_t source, uint16_t raw)
+{
+    (void)tick;
+    (void)source;
+    (void)raw;
+    (*(uint32_t *)user)++;
+}
+
+static void state_ym_write(muhtari *m, uint8_t reg, uint8_t value)
+{
+    uint64_t tick = m->bus.ticks;
+    muhtari__ym2151_write(m, 0x0460u, reg, tick);
+    muhtari__ym2151_write(m, 0x0461u, value, tick);
+}
+
+static void state_ym_expect_refusal(muhtari *m, const uint8_t *valid, const uint8_t *candidate,
+                                    size_t total, muhtari_status expected)
+{
+    uint8_t *expansion = m->cart.expansion.ram;
+    alloc_counts *counts = (alloc_counts *)m->allocator.user;
+    uint32_t *observations = (uint32_t *)m->observer_user;
+    uint32_t events_before = observations != NULL ? *observations : 0u;
+    uint32_t allocations = counts->allocs;
+    uint32_t frees = counts->frees;
+    CHECK(expansion != NULL);
+    if (expansion != NULL)
+        memcpy(state_ym_expansion, expansion, sizeof state_ym_expansion);
+    memcpy(public_control, candidate, total);
+    memcpy(&snapshot, m, sizeof snapshot);
+    CHECK_EQ_U64(muhtari_load_state(m, public_control, total), expected);
+    CHECK(memcmp(public_control, candidate, total) == 0);
+    CHECK(memcmp(&snapshot, m, sizeof snapshot) == 0);
+    if (expansion != NULL)
+        CHECK(memcmp(state_ym_expansion, expansion, sizeof state_ym_expansion) == 0);
+    if (observations != NULL)
+        CHECK_EQ_U64(*observations, events_before);
+    CHECK_EQ_U64(counts->allocs, allocations);
+    CHECK_EQ_U64(counts->frees, frees);
+    CHECK_EQ_U64(muhtari_save_state(m, public_second, total), MUHTARI_STATUS_OK);
+    CHECK(memcmp(public_second, valid, total) == 0);
+}
+
+static void state_ym_corrupt(muhtari *m, const uint8_t *valid, size_t total, size_t field,
+                             unsigned width, uint64_t value)
+{
+    memcpy(public_first, valid, total);
+    if (width == 1u)
+        public_first[field] = (uint8_t)value;
+    else if (width == 2u)
+        put_u16(public_first + field, (uint16_t)value);
+    else if (width == 4u)
+        put_u32(public_first + field, (uint32_t)value);
+    else
+        put_u64(public_first + field, value);
+    state_rechecksum(public_first, total);
+    state_ym_expect_refusal(m, valid, public_first, total, MUHTARI_STATUS_ERR_INVALID_STATE);
+}
+
+static void state_ym_checkpoint(muhtari *source, muhtari *restored)
+{
+    size_t total = muhtari_state_size(source);
+    alloc_counts *source_counts = (alloc_counts *)source->allocator.user;
+    alloc_counts *restored_counts = (alloc_counts *)restored->allocator.user;
+    uint32_t *source_events = (uint32_t *)source->observer_user;
+    uint32_t *restored_events = (uint32_t *)restored->observer_user;
+    CHECK_EQ_U64(total, muhtari_state_size(restored));
+    CHECK(total <= sizeof public_snapshot);
+    if (total == 0u || total > sizeof public_snapshot)
+        return;
+    CHECK_EQ_U64(muhtari_save_state(source, public_snapshot, total), MUHTARI_STATUS_OK);
+    uint8_t *restored_expansion = restored->cart.expansion.ram;
+    uint32_t source_allocs = source_counts->allocs;
+    uint32_t source_frees = source_counts->frees;
+    uint32_t restored_allocs = restored_counts->allocs;
+    uint32_t restored_frees = restored_counts->frees;
+    uint32_t source_events_before = source_events != NULL ? *source_events : 0u;
+    uint32_t restored_events_before = restored_events != NULL ? *restored_events : 0u;
+    CHECK_EQ_U64(muhtari_load_state(restored, public_snapshot, total), MUHTARI_STATUS_OK);
+    if (source_events != NULL)
+        CHECK_EQ_U64(*source_events, source_events_before);
+    if (restored_events != NULL)
+        CHECK_EQ_U64(*restored_events, restored_events_before);
+    CHECK_EQ_U64(muhtari_save_state(restored, public_second, total), MUHTARI_STATUS_OK);
+    CHECK(memcmp(public_snapshot, public_second, total) == 0);
+    CHECK(restored->cart.expansion.ram == restored_expansion);
+    CHECK_EQ_U64(source_counts->allocs, source_allocs);
+    CHECK_EQ_U64(source_counts->frees, source_frees);
+    CHECK_EQ_U64(restored_counts->allocs, restored_allocs);
+    CHECK_EQ_U64(restored_counts->frees, restored_frees);
+    if (source->observer != NULL)
+        CHECK_EQ_U64(muhtari__synth_observe(source, NULL, NULL), MUHTARI_STATUS_OK);
+    if (restored->observer != NULL)
+        CHECK_EQ_U64(muhtari__synth_observe(restored, NULL, NULL), MUHTARI_STATUS_OK);
+
+    CHECK(restored_expansion != NULL);
+    uint32_t source_samples = state_run_frame(source, public_video_a, public_audio_a);
+    uint32_t restored_samples = state_run_frame(restored, public_video_b, public_audio_b);
+    CHECK_EQ_U64(restored_samples, source_samples);
+    CHECK(memcmp(public_video_a, public_video_b,
+                 (size_t)320u * muhtari__timing(source).height) == 0);
+    CHECK(memcmp(public_audio_a, public_audio_b,
+                 (size_t)source_samples * sizeof public_audio_a[0]) == 0);
+    CHECK(memcmp(&source->ym, &restored->ym, sizeof source->ym) == 0);
+    CHECK(memcmp(&source->bus, &restored->bus, sizeof source->bus) == 0);
+    CHECK_EQ_U64(source->frames, restored->frames);
+    CHECK_EQ_U64(source->lag_frames, restored->lag_frames);
+    CHECK_EQ_U64(source->battery.generation, restored->battery.generation);
+    CHECK(memcmp(source->battery.data, restored->battery.data, source->battery.bytes) == 0);
+    CHECK_EQ_U64(muhtari_save_state(source, public_snapshot, total), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_save_state(restored, public_second, total), MUHTARI_STATUS_OK);
+    CHECK(memcmp(public_snapshot, public_second, total) == 0);
+}
+
+static void test_ym(void)
+{
+    for (unsigned region_index = 0u; region_index < 2u; region_index++) {
+        alloc_counts source_counts;
+        alloc_counts restored_counts;
+        muhtari *source = state_create(&source_counts);
+        muhtari *restored = state_create(&restored_counts);
+        uint32_t source_observations = 0u;
+        uint32_t restored_observations = 0u;
+        CHECK(source != NULL && restored != NULL);
+        if (source == NULL || restored == NULL) {
+            muhtari_destroy(restored);
+            muhtari_destroy(source);
+            continue;
+        }
+        size_t image_bytes = images_ym2151(image);
+        muhtari_media media = state_media_for_image(image, image_bytes);
+        media.expansion = MUHTARI_EXPANSION_XM;
+        media.port[1] = MUHTARI_PORT_SAVEKEY;
+        media.region = region_index == 0u ? MUHTARI_REGION_NTSC : MUHTARI_REGION_PAL;
+        CHECK_EQ_U64(muhtari__synth_observe(source, state_ym_observe, &source_observations),
+                     MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(muhtari__synth_observe(restored, state_ym_observe, &restored_observations),
+                     MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(muhtari_load(source, &media), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(muhtari_load(restored, &media), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(source->synth.ym_installed, 1u);
+        CHECK_EQ_U64(source->battery.bytes, 34816u);
+
+        size_t total = muhtari_state_size(source);
+        CHECK(total > STATE_YM_BYTES + STATE_HEADER_BYTES);
+        CHECK_EQ_U64(muhtari__state_payload_size(source) + STATE_HEADER_BYTES, total);
+        CHECK_EQ_U64(muhtari_save_state(source, public_snapshot, total), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(get_u32(public_snapshot + 8u), 2u);
+        CHECK_EQ_U64(get_u32(public_snapshot + 20u), 7u);
+        memcpy(public_first, public_snapshot, total);
+        public_first[24] ^= 1u;
+        state_ym_expect_refusal(source, public_snapshot, public_first, total,
+                                MUHTARI_STATUS_ERR_INVALID_STATE);
+        CHECK_EQ_U64(muhtari_save_state(source, public_first, total - 1u),
+                     MUHTARI_STATUS_ERR_BUFFER_TOO_SMALL);
+        memset(public_first + total, 0xA5, 4u);
+        CHECK_EQ_U64(muhtari_save_state(source, public_first, total + 4u), MUHTARI_STATUS_OK);
+        CHECK_EQ_HEX(public_first[total], 0xA5u);
+        CHECK_EQ_HEX(public_first[total + 3u], 0xA5u);
+        CHECK_EQ_U64(muhtari_load_state(restored, public_snapshot, total), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(muhtari_save_state(restored, public_second, total), MUHTARI_STATUS_OK);
+        CHECK(memcmp(public_snapshot, public_second, total) == 0);
+
+        /* Let the cartridge issue its real key-on writes, then checkpoint
+           the running chip and its bus/audio schedulers in each region. */
+        for (unsigned frame = 0u; frame < 3u; frame++)
+            (void)state_run_frame(source, public_video_a, public_audio_a);
+        CHECK(source->ym.operators[0].key_state != 0u);
+        state_ym_checkpoint(source, restored);
+
+        /* Re-key at a slow attack rate, then exercise fast decay and release
+           through the same bus writes the emulated cartridge uses. */
+        state_ym_write(source, 0x80u, 0x01u);
+        state_ym_write(source, 0x08u, 0x00u);
+        state_ym_write(source, 0x08u, 0x78u);
+        state_ym_checkpoint(source, restored);
+        CHECK(source->ym.operators[0].envelope_state >= 1u &&
+              source->ym.operators[0].envelope_state <= 4u);
+        state_ym_write(source, 0x80u, 0x1fu);
+        state_ym_write(source, 0xa0u, 0x1fu);
+        state_ym_write(source, 0xc0u, 0x1fu);
+        state_ym_write(source, 0xe0u, 0xffu); /* maximum sustain cache is 992 */
+        state_ym_checkpoint(source, restored);
+        state_ym_write(source, 0x08u, 0x00u);
+        state_ym_checkpoint(source, restored);
+
+        /* Nonzero feedback/noise/LFO plus a running timer and its write-busy
+           edge make the later state a more demanding continuation point. */
+        state_ym_write(source, 0x20u, 0xcfu);
+        state_ym_write(source, 0x0fu, 0x8fu);
+        state_ym_write(source, 0x18u, 0xffu);
+        state_ym_write(source, 0x1bu, 0x03u);
+        state_ym_write(source, 0x10u, 0xffu);
+        state_ym_write(source, 0x11u, 0x03u);
+        state_ym_write(source, 0x14u, 0x05u);
+        CHECK_EQ_U64(source->ym.timer_running[0], 1u);
+        CHECK(source->ym.clocks < source->ym.busy_end);
+        state_ym_checkpoint(source, restored);
+
+        total = muhtari_state_size(source);
+        CHECK_EQ_U64(muhtari_save_state(source, public_snapshot, total), MUHTARI_STATUS_OK);
+        size_t ym_start = STATE_HEADER_BYTES + muhtari__state_payload_size(source) - STATE_YM_BYTES;
+        /* Fixed serialized offsets: raw[10..11], chip globals, registers,
+           LFO/noise history, 32 operators, then feedback channels. */
+        const size_t noise_lfo = 341u;
+        const size_t operators = 853u;
+        const size_t operator_envelope = 14u;
+        state_ym_corrupt(source, public_snapshot, total, ym_start + noise_lfo, 2u, 1u);
+        state_ym_corrupt(source, public_snapshot, total,
+                         ym_start + operators + operator_envelope, 1u, 0u);
+        state_ym_corrupt(source, public_snapshot, total, ym_start + 4u + 72u, 1u,
+                         source->ym.timer_running[0] ^ 1u);
+        state_ym_corrupt(source, public_snapshot, total, ym_start + 20u, 8u,
+                         source->ym.clocks + 69u);
+        state_ym_corrupt(source, public_snapshot, total, ym_start + 12u, 8u,
+                         source->ym.clocks + 1u);
+        state_ym_corrupt(source, public_snapshot, total, ym_start + 66u, 2u,
+                         (uint16_t)source->ym.output[0] ^ 1u);
+        state_ym_corrupt(source, public_snapshot, total,
+                         ym_start + operators + 31u * 49u + 48u, 1u, 32u);
+        state_ym_corrupt(source, public_snapshot, total, 8094u, 4u,
+                         MUHTARI__SYNTH_PCM_CAPACITY + 1u);
+
+        memcpy(public_first, public_snapshot, total);
+        put_u32(public_first + 8u, 3u);
+        state_rechecksum(public_first, total);
+        state_ym_expect_refusal(source, public_snapshot, public_first, total,
+                                MUHTARI_STATUS_ERR_UNSUPPORTED_STATE);
+        memcpy(public_first, public_snapshot, total);
+        put_u32(public_first + 20u, 8u);
+        state_rechecksum(public_first, total);
+        state_ym_expect_refusal(source, public_snapshot, public_first, total,
+                                MUHTARI_STATUS_ERR_UNSUPPORTED_STATE);
+        memcpy(public_first, public_snapshot, total);
+        public_first[40] ^= 1u;
+        state_rechecksum(public_first, total);
+        state_ym_expect_refusal(source, public_snapshot, public_first, total,
+                                MUHTARI_STATUS_ERR_STATE_MISMATCH);
+        expect_state_refusal(source, public_snapshot, total - 1u,
+                             MUHTARI_STATUS_ERR_INVALID_STATE);
+        memcpy(public_first, public_snapshot, total);
+        public_first[total - 1u] ^= 1u;
+        state_ym_expect_refusal(source, public_snapshot, public_first, total,
+                                MUHTARI_STATUS_ERR_INVALID_STATE);
+        state_ym_checkpoint(source, restored);
+
+        /* A region-qualified YM identity must refuse before touching the
+           equivalent PAL machine. */
+        if (region_index == 0u) {
+            alloc_counts pal_counts;
+            muhtari *pal = state_create(&pal_counts);
+            CHECK(pal != NULL);
+            if (pal != NULL) {
+                muhtari_media pal_media = media;
+                pal_media.region = MUHTARI_REGION_PAL;
+                CHECK_EQ_U64(muhtari_load(pal, &pal_media), MUHTARI_STATUS_OK);
+                CHECK_EQ_U64(muhtari_save_state(pal, first, total), MUHTARI_STATUS_OK);
+                state_ym_expect_refusal(pal, first, public_snapshot, total,
+                                        MUHTARI_STATUS_ERR_STATE_MISMATCH);
+                muhtari_destroy(pal);
+            }
+        }
+
+        alloc_counts legacy_counts;
+        muhtari *legacy = state_create(&legacy_counts);
+        CHECK(legacy != NULL);
+        if (legacy != NULL) {
+            size_t legacy_bytes = images_ym2151(identity_image);
+            identity_image[67] &= (uint8_t)~0x08u;
+            images_footer(identity_image + IMAGES_HEADER,
+                          (uint32_t)(legacy_bytes - IMAGES_HEADER));
+            muhtari_media legacy_media = state_media_for_image(identity_image, legacy_bytes);
+            legacy_media.expansion = MUHTARI_EXPANSION_XM;
+            legacy_media.port[1] = MUHTARI_PORT_SAVEKEY;
+            legacy_media.region = media.region;
+            CHECK_EQ_U64(muhtari_load(legacy, &legacy_media), MUHTARI_STATUS_OK);
+            CHECK_EQ_U64(muhtari_state_size(legacy) + STATE_YM_BYTES, total);
+            CHECK_EQ_U64(muhtari_save_state(legacy, first, muhtari_state_size(legacy)),
+                         MUHTARI_STATUS_OK);
+            CHECK_EQ_U64(muhtari_load_state(source, first, muhtari_state_size(legacy)),
+                         MUHTARI_STATUS_ERR_INVALID_STATE);
+            muhtari_destroy(legacy);
+        }
+        muhtari_destroy(restored);
+        muhtari_destroy(source);
+        CHECK_EQ_U64(source_counts.allocs, source_counts.frees);
+        CHECK_EQ_U64(restored_counts.allocs, restored_counts.frees);
+    }
 }
 
 static size_t expected_payload_size(const muhtari *m)
@@ -1586,6 +1877,8 @@ static void test_fields(void)
     expect_invalid_u32(m, bytes, 8066u, MUHTARI__SYNTH_PCM_CAPACITY);
     expect_invalid_u32(m, bytes, 8070u, MUHTARI__SYNTH_PCM_CAPACITY + 1u);
     expect_invalid_u32(m, bytes, 8074u, 1u);     /* Sample clock is identity-bound. */
+    expect_invalid_u32(m, bytes, 8094u, MUHTARI__SYNTH_PCM_CAPACITY + 1u);
+    /* Synthesized audio carry history cannot exceed its fixed FIFO. */
     expect_invalid_u32(m, bytes, 8098u, 18361u); /* Mixed level is within DAC scale. */
     expect_invalid_u8(m, bytes, 8123u, 2u);      /* Synth pending is a boolean. */
     expect_invalid_u8(m, bytes, 8124u, 3u);      /* At most two installed POKEYs. */
@@ -2419,7 +2712,7 @@ static const struct {
     void (*run)(void);
 } cases[] = {{"payload", test_payload}, {"fields", test_fields},
              {"aliases", test_aliases}, {"lifecycle", test_lifecycle},
-             {"battery", test_battery}, {"topologies", test_topologies}};
+             {"battery", test_battery}, {"topologies", test_topologies}, {"ym", test_ym}};
 
 static void test_equality_report(void)
 {

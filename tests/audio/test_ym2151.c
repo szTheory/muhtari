@@ -95,23 +95,25 @@ struct span_snapshot {
 static void ym_tracer(void)
 {
     static struct span_snapshot spans[4];
+    static muhtari before;
     static const uint32_t kinds[4] = {MUHTARI_MEMORY_SYSTEM_RAM, MUHTARI_MEMORY_RIOT_RAM,
                                       MUHTARI_MEMORY_CART_RAM, MUHTARI_MEMORY_EXPANSION_RAM};
-    static uint8_t guarded[4096];
-    static uint8_t guarded_before[sizeof guarded];
     int16_t audio_a[AUDIO_CAPACITY];
     int16_t audio_b[AUDIO_CAPACITY];
-    uint8_t arbitrary[64];
+    struct ym_allocations a_alloc = {0u, 0u};
+    struct ym_allocations b_alloc = {0u, 0u};
     uint8_t *battery_before;
+    uint8_t *state;
+    uint8_t *candidate;
+    size_t state_bytes;
     size_t old_state_bytes;
     uint8_t *old_state;
-    uint64_t initial_ticks, initial_clocks, initial_generation;
 
     size_t ym_bytes = images_ym2151(ym_image);
     muhtari_media ym_media = media_for(ym_image, ym_bytes, MUHTARI_EXPANSION_XM);
     ym_media.port[1] = MUHTARI_PORT_SAVEKEY;
-    muhtari *a = make_machine();
-    muhtari *b = make_machine();
+    muhtari *a = make_machine_counted(&a_alloc);
+    muhtari *b = make_machine_counted(&b_alloc);
     CHECK_EQ_U64(muhtari_load(a, &ym_media), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(muhtari_load(b, &ym_media), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(a->synth.ym_installed, 1u);
@@ -121,7 +123,19 @@ static void ym_tracer(void)
     CHECK_EQ_U64(a->synth.raw[10], 0u);
     CHECK_EQ_U64(a->synth.raw[11], 0u);
     CHECK_EQ_U64(a->battery.bytes, 34816u);
-    CHECK_EQ_U64(muhtari_state_size(a), 0u);
+    state_bytes = muhtari_state_size(a);
+    CHECK(state_bytes > 64u);
+    CHECK_EQ_U64(state_bytes, muhtari_state_size(b));
+    state = malloc(state_bytes + 4u);
+    candidate = malloc(state_bytes);
+    CHECK(state != NULL && candidate != NULL);
+    if (state == NULL || candidate == NULL) {
+        free(candidate);
+        free(state);
+        muhtari_destroy(b);
+        muhtari_destroy(a);
+        return;
+    }
 
     for (unsigned i = 0u; i < 4u; i++) {
         memset(&spans[i].span, 0, sizeof spans[i].span);
@@ -137,21 +151,37 @@ static void ym_tracer(void)
     CHECK(battery_before != NULL);
     if (battery_before != NULL)
         memcpy(battery_before, a->battery.data, a->battery.bytes);
-    initial_ticks = a->bus.ticks;
-    initial_clocks = a->ym.clocks;
-    initial_generation = a->battery.generation;
 
-    memset(guarded, 0xA7, sizeof guarded);
-    memcpy(guarded_before, guarded, sizeof guarded);
-    CHECK_EQ_U64(muhtari_save_state(a, guarded, sizeof guarded),
-                 MUHTARI_STATUS_ERR_STATE_UNAVAILABLE);
-    memset(arbitrary, 0x39, sizeof arbitrary);
-    CHECK_EQ_U64(muhtari_load_state(a, arbitrary, sizeof arbitrary),
-                 MUHTARI_STATUS_ERR_STATE_UNAVAILABLE);
-    CHECK_EQ_U64(a->bus.ticks, initial_ticks);
-    CHECK_EQ_U64(a->ym.clocks, initial_clocks);
-    CHECK_EQ_U64(a->battery.generation, initial_generation);
-    CHECK(memcmp(guarded, guarded_before, sizeof guarded) == 0);
+    memset(state, 0xA7, state_bytes + 4u);
+    uint32_t a_allocs = a_alloc.allocs, a_frees = a_alloc.frees;
+    CHECK_EQ_U64(muhtari_save_state(a, state, state_bytes + 4u), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(state[8], 2u);
+    CHECK_EQ_U64(state[20], 7u);
+    CHECK_EQ_HEX(state[state_bytes], 0xA7u);
+    memcpy(candidate, state, state_bytes);
+    CHECK_EQ_U64(muhtari_save_state(a, state, state_bytes - 1u),
+                 MUHTARI_STATUS_ERR_BUFFER_TOO_SMALL);
+    CHECK(memcmp(candidate, state, state_bytes) == 0);
+    CHECK_EQ_U64(muhtari_save_state(a, state, state_bytes + 4u), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_load_state(b, state, state_bytes), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_save_state(b, candidate, state_bytes), MUHTARI_STATUS_OK);
+    CHECK(memcmp(state, candidate, state_bytes) == 0);
+    CHECK_EQ_U64(a_alloc.allocs, a_allocs);
+    CHECK_EQ_U64(a_alloc.frees, a_frees);
+    CHECK_EQ_HEX(state[state_bytes], 0xA7u);
+
+    /* Reject a damaged envelope and a truncated caller span without changing
+       the live machine, expansion RAM, battery bytes or stable RAM spans. */
+    memcpy(&before, a, sizeof before);
+    memcpy(candidate, state, state_bytes);
+    candidate[24] ^= 1u;
+    CHECK_EQ_U64(muhtari_load_state(a, candidate, state_bytes),
+                 MUHTARI_STATUS_ERR_INVALID_STATE);
+    CHECK(memcmp(&before, a, sizeof before) == 0);
+    CHECK(battery_before == NULL ||
+          memcmp(a->battery.data, battery_before, a->battery.bytes) == 0);
+    memcpy(candidate, state, 64u);
+    CHECK_EQ_U64(muhtari_load_state(a, candidate, 64u), MUHTARI_STATUS_ERR_INVALID_STATE);
     for (unsigned i = 0u; i < 4u; i++) {
         muhtari_span after;
         memset(&after, 0, sizeof after);
@@ -162,11 +192,9 @@ static void ym_tracer(void)
         if (after.bytes != 0u && spans[i].copy != NULL)
             CHECK(memcmp(after.data, spans[i].copy, after.bytes) == 0);
     }
-    CHECK(battery_before == NULL ||
-          memcmp(a->battery.data, battery_before, a->battery.bytes) == 0);
 
-    /* A valid legacy-format state from a non-YM machine is also refused
-       before its input is inspected or applied. */
+    /* A format-1 state remains valid for a non-YM machine and refuses on a
+       YM machine because the per-machine envelope extent differs. */
     images_header(old_image, 4u, "YM legacy control", YM_BODY, 0u);
     images_fill(old_image + IMAGES_HEADER, YM_BODY, 0x2151u);
     images_footer(old_image + IMAGES_HEADER, YM_BODY);
@@ -188,11 +216,20 @@ static void ym_tracer(void)
     if (old_state != NULL) {
         CHECK_EQ_U64(muhtari_save_state(legacy, old_state, old_state_bytes), MUHTARI_STATUS_OK);
         CHECK_EQ_U64(muhtari_load_state(a, old_state, old_state_bytes),
-                     MUHTARI_STATUS_ERR_STATE_UNAVAILABLE);
+                     MUHTARI_STATUS_ERR_INVALID_STATE);
     }
 
-    /* Public refusal leaves the live YM trace untouched: both independently
-       loaded instances now execute and produce the same bounded PCM. */
+    /* Resume from a nontrivial cartridge-generated YM stream and keep
+       repeating save/load between public frame calls. */
+    for (unsigned i = 0u; i < 3u; i++) {
+        uint32_t count = 0u;
+        CHECK_EQ_U64(frame(a, audio_a, &count), MUHTARI_STATUS_OK);
+    }
+    CHECK(a->ym.operators[0].key_state != 0u);
+    CHECK_EQ_U64(muhtari_save_state(a, state, state_bytes), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_load_state(b, state, state_bytes), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_save_state(b, candidate, state_bytes), MUHTARI_STATUS_OK);
+    CHECK(memcmp(state, candidate, state_bytes) == 0);
     int16_t minimum = INT16_MAX;
     int16_t maximum = INT16_MIN;
     uint64_t nonzero = 0u;
@@ -202,10 +239,7 @@ static void ym_tracer(void)
         CHECK_EQ_U64(frame(b, audio_b, &count_b), MUHTARI_STATUS_OK);
         CHECK_EQ_U64(count_a, count_b);
         CHECK(memcmp(audio_a, audio_b, count_a * sizeof audio_a[0]) == 0);
-        if (frame_index == 0u)
-            CHECK_EQ_U64(count_a, 54u);
-        else
-            CHECK(count_a == 800u || count_a == 801u);
+        CHECK(count_a == 800u || count_a == 801u);
         for (uint32_t i = 0u; i < count_a; i++) {
             int16_t sample = audio_a[i];
             if (sample < minimum)
@@ -224,6 +258,10 @@ static void ym_tracer(void)
         CHECK(memcmp(a->synth.raw, b->synth.raw, sizeof a->synth.raw) == 0);
         CHECK_EQ_U64(a->battery.generation, b->battery.generation);
         CHECK(memcmp(a->battery.data, b->battery.data, a->battery.bytes) == 0);
+        CHECK_EQ_U64(muhtari_save_state(a, state, state_bytes), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(muhtari_load_state(b, state, state_bytes), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(muhtari_save_state(b, candidate, state_bytes), MUHTARI_STATUS_OK);
+        CHECK(memcmp(state, candidate, state_bytes) == 0);
     }
     CHECK(nonzero > 100u);
     CHECK(minimum < 0);
@@ -241,6 +279,8 @@ static void ym_tracer(void)
         free(spans[i].copy);
     free(battery_before);
     free(old_state);
+    free(candidate);
+    free(state);
     muhtari_destroy(legacy_irq);
     muhtari_destroy(legacy);
     muhtari_destroy(b);
@@ -1227,7 +1267,7 @@ static void ym_lifecycle(void)
     CHECK_EQ_U64(muhtari_load(fresh, &ntsc_media), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(a->synth.ym_installed, 1u);
     CHECK_EQ_U64(pal->synth.ym_installed, 1u);
-    CHECK_EQ_U64(muhtari_state_size(a), 0u);
+    CHECK(muhtari_state_size(a) > 64u);
 
     /* Interleave different regions, then require the PAL instance to match
        its isolated control byte-for-byte across chip and scheduler state. */
@@ -1277,7 +1317,7 @@ static void ym_lifecycle(void)
     CHECK_EQ_U64(a->synth.mixed_level, 0u);
     CHECK_EQ_U64(a->synth.pending, 0u);
     CHECK_EQ_U64(a->synth.pcm_count, 0u);
-    CHECK_EQ_U64(muhtari_state_size(a), 0u);
+    CHECK(muhtari_state_size(a) > 64u);
     CHECK(a->observer == ym_observe_collect);
 
     memset(&events, 0, sizeof events);
@@ -1305,8 +1345,7 @@ static void ym_lifecycle(void)
     CHECK_EQ_U64(a_alloc.frees, frees_before);
 
     /* Replacing content with an accepted non-YM image is the public unload
-       transition; reloading XM must reinstall a reset YM and keep state
-       unavailable until the later complete continuation plan. */
+       transition; reloading XM reinstalls a reset YM with a valid envelope. */
     ym_make_legacy_image(old_image);
     muhtari_media legacy_media = media_for(old_image, YM_IMAGE_BYTES, MUHTARI_EXPANSION_OFF);
     CHECK_EQ_U64(muhtari_load(a, &legacy_media), MUHTARI_STATUS_OK);
@@ -1314,12 +1353,12 @@ static void ym_lifecycle(void)
     CHECK(muhtari_state_size(a) > 0u);
     CHECK_EQ_U64(muhtari_load(a, &ntsc_media), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(a->synth.ym_installed, 1u);
-    CHECK_EQ_U64(muhtari_state_size(a), 0u);
+    CHECK(muhtari_state_size(a) > 64u);
     CHECK_EQ_U64(a->ym.clocks, 0u);
     CHECK_EQ_U64(a->ym.output[0], 0u);
     CHECK_EQ_U64(a->ym.output[1], 0u);
     CHECK(a->observer == ym_observe_collect);
-    CHECK_EQ_U64(muhtari_state_size(a), 0u);
+    CHECK(muhtari_state_size(a) > 64u);
 
     muhtari_destroy(fresh);
     muhtari_destroy(pal_reference);
@@ -1490,7 +1529,7 @@ static void ym_hostile_run(int jammed)
         for (size_t i = used_video; i < sizeof video / sizeof video[0]; i++)
             CHECK_EQ_U64(video[i], 0xa7u);
         CHECK(m->ym.sample_divider < 64u);
-        CHECK_EQ_U64(muhtari_state_size(m), 0u);
+        CHECK(muhtari_state_size(m) > 64u);
         CHECK_EQ_U64(allocations.allocs, allocs_after_load);
         CHECK_EQ_U64(allocations.frees, frees_after_load);
         active_frames++;
