@@ -111,12 +111,16 @@ if(TARGET muhtari_libretro)
         ${PROJECT_BINARY_DIR}/tests/input-carts/input.a78 --output ${observer_output_dir}/native.json
       LABELS libretro portable TIMEOUT 30)
     set_tests_properties(libretro.observe PROPERTIES FIXTURES_REQUIRED input_carts)
+    # execute_process runs outside CTest, so carry the slow-lane timeout scale
+    # through to the observer child as well.
+    math(EXPR ym_observer_timeout "25 * ${MUHTARI_TIMEOUT_SCALE}")
     muhtari_add_test(NAME libretro.observe.ym
       COMMAND ${CMAKE_COMMAND}
         "-DOBSERVER=$<TARGET_FILE:muhtari-test-libretro-observe>"
         "-DEMULATOR=${CMAKE_CROSSCOMPILING_EMULATOR}"
         "-DFIXTURE_DIR=${PROJECT_BINARY_DIR}/tests/ym2151"
         "-DOUT=${observer_output_dir}"
+        "-DOBSERVER_TIMEOUT=${ym_observer_timeout}"
         -P ${PROJECT_SOURCE_DIR}/tests/libretro/ym_observe.cmake
       LABELS libretro portable TIMEOUT 30)
     set_tests_properties(libretro.observe.ym PROPERTIES FIXTURES_REQUIRED ym_carts)

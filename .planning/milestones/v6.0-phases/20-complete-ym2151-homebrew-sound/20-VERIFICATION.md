@@ -177,7 +177,7 @@ N/A — this is a core-library/emulator phase with no user-facing visual or exte
 
 ## Gaps Summary
 
-No must-have truth failed and no human-verification item remains. The targeted current restore/equality checks pass. The broader local runner.hashes_file sanitizer attempt timed out at 286 seconds and is explicitly not counted as passed; current corrected-head hosted CI remains a shipping check. The earlier hosted failure was on old head 3cce920, not this correction. Plan 20-07's cost-evidence path is stale after archive relocation, but the archived evidence file exists. These are recorded evidence/scope limits, not an observed failure of the phase goal.
+No must-have truth failed and no human-verification item remains. The targeted current restore/equality checks pass. The broader local runner.hashes_file sanitizer attempt timed out at 286 seconds and is explicitly not counted as passed. The earlier PAL rewind failure was on old head 3cce920; a later exact-head hosted full-inventory run exposed a separate `libretro.observe.ym` child timeout under PowerPC/QEMU. `tests/libretro/ym_observe.cmake` now receives the existing slow-lane scale, and its native pass/fault controls pass locally; the exact-source hosted BE32 check is the acceptance evidence for that lane. See the reproduced timeout diagnosis in [LESSONS.md](../../../LESSONS.md#scale-nested-observer-deadlines-with-the-emulated-lane-2026-11-12). Plan 20-07's cost-evidence path is stale after archive relocation, but the archived evidence file exists. The hosted timeout was in the test wrapper and did not report an YM output mismatch or establish a failure of the phase goal.
 
 ---
 

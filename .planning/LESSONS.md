@@ -720,3 +720,21 @@ With MSVC `/W4 /WX`, casting a complemented unsigned constant to `uint8_t` warns
 ## Keep quality observations within each lane's registered inventory (2026-11-12)
 
 The hygiene preset registers repository checks and deliberately returns before registering product tests. A quality report must therefore mark the YM workload as not measured in that lane instead of invoking a test executable that is absent from its clean build. Product lanes still execute the workload and fail if its binary or report is missing. The hosted hygiene job reproduces the hidden artifact dependency with `hashes: YM numeric report ntsc: no such file or directory`: [CI run 43228680657](https://github.com/szTheory/muhtari/actions/runs/43228680657).
+
+## Scale nested observer deadlines with the emulated lane (2026-11-12)
+
+`muhtari_add_test` scales CTest's outer deadline, but a CMake script's
+`execute_process(TIMEOUT ...)` is independent. On the `dff2f7b` merge commit,
+`libretro.observe.ym` passed in the native inventory and timed out at the
+wrapper's fixed 25-second child bound in the PowerPC/QEMU inventory; the outer
+CTest bound was 390 seconds. This is a harness deadline mismatch, not an
+observer-output mismatch. Pass `25 * MUHTARI_TIMEOUT_SCALE` to each observer
+child while keeping the existing CTest multiplier and nonzero-exit failure.
+
+The original `cmake --workflow --preset be32-full` lane failed at that child
+timeout in [Nightly equality job 131292885760](https://github.com/szTheory/muhtari/actions/runs/43250000793/job/131292885760).
+After the fix, the native script invocation passes with `OBSERVER_TIMEOUT=25`
+(exit 0, N/A-local); `OBSERVER_TIMEOUT=0` fails with the expected positive-bound
+diagnostic (exit 1); and a `/usr/bin/false` observer still fails with the
+observer-failure diagnostic (exit 1). `qemu-ppc` is unavailable locally, so
+only the exact-source hosted BE32 run can establish the scaled emulated path.
