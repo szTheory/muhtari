@@ -57,7 +57,26 @@ recommendations and local verification proceed without another approval.
   3. A host can reset, unload/reload, isolate instances and save/restore every YM state component mid-stream with identical subsequent audio, no post-load allocation, finite work and bounded output writes; invalid or incompatible state preserves the live machine and committed battery bytes under the compatibility policy documented before implementation.
   4. The same owned diagnostic passes through the actual public C library, headless runner, loaded libretro core, portable Wasm artifact and clean extracted/installed package consumers. Independent numeric expectations precede cross-route hashes; source/package identity, notices and existing callback/batch/fallback/refusal/integrity fault controls remain effective.
   5. Integrators can identify the exact supported request/profile and evidence limits in existing docs; maintainers can inspect justified finite work, integer headroom and memory/state bounds plus representative ordinary/worst-legal native/Wasm cost measurements using current mechanisms. The C17 seed specialization retains its license, provenance pin and update duty without adding a runtime C++ dependency.
-**Plans:** TBD
+**Plans:** 7 plans
+Plans:
+**Wave 1**
+- [ ] 20-01-PLAN.md — Public YM tracer, fail-closed state guard and exact-seed OPM parity
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 20-02-PLAN.md — YM bus timing, signed audio mix, observations and lifecycle bounds
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 20-03-PLAN.md — Complete YM save-state continuation and version compatibility
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [ ] 20-04-PLAN.md — Public C, runner and loaded native libretro diagnostic consumers
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [ ] 20-05-PLAN.md — Emitted Wasm and clean installed/extracted package consumers
+- [ ] 20-06-PLAN.md — Genuine old/new state compatibility and legacy byte identity
+
+**Wave 6** *(blocked on Wave 5 completion)*
+- [ ] 20-07-PLAN.md — Measured costs, documentation, full local gates and review
 **UI hint:** no
 
 Chip, bus, audio, state, all deliverables, package acceptance, tests, documentation
@@ -71,19 +90,20 @@ validation-tail phase completes this outcome. Phase planning reuses
 ## Progress
 
 **Execution order:** 19 → 20. All nine requirements are assigned exactly once;
-Phase 19 is complete and Phase 20 remains unplanned and unaccepted.
+Phase 19 is complete and Phase 20 is planned and ready to execute, but remains
+unaccepted until its implementation and verification gates pass.
 
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
 | 19. Measured milestone tune-up | 1/1 | Complete    | 2026-11-11 |
-| 20. Complete YM2151 homebrew sound | 0/TBD | Not started | - |
+| 20. Complete YM2151 homebrew sound | 0/7 | Planned | - |
 
 ## Next boundary
 
 The agent continues the owner-authorized autonomous local run into Phase 20
-planning using the saved profile and integration evidence; no routine roadmap
-acceptance is pending. After clearing context, resume with `$gsd-autonomous` for
-v6.0 and reconcile the live plan index before selecting the next step.
+execution using the saved plans and integration evidence; no routine roadmap
+acceptance is pending. After clearing context, resume with `$gsd-execute-phase 20`
+and reconcile the live plan index before selecting the next runnable wave.
 
 Publication, merge, new remote dispatch and host/device/identity-bound actions
 remain separate boundaries. Phase 12's exact diagnostic-app request was denied

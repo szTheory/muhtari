@@ -2,7 +2,7 @@
 title: "Lesson exchange"
 summary: "Lessons imported from the owner's sibling emulators (hypotheses until reproduced here) and the template for exporting this project's lessons."
 read_when: "At each phase or milestone boundary, when a sibling lesson might apply, or when the owner asks to export lessons."
-updated: 2026-11-10
+updated: 2026-11-11
 ---
 
 # Lesson exchange
@@ -92,6 +92,7 @@ Exported to the sibling projects on 2026-10-15 (preparation, `8ab05fa`). GSD fin
 | MU-GSD-005 | A marker-free `.claude/CLAUDE.md` is left untouched by GSD's instruction-file generator; one with GSD markers gets a "run /gsd-profile-user" placeholder and generated sections in a tracked, public file | `bin/lib/profile-output.cjs` | adopted (hand-written pointer) |
 | MU-GSD-006 | `branching_strategy: phase` forks the branch only at execute, so discuss and plan commits land on whatever branch is checked out; branch before the first committing step and let a pre-commit hook refuse `main` once a remote exists | `workflows/execute-phase.md` handle_branching; `execute-phase/steps/protected-branch.md` | adopted (AGENTS rule 9; hygiene) |
 | MU-GSD-007 | Dry-run the roadmap step before the real kickoff: copy the tree, `git init`, `query init.new-project`, run the `gsd-roadmapper` agent with the step's prompt, then `validate.consistency`, `roadmap.analyze`, `init.progress`, `list-seeds` | two green dry runs (GSD-HANDOFF 8) | adopted (preparation) |
+| MU-GSD-008 | A generic plan checker may flag file/task counts even when project engineering policy explicitly says numerical thresholds alone do not block. Preserve coherent plans unless there is a concrete ownership, coupling, or execution failure; fix demonstrated defects such as a lossy public state path. | Phase 20 checker recheck passed after the YM state-unavailable guard was added to 20-01 and atomically replaced by full 2/7 state in 20-03; advisory count findings were retained in `20-SOURCE-AUDIT.md`. Automated plan command syntax check: `python3` one-off extractor plus `sh -n`, exit 0 (N/A-local). | reproduced (AGENTS rule 7; ENGINEERING §11) |
 | MU-REL-001 | release-please 17.6.0: `initial-version` applies only while the manifest says `0.0.0` (default 1.0.0); `feat` bumps minor before 1.0 only with `bump-patch-for-minor-pre-major: false`; the `release-as` key is deprecated and sticky — use a `Release-As:` footer | release-please `src/versioning-strategies/default.ts`, `strategies/base.ts` at v17.6.0 | adopted (ENGINEERING 5) |
 | MU-REL-002 | Events caused by `GITHUB_TOKEN` start no workflow runs and its PRs wait for approval; Dependabot-triggered runs see only Dependabot secrets — mint a GitHub App token for every bot merge and store its key as a Dependabot secret too | GitHub docs on token triggers and Dependabot; gabbaboy PR #41 and #70 | adopted (owner task) |
 | MU-REL-003 | Version-free asset names plus `releases/latest/download/` leave `version.txt` the only machine-edited version string, which removes formatter breakage and release-induced verification staleness | nesturbator `b8e2824`, v1–v3 override closeouts | adopted (ENGINEERING 5) |

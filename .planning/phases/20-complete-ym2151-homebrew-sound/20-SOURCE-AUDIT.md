@@ -133,3 +133,5 @@ The orchestrator's separate spec-less heuristic reported 17 applicable rows and 
 
 Every task supplies read_first, exact files, concrete action/acceptance_criteria, automated verify with adjacent fails_when, and measurable done. Existing CMake/sh consumers and representative pass/fault coverage are reused. Frontmatter and structure are checked with the workflow-selected runtime before commit; each file must end at its complete output tag. No plan contains personal absolute paths, committed logs/media/state bytes, bypasses, forbidden entrypoints or chaining arguments.
 
+Terminal checker disposition: after the state-safety correction and the malformed-shell correction, the independent GSD plan checker returned `VERIFICATION PASSED` for all seven plans and found no substantive blocker. The source-audit classifications remain advisory and unresolved; required contracts are independently covered by plan tasks. The final structural and 16/16 decision-coverage queries passed, and a one-off shell syntax pass parsed all 18 automated task commands with balanced tags. This closes planning only; none of these checks establishes implementation or phase acceptance.
+
