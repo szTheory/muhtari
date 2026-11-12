@@ -96,23 +96,25 @@ execute_process(COMMAND "${CMAKE_COMMAND}" --build "${WORK}/consumer" --config R
 if(NOT rc STREQUAL "0")
   message(FATAL_ERROR "extracted library build: ${rc} ${out}${err}")
 endif()
+# This script runs outside CTest, so cross-compiled consumers need the same
+# emulator CTest normally prepends to executable test commands.
 set(consumer "${WORK}/consumer/consumer${suffix}")
 if(NOT EXISTS "${consumer}")
   set(consumer "${WORK}/consumer/Release/consumer${suffix}")
 endif()
-execute_process(COMMAND "${consumer}" --ym-fixture "${fixture}"
+execute_process(COMMAND ${EMULATOR} "${consumer}" --ym-fixture "${fixture}"
   RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
 if(NOT rc STREQUAL "0")
   message(FATAL_ERROR "extracted library YM: ${rc} ${out}${err}")
 endif()
 execute_process(COMMAND "${CMAKE_COMMAND}" "-DRUN=${WORK}/runner/${exe}"
   "-DDRIVER=${BUILD}/tests/muhtari-test-ym2151${suffix}" "-DDIR=${BUILD}/tests/ym2151"
-  "-DWORK=${WORK}/runner-check" -DCASE=ym.public_runner
+  "-DWORK=${WORK}/runner-check" "-DEMULATOR=${EMULATOR}" -DCASE=ym.public_runner
   -P "${ROOT}/tests/runner/tests.cmake" RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
 if(NOT rc STREQUAL "0")
   message(FATAL_ERROR "extracted runner YM: ${rc} ${out}${err}")
 endif()
-execute_process(COMMAND "${BUILD}/tests/muhtari-test-libretro-host${suffix}"
+execute_process(COMMAND ${EMULATOR} "${BUILD}/tests/muhtari-test-libretro-host${suffix}"
   "${WORK}/libretro/${core}" ym "${fixture}"
   RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
 if(NOT rc STREQUAL "0")
@@ -121,7 +123,7 @@ endif()
 # Exercise this exact consumer's corrupt-content refusal and source binding.
 file(READ "${fixture}" corrupt HEX LIMIT 16)
 file(WRITE "${WORK}/truncated.a78" "${corrupt}")
-execute_process(COMMAND "${consumer}" --ym-fixture "${WORK}/truncated.a78"
+execute_process(COMMAND ${EMULATOR} "${consumer}" --ym-fixture "${WORK}/truncated.a78"
   RESULT_VARIABLE rc OUTPUT_QUIET ERROR_QUIET)
 if(rc STREQUAL "0")
   message(FATAL_ERROR "corrupt fixture accepted by extracted consumer")

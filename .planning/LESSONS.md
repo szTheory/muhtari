@@ -738,3 +738,21 @@ After the fix, the native script invocation passes with `OBSERVER_TIMEOUT=25`
 diagnostic (exit 1); and a `/usr/bin/false` observer still fails with the
 observer-failure diagnostic (exit 1). `qemu-ppc` is unavailable locally, so
 only the exact-source hosted BE32 run can establish the scaled emulated path.
+
+## Apply the configured emulator inside CMake script-mode consumers (2026-11-12)
+
+CTest does not prepend `CMAKE_CROSSCOMPILING_EMULATOR` to binaries that a
+`cmake -P` script starts with `execute_process`. In the full BE32 release
+inventory, `release.ym_consumers` successfully extracted and built the package,
+then the host shell tried to interpret its PowerPC consumer and returned
+`Syntax error: ")" unexpected`. Pass the build emulator list to the script and
+prefix every guest executable it starts, including nested runner checks and
+the libretro host. Native direct invocation remains an empty emulator list.
+
+This occurred on the exact shipping head in [Release equality job
+131316658115](https://github.com/szTheory/muhtari/actions/runs/43256470708/job/131316658115);
+the uploaded JUnit report identifies only `release.ym_consumers` in
+`build/be32/junit-release.xml`, while both normal native and BE32 inventories
+completed. The targeted local Apple sanitizer build has Debug package members,
+so it cannot exercise this Release package check; `qemu-ppc` is unavailable
+locally. A fresh hosted BE32 run after the correction is the required proof.
