@@ -1,19 +1,19 @@
 ---
 gsd_state_version: "1.0"
 milestone: v6.0
-milestone_name: YM2151 homebrew sound
 status: milestone_complete
 stopped_at: v6.0 verified and archived locally; shipping next
-last_updated: "2026-11-12T11:49:25.016Z"
+last_updated: "2026-11-12T13:35:52.107Z"
 last_activity: 2026-11-12
-last_activity_desc: Milestone v6.0 completed and archived
-state_head: 25a0d7e5f1bd05bbbc6aa0a6eb172cfd38023e0b
+last_activity_desc: "Phase 20 shipped as PR #54"
+state_head: 9056b682960c19e287e8e6abdd77f0547ffac6c0
 progress:
   total_phases: 2
   completed_phases: 2
   total_plans: 8
   completed_plans: 8
   percent: 100
+milestone_name: YM2151 homebrew sound
 current_phase: 20
 ---
 
@@ -30,7 +30,7 @@ See [PROJECT.md](PROJECT.md), [archived requirements](milestones/v6.0-REQUIREMEN
 Phase: Milestone v6.0 complete
 Plan: —
 Status: Locally complete; publication pending
-Last activity: 2026-11-12 — Milestone v6.0 completed and archived
+Last activity: 2026-11-12 -- Phase 20 shipped as PR #54
 
 ## Performance Metrics
 
