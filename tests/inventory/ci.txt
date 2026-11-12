@@ -520,6 +520,8 @@ input.tia_en_disables_two_button	input,portable
 input.unplugged	input,portable
 install.consumer	install
 install.consumer.dll_crt	install
+install.consumer.dll_crt.ym	install
+install.consumer.ym	install
 install.stage	install
 libretro.bios_failures	libretro,portable
 libretro.host.audio	audio,libretro,portable
@@ -603,6 +605,7 @@ release.single_version_source.next	policy
 release.single_version_source.provenance.current	policy
 release.single_version_source.provenance.next	policy
 release.single_version_source.self_test	policy
+release.ym_consumers	release
 riot.pa7.edge_flag	portable,riot
 riot.power_on.defaults	portable,riot
 riot.ram.window	portable,riot

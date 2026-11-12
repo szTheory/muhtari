@@ -55,12 +55,16 @@ async function loadEvidence(options) {
   const wasmPath = options.module.replace(/\.mjs$/u, '.wasm');
   check(wasmPath !== options.module, 'production loader must use the .mjs suffix');
   const wasm = await readFile(wasmPath);
-  check(native.schema === 1, 'native observation schema must be 1');
+  check(native.schema === 1 || native.schema === 2, 'native observation schema must be 1 or 2');
   check(native.fixture_sha256 === sha256(fixture), 'fixture SHA-256 differs from native observation');
   const sourcePath = `${dirname(options.module)}${sep}muhtari-source-id.txt`;
   const sourceIdentity = (await readFile(sourcePath, 'utf8')).trim();
   check(/^[0-9a-f]{64}$/u.test(sourceIdentity), 'production source identity is invalid');
   check(native.source_identity === sourceIdentity, 'native observation source identity differs from production build');
+  if (native.schema === 2) {
+    validateYmNative(native, fixture, sourceIdentity);
+    return { native, fixture, wasm: new Uint8Array(wasm), wasmPath, sourceIdentity, ym: true };
+  }
   check(native.numeric_oracles?.width === WIDTH && native.numeric_oracles?.height === HEIGHT,
         'native numeric oracle must establish 320x242 geometry');
   check(native.numeric_oracles.sample_rate === 48000, 'native numeric oracle must establish 48000 Hz');
@@ -144,7 +148,16 @@ class Core {
     this.pads = [0, 0];
     this.env = this.callback((command, data) => this.environment(command, data), 'iii');
     this.video = this.callback((data, width, height, pitch) => this.videoRefresh(data, width, height, pitch), 'viiii');
-    this.sample = this.callback(() => { if (this.capture) this.capture.sampleCalls++; }, 'vii');
+    this.sample = this.callback((left, right) => {
+      if (!this.capture) return;
+      const c = this.capture;
+      c.sampleCalls++;
+      if (c.audioCount >= 1024) { c.error = 'sample callback exceeded capture'; return; }
+      c.audio ??= Buffer.alloc(4096);
+      c.audio.writeInt16LE((left << 16) >> 16, c.audioCount * 4);
+      c.audio.writeInt16LE((right << 16) >> 16, c.audioCount * 4 + 2);
+      c.audioCount++;
+    }, 'vii');
     this.batch = this.callback((data, frames) => this.audioBatch(data, frames), 'iii');
     this.poll = this.callback(() => { if (this.capture) this.capture.pollCalls++; }, 'v');
     this.input = this.callback((port, device, index, id) => this.inputState(port, device, index, id), 'iiiii');
@@ -206,6 +219,7 @@ class Core {
   get ownedStrings() { return this._ownedStrings ?? (this._ownedStrings = []); }
 
   optionValue(key) {
+    if (key === 'muhtari_region' && this.ymRegion) return this.ymRegion;
     if (key === 'muhtari_boot') return 'fast';
     if (['muhtari_palette', 'muhtari_region', 'muhtari_hsc', 'muhtari_expansion',
          'muhtari_battery_port1', 'muhtari_battery_port2'].includes(key)) return 'auto';
@@ -263,7 +277,7 @@ class Core {
     const av = this.allocate(40, 'system AV information');
     try {
       this.module._retro_get_system_av_info(av);
-      check(this.module.HEAPU32[av >>> 2] === WIDTH && this.module.HEAPU32[(av + 4) >>> 2] === HEIGHT,
+      check(this.module.HEAPU32[av >>> 2] === WIDTH && this.module.HEAPU32[(av + 4) >>> 2] === (this.ymRegion === 'pal' ? 292 : HEIGHT),
             'production libretro geometry is not 320x242');
     } finally { this.module._free(av); }
   }
@@ -289,13 +303,14 @@ class Core {
     const capture = this.capture;
     if (!capture) return;
     capture.videoCalls++;
-    if (!data || width !== WIDTH || height !== HEIGHT || pitch < WIDTH * 4) {
+    const expectedHeight = this.ymRegion === 'pal' ? 292 : HEIGHT;
+    if (!data || width !== WIDTH || height !== expectedHeight || pitch < WIDTH * 4) {
       capture.error = 'video callback geometry or data is invalid';
       return;
     }
     const heap = this.module.HEAPU8;
-    const bytes = Buffer.allocUnsafe(WIDTH * HEIGHT * 4);
-    for (let row = 0; row < HEIGHT; row++) {
+    const bytes = Buffer.allocUnsafe(WIDTH * height * 4);
+    for (let row = 0; row < height; row++) {
       const start = data + row * pitch;
       if (start + WIDTH * 4 > heap.length) { capture.error = 'video callback exceeded current wasm heap'; return; }
       bytes.set(heap.subarray(start, start + WIDTH * 4), row * WIDTH * 4);
@@ -373,7 +388,7 @@ class Core {
 
   serialize() {
     const size = this.module._retro_serialize_size();
-    check(size > 0 && size <= 307932, `invalid loaded save-state size: ${size}`);
+    check(size > 0 && size <= 310402, `invalid loaded save-state size: ${size}`);
     const pointer = this.allocate(size, 'save state');
     try {
       check(this.module._retro_serialize(pointer, size) !== 0, 'production core refused state serialization');
@@ -605,10 +620,244 @@ async function writeMeasurement(options, evidence, result, factory) {
   process.stdout.write(`wrote fixed-workload measurement to ${options.report}\n`);
 }
 
+
+const YM_FIXTURES = {
+  ordinary: '65c25495be4a0d73ae83a9f3f742186ffda34bff4058c3a5bc304bed428258d6',
+  worst: '89a0f03290d2442379991c661527ff83e6072fb6e0dd69896b936f64a4aafbd2',
+};
+const validHash = (value) => typeof value === 'string' && /^[0-9a-f]{64}$/u.test(value);
+
+function validateYmNative(native, fixture, sourceIdentity) {
+  check(native.schema === 2 && YM_FIXTURES[native.workload] === sha256(fixture) &&
+        native.fixture_sha256 === sha256(fixture), 'wrong YM workload or fixture');
+  check(validHash(native.source_identity) && native.source_identity === sourceIdentity, 'wrong YM source identity');
+  check(Array.isArray(native.regions) && native.regions.length === 2, 'incomplete YM regions');
+  for (let index = 0; index < 2; index++) {
+    const region = native.regions[index];
+    check(region.name === ['ntsc', 'pal'][index] && region.height === [242, 292][index] &&
+          region.sample_rate === 48000, 'wrong YM region order or numbers');
+    check(region.minimum < 0 && region.maximum > 0 && region.minimum >= -32768 &&
+          region.maximum <= 32767, 'wrong YM signed PCM extrema');
+    check(Array.isArray(region.mailbox) && region.mailbox.length === 4 &&
+          region.mailbox[0] === 128 && region.mailbox[1] === 1 &&
+          region.mailbox[2] > 0 && region.mailbox[3] === 2, 'wrong YM timer mailbox');
+    check(region.state_bytes === 179330 && validHash(region.saved_sha256) &&
+          validHash(region.continuation_sha256), 'wrong YM state extent or identity');
+    check(Array.isArray(region.frames) && region.frames.length === 6, 'incomplete YM frames');
+    for (let i = 0; i < 6; i++) {
+      const f = region.frames[i];
+      const allowed = i === 0 ? [index === 0 ? 54 : 960] : index === 0 ? [800, 801] : [961, 962];
+      check(f.index === i && allowed.includes(f.audio_count) && validHash(f.video_sha256) &&
+            validHash(f.audio_sha256), 'wrong YM frame extent or identity');
+    }
+    const perf = region.performance;
+    check(perf?.warmup_frames === 12 && perf.frames_per_window === 60 &&
+          perf.windows?.length === 3 && perf.windows.every((w) =>
+            Number.isFinite(w.elapsed_seconds) && w.elapsed_seconds > 0 &&
+            Number.isFinite(w.frames_per_second) && w.frames_per_second > 0 &&
+            Math.abs(w.frames_per_second * w.elapsed_seconds - 60) < 0.001),
+          'incomplete YM timing windows');
+  }
+}
+
+function runYmFrame(core, nativeFrame, index, route = 'batch') {
+  const c = { videoCalls: 0, batchCalls: 0, sampleCalls: 0, pollCalls: 0, audioCount: 0, error: null };
+  core.capture = c;
+  core.module._retro_run();
+  core.capture = null;
+  check(!c.error, c.error);
+  const pal = core.ymRegion === 'pal';
+  check(c.videoCalls === 1 && c.video && c.width === 320 && c.height === (pal ? 292 : 242) &&
+        c.pollCalls === 1, 'missing YM video/poll callback');
+  const allowed = index === 0 ? [pal ? 960 : 54] : pal ? [961, 962] : [800, 801];
+  if (route === 'absent') {
+    check(c.batchCalls === 0 && c.sampleCalls === 0 && c.audioCount === 0, 'unexpected absent YM audio callback');
+  } else {
+    check(allowed.includes(c.audioCount), 'wrong YM sample count');
+    check(route === 'batch' ? c.batchCalls === 1 && c.sampleCalls === 0
+                            : c.batchCalls === 0 && c.sampleCalls === c.audioCount,
+          'missing YM audio callback');
+    check(c.audio && c.audio.length >= c.audioCount * 4, 'short YM PCM capture');
+    c.audio = c.audio.subarray(0, c.audioCount * 4);
+    for (let i = 0; i < c.audioCount; i++)
+      check(c.audio.readInt16LE(i * 4) === c.audio.readInt16LE(i * 4 + 2), 'YM duplicated mono differs');
+  }
+  const frame = { index, video_sha256: sha256(c.video), audio_count: c.audioCount,
+    audio_sha256: c.audio ? sha256(c.audio) : null };
+  if (nativeFrame) {
+    check(frame.video_sha256 === nativeFrame.video_sha256, 'wrong YM video hash');
+    if (route !== 'absent') check(frame.audio_count === nativeFrame.audio_count &&
+      frame.audio_sha256 === nativeFrame.audio_sha256, 'wrong YM PCM hash or count');
+  }
+  return { frame, capture: c };
+}
+
+function repairStateCrc(state) {
+  state.writeUInt32LE(0, 24);
+  let crc = 0xffffffff;
+  for (const byte of state) {
+    crc ^= byte;
+    for (let bit = 0; bit < 8; bit++) crc = (crc >>> 1) ^ ((crc & 1) ? 0xedb88320 : 0);
+  }
+  state.writeUInt32LE((crc ^ 0xffffffff) >>> 0, 24);
+}
+
+async function runYm(options, evidence, factory) {
+  const measurements = [];
+  for (const region of evidence.native.regions) {
+    const core = new Core(await factory({ wasmBinary: evidence.wasm }), evidence);
+    core.ymRegion = region.name;
+    try {
+      core.startGame(evidence.fixture, true);
+      let saved;
+      let minimum = 32767, maximum = -32768;
+      for (let i = 0; i < 6; i++) {
+        const { capture } = runYmFrame(core, region.frames[i], i);
+        for (let j = 0; j < capture.audioCount; j++) {
+          const sample = capture.audio.readInt16LE(j * 4);
+          minimum = Math.min(minimum, sample); maximum = Math.max(maximum, sample);
+        }
+        if (i === 1) saved = core.serialize();
+      }
+      check(minimum === region.minimum && maximum === region.maximum, 'wrong YM numeric extrema');
+      const ram = core.module._retro_get_memory_data(evidence.native.abi.memory_system_ram);
+      const ramBytes = core.module._retro_get_memory_size(evidence.native.abi.memory_system_ram);
+      check(ram && ramBytes >= 0xb00 && ram + ramBytes <= core.module.HEAPU8.length,
+            'YM RAM exceeds heap');
+      check(JSON.stringify([...core.module.HEAPU8.subarray(ram + 0xa00, ram + 0xa04)]) ===
+            JSON.stringify(region.mailbox), 'wrong YM numeric mailbox');
+      const ending = core.serialize();
+      check(saved.length === region.state_bytes && saved.readUInt32LE(8) === 2 &&
+            saved.readUInt32LE(20) === 7 && sha256(saved) === region.saved_sha256 &&
+            sha256(ending) === region.continuation_sha256, 'wrong YM state bytes');
+      core.assertRefusals(ending);
+      const semantic = Buffer.from(ending);
+      semantic[semantic.length - 1] = 2; // final YM initialized boolean
+      repairStateCrc(semantic);
+      check(!core.unserialize(semantic) && sha256(core.serialize()) === sha256(ending),
+            'semantic YM state accepted or mutated live machine');
+      const battery = core.module._retro_get_memory_data(0);
+      const batterySize = core.module._retro_get_memory_size(0);
+      check(battery && batterySize === 34816 && battery + batterySize <= core.module.HEAPU8.length,
+            'YM battery extent unavailable');
+      const batteryHash = sha256(core.module.HEAPU8.subarray(battery, battery + batterySize));
+      const unsupported = Buffer.from(evidence.fixture); unsupported[67] |= 0x10;
+      const bad = core.makeGameInfo(unsupported);
+      try { check(core.module._retro_load_game(bad.info) === 0, 'unsupported YM reload accepted'); }
+      finally { core.module._free(bad.data); core.module._free(bad.info); }
+      check(sha256(core.serialize()) === sha256(ending) &&
+            sha256(core.module.HEAPU8.subarray(battery, battery + batterySize)) === batteryHash,
+            'refused YM reload changed state/battery');
+      for (const route of ['batch', 'sample', 'absent']) {
+        check(core.unserialize(saved), 'YM replay restore failed');
+        core.module._retro_set_audio_sample_batch(route === 'batch' ? core.batch : 0);
+        core.module._retro_set_audio_sample(route === 'absent' ? 0 : core.sample);
+        for (let i = 2; i < 6; i++) runYmFrame(core, region.frames[i], i, route);
+        check(sha256(core.serialize()) === sha256(ending), 'YM callback route changed continuation');
+      }
+      core.module._retro_set_audio_sample_batch(core.batch);
+      core.module._retro_set_audio_sample(core.sample);
+      const tail = core.allocate(ending.length + 16, 'YM serialization tail');
+      try {
+        core.module.HEAPU8.fill(0xa5, tail, tail + ending.length + 16);
+        check(core.module._retro_serialize(tail, ending.length + 16) !== 0 &&
+          core.module.HEAPU8.subarray(tail + ending.length, tail + ending.length + 16).every((x) => x === 0xa5),
+          'YM serialize changed tail');
+      } finally { core.module._free(tail); }
+      core.module._retro_reset();
+      runYmFrame(core, region.frames[0], 0);
+      const second = new Core(await factory({ wasmBinary: evidence.wasm }), evidence);
+      second.ymRegion = region.name;
+      try {
+        second.startGame(evidence.fixture);
+        runYmFrame(second, region.frames[0], 0);
+        const isolated = second.serialize();
+        runYmFrame(core, region.frames[1], 1);
+        check(sha256(second.serialize()) === sha256(isolated), 'YM factory instances share mutable state');
+        const first = core.serialize();
+        check(second.unserialize(isolated) && sha256(core.serialize()) === sha256(first),
+              'YM second restore changed first instance');
+      } finally { second.dispose(); }
+      if (options.mode === 'report') {
+        core.module._retro_reset();
+        for (let i = 0; i < 12; i++) runYmFrame(core, null, i);
+        const baseline = core.serialize();
+        const windows = [];
+        for (let w = 0; w < 3; w++) {
+          check(core.unserialize(baseline), 'YM timing baseline restore failed');
+          const start = performance.now();
+          for (let i = 0; i < 60; i++) runYmFrame(core, null, i + 12);
+          const seconds = (performance.now() - start) / 1000;
+          check(Number.isFinite(seconds) && seconds > 0, 'invalid YM timing');
+          windows.push({ elapsed_seconds: seconds, frames_per_second: 60 / seconds });
+        }
+        measurements.push({ name: region.name, native: region.performance,
+          node: { warmup_frames: 12, frames_per_window: 60, windows } });
+      }
+    } finally { core.dispose(); }
+  }
+  if (options.mode === 'controls') {
+    const faults = [
+      ['wrong YM workload or fixture', (n) => { n.workload = 'unknown'; }],
+      ['wrong YM source identity', (n) => { n.source_identity = 'a'.repeat(64); }],
+      ['wrong YM workload or fixture', (n) => { n.fixture_sha256 = 'a'.repeat(64); }],
+      ['incomplete YM regions', (n) => { n.regions.pop(); }],
+      ['wrong YM region order or numbers', (n) => { n.regions.reverse(); }],
+      ['incomplete YM frames', (n) => { n.regions[0].frames.pop(); }],
+      ['wrong YM frame extent or identity', (n) => { n.regions[0].frames[0].audio_count++; }],
+      ['wrong YM timer mailbox', (n) => { n.regions[0].mailbox[0] = 0; }],
+      ['incomplete YM timing windows', (n) => { n.regions[1].performance.windows.pop(); }],
+      ['incomplete YM timing windows', (n) => { n.regions[1].performance.windows[0].elapsed_seconds = 0; }],
+    ];
+    for (const [reason, mutate] of faults) {
+      const n = structuredClone(evidence.native); mutate(n);
+      let rejected = false;
+      try { validateYmNative(n, evidence.fixture, evidence.sourceIdentity); } catch (error) { rejected = error.message.includes(reason); }
+      check(rejected, `YM control did not reject: ${reason}`);
+    }
+    for (const name of REQUIRED_FACTORY_EXPORTS) {
+      let rejected = false;
+      try { assertRequiredExports(new Proxy({}, { get(_t, k) { return k === name ? undefined : () => {}; } })); }
+      catch (error) { rejected = error.message.includes(`missing required export: ${name}`); }
+      check(rejected, `YM export control failed: ${name}`);
+    }
+    const core = new Core(await factory({ wasmBinary: evidence.wasm }), evidence);
+    core.ymRegion = 'ntsc';
+    try {
+      core.startGame(evidence.fixture);
+      const n = evidence.native.regions[0].frames[0];
+      core.module._retro_set_video_refresh(0);
+      let rejected = false;
+      try { runYmFrame(core, n, 0); } catch (error) { rejected = error.message.includes('missing YM video/poll callback'); }
+      check(rejected, 'missing YM video callback accepted');
+      core.module._retro_set_video_refresh(core.video);
+      core.module._retro_reset();
+      const wrong = { ...n, audio_sha256: 'a'.repeat(64) };
+      rejected = false;
+      try { runYmFrame(core, wrong, 0); } catch (error) { rejected = error.message.includes('wrong YM PCM hash or count'); }
+      check(rejected, 'wrong YM PCM accepted');
+    } finally { core.dispose(); }
+  }
+  if (options.mode === 'report') {
+    const loader = await readFile(options.module);
+    await writeFile(options.report, `${JSON.stringify({ schema: 2, workload: evidence.native.workload,
+      fixture_sha256: evidence.native.fixture_sha256, source_identity: evidence.sourceIdentity,
+      loader_sha256: sha256(loader), wasm_sha256: sha256(evidence.wasm),
+      artifacts: { loader_bytes: loader.length, wasm_bytes: evidence.wasm.length },
+      native_toolchain: evidence.native.toolchain,
+      node: { version: process.version, platform: `${process.platform}/${process.arch}` },
+      sdk: { image_index: 'emscripten/emsdk@sha256:6bd7aef93408b10bf7b36642cb7c91119b302f720b9ec2d20439f73cf07fe894',
+        host: process.env.MUHTARI_HOST_DESCRIPTION ?? 'unavailable' },
+      workload_definition: { callback_copy_and_sha256: true, input: 'neutral' }, regions: measurements }, null, 2)}\n`);
+  }
+  process.stdout.write(`YM ${evidence.native.workload} ${options.mode} passed (both regions, actual Wasm)\n`);
+}
+
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   const evidence = await loadEvidence(options);
   const { factory, module } = await importFactory(options, evidence);
+  if (evidence.ym) return runYm(options, evidence, factory);
   if (options.mode === 'controls') return runControls(options, evidence, factory);
   if (options.mode === 'report') {
     const result = await runVerification(options, evidence, factory, 'verify');

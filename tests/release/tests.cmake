@@ -94,3 +94,10 @@ muhtari_add_test(NAME release.firmware_scan.self_test
     "-DREGEX=synthetic.zip/synthetic.a78: matches synthetic \\(header stripped\\)"
     -P ${release_scripts}/expect_fail.cmake
   LABELS release TIMEOUT 30)  # provisional, 9 samples
+
+muhtari_add_test(NAME release.ym_consumers
+  COMMAND ${CMAKE_COMMAND} -DROOT=${PROJECT_SOURCE_DIR} -DBUILD=${PROJECT_BINARY_DIR}
+    -DWORK=${PROJECT_BINARY_DIR}/release-ym-consumers -DSUFFIX=${release_suffix}
+    -DCC=${CMAKE_C_COMPILER} -DAR=${CMAKE_AR} -P ${CMAKE_CURRENT_LIST_DIR}/ym_consumers.cmake
+  LABELS release TIMEOUT 120)
+set_tests_properties(release.ym_consumers PROPERTIES FIXTURES_REQUIRED ym_carts)

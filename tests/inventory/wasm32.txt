@@ -519,6 +519,8 @@ input.tia_en_disables_two_button	input,portable
 input.unplugged	input,portable
 install.consumer	install
 install.consumer.dll_crt	install
+install.consumer.dll_crt.ym	install
+install.consumer.ym	install
 install.stage	install
 maria.dma_line.abort	maria,portable
 maria.dma_line.empty_dl	maria,portable

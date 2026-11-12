@@ -210,6 +210,12 @@ jobs:
             build/emscripten/libretro/muhtari-source-id.txt
             build/emscripten/junit.xml
             build/ci/tests/emscripten/native.json
+            build/ci/tests/emscripten/ym-native.json
+            build/ci/tests/emscripten/ym-worst-native.json
+            build/ci/tests/emscripten/ym-measurement.json
+            build/ci/tests/emscripten/ym-worst-measurement.json
+            build/ci/tests/ym2151/ym2151.a78
+            build/ci/tests/ym2151/ym2151-worst.a78
             build/ci/tests/emscripten/measurement.json
             build/ci/tests/emscripten/wasm-surface.json
           if-no-files-found: error
