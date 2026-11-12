@@ -338,7 +338,7 @@ static void ym_operator_prepare(struct muhtari__ym2151 *ym, uint32_t channel,
     struct muhtari__ym_operator *op = &ym->operators[operator_index];
     ym_cache_operator(ym, channel, operator_index);
     ym_operator_clock_keystate(op, op->keyon_live != 0u ? 1u : 0u);
-    op->keyon_live &= (uint8_t)~4u;
+    op->keyon_live = (uint8_t)(op->keyon_live & UINT8_C(0xfb));
 }
 
 static void ym_operator_clock_envelope(struct muhtari__ym_operator *op, uint32_t env_counter)
