@@ -104,6 +104,10 @@ muhtari_add_test(NAME ym.mix COMMAND muhtari-test-ym2151 mix
   LABELS audio portable TIMEOUT 20)
 muhtari_add_test(NAME ym.observer COMMAND muhtari-test-ym2151 observer
   LABELS audio portable TIMEOUT 30)
+muhtari_add_test(NAME ym.lifecycle COMMAND muhtari-test-ym2151 lifecycle
+  LABELS audio portable TIMEOUT 30)
+muhtari_add_test(NAME ym.hostile COMMAND muhtari-test-ym2151 hostile
+  LABELS audio portable TIMEOUT 30)
 
 add_executable(muhtari-test-irq ${CMAKE_CURRENT_LIST_DIR}/test_irq.c
   ${CMAKE_CURRENT_LIST_DIR}/../cart/images.c)

@@ -1193,6 +1193,354 @@ static void ym_observer(void)
     ym_observer_public_region(MUHTARI_REGION_PAL);
 }
 
+static void ym_make_legacy_image(uint8_t *image)
+{
+    images_header(image, 4u, "YM lifecycle control", YM_BODY, 0u);
+    images_fill(image + IMAGES_HEADER, YM_BODY, 0x2151u);
+    images_footer(image + IMAGES_HEADER, YM_BODY);
+}
+
+static void ym_lifecycle(void)
+{
+    struct ym_allocations a_alloc = {0u, 0u};
+    struct ym_observed_events events = {0};
+    size_t bytes = images_ym2151(ym_image);
+    muhtari_media ntsc_media = media_for(ym_image, bytes, MUHTARI_EXPANSION_XM);
+    muhtari_media pal_media = ntsc_media;
+    pal_media.region = MUHTARI_REGION_PAL;
+    muhtari *a = make_machine_counted(&a_alloc);
+    muhtari *pal = make_machine();
+    muhtari *pal_reference = make_machine();
+    muhtari *fresh = make_machine();
+    CHECK(a != NULL && pal != NULL && pal_reference != NULL && fresh != NULL);
+    if (a == NULL || pal == NULL || pal_reference == NULL || fresh == NULL) {
+        muhtari_destroy(fresh);
+        muhtari_destroy(pal_reference);
+        muhtari_destroy(pal);
+        muhtari_destroy(a);
+        return;
+    }
+    CHECK_EQ_U64(muhtari__synth_observe(a, ym_observe_collect, &events), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_load(a, &ntsc_media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_load(pal, &pal_media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_load(pal_reference, &pal_media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_load(fresh, &ntsc_media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(a->synth.ym_installed, 1u);
+    CHECK_EQ_U64(pal->synth.ym_installed, 1u);
+    CHECK_EQ_U64(muhtari_state_size(a), 0u);
+
+    /* Interleave different regions, then require the PAL instance to match
+       its isolated control byte-for-byte across chip and scheduler state. */
+    int16_t pal_audio[2][AUDIO_CAPACITY];
+    uint32_t count[2] = {0u, 0u};
+    uint32_t pal_first_count = ym_frame_sample_count(pal);
+    CHECK_EQ_U64(frame(pal, pal_audio[0], &count[0]), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(count[0], pal_first_count);
+    int16_t ntsc_audio[AUDIO_CAPACITY];
+    for (unsigned i = 0u; i < 3u; i++)
+        CHECK_EQ_U64(frame(a, ntsc_audio, &count[0]), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(frame(pal, pal_audio[1], &count[1]), MUHTARI_STATUS_OK);
+    uint32_t reference_count[2] = {0u, 0u};
+    int16_t reference_audio[2][AUDIO_CAPACITY];
+    CHECK_EQ_U64(frame(pal_reference, reference_audio[0], &reference_count[0]),
+                 MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(frame(pal_reference, reference_audio[1], &reference_count[1]),
+                 MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(count[1], reference_count[1]);
+    CHECK(memcmp(pal_audio[1], reference_audio[1],
+                 count[1] * sizeof pal_audio[1][0]) == 0);
+    CHECK(memcmp(&pal->ym, &pal_reference->ym, sizeof pal->ym) == 0);
+    CHECK(memcmp(&pal->synth, &pal_reference->synth, sizeof pal->synth) == 0);
+    CHECK(memcmp(&pal->cpu, &pal_reference->cpu, sizeof pal->cpu) == 0);
+    CHECK(memcmp(&pal->bus, &pal_reference->bus, sizeof pal->bus) == 0);
+    CHECK(memcmp(pal->ram, pal_reference->ram, sizeof pal->ram) == 0);
+    CHECK(a->ym.clocks > 0u && a->ym.total_clocks > 0u);
+    CHECK(pal->ym.clocks > a->ym.clocks);
+
+    /* Power-cycle the active instance against a fresh equivalent machine.
+       Compare the complete chip and synth state, including timers, busy,
+       phase, output and operator/channel caches. */
+    CHECK_EQ_U64(muhtari_power_cycle(a), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_power_cycle(fresh), MUHTARI_STATUS_OK);
+    CHECK(memcmp(&a->ym, &fresh->ym, sizeof a->ym) == 0);
+    CHECK(memcmp(&a->synth, &fresh->synth, sizeof a->synth) == 0);
+    CHECK_EQ_U64(a->ym.clocks, 0u);
+    CHECK_EQ_U64(a->ym.sample_divider, 0u);
+    CHECK_EQ_U64(a->ym.busy_end, 0u);
+    CHECK_EQ_U64(a->ym.status, 0u);
+    CHECK_EQ_U64(a->ym.timer_running[0], 0u);
+    CHECK_EQ_U64(a->ym.timer_running[1], 0u);
+    CHECK_EQ_U64(a->ym.output[0], 0u);
+    CHECK_EQ_U64(a->ym.output[1], 0u);
+    CHECK_EQ_U64(a->synth.raw[10], 0u);
+    CHECK_EQ_U64(a->synth.raw[11], 0u);
+    CHECK_EQ_U64(a->synth.mixed_level, 0u);
+    CHECK_EQ_U64(a->synth.pending, 0u);
+    CHECK_EQ_U64(a->synth.pcm_count, 0u);
+    CHECK_EQ_U64(muhtari_state_size(a), 0u);
+    CHECK(a->observer == ym_observe_collect);
+
+    memset(&events, 0, sizeof events);
+    int16_t after_reset[AUDIO_CAPACITY], fresh_after_reset[AUDIO_CAPACITY];
+    uint32_t after_count = 0u, fresh_count = 0u;
+    CHECK_EQ_U64(frame(a, after_reset, &after_count), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(frame(fresh, fresh_after_reset, &fresh_count), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(after_count, fresh_count);
+    CHECK(memcmp(after_reset, fresh_after_reset, after_count * sizeof after_reset[0]) == 0);
+    CHECK(memcmp(&a->ym, &fresh->ym, sizeof a->ym) == 0);
+    CHECK(memcmp(&a->synth, &fresh->synth, sizeof a->synth) == 0);
+
+    uint8_t refused[YM_IMAGE_BYTES];
+    memcpy(refused, ym_image, bytes);
+    refused[63] = 0u;
+    muhtari_media refused_media = media_for(refused, bytes, MUHTARI_EXPANSION_AUTO);
+    uint8_t *rom_before = a->cart.rom;
+    struct muhtari__ym2151 ym_before = a->ym;
+    uint32_t allocs_before = a_alloc.allocs;
+    uint32_t frees_before = a_alloc.frees;
+    CHECK_EQ_U64(muhtari_load(a, &refused_media), MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE);
+    CHECK(a->cart.rom == rom_before);
+    CHECK(memcmp(&a->ym, &ym_before, sizeof ym_before) == 0);
+    CHECK_EQ_U64(a_alloc.allocs, allocs_before);
+    CHECK_EQ_U64(a_alloc.frees, frees_before);
+
+    /* Replacing content with an accepted non-YM image is the public unload
+       transition; reloading XM must reinstall a reset YM and keep state
+       unavailable until the later complete continuation plan. */
+    ym_make_legacy_image(old_image);
+    muhtari_media legacy_media = media_for(old_image, YM_IMAGE_BYTES, MUHTARI_EXPANSION_OFF);
+    CHECK_EQ_U64(muhtari_load(a, &legacy_media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(a->synth.ym_installed, 0u);
+    CHECK(muhtari_state_size(a) > 0u);
+    CHECK_EQ_U64(muhtari_load(a, &ntsc_media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(a->synth.ym_installed, 1u);
+    CHECK_EQ_U64(muhtari_state_size(a), 0u);
+    CHECK_EQ_U64(a->ym.clocks, 0u);
+    CHECK_EQ_U64(a->ym.output[0], 0u);
+    CHECK_EQ_U64(a->ym.output[1], 0u);
+    CHECK(a->observer == ym_observe_collect);
+    CHECK_EQ_U64(muhtari_state_size(a), 0u);
+
+    muhtari_destroy(fresh);
+    muhtari_destroy(pal_reference);
+    muhtari_destroy(pal);
+    muhtari_destroy(a);
+    CHECK_EQ_U64(a_alloc.allocs, a_alloc.frees);
+}
+
+static size_t ym_emit_write(uint8_t *body, size_t at, uint8_t reg, uint8_t value)
+{
+    static const uint8_t address_write[] = {0xa9u, 0u, 0x8du, 0x60u, 0x04u};
+    static const uint8_t data_write[] = {0xa9u, 0u, 0x8du, 0x61u, 0x04u};
+    memcpy(body + at, address_write, sizeof address_write);
+    at += sizeof address_write;
+    body[at - 4u] = reg;
+    memcpy(body + at, data_write, sizeof data_write);
+    at += sizeof data_write;
+    body[at - 4u] = value;
+    return at;
+}
+
+static size_t ym_emit_control(uint8_t *body, size_t at, uint8_t control)
+{
+    static const uint8_t write_control[] = {0xa9u, 0u, 0x8du, 0x70u, 0x04u};
+    memcpy(body + at, write_control, sizeof write_control);
+    body[at + 1u] = control;
+    return at + sizeof write_control;
+}
+
+static size_t ym_hostile_image(uint8_t *image, int jammed)
+{
+    size_t bytes = images_ym2151(image);
+    uint8_t *body = image + IMAGES_HEADER;
+    memset(body, 0xeau, YM_BODY);
+    body[0] = 0xa2u; /* LDX #$FD: keep IRQ stack in system RAM */
+    body[1] = 0xfdu;
+    body[2] = 0x9au; /* TXS */
+    size_t at = ym_emit_control(body, 3u, 0x84u);
+    for (unsigned channel = 0u; channel < 8u; channel++) {
+        at = ym_emit_write(body, at, (uint8_t)(0x20u + channel), 0xc7u);
+        at = ym_emit_write(body, at, (uint8_t)(0x28u + channel), 0x4cu);
+        at = ym_emit_write(body, at, (uint8_t)(0x30u + channel), 0x00u);
+    }
+    static const uint8_t bases[] = {0x60u, 0x80u, 0xa0u, 0xc0u, 0xe0u, 0x40u};
+    static const uint8_t values[] = {0x00u, 0x1fu, 0x00u, 0x00u, 0x0fu, 0x01u};
+    static const uint8_t slots[] = {0u, 8u, 16u, 24u};
+    for (unsigned channel = 0u; channel < 8u; channel++) {
+        for (unsigned group = 0u; group < sizeof bases; group++) {
+            for (unsigned slot = 0u; slot < sizeof slots; slot++) {
+                at = ym_emit_write(body, at, (uint8_t)(bases[group] + slots[slot] + channel),
+                                   values[group]);
+            }
+        }
+    }
+    for (unsigned channel = 0u; channel < 8u; channel++)
+        at = ym_emit_write(body, at, 0x08u, (uint8_t)(0x78u | channel));
+    at = ym_emit_write(body, at, 0x10u, 0xffu);
+    at = ym_emit_write(body, at, 0x11u, 3u);
+    at = ym_emit_write(body, at, 0x14u, 0x05u); /* minimum-period Timer A IRQ */
+    if (jammed != 0) {
+        body[at++] = 0x58u; /* CLI immediately before the jam. */
+        body[at++] = 0x02u; /* JAM after programming the complete profile */
+    } else {
+        at = ym_emit_control(body, at, 0x04u); /* D7 off */
+        at = ym_emit_write(body, at, 0x28u, 0x7fu); /* ignored data */
+        at = ym_emit_control(body, at, 0x84u); /* D7 on */
+        at = ym_emit_write(body, at, 0x28u, 0x4au);
+        at = ym_emit_write(body, at, 0x28u, 0x4cu);
+        at = ym_emit_write(body, at, 0x28u, 0x4au);
+        at = ym_emit_write(body, at, 0xa0u, 0x01u);
+        at = ym_emit_write(body, at, 0x68u, 0x02u);
+        at = ym_emit_write(body, at, 0x48u, 0x03u);
+        at = ym_emit_write(body, at, 0x08u, 0x78u);
+        at = ym_emit_control(body, at, 0x04u);
+        at = ym_emit_write(body, at, 0x2fu, 0x66u); /* ignored while disabled */
+        at = ym_emit_control(body, at, 0x84u);
+        body[at++] = 0x58u; /* Admit any pending IRQ after all latch/data pairs. */
+        size_t spin = at;
+        body[at++] = 0x4cu;
+        body[at++] = (uint8_t)spin;
+        body[at++] = (uint8_t)((0xc000u + spin) >> 8);
+    }
+    CHECK(at < 0x0ff0u);
+    size_t handler = ym_emit_control(body, 0x0ff0u, 0x84u);
+    handler = ym_emit_write(body, handler, 0x14u, 0x15u); /* clear flag, keep timer running */
+    body[handler++] = 0xeeu; /* INC $1800: count accepted timer IRQ entries */
+    body[handler++] = 0x00u;
+    body[handler++] = 0x18u;
+    body[handler++] = 0x40u; /* RTI */
+    body[0x3ffcu] = 0x00u;
+    body[0x3ffdu] = 0xc0u;
+    body[0x3ffeu] = 0xf0u;
+    body[0x3fffu] = 0xcfu;
+    images_footer(body, YM_BODY);
+    return bytes;
+}
+
+static muhtari_status ym_hostile_frame(muhtari *m, int16_t *audio, uint8_t *video,
+                                       uint32_t *count)
+{
+    struct muhtari__timing timing = muhtari__timing(m);
+    muhtari_frame io;
+    memset(&io, 0, sizeof io);
+    io.size = (uint32_t)sizeof io;
+    io.audio = audio;
+    io.audio_capacity = timing.max_samples;
+    io.video = video;
+    io.video_pitch = MUHTARI__WIDTH;
+    muhtari_status status = muhtari_run_frame(m, &io);
+    *count = io.audio_count;
+    return status;
+}
+
+static void ym_hostile_run(int jammed)
+{
+    struct ym_allocations allocations = {0u, 0u};
+    struct ym_observed_events events = {0};
+    uint8_t image[YM_IMAGE_BYTES];
+    size_t bytes = ym_hostile_image(image, jammed);
+    muhtari_media media = media_for(image, bytes, MUHTARI_EXPANSION_XM);
+    muhtari *m = make_machine_counted(&allocations);
+    CHECK(m != NULL);
+    if (m == NULL)
+        return;
+    CHECK_EQ_U64(muhtari__synth_observe(m, ym_observe_collect, &events), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    uint32_t allocs_after_load = allocations.allocs;
+    uint32_t frees_after_load = allocations.frees;
+    uint64_t clock_origin_tick = m->ym.last_tick;
+    int16_t audio[AUDIO_CAPACITY + 8u];
+    uint8_t video[320u * 292u + 8u];
+    unsigned active_frames = 0u;
+    while ((m->ym.timer_running[0] == 0u || events.source_count[0] == 0u ||
+            events.source_count[1] == 0u || (jammed != 0 && m->cpu.jammed == 0u) ||
+            (jammed == 0 && m->ram[0] == 0u)) &&
+           active_frames < 6u) {
+        struct muhtari__timing timing = muhtari__timing(m);
+        uint32_t required = ym_frame_sample_count(m);
+        CHECK(required > 0u && required <= timing.max_samples);
+        for (size_t i = 0u; i < sizeof audio / sizeof audio[0]; i++)
+            audio[i] = (int16_t)0x5a5a;
+        memset(video, 0xa7, sizeof video);
+        muhtari_frame short_io;
+        memset(&short_io, 0, sizeof short_io);
+        short_io.size = (uint32_t)sizeof short_io;
+        short_io.audio = audio;
+        short_io.audio_capacity = required - 1u;
+        short_io.video = video;
+        short_io.video_pitch = MUHTARI__WIDTH;
+        uint64_t before_tick = m->bus.ticks;
+        uint64_t deadline = m->frame_deadline;
+        CHECK_EQ_U64(muhtari_run_frame(m, &short_io), MUHTARI_STATUS_ERR_BUFFER_TOO_SMALL);
+        CHECK_EQ_U64(short_io.audio_count, 0u);
+        CHECK_EQ_U64(m->bus.ticks, before_tick);
+        for (size_t i = 0u; i < sizeof video / sizeof video[0]; i++)
+            CHECK_EQ_U64(video[i], 0xa7u);
+
+        uint32_t count = 0u;
+        CHECK_EQ_U64(ym_hostile_frame(m, audio, video, &count), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(count, required);
+        CHECK(m->bus.ticks >= deadline);
+        CHECK(m->bus.ticks - deadline <= MUHTARI__SYNTH_OVERSHOOT_TICKS);
+        CHECK_EQ_U64(m->ym.clocks, (m->ym.last_tick - clock_origin_tick) / 2u);
+        CHECK_EQ_U64(m->ym.clock_remainder, (m->ym.last_tick - clock_origin_tick) & 1u);
+        for (size_t i = count; i < sizeof audio / sizeof audio[0]; i++)
+            CHECK_EQ_U64((uint16_t)audio[i], 0x5a5au);
+        size_t used_video = (size_t)timing.height * MUHTARI__WIDTH;
+        for (size_t i = used_video; i < sizeof video / sizeof video[0]; i++)
+            CHECK_EQ_U64(video[i], 0xa7u);
+        CHECK(m->ym.sample_divider < 64u);
+        CHECK_EQ_U64(muhtari_state_size(m), 0u);
+        CHECK_EQ_U64(allocations.allocs, allocs_after_load);
+        CHECK_EQ_U64(allocations.frees, frees_after_load);
+        active_frames++;
+    }
+    CHECK(active_frames < 6u);
+    CHECK_EQ_U64(m->cart.irq_mask, 4u);
+    CHECK_EQ_U64(m->ym.timer_running[0], 1u);
+    CHECK_EQ_U64(m->ym.active_channels, 0xffu);
+    if (jammed != 0) {
+        CHECK_EQ_U64(m->cpu.jammed, 1u);
+    } else {
+        CHECK(m->ram[0] > 0u); /* IRQ handler ran through the normal CPU path. */
+        CHECK(m->ym.timer_deadline[0] > m->ym.clocks);
+    }
+    CHECK(events.source_count[0] > 0u && events.source_count[1] > 0u);
+    CHECK(events.count < 12u * (m->bus.ticks + 1u));
+    CHECK(events.source_count[0] + events.source_count[1] <= 2u * (m->ym.clocks / 64u + 1u));
+
+    /* A jammed CPU keeps issuing bounded open-bus reads while the timer and
+       output clocks continue; a live interrupt loop keeps retriggering. */
+    if (jammed != 0) {
+        struct muhtari__timing timing = muhtari__timing(m);
+        uint32_t required = ym_frame_sample_count(m);
+        muhtari_frame io;
+        memset(&io, 0, sizeof io);
+        io.size = (uint32_t)sizeof io;
+        io.audio = audio;
+        io.audio_capacity = timing.max_samples;
+        io.video = video;
+        io.video_pitch = MUHTARI__WIDTH;
+        uint64_t deadline = m->frame_deadline;
+        CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(io.audio_count, required);
+        CHECK(m->bus.ticks >= deadline);
+        CHECK(m->bus.ticks - deadline <= MUHTARI__SYNTH_OVERSHOOT_TICKS);
+        CHECK_EQ_U64(m->cpu.jammed, 1u);
+        CHECK(m->ym.clocks > 0u);
+        CHECK_EQ_U64(allocations.allocs, allocs_after_load);
+        CHECK_EQ_U64(allocations.frees, frees_after_load);
+    }
+    muhtari_destroy(m);
+    CHECK_EQ_U64(allocations.allocs, allocations.frees);
+}
+
+static void ym_hostile(void)
+{
+    ym_hostile_run(0);
+    ym_hostile_run(1);
+}
+
 int main(int argc, char **argv)
 {
     if (argc != 2)
@@ -1215,6 +1563,10 @@ int main(int argc, char **argv)
         ym_mix_extrema();
     else if (strcmp(argv[1], "observer") == 0)
         ym_observer();
+    else if (strcmp(argv[1], "lifecycle") == 0)
+        ym_lifecycle();
+    else if (strcmp(argv[1], "hostile") == 0)
+        ym_hostile();
     else
         return 2;
     CHECK_DONE();

@@ -722,36 +722,12 @@ static uint8_t ym_status(const struct muhtari__ym2151 *ym)
 void muhtari__ym2151_reset(muhtari *m)
 {
     struct muhtari__ym2151 *ym = &m->ym;
-    uint8_t initialized = ym->initialized;
-    uint8_t address = ym->address;
-    uint8_t clock_remainder = ym->clock_remainder;
-    uint16_t sample_divider = ym->sample_divider;
-    uint64_t clocks = ym->clocks;
-    uint32_t lfo_counter = ym->lfo_counter;
-    uint32_t noise_lfsr = ym->noise_lfsr;
-    uint8_t noise_counter = ym->noise_counter;
-    uint8_t noise_state = ym->noise_state;
-    uint8_t noise_lfo = ym->noise_lfo;
-    uint8_t lfo_am = ym->lfo_am;
-    uint16_t lfo_noise[256];
-    if (initialized != 0u)
-        memcpy(lfo_noise, ym->lfo_noise, sizeof lfo_noise);
-    else
-        memset(lfo_noise, 0, sizeof lfo_noise);
+    /* Power-on discards every clocked field and derived cache so a later
+       continuation starts exactly like a newly loaded chip (ym2151.md). */
     memset(ym, 0, sizeof *ym);
     ym->initialized = 1u;
-    ym->address = address;
-    ym->clock_remainder = clock_remainder;
-    ym->sample_divider = sample_divider;
-    ym->clocks = clocks;
     ym->last_tick = m->bus.ticks;
-    ym->lfo_counter = lfo_counter;
-    ym->noise_lfsr = initialized != 0u ? noise_lfsr : 1u;
-    ym->noise_counter = noise_counter;
-    ym->noise_state = noise_state;
-    ym->noise_lfo = noise_lfo;
-    ym->lfo_am = lfo_am;
-    memcpy(ym->lfo_noise, lfo_noise, sizeof lfo_noise);
+    ym->noise_lfsr = 1u;
     ym->clock_prescale = 2u;
     ym->irq_mask = 3u;
     ym->active_channels = YM_ALL_CHANNELS;
