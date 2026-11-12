@@ -25,7 +25,7 @@
 #define YM_EG_RELEASE 4u
 #define YM_PHASE_STEP_DYNAMIC 1u
 #define YM_CLOCKS_PER_SAMPLE 64u
-#define YM_BUSY_CLOCKS 64u
+#define YM_BUSY_CLOCKS 68u /* Yamaha YM2151 Application Manual, section 2.1.1 */
 
 /* These lookup values are transcribed from the approved OPM-only pin. */
 static const uint16_t ym_sin_table[256] = {
@@ -418,7 +418,7 @@ static int32_t ym_operator_volume(const struct muhtari__ym2151 *ym,
     uint32_t wave = ym_abs_sin_attenuation(phase);
     uint32_t envelope = ym_envelope_attenuation(ym, op, am_offset) << 2;
     int32_t result = (int32_t)ym_attenuation_to_volume((wave & 0x7fffu) + envelope);
-    return ym_bits(wave, 15u, 1u) != 0u ? -result : result;
+    return ym_bits(phase, 9u, 1u) != 0u ? -result : result;
 }
 
 static int32_t ym_operator_noise_volume(const struct muhtari__ym2151 *ym,
@@ -749,7 +749,7 @@ void muhtari__ym2151_reset(muhtari *m)
     ym->lfo_am = lfo_am;
     memcpy(ym->lfo_noise, lfo_noise, sizeof lfo_noise);
     ym->clock_prescale = 2u;
-    ym->irq_mask = 0x03u;
+    ym->irq_mask = 3u;
     ym->active_channels = YM_ALL_CHANNELS;
     ym->modified_channels = YM_ALL_CHANNELS;
     for (uint32_t index = 0; index < YM_OPERATORS; index++) {

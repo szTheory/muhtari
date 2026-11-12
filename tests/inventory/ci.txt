@@ -699,4 +699,7 @@ title.pin.recipe	portable,title
 title.pin.self_test	portable,title
 title.simple.bios	portable,title
 title.simple.fast	portable,title
+ym.controls	audio,portable
+ym.numeric	audio,portable
+ym.synthesis	audio,portable
 ym.tracer	audio,portable

@@ -88,6 +88,12 @@ set_target_properties(muhtari-test-ym2151 PROPERTIES
 muhtari_warnings(muhtari-test-ym2151)
 muhtari_add_test(NAME ym.tracer COMMAND muhtari-test-ym2151 tracer
   LABELS audio portable TIMEOUT 30)
+muhtari_add_test(NAME ym.numeric COMMAND muhtari-test-ym2151 numeric
+  LABELS audio portable TIMEOUT 10)
+muhtari_add_test(NAME ym.synthesis COMMAND muhtari-test-ym2151 synthesis
+  LABELS audio portable TIMEOUT 10)
+muhtari_add_test(NAME ym.controls COMMAND muhtari-test-ym2151 controls
+  LABELS audio portable TIMEOUT 10)
 
 add_executable(muhtari-test-irq ${CMAKE_CURRENT_LIST_DIR}/test_irq.c
   ${CMAKE_CURRENT_LIST_DIR}/../cart/images.c)

@@ -1,11 +1,13 @@
 /* Public XM/YM frame path and fail-closed state gate. */
 #include <limits.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "internal.h"
 #include "../check.h"
 #include "../cart/images.h"
+#include "ym_vectors.h"
 
 #define YM_BODY (16u * IMAGES_KIB)
 #define YM_IMAGE_BYTES (IMAGES_HEADER + YM_BODY)
@@ -224,10 +226,258 @@ static void ym_tracer(void)
     muhtari_destroy(a);
 }
 
+static muhtari *ym_test_chip(void)
+{
+    muhtari *m = calloc(1u, sizeof *m);
+    CHECK(m != NULL);
+    if (m != NULL) {
+        muhtari__synth_reset(m, 0u, 0u);
+        muhtari__ym2151_reset(m);
+    }
+    return m;
+}
+
+static void ym_write_reg(muhtari *m, uint8_t reg, uint8_t value, uint64_t tick)
+{
+    muhtari__ym2151_write(m, 0x0460u, reg, tick);
+    muhtari__ym2151_write(m, 0x0461u, value, tick);
+}
+
+static void ym_numeric_timer(uint32_t timer, uint32_t value, uint64_t expected_period)
+{
+    muhtari *m = ym_test_chip();
+    CHECK(m != NULL);
+    if (m == NULL)
+        return;
+
+    uint8_t mode;
+    uint8_t flag = timer == 0u ? 1u : 2u;
+    if (timer == 0u) {
+        ym_write_reg(m, 0x10u, (uint8_t)(value >> 2), 0u);
+        ym_write_reg(m, 0x11u, (uint8_t)(value & 3u), 0u);
+        mode = 0x05u;
+    } else {
+        ym_write_reg(m, 0x12u, (uint8_t)value, 0u);
+        mode = 0x0au;
+    }
+    ym_write_reg(m, 0x14u, mode, 0u);
+    CHECK_EQ_U64(m->ym.timer_running[timer], 1u);
+    CHECK_EQ_U64(m->ym.timer_deadline[timer], expected_period);
+
+    uint64_t just_before = (expected_period - 1u) * 2u;
+    uint64_t exact = expected_period * 2u;
+    uint64_t just_after = (expected_period + 1u) * 2u;
+    CHECK_EQ_U64(muhtari__ym2151_read(m, 0x0461u, just_before) & flag, 0u);
+    CHECK_EQ_U64(muhtari__ym2151_irq(m), 0u);
+    CHECK_EQ_U64(muhtari__ym2151_read(m, 0x0461u, exact) & flag, flag);
+    CHECK_EQ_U64(muhtari__ym2151_irq(m), 1u);
+    CHECK_EQ_U64(muhtari__ym2151_read(m, 0x0461u, just_after) & flag, flag);
+    CHECK_EQ_U64(muhtari__ym2151_irq(m), 1u);
+    CHECK_EQ_U64(m->ym.timer_running[timer], 1u);
+    CHECK_EQ_U64(m->ym.timer_deadline[timer], expected_period * 2u);
+
+    /* Clearing the carry-enable bit does not erase an already latched flag
+       or mask its IRQ; only the documented reset bit clears that status. */
+    uint8_t disabled_mode = (uint8_t)(mode & (timer == 0u ? 0xfbu : 0xf7u));
+    ym_write_reg(m, 0x14u, disabled_mode, just_after);
+    CHECK_EQ_U64(muhtari__ym2151_read(m, 0x0461u, just_after) & flag, flag);
+    CHECK_EQ_U64(muhtari__ym2151_irq(m), 1u);
+
+    uint8_t reset_mode = (uint8_t)(mode | (timer == 0u ? 0x10u : 0x20u));
+    ym_write_reg(m, 0x14u, reset_mode, just_after);
+    CHECK_EQ_U64(muhtari__ym2151_read(m, 0x0461u, just_after) & flag, 0u);
+    CHECK_EQ_U64(muhtari__ym2151_irq(m), 0u);
+    free(m);
+}
+
+static void ym_numeric(void)
+{
+    muhtari *m = ym_test_chip();
+    CHECK(m != NULL);
+    if (m != NULL) {
+        ym_write_reg(m, 0x20u, 0u, 0u);
+        CHECK_EQ_U64(muhtari__ym2151_read(m, 0x0461u, 67u * 2u) & 0x80u, 0x80u);
+        CHECK_EQ_U64(muhtari__ym2151_read(m, 0x0461u, 68u * 2u) & 0x80u, 0u);
+        CHECK_EQ_U64(muhtari__ym2151_read(m, 0x0461u, 69u * 2u) & 0x80u, 0u);
+        CHECK_EQ_U64(m->ym.busy_end, 68u);
+        free(m);
+    }
+
+    /* Yamaha Application Manual §2.1.7, measured in φM periods. */
+    ym_numeric_timer(0u, 1023u, 64u * (1024u - 1023u));
+    ym_numeric_timer(0u, 0u, 64u * (1024u - 0u));
+    ym_numeric_timer(1u, 255u, 1024u * (256u - 255u));
+    ym_numeric_timer(1u, 0u, 1024u * (256u - 0u));
+
+    muhtari *same_edge = ym_test_chip();
+    CHECK(same_edge != NULL);
+    if (same_edge != NULL) {
+        ym_write_reg(same_edge, 0x10u, 0xffu, 0u);
+        ym_write_reg(same_edge, 0x11u, 3u, 0u);
+        ym_write_reg(same_edge, 0x14u, 0x05u, 0u);
+        CHECK_EQ_U64(muhtari__ym2151_read(same_edge, 0x0461u, 128u) & 1u, 1u);
+        ym_write_reg(same_edge, 0x14u, 0x15u, 128u);
+        CHECK_EQ_U64(muhtari__ym2151_read(same_edge, 0x0461u, 128u) & 1u, 0u);
+        CHECK_EQ_U64(muhtari__ym2151_irq(same_edge), 0u);
+        free(same_edge);
+    }
+
+    /* Exercise the last legal MARIA tick without wrapping catch-up arithmetic;
+       Timer B remains scheduled for its complete documented maximum period. */
+    muhtari *epoch = ym_test_chip();
+    CHECK(epoch != NULL);
+    if (epoch != NULL) {
+        uint64_t base_tick = UINT64_MAX - 10u;
+        epoch->ym.last_tick = base_tick;
+        epoch->ym.clocks = base_tick / 2u;
+        uint64_t timer_clock = epoch->ym.clocks;
+        uint64_t expected_deadline = timer_clock + 1024u * 256u;
+        ym_write_reg(epoch, 0x12u, 0u, base_tick);
+        ym_write_reg(epoch, 0x14u, 0x0au, base_tick);
+        CHECK_EQ_U64(epoch->ym.timer_deadline[1], expected_deadline);
+        muhtari__ym2151_catch_up(epoch, UINT64_MAX);
+        CHECK_EQ_U64(epoch->ym.clocks, timer_clock + 5u);
+        CHECK_EQ_U64(epoch->ym.last_tick, UINT64_MAX);
+        CHECK_EQ_U64(epoch->ym.sample_divider, 5u);
+        CHECK_EQ_U64(epoch->ym.timer_deadline[1], expected_deadline);
+        CHECK(expected_deadline > epoch->ym.clocks);
+        free(epoch);
+    }
+}
+
+static uint64_t ym_hash_sample(uint64_t hash, int16_t left, int16_t right)
+{
+    uint16_t values[2] = {(uint16_t)left, (uint16_t)right};
+    for (unsigned channel = 0u; channel < 2u; channel++) {
+        hash ^= values[channel] & 0xffu;
+        hash *= UINT64_C(1099511628211);
+        hash ^= values[channel] >> 8;
+        hash *= UINT64_C(1099511628211);
+    }
+    return hash;
+}
+
+static void ym_case_write(muhtari *machines[2], uint8_t count, uint8_t chip,
+                          uint8_t reg, uint8_t value, uint64_t tick)
+{
+    if (chip == YM_CASE_ALL) {
+        for (uint8_t i = 0u; i < count; i++)
+            ym_write_reg(machines[i], reg, value, tick);
+    } else if (chip < count) {
+        ym_write_reg(machines[chip], reg, value, tick);
+    }
+}
+
+static uint64_t ym_run_case(const struct ym_case_vector *test, uint32_t *sample_count,
+                            int16_t minimum[2], int16_t maximum[2])
+{
+    muhtari *machines[2] = {NULL, NULL};
+    uint64_t now = 0u;
+    uint64_t hash = UINT64_C(14695981039346656037);
+    uint32_t generated = 0u;
+    minimum[0] = INT16_MAX;
+    minimum[1] = INT16_MAX;
+    maximum[0] = INT16_MIN;
+    maximum[1] = INT16_MIN;
+
+    CHECK(test->chip_count == 1u || test->chip_count == 2u);
+    CHECK(test->sample_count <= 2048u);
+    for (uint8_t chip = 0u; chip < test->chip_count; chip++)
+        machines[chip] = ym_test_chip();
+    for (size_t i = 0u; i < sizeof ym_common / sizeof ym_common[0]; i++)
+        ym_case_write(machines, test->chip_count, ym_common[i].chip,
+                      ym_common[i].reg, ym_common[i].value, 0u);
+
+    for (uint16_t action = 0u; action < test->action_count; action++) {
+        const struct ym_case_action *item = &test->actions[action];
+        if (item->reg != YM_CASE_STEP)
+            ym_case_write(machines, test->chip_count, item->chip, item->reg,
+                          item->value, now * 2u);
+        for (uint16_t step = 0u; step < item->samples; step++) {
+            now += 64u;
+            for (uint8_t chip = 0u; chip < test->chip_count; chip++) {
+                muhtari__ym2151_catch_up(machines[chip], now * 2u);
+                hash = ym_hash_sample(hash, machines[chip]->ym.output[0],
+                                      machines[chip]->ym.output[1]);
+                for (unsigned channel = 0u; channel < 2u; channel++) {
+                    int16_t output = machines[chip]->ym.output[channel];
+                    if (output < minimum[channel])
+                        minimum[channel] = output;
+                    if (output > maximum[channel])
+                        maximum[channel] = output;
+                }
+            }
+            generated++;
+        }
+    }
+    CHECK_EQ_U64(generated, test->sample_count);
+    for (uint8_t chip = 0u; chip < test->chip_count; chip++)
+        free(machines[chip]);
+    *sample_count = generated;
+    return hash;
+}
+
+static void ym_synthesis(void)
+{
+    for (size_t i = 0u; i < YM_CASE_COUNT; i++) {
+        uint32_t samples = 0u;
+        int16_t minimum[2], maximum[2];
+        uint64_t hash = ym_run_case(&ym_cases[i], &samples, minimum, maximum);
+        (void)printf("%s %u %016llx\n", ym_cases[i].name, samples,
+                     (unsigned long long)hash);
+        CHECK_EQ_U64(samples, ym_cases[i].sample_count);
+        CHECK_EQ_U64(hash, ym_cases[i].hash);
+        if (i == 0u) {
+            CHECK(minimum[0] < 0 && minimum[1] < 0);
+            CHECK(maximum[0] > 0 && maximum[1] > 0);
+        }
+    }
+}
+
+static int ym_judge(const struct ym_case_vector *expected, const char *name,
+                    uint32_t samples, uint64_t hash, const char *seed)
+{
+    static const char expected_seed[] = "81aec25ccbb98f4873a255f7551ac4dadac59b4a";
+    return strcmp(name, expected->name) == 0 && samples == expected->sample_count &&
+           hash == expected->hash && strcmp(seed, expected_seed) == 0;
+}
+
+static void ym_controls(void)
+{
+    const struct ym_case_vector *expected = &ym_cases[0];
+    int16_t one[2] = {1234, -567};
+    uint64_t correct = ym_hash_sample(UINT64_C(14695981039346656037), one[0], one[1]);
+    uint64_t swapped = ym_hash_sample(UINT64_C(14695981039346656037), one[1], one[0]);
+    struct ym_case_vector control = *expected;
+    control.name = "control";
+    control.sample_count = 1u;
+    control.hash = correct;
+    CHECK(ym_judge(&control, control.name, 1u, correct,
+                   "81aec25ccbb98f4873a255f7551ac4dadac59b4a"));
+    CHECK(correct != swapped);
+    CHECK(!ym_judge(&control, control.name, 1u,
+                    control.hash ^ 1u, "81aec25ccbb98f4873a255f7551ac4dadac59b4a"));
+    CHECK(!ym_judge(&control, control.name, 1u, swapped,
+                    "81aec25ccbb98f4873a255f7551ac4dadac59b4a"));
+    CHECK(!ym_judge(&control, "missing_case", 1u, correct,
+                    "81aec25ccbb98f4873a255f7551ac4dadac59b4a"));
+    CHECK(!ym_judge(&control, control.name, 1u, correct,
+                    "wrong-seed"));
+}
+
 int main(int argc, char **argv)
 {
-    if (argc != 2 || strcmp(argv[1], "tracer") != 0)
+    if (argc != 2)
         return 2;
-    ym_tracer();
+    if (strcmp(argv[1], "tracer") == 0)
+        ym_tracer();
+    else if (strcmp(argv[1], "numeric") == 0)
+        ym_numeric();
+    else if (strcmp(argv[1], "synthesis") == 0)
+        ym_synthesis();
+    else if (strcmp(argv[1], "controls") == 0)
+        ym_controls();
+    else
+        return 2;
     CHECK_DONE();
 }
