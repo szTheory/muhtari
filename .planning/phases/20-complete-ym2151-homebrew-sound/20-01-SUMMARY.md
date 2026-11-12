@@ -16,9 +16,9 @@ affects: [20-02, 20-03, YM-01, YM-02, YM-03]
 actuals:
   tokens: 30266
   tasks: 2
-  commits: 2
+  commits: 3
   plan_head_before: 6977f436555421551f83ae7f875ce331d0fccb1a
-  plan_head_after: 9f1675adabf7d1e9306b1d1cce054805112c231d
+  plan_head_after: 757d72b48e175cc2ee0b9e61681f4d8b5d9fcb76
 
 tech-stack:
   added: [test-only C++17 OPM oracle harness]
@@ -110,11 +110,13 @@ status: complete
 - Completed the public XM/YM frame tracer, bounded mono output checks, no-YM state control, and fail-closed YM save/load guard.
 - Added Yamaha-source numeric busy/timer expectations and a receipt-bound oracle comparing the C port to the already-built OPM object. The corpus covers all eight algorithms, four operator positions, key/envelope phases, feedback, noise, four LFO waveforms, panning, phase wrap, repeated writes, and two interleaved instances.
 - Preserved legacy no-YM audio behavior in the registered frame, observer, and runner sample checks. The YM state guard remains in place for Plan 20-03; this plan does not complete YM-05 or phase-level acceptance.
+- Fixed the synthetic C and C++ test drivers to consume audio through the normal bounded renderer at frame cadence; the production FIFO size and deadlines did not change.
 
 ## Task Commits
 
 1. **Task 1: Run one generated XM note through the public C frame path** — `11ca736` (`feat(20-01): add XM YM2151 public sound tracer`).
 2. **Task 2: Prove independent chip numbers and actual exact-seed translation parity** — `9f1675a` (`fix(20-01): qualify YM numeric and seed parity`).
+3. **Post-plan sanitizer gap fix: Drain YM helper audio at frame cadence** — `757d72b` (`fix(20-01): drain YM helper audio at frame cadence`).
 
 The summary and planning state are recorded in the final metadata commit.
 
@@ -135,12 +137,16 @@ The summary and planning state are recorded in the final metadata commit.
 - The exact-seed comparator checks both signed 16-bit channels before the mono mixer. A separate raw-DAC assertion requires positive and negative samples on both channels; the public PCM tracer alone would not establish raw YM polarity.
 - YM state sizing/save/load remains unavailable until Plan 20-03 installs complete continuation. No lossy legacy snapshot is exposed in this plan.
 
-## Verification Evidence
+## Recorded Results
 
 - `cmake --preset ci && cmake --build --preset ci --target muhtari-test-ym2151 muhtari` — exit 0.
 - `ctest --test-dir build/ci --output-on-failure --no-tests=error -R '^ym[.](numeric|synthesis|controls|tracer)$'` — exit 0; all four tests passed.
 - `cmake -DROOT=. -DSEED=build/v6-ym-seed -DWORK=build/v6-ym-oracle -P tests/audio/ym_oracle.cmake` — exit 0. The script verified all six prepared input hashes and the existing object SHA-256 `7585c505b90b9a3fe3cd4917b819e56515a1baaa951484d07706353a9b06d5f8` from `build/v6-ym-seed/source-receipt.json`, then compared 9,728 synchronized steps (10,240 chip sample pairs including the two-chip case). It did not fetch or rebuild the seed.
 - `ctest --test-dir build/ci --output-on-failure --no-tests=error -R '^audio[.](frames|observer|samples)$'` — exit 0; all 11 selected checks passed, including eight existing fixture builds and the eight runner audio comparisons.
+- After the helper fix in `757d72b`, `cmake --preset ci && cmake --build --preset ci --target muhtari-test-ym2151 muhtari && ctest --test-dir build/ci --output-on-failure --no-tests=error -R '^ym[.](numeric|synthesis|controls|tracer)$'` — exit 0; all four tests passed.
+- After the helper fix, `cmake -DROOT=. -DSEED=build/v6-ym-seed -DWORK=build/v6-20-ym-oracle-gap -P tests/audio/ym_oracle.cmake` — exit 0; all ten receipt-bound synthesis cases and numeric edges passed using the existing pinned object.
+- Qualified AppleClang local sanitizer: `cmake --preset asan -B build/v6-ym-sanitize-apple -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++` — exit 0; `cmake --build build/v6-ym-sanitize-apple --target muhtari-test-ym2151 --parallel 2` — exit 0; `ctest --test-dir build/v6-ym-sanitize-apple --no-tests=error --output-on-failure --parallel 1 --output-junit build/v6-ym-apple-focus-fixed.junit.xml -R '^ym[.](tracer|numeric|synthesis|controls)$'` — exit 0, 4/4 in 0.654s with combined address/undefined sanitizers and no recovery. Separate heap-out-of-bounds and signed-overflow controls were both detected. The original C++ oracle was excluded from sanitizer instrumentation.
+- The installed Homebrew sanitizer runtime failed its standalone startup probes before `main`; the same boundary reproduced outside the sandbox. Plain and UBSan-only probes passed, while its ASan/combined probes timed out. The AppleClang run is a qualified local supplement, not pinned Homebrew or CI acceptance. The first AppleClang focused run exited 8 because two test helpers filled the existing PCM FIFO; the frame-cadence consumer fix above resolves that assertion.
 - Run URLs: `N/A-local`.
 
 ## Deviations from Plan
@@ -163,7 +169,15 @@ The summary and planning state are recorded in the final metadata commit.
 - **Verification:** Numeric reset/enable checks and per-clock status, deadline, and IRQ parity against the exact object.
 - **Committed in:** `9f1675a`.
 
-**Total deviations:** 2 auto-fixed correctness issues. Both were found by the planned numeric/parity work; no scope was added.
+**3. [Rule 7 - Test-driver fidelity] Drained synthetic PCM through the real bounded consumer**
+- **Found during:** Post-plan ASan/UBSan gap check.
+- **Issue:** Standalone C/C++ helpers advanced chip clocks without rendering/discarding PCM, causing the existing private FIFO assertion to abort under assert-enabled builds; release tests had hidden this because assertions were disabled.
+- **Fix:** Split helper advancement at normal frame boundaries and consume with the existing half-open synth renderer. Keep the FIFO/deadline bounds and direct five-tick epoch test unchanged.
+- **Files modified:** `tests/audio/test_ym2151.c`, `tests/audio/ym_oracle.cpp`.
+- **Verification:** Commit `757d72b`; four selected YM C tests and the receipt-bound oracle pass; AppleClang combined ASan/UBSan C tests pass 4/4 with both deliberate fault controls detected.
+- **Committed in:** `757d72b`.
+
+**Total deviations:** 3 auto-fixed issues (two production correctness defects and one sanitizer-discovered test-driver fidelity defect). No phase scope was added.
 
 ## Issues Encountered
 
@@ -184,4 +198,4 @@ Plan 20-01 is complete and committed. Its report and planning bookkeeping are re
 
 ## Self-Check: PASSED
 
-The summary exists, and both task commits (`11ca736`, `9f1675a`) are ancestors of the current branch head.
+The summary exists, all three product/helper commits (`11ca736`, `9f1675a`, `757d72b`) are ancestors of the current branch head, and it records the assert-enabled sanitizer evidence separately from the pinned CI-runtime boundary.
