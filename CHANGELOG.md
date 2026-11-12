@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.0](https://github.com/szTheory/muhtari/compare/v0.13.1...v0.14.0) (2026-11-12)
+
+
+### Features
+
+* **ym2151:** complete homebrew sound ([#54](https://github.com/szTheory/muhtari/issues/54)) ([77d9bec](https://github.com/szTheory/muhtari/commit/77d9bec233756eea7044bfac48545d6a98fedfdb))
+
 ## [0.13.1](https://github.com/szTheory/muhtari/compare/v0.13.0...v0.13.1) (2026-11-11)
 
 
