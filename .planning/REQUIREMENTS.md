@@ -12,14 +12,14 @@ from a small MIT-licensed C library hosts can embed.
 
 ### Qualified YM2151 sound
 
-- [ ] **YM-01**: A host can load one explicitly documented YM2151 profile within selected/autodetected XM topology; map, enable, clock, busy/status, timers and established IRQ routing follow a source-qualified digital model. Unsupported topologies/devices refuse before allocation or live-machine mutation.
-- [ ] **YM-02**: A homebrew register workload produces independently checked non-silent FM output from an integer, instance-owned, bounded C17 specialization of the approved BSD-3 OPM seed, with exact-pin synthesis parity separately identified from hardware accuracy and all notices/update duties retained.
-- [ ] **YM-03**: A host receives deterministic bounded mono PCM and canonical audio observations from the qualified YM workload at supported rates/regions, including partial-frame carry and maximum legal mix; TIA/POKEY-only outputs and existing duplicated-mono libretro output remain unchanged.
-- [ ] **YM-04**: A host can reset, unload/reload and run isolated YM instances without stale state, post-load allocation, unbounded work or writes outside borrowed output buffers.
-- [ ] **YM-05**: A host can save/restore all YM state mid-stream and obtain identical subsequent audio; corrupt, unsupported or semantically invalid state preserves the live machine and committed battery bytes. Concrete API/behavior/native-format compatibility policy is documented before implementation.
-- [ ] **YM-06**: The same owned YM diagnostic executes through the actual public C library, headless runner and loaded libretro core, with independent numeric expectations before cross-route hashes and retained callback/batch/fallback/refusal controls.
-- [ ] **YM-07**: The portable libretro artifact and clean extracted/installed package consumers reproduce the owned YM workload's native observations, with package identity, notices and existing integrity/fault controls preserved.
-- [ ] **YM-08**: Integrators can identify the supported request, exact profile and evidence limits in existing docs, and maintainers have representative ordinary/worst-legal YM native/Wasm cost, integer headroom, memory/state extent and justified finite bounds using current mechanisms.
+- [x] **YM-01**: A host can load one explicitly documented YM2151 profile within selected/autodetected XM topology; map, enable, clock, busy/status, timers and established IRQ routing follow a source-qualified digital model. Unsupported topologies/devices refuse before allocation or live-machine mutation.
+- [x] **YM-02**: A homebrew register workload produces independently checked non-silent FM output from an integer, instance-owned, bounded C17 specialization of the approved BSD-3 OPM seed, with exact-pin synthesis parity separately identified from hardware accuracy and all notices/update duties retained.
+- [x] **YM-03**: A host receives deterministic bounded mono PCM and canonical audio observations from the qualified YM workload at supported rates/regions, including partial-frame carry and maximum legal mix; TIA/POKEY-only outputs and existing duplicated-mono libretro output remain unchanged.
+- [x] **YM-04**: A host can reset, unload/reload and run isolated YM instances without stale state, post-load allocation, unbounded work or writes outside borrowed output buffers.
+- [x] **YM-05**: A host can save/restore all YM state mid-stream and obtain identical subsequent audio; corrupt, unsupported or semantically invalid state preserves the live machine and committed battery bytes. Concrete API/behavior/native-format compatibility policy is documented before implementation.
+- [x] **YM-06**: The same owned YM diagnostic executes through the actual public C library, headless runner and loaded libretro core, with independent numeric expectations before cross-route hashes and retained callback/batch/fallback/refusal controls.
+- [x] **YM-07**: The portable libretro artifact and clean extracted/installed package consumers reproduce the owned YM workload's native observations, with package identity, notices and existing integrity/fault controls preserved.
+- [x] **YM-08**: Integrators can identify the supported request, exact profile and evidence limits in existing docs, and maintainers have representative ordinary/worst-legal YM native/Wasm cost, integer headroom, memory/state extent and justified finite bounds using current mechanisms.
 
 ## Deferred Requirements
 
@@ -44,14 +44,14 @@ work, homebrew chips, browser/player adoption, ports and AI/TAS retain their see
 | Requirement | Phase | Status |
 |---|---|---|
 | TUNE-10 | Phase 19 | Complete |
-| YM-01 | Phase 20 | Pending |
-| YM-02 | Phase 20 | Pending |
-| YM-03 | Phase 20 | Pending |
-| YM-04 | Phase 20 | Pending |
-| YM-05 | Phase 20 | Pending |
-| YM-06 | Phase 20 | Pending |
-| YM-07 | Phase 20 | Pending |
-| YM-08 | Phase 20 | Pending |
+| YM-01 | Phase 20 | Complete |
+| YM-02 | Phase 20 | Complete |
+| YM-03 | Phase 20 | Complete |
+| YM-04 | Phase 20 | Complete |
+| YM-05 | Phase 20 | Complete |
+| YM-06 | Phase 20 | Complete |
+| YM-07 | Phase 20 | Complete |
+| YM-08 | Phase 20 | Complete |
 
 **Coverage:** 9/9 requirements mapped exactly once; no orphaned requirements.
 

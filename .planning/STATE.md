@@ -5,16 +5,16 @@ milestone_name: YM2151 homebrew sound
 current_phase: 20
 current_phase_name: Complete YM2151 homebrew sound
 status: executing
-stopped_at: Completed 20-06-PLAN.md
-last_updated: "2026-11-12T10:07:11.325Z"
+stopped_at: Completed 20-07-PLAN.md; phase verification next
+last_updated: "2026-11-12T11:20:34.081667Z"
 last_activity: 2026-11-12
-last_activity_desc: Phase 20 Plan 20-06 complete; Plan 20-07 next
+last_activity_desc: Phase 20 implementation and required local gates complete; goal verification next
 state_head: 1f8aacd28ec5c6e9a30293da95f866717ee4dbe6
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 8
-  completed_plans: 7
+  completed_plans: 8
   percent: 50
 ---
 
@@ -24,20 +24,20 @@ progress:
 
 See [PROJECT.md](PROJECT.md), [current requirements](REQUIREMENTS.md), [ROADMAP.md](ROADMAP.md) and [milestone synthesis](research/next-milestone/SUMMARY.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** Phase 20 — Complete YM2151 homebrew sound; Plan 20-03 complete, Plan 20-04 next
+**Current focus:** Phase 20 — Complete YM2151 homebrew sound; all seven plans complete; goal verification next
 
 ## Current Position
 
 Phase: 20 (Complete YM2151 homebrew sound) — EXECUTING
 Plan: 7 of 7
-Status: Ready to execute
-Last activity: 2026-11-12 — Phase 20 Plan 20-06 complete; Plan 20-07 next
+Status: Implementation complete; goal verification pending
+Last activity: 2026-11-12 — Phase 20 implementation and required local gates complete; goal verification next
 
 Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
-v6.0 has seven completed plans and one completed phase. Phase 20 Plans 20-01 through 20-06 are complete; Plan 20-07 is next. Phase 19 records the source-specific baseline and local gate outcomes in its summary; prior v5.0 ship evidence remains in the final ship receipt.
+v6.0 has eight completed plans and one verified phase. All seven Phase20 plans and required final local gates are complete; independent goal verification is next. Phase 19 records the source-specific baseline and local gate outcomes in its summary; prior v5.0 ship evidence remains in the final ship receipt.
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
@@ -51,13 +51,13 @@ v6.0 has seven completed plans and one completed phase. Phase 20 Plans 20-01 thr
 - v3.0 closed with deferred scope: only Phase 13 verified; nine requirements remain unchecked in the [archive](milestones/v3.0-MILESTONE-AUDIT.md). v4.0 promotes no old host acceptance claim.
 - Root remains canonical; stale dirty worktrees stay preserved and require content/ancestry reconciliation before import. See [workspace reconciliation](debug/workspace-reconciliation-2026-11-10.md).
 - Owner-selected v6.0 keeps one source-qualified XM/YM2151 profile, public mono PCM and C17 integer-only instance ownership. Profile, finite resource bounds and concrete API/behavior/native-format compatibility consequences are qualified before implementation; materially new consequences remain owner decisions.
-- Required chip/bus/audio/state, library/runner/libretro/Wasm/package acceptance, tests, docs and cost stay together in Phase 20. Plans 20-01 through 20-06 are complete; the next runnable plan is 20-07. YM state now uses format 2/behavior 7 while no-YM snapshots retain format 1/behavior 6; independent genuine old/new continuation remains in Plan 20-06. Reuse saved research, current mechanisms and [fan-out guidance](research/fan-out/prompt.txt); do not add a validation-tail phase or repeat upstream research.
+- Required chip/bus/audio/state, library/runner/libretro/Wasm/package acceptance, tests, docs and cost stay together in Phase 20. All seven plans and required final local gates are complete; independent goal verification is next. YM state now uses format 2/behavior 7 while no-YM snapshots retain format 1/behavior 6; independent genuine old/new continuation remains in Plan 20-06. Reuse saved research, current mechanisms and [fan-out guidance](research/fan-out/prompt.txt); do not add a validation-tail phase or repeat upstream research.
 
 Inherited todos and optional seeds retain their dispositions except selected YM/XM and recurring tune-up contributions. Atari 2600 belongs to twentysixhundo; LibFuturo owns its existing host/browser routes. [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md) carries future horizons.
 
 ### Blockers/Concerns
 
-- No current local roadmap blocker. Exact source-qualified map/enable/clock/status/timer/IRQ profile, seed feasibility and compatibility policy remain Phase 20 prerequisites; unresolved material consequences stop that decision, not independent authorized local work.
+- No current local roadmap blocker. The exact profile, compatibility policy, final native/portable/package evidence and clean bounded review are complete; phase goal verification and local milestone audit/archival remain. The optional GCC13 no-FP attempt is unqualified because it lacks a required warning flag; no unavailable platform pass is claimed.
 - Phase 12's exact diagnostic-app request was denied before preflight/content and must not be retried. Original Phase 12 host/remote stops, Phase 14's spent host scope, expired windows and specific no-retry limits remain binding. No v6.0 action renews them or accepts the nine deferred v3.0 requirements.
 - Publication, merge, new remote dispatch and host/device/identity-bound actions remain outside autonomous local authority. Browser/player, Playstead, physical audibility, calibrated hardware accuracy, public stereo and full XM are excluded. Earlier combined-source/failed release evidence remains source-specific in archived receipts.
 

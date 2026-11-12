@@ -670,6 +670,28 @@ their applicability as a new Muhtari control remains a hypothesis until a local
 fault/control reproduces the need. Do not add another generic evidence layer
 solely because the sibling has one.
 
+## Merge every active audio source before advancing the mixer (2026-11-12)
+
+The YM+dual-POKEY+TIA stress workload passed Release consumers while assertion-enabled
+Apple ASan/UBSan stopped at the mixer's pending-timestamp ordering assertion. YM was
+catching up after a later POKEY edge had already emitted. Register activity and
+cross-route equality did not expose the shared scheduling error. Registering the
+existing monotonic raw observer on that same stress workload reproduces the defect
+in Release, with all twelve sources actually changing in both regions.
+
+The fix merges YM through each TIA event and then the existing POKEY half-edge
+limit, preserving actual slow/held-cycle timing, timer batch bounds and the no-YM
+path. Never advance an independent audio source to the end of a batch after another
+source has already queued a later event. Keep a Release-mode ordering assertion
+alongside debug assertions when the maximum coinstalled topology is supported.
+
+Evidence: focused CTest hostile case in build/v6-phase20-ordering-before.log exits8
+before the production fix; seventeen focused Release and qualified Apple sanitizer
+tests exit0 after it. Final complete native, hygiene, compatibility and actual
+emitted/extracted Wasm gates also exit0 at the reviewed product snapshot. Commands,
+source identities and limits are retained in the Phase20 cost report; URLs N/A-local.
+No hardware, retail or other platform acceptance is inferred.
+
 Provenance: LibFuturo local commits `ce9028e`, `98f935c`, `4fb7d1c` and the later
 core-profiles Phase 2 verification; the read-only successor snapshot and exact
 paths are retained in [CONSUMERS](research/next-milestone/CONSUMERS.md). No sibling
