@@ -13,20 +13,28 @@
 #define YM_IMAGE_BYTES (IMAGES_HEADER + YM_BODY)
 #define AUDIO_CAPACITY 962u
 
+struct ym_allocations {
+    uint32_t allocs, frees;
+};
+
 static uint8_t ym_image[YM_IMAGE_BYTES];
 static uint8_t old_image[YM_IMAGE_BYTES];
 static uint8_t irq_image[YM_IMAGE_BYTES];
 
 static void *test_alloc(void *user, size_t bytes)
 {
-    (void)user;
+    struct ym_allocations *counts = user;
+    if (counts != NULL)
+        counts->allocs++;
     return malloc(bytes);
 }
 
 static void test_free(void *user, void *ptr, size_t bytes)
 {
-    (void)user;
+    struct ym_allocations *counts = user;
     (void)bytes;
+    if (counts != NULL)
+        counts->frees++;
     free(ptr);
 }
 
@@ -35,6 +43,19 @@ static muhtari *make_machine(void)
     muhtari_config config;
     memset(&config, 0, sizeof config);
     config.size = (uint32_t)sizeof config;
+    config.allocator.alloc = test_alloc;
+    config.allocator.free = test_free;
+    muhtari *machine = NULL;
+    CHECK_EQ_U64(muhtari_create(&config, &machine), MUHTARI_STATUS_OK);
+    return machine;
+}
+
+static muhtari *make_machine_counted(struct ym_allocations *counts)
+{
+    muhtari_config config;
+    memset(&config, 0, sizeof config);
+    config.size = (uint32_t)sizeof config;
+    config.allocator.user = counts;
     config.allocator.alloc = test_alloc;
     config.allocator.free = test_free;
     muhtari *machine = NULL;
@@ -497,6 +518,341 @@ static void ym_controls(void)
                     "wrong-seed"));
 }
 
+static muhtari_status ym_load_variant(muhtari *m, const uint8_t *image, size_t bytes,
+                                      uint32_t expansion)
+{
+    muhtari_media media = media_for(image, bytes, expansion);
+    return muhtari_load(m, &media);
+}
+
+static void ym_profile(void)
+{
+    uint8_t variant[YM_IMAGE_BYTES];
+    struct ym_allocations counts = {0u, 0u};
+    size_t bytes = images_ym2151(ym_image);
+    muhtari *m = make_machine_counted(&counts);
+    CHECK(m != NULL);
+    if (m == NULL)
+        return;
+
+    CHECK_EQ_U64(ym_load_variant(m, ym_image, bytes, MUHTARI_EXPANSION_XM),
+                 MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(m->synth.ym_installed, 1u);
+    CHECK_EQ_U64(m->cart.irq_mask, 4u);
+
+    /* Every lower control bit (including HSC/POKEY/RAM controls) is
+       orthogonal to D7: it gates only the exact YM address/data pair. */
+    for (unsigned low = 0u; low < 128u; low++) {
+        uint8_t previous = m->ym.registers[0x20u];
+        muhtari__bus_write(m, 0x0470u, (uint8_t)low);
+        muhtari__bus_write(m, 0x0460u, 0x20u);
+        muhtari__bus_write(m, 0x0461u, (uint8_t)(low ^ 0x5au));
+        CHECK_EQ_U64(m->ym.registers[0x20u], previous);
+
+        muhtari__bus_write(m, 0x0470u, (uint8_t)(0x80u | low));
+        muhtari__bus_write(m, 0x0460u, 0x20u);
+        muhtari__bus_write(m, 0x0461u, (uint8_t)(low ^ 0xa5u));
+        CHECK_EQ_U64(m->ym.registers[0x20u], (low ^ 0xa5u));
+    }
+    CHECK_EQ_U64(m->cart.expansion.control, 0xffu);
+
+    /* Page registers and all nearby aliases leave the chip address/data
+       state alone. Peeks and MARIA reads cannot clock or read YM status. */
+    muhtari__bus_write(m, 0x0470u, 0x84u);
+    muhtari__bus_write(m, 0x0460u, 0x20u);
+    muhtari__bus_write(m, 0x0461u, 0x6du);
+    uint8_t register_value = m->ym.registers[0x20u];
+    uint8_t address = m->ym.address;
+    uint64_t clocks = m->ym.clocks;
+    uint64_t last_tick = m->ym.last_tick;
+    for (unsigned page = 0u; page < 16u; page++) {
+        muhtari__bus_write(m, 0x0478u, (uint8_t)(page * 17u));
+        muhtari__bus_write(m, 0x047cu, (uint8_t)(page * 17u));
+        CHECK_EQ_U64(m->ym.registers[0x20u], register_value);
+        CHECK_EQ_U64(m->ym.address, address);
+    }
+    static const uint16_t aliases[] = {0x045fu, 0x0462u, 0x0463u, 0x046fu,
+                                       0x0471u, 0x0477u, 0x0479u, 0x047du};
+    for (size_t i = 0u; i < sizeof aliases / sizeof aliases[0]; i++) {
+        muhtari__bus_write(m, aliases[i], 0x3cu);
+        CHECK_EQ_U64(m->ym.registers[0x20u], register_value);
+        CHECK_EQ_U64(m->ym.address, address);
+    }
+    clocks = m->ym.clocks;
+    last_tick = m->ym.last_tick;
+    (void)muhtari__bus_peek(m, 0x0460u);
+    (void)muhtari__bus_peek(m, 0x0461u);
+    CHECK_EQ_U64(m->ym.clocks, clocks);
+    CHECK_EQ_U64(m->ym.last_tick, last_tick);
+    (void)muhtari__cart_read_at(m, 0x0461u, 1, m->bus.ticks + 100u);
+    CHECK_EQ_U64(m->ym.clocks, clocks);
+    CHECK_EQ_U64(m->ym.last_tick, last_tick);
+
+    /* D7 only suppresses register access. Timer and output clocks keep
+       running, and re-enabling does not reset either source. */
+    muhtari__bus_write(m, 0x0470u, 0x80u);
+    muhtari__bus_write(m, 0x0460u, 0x10u);
+    muhtari__bus_write(m, 0x0461u, 0xffu);
+    muhtari__bus_write(m, 0x0460u, 0x11u);
+    muhtari__bus_write(m, 0x0461u, 0x03u);
+    muhtari__bus_write(m, 0x0460u, 0x14u);
+    muhtari__bus_write(m, 0x0461u, 0x05u);
+    uint64_t timer_deadline = m->ym.timer_deadline[0];
+    uint32_t output_steps = m->ym.total_clocks;
+    muhtari__bus_write(m, 0x0470u, 0u);
+    for (unsigned i = 0u; i < 33u; i++)
+        (void)muhtari__bus_read(m, 0xc000u);
+    CHECK((m->ym.status & 1u) != 0u);
+    CHECK(m->ym.total_clocks > output_steps);
+    CHECK(m->ym.timer_deadline[0] > timer_deadline);
+    uint64_t running_deadline = m->ym.timer_deadline[0];
+    muhtari__bus_write(m, 0x0470u, 0x84u);
+    CHECK((m->ym.status & 1u) != 0u);
+    CHECK_EQ_U64(m->ym.timer_deadline[0], running_deadline);
+
+    /* A status-reset data write exactly on the timer edge sees the due chip
+       event first, then applies the reset in the same bus data phase. */
+    muhtari *edge = make_machine();
+    CHECK(edge != NULL);
+    if (edge != NULL) {
+        CHECK_EQ_U64(ym_load_variant(edge, ym_image, bytes, MUHTARI_EXPANSION_XM),
+                     MUHTARI_STATUS_OK);
+        edge->cart.expansion.control = 0x80u;
+        ym_write_reg(edge, 0x10u, 0xffu, edge->bus.ticks);
+        ym_write_reg(edge, 0x11u, 3u, edge->bus.ticks);
+        ym_write_reg(edge, 0x14u, 0x05u, edge->bus.ticks);
+        uint64_t due_tick = muhtari__ym2151_next_timer_tick(edge);
+        CHECK(due_tick >= edge->ym.last_tick + 4u);
+        edge->bus.ticks = due_tick - 4u;
+        edge->ym.last_tick = due_tick - 4u;
+        edge->ym.clocks = edge->ym.timer_deadline[0] - 2u;
+        edge->ym.address = 0x14u;
+        muhtari__bus_write(edge, 0x0461u, 0x15u);
+        CHECK_EQ_U64(edge->ym.status & 1u, 0u);
+        CHECK_EQ_U64(edge->ym.timer_running[0], 1u);
+        muhtari_destroy(edge);
+    }
+
+    /* Refusal cases are validated before allocation or mutation of the live
+       machine, YM instance, or battery bytes/generation. */
+    uint8_t *rom_before = m->cart.rom;
+    uint64_t ticks_before = m->bus.ticks;
+    struct muhtari__ym2151 ym_before = m->ym;
+    uint64_t generation_before = m->battery.generation;
+    size_t battery_bytes = m->battery.bytes;
+    uint8_t *battery_before = malloc(battery_bytes);
+    CHECK(battery_before != NULL);
+    if (battery_before != NULL)
+        memcpy(battery_before, m->battery.data, battery_bytes);
+    m->ram[0] = 0xa5u;
+    m->battery.data[0] = 0x39u;
+    m->battery.generation = 17u;
+    generation_before = m->battery.generation;
+    if (battery_before != NULL)
+        memcpy(battery_before, m->battery.data, battery_bytes);
+
+#define YM_REFUSE(expected_status, expansion_value)                                                 \
+    do {                                                                                            \
+        uint32_t allocs_before = counts.allocs;                                                     \
+        uint32_t frees_before = counts.frees;                                                       \
+        CHECK_EQ_U64(ym_load_variant(m, variant, bytes, (expansion_value)),                        \
+                     (expected_status));                                                           \
+        CHECK_EQ_U64(counts.allocs, allocs_before);                                                 \
+        CHECK_EQ_U64(counts.frees, frees_before);                                                   \
+        CHECK(m->cart.rom == rom_before);                                                            \
+        CHECK_EQ_U64(m->bus.ticks, ticks_before);                                                    \
+        CHECK(memcmp(&m->ym, &ym_before, sizeof ym_before) == 0);                                   \
+        CHECK_EQ_U64(m->battery.generation, generation_before);                                     \
+        CHECK_EQ_U64(m->battery.bytes, battery_bytes);                                              \
+        CHECK(m->ram[0] == 0xa5u);                                                                  \
+        CHECK(battery_before == NULL || memcmp(m->battery.data, battery_before, battery_bytes) == 0); \
+    } while (0)
+
+    memcpy(variant, ym_image, bytes);
+    variant[63] = 0u; /* YM declared without XM */
+    YM_REFUSE(MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE, MUHTARI_EXPANSION_AUTO);
+    memcpy(variant, ym_image, bytes);
+    YM_REFUSE(MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE, MUHTARI_EXPANSION_OFF);
+    memcpy(variant, ym_image, bytes);
+    YM_REFUSE(MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE, MUHTARI_EXPANSION_XBOARD);
+    memcpy(variant, ym_image, bytes);
+    variant[67] = 0x18u; /* YM plus unsupported Covox */
+    YM_REFUSE(MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE, MUHTARI_EXPANSION_XM);
+    memcpy(variant, ym_image, bytes);
+    variant[67] = 0x28u; /* YM plus unsupported ADPCM */
+    YM_REFUSE(MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE, MUHTARI_EXPANSION_XM);
+    memcpy(variant, ym_image, bytes);
+    variant[67] = 0x0du; /* YM plus conflicting POKEY at $4000 */
+    YM_REFUSE(MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE, MUHTARI_EXPANSION_XM);
+    memcpy(variant, ym_image, bytes);
+    variant[64] = 4u; /* valid Souper mapper */
+    YM_REFUSE(MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD, MUHTARI_EXPANSION_XM);
+#undef YM_REFUSE
+
+    /* Selected and auto-detected XM both install the declaration. Plain XM,
+       v3, headerless and ignored v4 data never infer a YM or IRQ source. */
+    memcpy(variant, ym_image, bytes);
+    muhtari *auto_xm = make_machine();
+    CHECK(auto_xm != NULL);
+    if (auto_xm != NULL) {
+        CHECK_EQ_U64(ym_load_variant(auto_xm, variant, bytes, MUHTARI_EXPANSION_AUTO),
+                     MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(auto_xm->synth.ym_installed, 1u);
+        muhtari_destroy(auto_xm);
+    }
+    memcpy(variant, ym_image, bytes);
+    variant[67] = 0u;
+    variant[69] = 0u;
+    muhtari *plain_xm = make_machine();
+    CHECK(plain_xm != NULL);
+    if (plain_xm != NULL) {
+        CHECK_EQ_U64(ym_load_variant(plain_xm, variant, bytes, MUHTARI_EXPANSION_XM),
+                     MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(plain_xm->synth.ym_installed, 0u);
+        muhtari_destroy(plain_xm);
+    }
+    memcpy(variant, ym_image, bytes);
+    variant[0] = 3u;
+    muhtari *v3 = make_machine();
+    CHECK(v3 != NULL);
+    if (v3 != NULL) {
+        CHECK_EQ_U64(ym_load_variant(v3, variant, bytes, MUHTARI_EXPANSION_AUTO),
+                     MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(v3->synth.ym_installed, 0u);
+        CHECK_EQ_U64(v3->cart.irq_mask, 0u);
+        muhtari_destroy(v3);
+    }
+    memcpy(variant, ym_image, bytes);
+    variant[64] = 9u; /* malformed v4 block is ignored */
+    muhtari *ignored_v4 = make_machine();
+    CHECK(ignored_v4 != NULL);
+    if (ignored_v4 != NULL) {
+        CHECK_EQ_U64(ym_load_variant(ignored_v4, variant, bytes, MUHTARI_EXPANSION_AUTO),
+                     MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(ignored_v4->synth.ym_installed, 0u);
+        CHECK_EQ_U64(ignored_v4->cart.irq_mask, 0u);
+        muhtari_destroy(ignored_v4);
+    }
+    uint8_t headerless[16u * IMAGES_KIB];
+    size_t headerless_bytes = images_headerless(headerless, sizeof headerless);
+    muhtari *legacy = make_machine();
+    CHECK(legacy != NULL);
+    if (legacy != NULL) {
+        CHECK_EQ_U64(ym_load_variant(legacy, headerless, headerless_bytes, MUHTARI_EXPANSION_XM),
+                     MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(legacy->synth.ym_installed, 0u);
+        CHECK_EQ_U64(legacy->cart.irq_mask, 0u);
+        muhtari_destroy(legacy);
+    }
+
+    free(battery_before);
+    muhtari_destroy(m);
+    CHECK_EQ_U64(counts.allocs, counts.frees);
+}
+
+static void ym_clock_region(uint32_t region)
+{
+    size_t bytes = images_ym2151(ym_image);
+    muhtari_media media = media_for(ym_image, bytes, MUHTARI_EXPANSION_XM);
+    media.region = region;
+    muhtari *m = make_machine();
+    CHECK(m != NULL);
+    if (m == NULL)
+        return;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    uint64_t clock_origin = m->ym.last_tick;
+    uint64_t sample_origin = m->synth.origin;
+
+    int16_t audio[AUDIO_CAPACITY];
+    for (unsigned i = 0u; i < 2u; i++) {
+        uint32_t count = 0u;
+        CHECK_EQ_U64(frame(m, audio, &count), MUHTARI_STATUS_OK);
+        CHECK(count <= AUDIO_CAPACITY);
+        CHECK_EQ_U64(m->ym.last_tick, m->bus.ticks);
+        CHECK_EQ_U64(m->ym.clocks, (m->bus.ticks - clock_origin) / 2u);
+        CHECK_EQ_U64(m->ym.clock_remainder, (m->bus.ticks - clock_origin) & 1u);
+        CHECK_EQ_U64(m->ym.sample_divider, m->ym.clocks % 64u);
+        CHECK_EQ_U64(m->ym.total_clocks, (m->ym.clocks / 64u) & 0xffu);
+    }
+
+    /* A slow TIA access, RDY hold, and /HALT-held cycles all consume the
+       same absolute master tick clock as normal frame DMA. */
+    uint64_t before = m->bus.ticks;
+    (void)muhtari__bus_read(m, 0x0004u);
+    CHECK_EQ_U64(m->ym.last_tick, m->bus.ticks);
+    CHECK_EQ_U64(m->ym.clocks, (m->bus.ticks - clock_origin) / 2u);
+    CHECK(m->bus.ticks - before >= 6u);
+
+    before = m->bus.ticks;
+    m->bus.rdy_release = before + 80u;
+    muhtari__bus_rearm(m);
+    (void)muhtari__bus_read(m, 0x0004u);
+    CHECK(m->bus.ticks >= before + 80u);
+    CHECK_EQ_U64(m->ym.last_tick, m->bus.ticks);
+    CHECK_EQ_U64(m->ym.clocks, (m->bus.ticks - clock_origin) / 2u);
+
+    before = m->bus.ticks;
+    m->bus.halt_stage = 1u; /* HALT_REQUESTED */
+    m->bus.halt_at = before + 1u;
+    m->bus.halt_until = before + 64u;
+    m->bus.halt_cycles = 0u;
+    muhtari__bus_rearm(m);
+    (void)muhtari__bus_read(m, 0x0004u);
+    CHECK(m->bus.ticks > before);
+    CHECK_EQ_U64(m->ym.last_tick, m->bus.ticks);
+    CHECK_EQ_U64(m->ym.clocks, (m->bus.ticks - clock_origin) / 2u);
+
+    uint64_t sample_num = region == MUHTARI_REGION_PAL ? 4000u : 88u;
+    uint64_t sample_den = region == MUHTARI_REGION_PAL ? 591149u : 13125u;
+    CHECK_EQ_U64(m->synth.phase,
+                 ((m->synth.horizon - sample_origin) * sample_num) % sample_den);
+    muhtari_destroy(m);
+}
+
+static void ym_clock(void)
+{
+    ym_clock_region(MUHTARI_REGION_NTSC);
+    ym_clock_region(MUHTARI_REGION_PAL);
+}
+
+static void ym_irq(void)
+{
+    uint8_t image[YM_IMAGE_BYTES];
+    size_t bytes = images_ym2151(image);
+    for (unsigned wired = 0u; wired < 2u; wired++) {
+        image[67] = 0x0au; /* supported POKEY $0450 alongside YM */
+        image[69] = wired != 0u ? 0x05u : 0x01u;
+        muhtari_media media = media_for(image, bytes, MUHTARI_EXPANSION_XM);
+        muhtari *m = make_machine();
+        CHECK(m != NULL);
+        if (m == NULL)
+            continue;
+        CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(m->cart.irq_mask, wired != 0u ? 5u : 1u);
+        uint64_t tick = m->bus.ticks;
+        ym_write_reg(m, 0x10u, 0xffu, tick);
+        ym_write_reg(m, 0x11u, 3u, tick);
+        ym_write_reg(m, 0x14u, 0x05u, tick);
+        muhtari__bus_rearm(m);
+        uint64_t due = muhtari__ym2151_next_timer_tick(m);
+        CHECK(due != 0u);
+        if (muhtari__maria_next_event(m) > due && muhtari__ports_next_event(m) > due)
+            CHECK_EQ_U64(m->bus.next_deadline, due);
+
+        for (unsigned cycle = 0u; cycle < 40u; cycle++)
+            (void)muhtari__bus_read(m, 0xc000u);
+        CHECK_EQ_U64(m->ym.status & 1u, 1u);
+        if (wired != 0u) {
+            CHECK_EQ_U64(m->bus.irq_pipe, 7u);
+            CHECK_EQ_U64(m->bus.irq_level, 1u);
+        } else {
+            CHECK_EQ_U64(m->bus.irq_pipe, 0u);
+            CHECK_EQ_U64(m->bus.irq_level, 0u);
+        }
+        muhtari_destroy(m);
+    }
+}
+
 int main(int argc, char **argv)
 {
     if (argc != 2)
@@ -509,6 +865,12 @@ int main(int argc, char **argv)
         ym_synthesis();
     else if (strcmp(argv[1], "controls") == 0)
         ym_controls();
+    else if (strcmp(argv[1], "profile") == 0)
+        ym_profile();
+    else if (strcmp(argv[1], "clock") == 0)
+        ym_clock();
+    else if (strcmp(argv[1], "irq") == 0)
+        ym_irq();
     else
         return 2;
     CHECK_DONE();

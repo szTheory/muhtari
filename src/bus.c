@@ -95,15 +95,19 @@ enum halt_stage {
 };
 
 /* Recomputes next_deadline from the pending events: MARIA's next line
-   event, a HALT request, an NMI edge. While RDY is low or /HALT is low
-   every cycle takes the slow path. */
+   event, cartridge timer edges, a HALT request, an NMI edge. While RDY is
+   low or /HALT is low every cycle takes the slow path. */
 void muhtari__bus_rearm(muhtari *m)
 {
     struct muhtari__bus *b = &m->bus;
     uint64_t d = muhtari__maria_next_event(m);
     uint64_t ports = muhtari__ports_next_event(m);
+    uint64_t ym = muhtari__ym2151_next_timer_tick(m);
     if (ports < d) {
         d = ports;
+    }
+    if (ym != 0u && ym < d) {
+        d = ym;
     }
     if (b->rdy_release != 0u || b->halt_stage == HALT_LOW) {
         d = 0u;
@@ -134,18 +138,25 @@ static uint64_t cycles_until(uint64_t from, uint64_t until)
     return until > from ? (until - from + BUS_FAST_TICKS - 1u) / BUS_FAST_TICKS : 0u;
 }
 
-/* Merge line and controller events chronologically through the actual
-   access tick (bus.md, Line events; controllers.md, Driving). */
+/* Merge line, controller and cartridge chip events chronologically through
+   the actual access tick (bus.md, Line events; controllers.md, Driving;
+   ym2151.md, Timer clock). */
 static void timed_events(muhtari *m, uint64_t limit)
 {
     for (;;) {
         uint64_t maria = muhtari__maria_next_event(m);
         uint64_t ports = muhtari__ports_next_event(m);
+        uint64_t ym = muhtari__ym2151_next_timer_tick(m);
         uint64_t next = maria < ports ? maria : ports;
+        if (ym != 0u && ym < next) {
+            next = ym;
+        }
         if (next > limit) {
             break;
         }
-        if (maria <= ports) {
+        if (ym != 0u && ym <= maria && ym <= ports) {
+            muhtari__ym2151_catch_up(m, ym);
+        } else if (maria <= ports) {
             muhtari__maria_event(m);
         } else {
             muhtari__ports_catch_up(m, ports);
@@ -225,6 +236,10 @@ static void advance(muhtari *m, uint64_t k)
     b->ticks += k * BUS_FAST_TICKS;
     b->phi2 += k;
     timed_events(m, b->ticks);
+    if (m->synth.ym_installed != 0u) {
+        muhtari__ym2151_catch_up(m, b->ticks);
+        muhtari__bus_rearm(m);
+    }
 }
 
 /* The held cycles to advance before the next cycle start a pending event
@@ -236,8 +251,12 @@ static uint64_t hold_step(const muhtari *m, uint64_t n)
     uint64_t k = n;
     uint64_t e = muhtari__maria_next_event(m);
     uint64_t ports = muhtari__ports_next_event(m);
+    uint64_t ym = muhtari__ym2151_next_timer_tick(m);
     if (ports < e) {
         e = ports;
+    }
+    if (ym != 0u && ym < e) {
+        e = ym;
     }
     if (e > b->ticks + 2u * BUS_FAST_TICKS) {
         uint64_t j = cycles_until(b->ticks + BUS_FAST_DATA, e);
@@ -355,6 +374,8 @@ static void end(muhtari *m, uint32_t len)
        Held batches advance the source above, but never this CPU pipeline. */
     m->bus.irq_pipe = (uint8_t)((((unsigned)m->bus.irq_pipe << 1) | requested) & 7u);
     m->bus.irq_level = (uint8_t)((m->bus.irq_pipe & 4u) != 0u);
+    if (m->synth.ym_installed != 0u)
+        muhtari__bus_rearm(m);
 }
 
 /* The input registers: the RIOT's SWCHA and SWCHB, its port registers 0

@@ -666,7 +666,10 @@ title.pin.recipe	portable,title
 title.pin.self_test	portable,title
 title.simple.bios	portable,title
 title.simple.fast	portable,title
+ym.clock	audio,portable
 ym.controls	audio,portable
+ym.irq	audio,portable
 ym.numeric	audio,portable
+ym.profile	audio,portable
 ym.synthesis	audio,portable
 ym.tracer	audio,portable

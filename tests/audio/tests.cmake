@@ -94,6 +94,12 @@ muhtari_add_test(NAME ym.synthesis COMMAND muhtari-test-ym2151 synthesis
   LABELS audio portable TIMEOUT 10)
 muhtari_add_test(NAME ym.controls COMMAND muhtari-test-ym2151 controls
   LABELS audio portable TIMEOUT 10)
+muhtari_add_test(NAME ym.clock COMMAND muhtari-test-ym2151 clock
+  LABELS audio portable TIMEOUT 30)
+muhtari_add_test(NAME ym.irq COMMAND muhtari-test-ym2151 irq
+  LABELS audio portable TIMEOUT 10)
+muhtari_add_test(NAME ym.profile COMMAND muhtari-test-ym2151 profile
+  LABELS audio portable TIMEOUT 30)
 
 add_executable(muhtari-test-irq ${CMAKE_CURRENT_LIST_DIR}/test_irq.c
   ${CMAKE_CURRENT_LIST_DIR}/../cart/images.c)

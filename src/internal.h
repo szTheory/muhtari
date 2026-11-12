@@ -145,6 +145,7 @@ struct muhtari__ym2151 {
 };
 void muhtari__ym2151_reset(muhtari *m);
 void muhtari__ym2151_catch_up(muhtari *m, uint64_t tick);
+uint64_t muhtari__ym2151_next_timer_tick(const muhtari *m);
 uint8_t muhtari__ym2151_read(muhtari *m, uint16_t addr, uint64_t tick);
 uint8_t muhtari__ym2151_peek(const muhtari *m, uint16_t addr);
 void muhtari__ym2151_write(muhtari *m, uint16_t addr, uint8_t value, uint64_t tick);

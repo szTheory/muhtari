@@ -781,6 +781,34 @@ void muhtari__ym2151_catch_up(muhtari *m, uint64_t tick)
     ym->last_tick = tick;
 }
 
+/* The bus uses this absolute tick to stop held-cycle batches at timer edges.
+   Clock phase is retained across odd MARIA ticks; compute from a distance so
+   the final legal timer period cannot wrap an absolute deadline. */
+uint64_t muhtari__ym2151_next_timer_tick(const muhtari *m)
+{
+    const struct muhtari__ym2151 *ym = &m->ym;
+    if (m->synth.ym_installed == 0u)
+        return 0u;
+
+    uint64_t nearest = 0u;
+    for (unsigned timer = 0u; timer < 2u; timer++) {
+        if (ym->timer_running[timer] == 0u || ym->timer_deadline[timer] <= ym->clocks)
+            continue;
+        uint64_t clocks = ym->timer_deadline[timer] - ym->clocks;
+        uint64_t first = ym->clock_remainder != 0u ? 1u : 2u;
+        uint64_t tail = clocks - 1u;
+        if (tail > (UINT64_MAX - first) / 2u)
+            continue;
+        uint64_t delta = first + tail * 2u;
+        if (delta > UINT64_MAX - ym->last_tick)
+            continue;
+        uint64_t tick = ym->last_tick + delta;
+        if (nearest == 0u || tick < nearest)
+            nearest = tick;
+    }
+    return nearest;
+}
+
 uint8_t muhtari__ym2151_read(muhtari *m, uint16_t addr, uint64_t tick)
 {
     muhtari__ym2151_catch_up(m, tick);
