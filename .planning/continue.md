@@ -1,13 +1,22 @@
-# Current continuation — v6.0 selected, autonomous local work active
+# Current continuation — v6.0 verified locally; shipping next
 
-Owner selected YM2151 homebrew sound and authorized gsd-autonomous style on
-2026-11-11. Current [STATE](STATE.md), [requirements](REQUIREMENTS.md) and
-[roadmap](ROADMAP.md) supersede pending-selection text below. Reconcile actual
-plans and verification, then continue `$gsd-autonomous` without repeating routine
-scope acceptance. No owner directory switch is needed. The agent owns service,
-source and receipt checks. Existing Phase12/14 denied/spent scopes remain closed;
-publication/merge and materially new remote/host/compatibility decisions remain
-separate. The rest of this packet is historical provenance.
+YM2151 homebrew sound is implemented and verified through public C, real runner,
+loaded libretro, actual emitted Wasm and clean package consumers. Both phases,
+all nine current requirements, required local gates, bounded review and milestone
+integration pass. Local archive/cleanup is complete. Publication is pending.
+
+Context can be cleared. Run `$gsd-ship 20` from this root checkout; no directory
+switch is needed. The agent owns service-health, current receipt, source/branch
+and shipping checks. Do not ask the owner to interpret a vague review prerequisite.
+[State](STATE.md), [milestone audit](milestones/v6.0-MILESTONE-AUDIT.md) and
+[Phase20 evidence](milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-COST-EVIDENCE.md)
+carry the current result and precise unavailable-platform limits.
+
+No push, new remote dispatch, merge, tag, publication or host/device run occurred
+under local milestone authority. Original Phase12/14 denied/spent scopes and all
+nine deferred v3 requirements stay unchanged. The frozen kickoff worktree/products
+and unrelated dirty worktrees remain preserved. The material below is historical
+scoping provenance and does not start another milestone.
 
 > Updated by later owner-requested fan-out: the active successor recommendation,
 > source-confidence register and next action are now in

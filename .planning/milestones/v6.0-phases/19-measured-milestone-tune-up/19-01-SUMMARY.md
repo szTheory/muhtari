@@ -98,7 +98,7 @@ The orchestrator-owned phase summary/state commit is recorded after independent 
 ## Files Created/Modified
 
 - [19-TUNEUP.md](19-TUNEUP.md) — publication, source-specific receipts, six dimensions, timing, local checks, disposition and preserved stops.
-- [LESSONS.md](../../LESSONS.md) — reproduced hygiene execution-boundary lesson, added as orchestrator bookkeeping.
+- [LESSONS.md](../../../LESSONS.md) — reproduced hygiene execution-boundary lesson, added as orchestrator bookkeeping.
 
 ## Decisions Made
 

@@ -5,27 +5,27 @@ status: passed
 score: 5/5 goal truths verified
 covered_files:
   - .github/workflows/ci.yml
-  - .planning/phases/19-measured-milestone-tune-up/19-01-SUMMARY.md
-  - .planning/phases/20-complete-ym2151-homebrew-sound/20-01-PLAN.md
-  - .planning/phases/20-complete-ym2151-homebrew-sound/20-01-SUMMARY.md
-  - .planning/phases/20-complete-ym2151-homebrew-sound/20-02-PLAN.md
-  - .planning/phases/20-complete-ym2151-homebrew-sound/20-02-SUMMARY.md
-  - .planning/phases/20-complete-ym2151-homebrew-sound/20-03-PLAN.md
-  - .planning/phases/20-complete-ym2151-homebrew-sound/20-03-SUMMARY.md
-  - .planning/phases/20-complete-ym2151-homebrew-sound/20-04-PLAN.md
-  - .planning/phases/20-complete-ym2151-homebrew-sound/20-04-SUMMARY.md
-  - .planning/phases/20-complete-ym2151-homebrew-sound/20-05-PLAN.md
-  - .planning/phases/20-complete-ym2151-homebrew-sound/20-05-SUMMARY.md
-  - .planning/phases/20-complete-ym2151-homebrew-sound/20-06-PLAN.md
-  - .planning/phases/20-complete-ym2151-homebrew-sound/20-06-SUMMARY.md
-  - .planning/phases/20-complete-ym2151-homebrew-sound/20-07-PLAN.md
-  - .planning/phases/20-complete-ym2151-homebrew-sound/20-07-SUMMARY.md
-  - .planning/phases/20-complete-ym2151-homebrew-sound/20-CONTEXT.md
-  - .planning/phases/20-complete-ym2151-homebrew-sound/20-COST-EVIDENCE.md
-  - .planning/phases/20-complete-ym2151-homebrew-sound/20-RESEARCH.md
-  - .planning/phases/20-complete-ym2151-homebrew-sound/20-REVIEW-DISPOSITION.md
-  - .planning/phases/20-complete-ym2151-homebrew-sound/20-REVIEW.md
-  - .planning/phases/20-complete-ym2151-homebrew-sound/20-SOURCE-AUDIT.md
+  - .planning/milestones/v6.0-phases/19-measured-milestone-tune-up/19-01-SUMMARY.md
+  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-01-PLAN.md
+  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-01-SUMMARY.md
+  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-02-PLAN.md
+  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-02-SUMMARY.md
+  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-03-PLAN.md
+  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-03-SUMMARY.md
+  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-04-PLAN.md
+  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-04-SUMMARY.md
+  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-05-PLAN.md
+  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-05-SUMMARY.md
+  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-06-PLAN.md
+  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-06-SUMMARY.md
+  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-07-PLAN.md
+  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-07-SUMMARY.md
+  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-CONTEXT.md
+  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-COST-EVIDENCE.md
+  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-RESEARCH.md
+  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-REVIEW-DISPOSITION.md
+  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-REVIEW.md
+  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-SOURCE-AUDIT.md
   - .worktrees/ym-state-baseline/include/muhtari.h
   - CMakeLists.txt
   - PROVENANCE.md
@@ -123,7 +123,7 @@ covered_files:
   - tests/release/ym_consumers.cmake
   - tests/runner/tests.cmake
   - tests/state-compat/CMakeLists.txt
-covered_digest: "v4:sha256:8a3299ffede327b678794a46e59f560211798652e3d29bc25912afbce0ec632c"
+covered_digest: "v4:sha256:6d00506814c78dfbdb2df775ae502a13f4c4ff6f4ac939ff3f09a9af9b2c9cb1"
 behavior_unverified: 0
 overrides_applied: 0
 decision_coverage:
@@ -183,3 +183,7 @@ Owned diagnostic conformance, source-qualified digital modeling, seed translatio
 
 Passed for all five phase goal truths and all eight requirements. No blocking gap, acceptance override or human verification item remains in this phase. The orchestrator owns phase completion, milestone audit and local archival; shipping retains its separate authority boundary.
 
+
+## Archive relocation audit — 2026-11-12
+
+The local archive moved phase files byte-for-byte, then rebased live Markdown links. Product and execution-receipt bytes remain unchanged. The verifier remapped covered paths and recomputed the fingerprint through the selected runtime; the original source-specific verdict, qualifications and failed history remain intact. Previous fingerprint: `v4:sha256:8a3299ffede327b678794a46e59f560211798652e3d29bc25912afbce0ec632c`. No product gate was repeated for relocation.

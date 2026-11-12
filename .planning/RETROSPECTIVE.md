@@ -191,6 +191,26 @@ Routine report/commit closeouts consumed excessive elapsed time, and summary par
 
 Final native/release, pinned SDK/extracted consumer, real publisher controls and hygiene passed at the recorded product snapshot. Native notice-path and SDK control-name failures were diagnosed and retained. No reliable hosted optimization series, browser/device evidence or new remote allowance was produced; older failures and fifty carried acknowledgments remain distinct.
 
+## Milestone: v6.0 — YM2151 homebrew sound
+
+**Locally completed:** 2026-11-12; publication pending. Two phases, eight plans and nineteen actual task blocks.
+
+### What Was Built
+
+One qualified XM/YM2151 digital profile with permissive integer C17 synthesis, bounded mono audio, full transactional state, genuine legacy compatibility and actual native/Wasm/clean-package consumers. Complete measured cost and accurate evidence limits accompany the feature.
+
+### What Worked
+
+Numeric expectations before hashes, an unchanged frozen seed and genuine kickoff products gave independent checks. Maximum coinstalled topology and the qualified assertion-enabled sanitizer exposed a shared clock-ordering fault that Release equality missed; the new Release monotonic observer now catches it. Two bounded review-fix rounds finished clean.
+
+### What Needs Improvement
+
+The runner hash inventory retained a stale literal count after additive YM rows. Verification bookkeeping also stalled after checks were established; a concise evidence draft and a persistence/fingerprint-only handoff completed it. Persist a minimal evidence outline early and keep later report expansion bounded. The archive moved paths without rebasing verification fingerprints; preserve byte identities, repair links and use the verification owner to refresh only relocation metadata. Collapsing the roadmap also erased the phase-completion record required by shipping. Retain a compact checked phase list and validate the actual next command's read-only admission fields after archival.
+
+### Evidence and Limits
+
+Required local gates and both phase verifications/integration pass. GCC13 does not qualify for the current no-FP warning set; BE/WASI tools are absent. Qualified Apple sanitizer results and actual Emscripten execution remain separate. No source quota, timeout, cache, extra dependency, remote dispatch or host scope was widened. Original failures and nine deferred v3 requirements remain preserved; no unavailable platform, hardware or publication acceptance is inferred.
+
 ## Cross-Milestone Trends
 
 | Milestone | Phases | Plans | Requirements | Test evidence | Closeout |

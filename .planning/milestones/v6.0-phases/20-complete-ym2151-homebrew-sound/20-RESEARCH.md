@@ -170,8 +170,8 @@ notices, exact provenance and update duty. No unrelated emulator source, ROM,
 firmware, scheduler, test framework or new package is justified.
 
 The seed and source qualification are documented in
-[profile evidence](../../research/ym2151-profile/EVIDENCE.md) and
-[integration engineering](../../research/ym2151-integration/ENGINEERING.md).
+[profile evidence](../../../research/ym2151-profile/EVIDENCE.md) and
+[integration engineering](../../../research/ym2151-integration/ENGINEERING.md).
 Only those listed seed files are approved. No local seed directory is assumed
 available; if fetching is needed, use ignored build/v6-ym-seed/ and qualify the
 exact pin/license/identity before use. Research did not compile the seed.
@@ -216,8 +216,8 @@ feedback, LFO/noise, both channel outputs, legal writes and reset/continuation
 proportionately; source-derived hashes alone cannot substitute for independent
 numeric checks. Keep no-YM golden vectors and legacy identity bytes unchanged.
 
-The [state policy](../../research/ym2151-state/POLICY.md) and its
-[adversarial review](../../research/ym2151-state/REVIEW.md) identify concrete
+The [state policy](../../../research/ym2151-state/POLICY.md) and its
+[adversarial review](../../../research/ym2151-state/REVIEW.md) identify concrete
 version consumers and failure boundaries. Build a genuine old producer/consumer
 from kickoff fef5691; verify same-point non-YM bytes and continuation in BOTH
 directions, rather than producing a legacy fixture with new code. Sample both
@@ -280,9 +280,9 @@ scopes, nine v3 gaps and separate publication/merge/remote authority remain inta
 ## Sources
 
 - [Selected phase context](20-CONTEXT.md), current requirements, INTENT and fan-out brief.
-- [Exact profile and primary source links](../../research/ym2151-profile/EVIDENCE.md).
-- [Compatibility source review](../../research/ym2151-state/REVIEW.md).
-- [State policy recommendation](../../research/ym2151-state/POLICY.md).
-- [Current-owner engineering and pinned seed analysis](../../research/ym2151-integration/ENGINEERING.md).
+- [Exact profile and primary source links](../../../research/ym2151-profile/EVIDENCE.md).
+- [Compatibility source review](../../../research/ym2151-state/REVIEW.md).
+- [State policy recommendation](../../../research/ym2151-state/POLICY.md).
+- [Current-owner engineering and pinned seed analysis](../../../research/ym2151-integration/ENGINEERING.md).
 - PROVENANCE.md, preparation/ARCHITECTURE.md, A7800-AUDIO.md, ENGINEERING.md section 11,
   relevant LESSONS.md and current source/test consumers identified in those notes.

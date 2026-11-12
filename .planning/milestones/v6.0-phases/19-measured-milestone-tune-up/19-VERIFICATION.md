@@ -4,8 +4,8 @@ verified: 2026-11-12T03:47:28Z
 status: passed
 score: 8/8 must-haves verified
 covered_files:
-  - .planning/phases/19-measured-milestone-tune-up/19-01-PLAN.md
-  - .planning/phases/19-measured-milestone-tune-up/19-01-SUMMARY.md
+  - .planning/milestones/v6.0-phases/19-measured-milestone-tune-up/19-01-PLAN.md
+  - .planning/milestones/v6.0-phases/19-measured-milestone-tune-up/19-01-SUMMARY.md
   - build/v5-final-efficiency.json
   - build/v5-fixture-main-jobs-api.json
   - build/v5-fixture-main-run-api.json
@@ -14,7 +14,7 @@ covered_files:
   - build/v6-phase19-hygiene-qualified.log
   - build/v6-phase19-hygiene.log
   - build/v6-phase19-native.log
-covered_digest: "v4:sha256:a640ccd939b04155aea6870f4dcc7c025236518904c04f1a5d5a64494b9bc709"
+covered_digest: "v4:sha256:7a9a4684d22fbe3e1b559930f816e8672306aebd5b03bd8abbd9067a58e38315"
 behavior_unverified: 0
 overrides_applied: 0
 decision_coverage:
@@ -108,3 +108,7 @@ None. This phase has no user-facing runtime or hardware outcome to evaluate; the
 ---
 *Verified: 2026-11-12T03:47:28Z*
 *Verifier: gsd-verifier*
+
+## Archive relocation audit — 2026-11-12
+
+The local archive moved phase files byte-for-byte, then rebased live Markdown links. Product and execution-receipt bytes remain unchanged. The verifier remapped covered paths and recomputed the fingerprint through the selected runtime; the original source-specific verdict, qualifications and failed history remain intact. Previous fingerprint: `v4:sha256:a640ccd939b04155aea6870f4dcc7c025236518904c04f1a5d5a64494b9bc709`. No product gate was repeated for relocation.

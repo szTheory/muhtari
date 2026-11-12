@@ -2,7 +2,7 @@
 title: "Product roadmap (rolling)"
 summary: "Immediate / Near / Mid / Long direction for muhtari with evidence and promotion triggers."
 read_when: "At every new-milestone and complete-milestone step, and when a finding changes priorities."
-updated: 2026-11-11
+updated: 2026-11-12
 ---
 
 # Product roadmap (rolling)
@@ -15,36 +15,32 @@ At every milestone boundary, reconcile shipped and partial work, keep unresolved
 debt visible, re-rank the horizons, record why the order changed, promote only
 scoped work, and snapshot this file at close.
 
-## Immediate — implement v6.0 YM2151 homebrew sound
+## Immediate — ship the locally verified YM2151 milestone
 
-v5.0 shipped as [v0.13.1](https://github.com/szTheory/muhtari/releases/tag/v0.13.1).
-Exact-source publication, public bytes/attestations, latest installation and
-current-main CI passed; [the final ship receipt](milestones/v5.0-SHIP.md#final-publication-and-current-main-closure--reconciled-2026-11-11)
-keeps failed-source history separate. Shipping recovery is closed.
+v6.0 is implemented, verified and archived locally: one source-qualified XM/YM2151
+profile, integer deterministic mono sound, complete state/lifecycle, actual native
+and portable deliverables/packages, genuine old/current legacy compatibility and
+measured bounded cost. [Audit](milestones/v6.0-MILESTONE-AUDIT.md) and
+[requirements](milestones/v6.0-REQUIREMENTS.md) retain the accepted scope and limits.
+The source-qualified map/clock/version policy is settled; no blanket approval or
+owner UAT is pending for local implementation.
 
-The owner selected **v6.0 — YM2151 homebrew sound** and authorized autonomous
-local follow-through on 2026-11-11. The [execution roadmap](ROADMAP.md) and
-[requirements](REQUIREMENTS.md) select Phase 19 measured tune-up followed by
-Phase 20 complete YM feature. The saved [synthesis](research/next-milestone/SUMMARY.md)
-and [proposal](research/next-milestone/PROPOSAL.md) remain source provenance,
-superseded only as to pending selection/authority. Keep one qualified XM profile,
-mono PCM and all three existing deliverables; no blanket approval is pending.
+Publication remains separate. Clear context and run `$gsd-ship 20` from the root
+checkout; the agent owns service-health, source and receipt checks. No new remote
+run, push, merge, tag or publication occurred here. The current published package
+is still the verified v5.0 result in its [ship receipt](milestones/v5.0-SHIP.md).
 
-This is an explicit unsupported load capability with a lawful owned-diagnostic
-acceptance path, not a diagnosed retail-game defect. Exact map/enable/clock and
-state-format/behavior consequences must be settled before code. Full XM,
-Souper/BupChip, Covox/ADPCM, public stereo API, browser UX and Playstead remain
-outside this milestone. The strongest core alternative is a measured 7800
-accuracy/gameplay correction if a lawful discriminating counterexample arrives.
-Keep the recurring tune-up small and evidence-driven.
-
-No browser player, device code, UI, real-browser performance, power or earlier host acceptance is included. Muhtari still has three deliverables. Shipping uses the existing producer and no new dependency. Two Windows case deadlines were corrected from complete measured workloads; no cache or workflow topology change was introduced.
+No retail compatibility, physical XM clock/gain/audibility, browser/player,
+handheld or unavailable-platform acceptance is inferred. Muhtari retains exactly
+three deliverables and no device/UI code. No new numerical quota, dependency,
+cache, workflow topology or unrelated deadline was introduced.
 
 ## Next — a useful core slice and independent consumer progress
 
-For the selected YM milestone, pair the new chip with load, bus, audio, state,
-refusal, actual runner/libretro and portable-package acceptance. Chip synthesis
-parity to its seed is not hardware calibration. Independently, LibFuturo owns
+The selected YM slice now includes load, bus, audio, state, refusal and actual
+runner/libretro/portable-package acceptance. The next implementation milestone
+is unselected; a lawful discriminating correctness counterexample remains a useful
+trigger. Seed synthesis parity is not hardware calibration. Independently, LibFuturo owns
 its underway PAL browser/profile work and the missing qualification/adoption
 outcomes. No new upstream API/package requirement is established by that work.
 
@@ -150,3 +146,5 @@ example; reproduce sibling lessons locally before adopting them.
 | 2026-11-10 | Promoted v5.0 downloadable Emscripten libretro packaging after successful v4.0 publication | Three specialist reviews and an adversarial synthesis identified the concrete CI-artifact-only gap; local package/release integrity preparation advances browser integrators without UI or renewed host authority. |
 
 | 2026-11-11 | Closed v5.0 shipping and held successor selection for cross-project feedback | v0.13.1 public-byte verification and current-main CI passed. LibFuturo implements consumer/browser routes; its qualification and adoption gaps remain separate from Muhtari core scope. |
+
+| 2026-11-12 | Completed and archived the qualified YM2151 milestone locally; shipping is next | All nine requirements, both phases and actual native/Wasm/package consumers pass; original host stops and unaccepted platform/hardware claims remain unchanged. |

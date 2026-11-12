@@ -1,5 +1,22 @@
 # Project Milestones: muhtari
 
+## v6.0 YM2151 homebrew sound (Locally completed: 2026-11-12)
+
+**Scope:** Two phases, eight plans, nineteen actual plan task blocks. The runtime summary fallback counted eight tasks; the plan blocks are authoritative.
+
+**Delivered:**
+- One qualified selected/header-auto XM/YM2151 profile, integer instance-owned OPM and source-qualified digital bus/timer/IRQ behavior.
+- Deterministic bounded mono audio, complete transactional YM states and genuine bidirectional legacy6/1 compatibility with unchanged API8/ABI1.
+- Actual public library, runner, loaded libretro, emitted Wasm and clean installed/extracted package consumers with current notices and fault controls.
+- Complete ordinary/adverse native/Node cost windows, concrete space/headroom/bounds, accurate evidence limits and clean required review.
+
+**Closeout:** `verified_closeout`; nine current requirements, both phases and all five integration flows pass. Zero newly acknowledged items;49 previously acknowledged items retain their verdicts. The nine deferred v3 requirements and original Phase12/14 stops remain unchanged.
+**Publication:** Pending. No push, remote dispatch, merge, tag or publication occurred. Current published package remains the v5.0 result below.
+**Archive:** [roadmap](milestones/v6.0-ROADMAP.md), [requirements](milestones/v6.0-REQUIREMENTS.md), [audit](milestones/v6.0-MILESTONE-AUDIT.md), [phase records](milestones/v6.0-phases/).
+**Next:** Clear context and run `$gsd-ship 20`; the agent owns service-health, current receipt and source checks.
+
+---
+
 ## v5.0 Downloadable WebAssembly core (Shipped: 2026-11-11)
 
 **Phases completed:** 2 phases, 3 plans, 7 tasks (actual plan blocks; SDK prose count was 4)

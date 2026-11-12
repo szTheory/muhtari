@@ -4,17 +4,17 @@
 
 The kickoff correction in `fef5691` updates the current record from the former
 v5.0-local / v0.12.0-current wording to the shipped v0.13.1 baseline, and selects
-v6.0 for local follow-through. The present [PROJECT](../../PROJECT.md),
-[STATE](../../STATE.md), [ROADMAP](../../ROADMAP.md),
-[requirements](../../REQUIREMENTS.md), and [product roadmap](../../PRODUCT-ROADMAP.md)
-agree. Their local links resolve. The [terminal v5.0 ship receipt](../../milestones/v5.0-SHIP.md)
+v6.0 for local follow-through. The present [PROJECT](../../../PROJECT.md),
+[STATE](../../../STATE.md), [ROADMAP](../../../ROADMAP.md),
+[requirements](../../../REQUIREMENTS.md), and [product roadmap](../../../PRODUCT-ROADMAP.md)
+agree. Their local links resolve. The [terminal v5.0 ship receipt](../../v5.0-SHIP.md)
 records the immutable published source, public archive/attestation checks, latest
 installation, PR #53 merge and successful current-main CI. This report reuses
 those verified outcomes; it did not re-download assets or refresh hosted state.
 
-The [README](../../../README.md) keeps version-free `releases/latest` install and
+The [README](../../../../README.md) keeps version-free `releases/latest` install and
 download links for native and Emscripten artifacts, and points to the existing
-[portable bundle instructions](../../../docs/libretro.md#portable-emscripten-bundle).
+[portable bundle instructions](../../../../docs/libretro.md#portable-emscripten-bundle).
 No second publication or documentation correction was indicated.
 
 ## Source-specific receipts
@@ -40,16 +40,16 @@ grades. Each rationale links to the evidence or governing contract.
 | Dimension | Score | Evidence and limit |
 |---|---:|---|
 | Performance | 3/5 | The [saved CI timing observations](#ci-timing-and-cancellation-limits) locate long Windows jobs, but are different workflows and do not measure emulator throughput, billing, or YM behavior. Phase 20 still needs its own bounded-work and cost measurements. |
-| CI/CD | 4/5 | The [release and current-main sources](#source-specific-receipts) each pass their own required aggregate, and the [local CI workflow](../../../.github/workflows/ci.yml) retains its inventory. Two distinct historical timing failures remain visible in the ship receipt; these small samples support preserving current coverage and limits. |
-| Ease of use | 4/5 | The [README](../../../README.md) provides a direct RetroArch install, latest-release downloads and a runner quick start; [portable host instructions](../../../docs/libretro.md#portable-emscripten-bundle) cover the Emscripten bundle. No application or hardware install was performed for this report. |
-| Architecture | 4/5 | The [three-deliverable and deterministic-core contract](../../../AGENTS.md) remains explicit, and the [existing CMake presets](../../../CMakePresets.json) supply the local workflow without a new dependency or runtime layer. This says nothing about the not-yet-built YM specialization. |
-| Docs/README | 4/5 | Current milestone and release records now agree on v0.13.1 and v6.0, and user-facing links remain version-free. The [ship history](../../milestones/v5.0-SHIP.md) keeps older failures as historical checkpoints; the final section identifies the accepted outcome. |
-| Upgrade path | 4/5 | [Pinned dependencies](../../../pins.txt) and the [Dependabot policy](../../../.github/dependabot.yml) preserve reviewable upgrades. This review made no fresh dependency, runner-image, vulnerability or live settings query, so it does not claim current external versions or settings compliance. |
+| CI/CD | 4/5 | The [release and current-main sources](#source-specific-receipts) each pass their own required aggregate, and the [local CI workflow](../../../../.github/workflows/ci.yml) retains its inventory. Two distinct historical timing failures remain visible in the ship receipt; these small samples support preserving current coverage and limits. |
+| Ease of use | 4/5 | The [README](../../../../README.md) provides a direct RetroArch install, latest-release downloads and a runner quick start; [portable host instructions](../../../../docs/libretro.md#portable-emscripten-bundle) cover the Emscripten bundle. No application or hardware install was performed for this report. |
+| Architecture | 4/5 | The [three-deliverable and deterministic-core contract](../../../../AGENTS.md) remains explicit, and the [existing CMake presets](../../../../CMakePresets.json) supply the local workflow without a new dependency or runtime layer. This says nothing about the not-yet-built YM specialization. |
+| Docs/README | 4/5 | Current milestone and release records now agree on v0.13.1 and v6.0, and user-facing links remain version-free. The [ship history](../../v5.0-SHIP.md) keeps older failures as historical checkpoints; the final section identifies the accepted outcome. |
+| Upgrade path | 4/5 | [Pinned dependencies](../../../../pins.txt) and the [Dependabot policy](../../../../.github/dependabot.yml) preserve reviewable upgrades. This review made no fresh dependency, runner-image, vulnerability or live settings query, so it does not claim current external versions or settings compliance. |
 
 Performance is the weakest dimension because the retained CI timings are not a
 product performance series and no YM implementation exists yet. The v0.13.1
 record correction improves publication clarity; it does not fill that
-measurement gap. The [quality floors](../../../quality.json) and required versus
+measurement gap. The [quality floors](../../../../quality.json) and required versus
 advisory membership remain unchanged.
 
 ## CI timing and cancellation limits

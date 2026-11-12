@@ -2,41 +2,39 @@
 gsd_state_version: "1.0"
 milestone: v6.0
 milestone_name: YM2151 homebrew sound
-current_phase: 20
-status: completed
-stopped_at: Phase 20 complete — all phases complete
-last_updated: "2026-11-12T11:41:25.098Z"
+status: milestone_complete
+stopped_at: v6.0 verified and archived locally; shipping next
+last_updated: "2026-11-12T11:49:25.016Z"
 last_activity: 2026-11-12
-last_activity_desc: Phase 20 complete
-state_head: 1f290a5ca945e23a2f59e18941773ebae74dabfe
+last_activity_desc: Milestone v6.0 completed and archived
+state_head: 25a0d7e5f1bd05bbbc6aa0a6eb172cfd38023e0b
 progress:
   total_phases: 2
   completed_phases: 2
   total_plans: 8
   completed_plans: 8
   percent: 100
+current_phase: 20
 ---
 
 # Project State
 
 ## Project Reference
 
-See [PROJECT.md](PROJECT.md), [current requirements](REQUIREMENTS.md), [ROADMAP.md](ROADMAP.md) and [milestone synthesis](research/next-milestone/SUMMARY.md).
+See [PROJECT.md](PROJECT.md), [archived requirements](milestones/v6.0-REQUIREMENTS.md), [ROADMAP.md](ROADMAP.md) and [milestone synthesis](research/next-milestone/SUMMARY.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** Phase 20 — Complete YM2151 homebrew sound; all seven plans complete; goal verification next
+**Current focus:** v6.0 locally complete; separate shipping boundary next
 
 ## Current Position
 
-Phase: 20
-Plan: Not started
-Status: All phases complete
-Last activity: 2026-11-12 — Phase 20 complete
-
-Progress: [██████████] 100%
+Phase: Milestone v6.0 complete
+Plan: —
+Status: Locally complete; publication pending
+Last activity: 2026-11-12 — Milestone v6.0 completed and archived
 
 ## Performance Metrics
 
-v6.0 has eight completed plans and one verified phase. All seven Phase20 plans and required final local gates are complete; independent goal verification is next. Phase 19 records the source-specific baseline and local gate outcomes in its summary; prior v5.0 ship evidence remains in the final ship receipt.
+v6.0 has two verified phases, eight completed plans and nineteen actual plan task blocks. All nine current requirements, required local gates and independent review/integration pass. Current publication remains the v5.0/package result.
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
@@ -50,13 +48,13 @@ v6.0 has eight completed plans and one verified phase. All seven Phase20 plans a
 - v3.0 closed with deferred scope: only Phase 13 verified; nine requirements remain unchecked in the [archive](milestones/v3.0-MILESTONE-AUDIT.md). v4.0 promotes no old host acceptance claim.
 - Root remains canonical; stale dirty worktrees stay preserved and require content/ancestry reconciliation before import. See [workspace reconciliation](debug/workspace-reconciliation-2026-11-10.md).
 - Owner-selected v6.0 keeps one source-qualified XM/YM2151 profile, public mono PCM and C17 integer-only instance ownership. Profile, finite resource bounds and concrete API/behavior/native-format compatibility consequences are qualified before implementation; materially new consequences remain owner decisions.
-- Required chip/bus/audio/state, library/runner/libretro/Wasm/package acceptance, tests, docs and cost stay together in Phase 20. All seven plans and required final local gates are complete; independent goal verification is next. YM state now uses format 2/behavior 7 while no-YM snapshots retain format 1/behavior 6; independent genuine old/new continuation remains in Plan 20-06. Reuse saved research, current mechanisms and [fan-out guidance](research/fan-out/prompt.txt); do not add a validation-tail phase or repeat upstream research.
+- Required chip/bus/audio/state, library/runner/libretro/Wasm/package acceptance, tests, docs and cost stay together in Phase 20. All seven plans, required local gates, goal verification and milestone integration are complete. YM state now uses format 2/behavior 7 while no-YM snapshots retain format 1/behavior 6; independent genuine old/new continuation remains in Plan 20-06. Reuse saved research, current mechanisms and [fan-out guidance](research/fan-out/prompt.txt); do not add a validation-tail phase or repeat upstream research.
 
 Inherited todos and optional seeds retain their dispositions except selected YM/XM and recurring tune-up contributions. Atari 2600 belongs to twentysixhundo; LibFuturo owns its existing host/browser routes. [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md) carries future horizons.
 
 ### Blockers/Concerns
 
-- No current local roadmap blocker. The exact profile, compatibility policy, final native/portable/package evidence and clean bounded review are complete; phase goal verification and local milestone audit/archival remain. The optional GCC13 no-FP attempt is unqualified because it lacks a required warning flag; no unavailable platform pass is claimed.
+- No current local roadmap blocker. The exact profile, compatibility policy, final native/portable/package evidence and clean bounded review are complete; phase goal verification and local milestone audit/archival are complete. The optional GCC13 no-FP attempt is unqualified because it lacks a required warning flag; no unavailable platform pass is claimed.
 - Phase 12's exact diagnostic-app request was denied before preflight/content and must not be retried. Original Phase 12 host/remote stops, Phase 14's spent host scope, expired windows and specific no-retry limits remain binding. No v6.0 action renews them or accepts the nine deferred v3.0 requirements.
 - Publication, merge, new remote dispatch and host/device/identity-bound actions remain outside autonomous local authority. Browser/player, Playstead, physical audibility, calibrated hardware accuracy, public stereo and full XM are excluded. Earlier combined-source/failed release evidence remains source-specific in archived receipts.
 
@@ -114,10 +112,9 @@ Next action: After clearing context, run `$gsd-autonomous` for v6.0. It will rec
 
 ## Operator Next Steps
 
-- Shipping execution is complete: v0.13.1 public downloads/attestations and installation passed; PR #53 merged and current-main CI passed. Commands, exits, source distinctions and run URLs are in [the final ship receipt](milestones/v5.0-SHIP.md#final-publication-and-current-main-closure--reconciled-2026-11-11). Earlier pending recovery paragraphs there are historical checkpoints, not new work.
-- v6.0 scope/requirements/roadmap are selected under the owner’s autonomous direction. Phase 19 is complete; the agent proceeds into Phase 20 using [research synthesis](research/next-milestone/SUMMARY.md), [YM2151 scope](research/next-milestone/PROPOSAL.md), role reports and integration findings, preserving source confidence, alternatives and revisit triggers.
-- Preserve denied/spent Phase 12/14 scopes, their specific no-retry limits and the nine deferred v3.0 requirements. The shipping recovery renewed none of them. No owner checkout switch, blanket UAT or routine CI confirmation is needed.
-- Phase 19 planning, evidence, review and verification are committed locally on the authorized v6.0 milestone branch. Preserve the independent Phase 20 research and all sibling dirt. No remote action, host launch, publication or merge is selected here.
+
+- Start the next milestone with $gsd-new-milestone
+
 
 ## Decisions
 
@@ -130,3 +127,7 @@ Next action: After clearing context, run `$gsd-autonomous` for v6.0. It will rec
 - [Phase 20]: Phase 20 Plan 20-02: Power-cycle clears clocked YM state and derived caches to a deterministic fresh-instance baseline.
 - [Phase 20]: Phase 20 Plan 20-03: YM snapshots use format 2/behavior 7; no-YM snapshots retain format 1/behavior 6, and global latest reporting is API 8/ABI 1/behavior 7/format 2.
 - [Phase 20]: Phase 20 Plan 20-03: YM clock history is validated from its existing last-tick, clock-count and remainder tuple; no extra runtime epoch field is needed.
+
+## Next action
+
+Context can be cleared. Run `$gsd-ship 20` from the current root checkout. The agent owns service-health, current receipt and source checks. Shipping authority remains separate; no push, merge, new remote run, tag or publication was performed here. All original host/remote stops remain binding.

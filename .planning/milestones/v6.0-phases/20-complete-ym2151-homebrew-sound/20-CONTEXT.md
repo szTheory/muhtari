@@ -173,10 +173,10 @@ operation ceilings and C17 hazards, rather than relying on legacy design prose.
 Use the saved milestone synthesis/proposal, now-selected requirements and these
 completed independent findings:
 
-- [Profile/source qualification](../../research/ym2151-profile/EVIDENCE.md).
-- [State policy](../../research/ym2151-state/POLICY.md) and
-  [adversarial source review](../../research/ym2151-state/REVIEW.md).
-- [Integration engineering](../../research/ym2151-integration/ENGINEERING.md).
+- [Profile/source qualification](../../../research/ym2151-profile/EVIDENCE.md).
+- [State policy](../../../research/ym2151-state/POLICY.md) and
+  [adversarial source review](../../../research/ym2151-state/REVIEW.md).
+- [Integration engineering](../../../research/ym2151-integration/ENGINEERING.md).
 
 No further broad ecosystem survey is needed. These are source findings and
 recommendations; implementation, parity, timing and runtime evidence remain to

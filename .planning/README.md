@@ -9,12 +9,12 @@ relevant source links instead of scanning every historical plan.
 | Shared goals, gamer priorities, writing voice, research posture and provenance | [INTENT.md](INTENT.md) |
 | What ships today and binding constraints | [PROJECT.md](PROJECT.md), [../AGENTS.md](../AGENTS.md) |
 | Current position and next allowed step | [STATE.md](STATE.md) |
-| Current execution contract / last completed requirements | [ROADMAP.md](ROADMAP.md), [v5.0 requirements](milestones/v5.0-REQUIREMENTS.md); successor requirements do not exist until selection |
+| Current execution contract / last completed requirements | [ROADMAP.md](ROADMAP.md), [v6.0 requirements](milestones/v6.0-REQUIREMENTS.md); implementation is complete locally and publication is pending |
 | Immediate, next, mid-term and long-term horizons | [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md) |
 | Where hardware/API/engineering facts live | [preparation/README.md](preparation/README.md) |
 | Settled choices and reasons | [preparation/DECISIONS.md](preparation/DECISIONS.md) |
 | Reproduced lessons versus imported hypotheses | [LESSONS.md](LESSONS.md) |
-| Successor scoping, recommendation, evidence confidence and revisit triggers | [Current synthesis](research/next-milestone/SUMMARY.md), [proposal](research/next-milestone/PROPOSAL.md); [v5.0 research](research/v5.0/SUMMARY.md) is historical |
+| Successor scoping, recommendation, evidence confidence and revisit triggers | [v6.0 scoping synthesis](research/next-milestone/SUMMARY.md), [proposal](research/next-milestone/PROPOSAL.md); [v5.0 research](research/v5.0/SUMMARY.md) is historical |
 | Playstead quick route, native-host north star and pasteable handoff | [research/PLAYSTEAD-HANDOFF.md](research/PLAYSTEAD-HANDOFF.md) |
 | Reusable bounded specialist brief | [research/fan-out/prompt.txt](research/fan-out/prompt.txt) |
 | Historical browser-player idea and alternatives; reconcile with implemented LibFuturo routes in the current synthesis | [Browser-player seed](seeds/SEED-261030-tt4-browser-libretro-player.md), [bounded research](research/browser-player/RECOMMENDATION.md) |
