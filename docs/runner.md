@@ -519,11 +519,18 @@ audio_behaviour_revision <muhtari_get_versions value>
 audio_synthesis exact-q23-16x64-dc20
 ```
 
-The transition SHA-256 covers 11 bytes per changed raw DAC level: little-endian
-uint64 absolute tick, uint8 source, little-endian uint16 level (0–15).
+The revision line reports the library's latest supported behaviour revision
+(currently 7), including for runs without YM. A revision-6 movie therefore
+keeps the existing “replaying anyway” warning; the revision number is metadata,
+separate from unchanged no-YM frame and audio hashes.
+
+The transition SHA-256 covers 11 bytes per changed raw DAC word: little-endian
+uint64 absolute tick, uint8 source, little-endian uint16 value. YM source words
+10 and 11 preserve their signed int16 two's-complement bits; older sources keep
+their existing 0–15 or 0–206 raw values.
 Sources 0–1 are TIA, 2–5 primary POKEY, 6–9 secondary $440. Equal ticks use
-ascending source identity and retain same-source subevents. Initial zeros and
-unchanged levels add no records; a silent raw stream hashes empty input.
+ascending source identity and retain same-source subevents. YM uses sources
+10–11. Initial zeros and unchanged levels add no records; a silent raw stream hashes empty input.
 The PCM SHA-256 separately covers two little-endian bytes per actual signed
 int16 mono sample, including silence. Neither capacity padding nor stereo
 duplication enters it. Counts cover the entire completed run, including a

@@ -10,7 +10,7 @@
    absent; the behaviour revision changes when a frame, audio or state hash
    changes for the same inputs. */
 #define MUHTARI__ABI 1u
-#define MUHTARI__BEHAVIOUR_REVISION 6u
+#define MUHTARI__BEHAVIOUR_REVISION 7u
 
 /* The largest size tag accepted, far above any struct's planned growth. A tag
    promises that many readable bytes; the cap bounds how far a wrong tag can
@@ -61,7 +61,7 @@ muhtari_status muhtari_get_versions(muhtari_versions *out)
     v.api = MUHTARI_API_VERSION;
     v.abi = MUHTARI__ABI;
     v.behaviour_revision = MUHTARI__BEHAVIOUR_REVISION;
-    v.state_format = 1u;
+    v.state_format = 2u;
     muhtari__write_out(out, &v, (uint32_t)sizeof v);
     return MUHTARI_STATUS_OK;
 }

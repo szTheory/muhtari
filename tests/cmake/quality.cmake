@@ -168,7 +168,8 @@ endfunction()
 
 # Fault prevented: sample edits hiding behind a behavior-annotation migration.
 # Unique adjacent revision transitions preserve every byte, except the four
-# independently attributed slow-HALT chains in 5-to-6. Identity is the raw base.
+# independently attributed slow-HALT chains in 5-to-6. The 6-to-7 metadata
+# transition keeps every sample row unchanged. Identity is the raw base.
 function(quality_sample_identity out candidate trusted)
   foreach(input candidate trusted)
     file(READ "${${input}}" ${input}_text)
@@ -180,7 +181,7 @@ function(quality_sample_identity out candidate trusted)
       if(NOT count EQUAL 1)
         message(FATAL_ERROR "quality: sample annotation must be unique")
       endif()
-      if(NOT "${${input}_text}" MATCHES "(^|\n)# behaviour_revision ([23456])\n")
+      if(NOT "${${input}_text}" MATCHES "(^|\n)# behaviour_revision ([234567])\n")
         message(FATAL_ERROR "quality: invalid sample revision transition")
       endif()
       set(${input}_revision "${CMAKE_MATCH_2}")
@@ -188,7 +189,8 @@ function(quality_sample_identity out candidate trusted)
     if(NOT (trusted_revision EQUAL 2 AND candidate_revision EQUAL 3) AND
         NOT (trusted_revision EQUAL 3 AND candidate_revision EQUAL 4) AND
         NOT (trusted_revision EQUAL 4 AND candidate_revision EQUAL 5) AND
-        NOT (trusted_revision EQUAL 5 AND candidate_revision EQUAL 6))
+        NOT (trusted_revision EQUAL 5 AND candidate_revision EQUAL 6) AND
+        NOT (trusted_revision EQUAL 6 AND candidate_revision EQUAL 7))
       message(FATAL_ERROR "quality: invalid sample revision transition")
     endif()
     string(REGEX REPLACE "(^|\n)# behaviour_revision ${candidate_revision}\n" "\\1# behaviour_revision ${trusted_revision}\n"

@@ -96,7 +96,7 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     message(FATAL_ERROR "hashes: expected3088 retained and78 state equality rows, got ${count}")
     endif()
     # Retain the independent accepted digests, normalizing only the exact
-    # causal slow-HALT audio changes and revision 6 back to their old rows.
+    # causal slow-HALT audio changes and revision 7 metadata back to old rows.
     # The differential build restores these four rows; the other952 rows agree
     # (hardware/bus.md, HALT); arbitrary values still fail the old aggregates.
     set(historical "${rows}")
@@ -119,7 +119,7 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
       list(REMOVE_AT historical ${position})
       list(INSERT historical ${position} "${field} ${previous}")
     endforeach()
-    list(TRANSFORM historical REPLACE "([.]audio_behaviour_revision) 6$" "\\1 5")
+    list(TRANSFORM historical REPLACE "([.]audio_behaviour_revision) 7$" "\\1 5")
     # Independent accepted source 54485d6, CI run 40104749040; the seven
     # earlier revision4-to-5 annotations remain part of this historical pin.
     list(SUBLIST historical 0 69 retained)
@@ -224,7 +224,7 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
       elseif(fault STREQUAL "short_digest")
         string(REGEX REPLACE "audio_pcm_sha256 [^\n]+" "audio_pcm_sha256 a" bad "${bad}")
       elseif(fault STREQUAL "version")
-        string(REPLACE "audio_behaviour_revision 6" "audio_behaviour_revision 5" bad "${bad}")
+        string(REPLACE "audio_behaviour_revision 7" "audio_behaviour_revision 6" bad "${bad}")
       elseif(fault MATCHES "^(crc|numeric)$")
         set(which 4)
         if(fault STREQUAL "numeric")
@@ -265,7 +265,7 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
       elseif(fault STREQUAL "leading_blank")
         set(bad "\n${bad}")
       elseif(fault STREQUAL "revision")
-        string(REPLACE "audio_behaviour_revision 6" "audio_behaviour_revision 5" bad "${bad}")
+        string(REPLACE "audio_behaviour_revision 7" "audio_behaviour_revision 6" bad "${bad}")
       elseif(fault STREQUAL "mailbox")
         string(REPLACE "diagnostic 4d374447" "diagnostic 00000000" bad "${bad}")
       endif()
