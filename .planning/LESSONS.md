@@ -698,3 +698,11 @@ paths are retained in [CONSUMERS](research/next-milestone/CONSUMERS.md). No sibl
 build/test/host/CI was launched here. Browser `lf_*` proof, native snapshot proof,
 Muhtari `retro_*` artifact proof and hardware accuracy keep separate acceptance
 boundaries. Revisit on a concrete new input/package/profile mismatch.
+
+## Keep compiler-visible masks within their destination width (2026-11-12)
+
+With MSVC `/W4 /WX`, casting `~4u` to `uint8_t` warns C4310 because the unsigned complement is wider than the destination; the warning becomes a Windows x64 and ARM64 build failure. Express the equivalent low-byte mask directly (`UINT8_C(0xfb)`) so the operation remains clear-bit-2 without a truncating constant cast. The first hosted run reproduces the same diagnostic on both Windows architectures: [CI run 43228680657](https://github.com/szTheory/muhtari/actions/runs/43228680657).
+
+## Keep quality observations within each lane's registered inventory (2026-11-12)
+
+The hygiene preset registers repository checks and deliberately returns before registering product tests. A quality report must therefore mark the YM workload as not measured in that lane instead of invoking a test executable that is absent from its clean build. Product lanes still execute the workload and fail if its binary or report is missing. The hosted hygiene job reproduces the hidden artifact dependency with `hashes: YM numeric report ntsc: no such file or directory`: [CI run 43228680657](https://github.com/szTheory/muhtari/actions/runs/43228680657).
