@@ -34,7 +34,7 @@
 enum {
     VIDEO_WIDTH = 320u,
     VIDEO_HEIGHT = 242u,
-    VIDEO_BYTES = VIDEO_WIDTH * VIDEO_HEIGHT * 4u,
+    VIDEO_BYTES = VIDEO_WIDTH * 292u * 4u,
     AUDIO_CAPACITY = 1024u,
     LAST_ENTRY = 0x0841u,
     ENTRY_BYTES = 8u,
@@ -79,6 +79,7 @@ typedef struct performance_observation {
 
 static callback_frame callbacks;
 static uint16_t pad[2];
+static const char *ym_region;
 
 static int save_adapter_state(uint8_t **state, size_t *bytes);
 
@@ -133,6 +134,8 @@ static int validate_numeric(const numeric_observation *observation, int expected
 
 static const char *option_value(const char *key)
 {
+    if (ym_region != NULL && strcmp(key, "muhtari_region") == 0)
+        return ym_region;
     if (strcmp(key, "muhtari_boot") == 0)
         return "fast";
     if (strcmp(key, "muhtari_palette") == 0 || strcmp(key, "muhtari_region") == 0 ||
@@ -186,7 +189,7 @@ static void RETRO_CALLCONV video_refresh(const void *data, unsigned width, unsig
     callbacks.width = width;
     callbacks.height = height;
     callbacks.pitch = pitch;
-    if (data == NULL || width != VIDEO_WIDTH || height != VIDEO_HEIGHT ||
+    if (data == NULL || width != VIDEO_WIDTH || (height != VIDEO_HEIGHT && height != 292u) ||
         pitch < (size_t)width * 4u) {
         return;
     }
@@ -1032,8 +1035,248 @@ static int observe_fixture(const char *fixture_path, const char *output_path)
     return 1;
 }
 
+/* The same owned bytes feed native, portable and extracted-package consumers.
+   Pin both identities so a plausible look-alike cannot create parity evidence. */
+static const char *ym_workload(const char *hash)
+{
+    if (strcmp(hash, "65c25495be4a0d73ae83a9f3f742186ffda34bff4058c3a5bc304bed428258d6") == 0)
+        return "ordinary";
+    if (strcmp(hash, "11b6fa4251de4771cfcc19b86ebc9f8c6679ddab211f3b4db42221c47535290b") == 0)
+        return "worst";
+    return NULL;
+}
+
+static int ym_numeric(unsigned height, unsigned count, unsigned index, unsigned video,
+                      unsigned audio, unsigned poll)
+{
+    if (video != 1u || audio != 1u || poll != 1u || (height != 242u && height != 292u))
+        return 0;
+    if (index == 0u)
+        return height == 292u ? count == 960u : count == 54u;
+    return height == 292u ? count == 961u || count == 962u : count == 800u || count == 801u;
+}
+
+static int ym_capture(unsigned height, unsigned index, frame_observation *out)
+{
+    memset(&callbacks, 0, sizeof callbacks);
+    retro_run();
+    OBS_CHECK(callbacks.width == VIDEO_WIDTH && callbacks.height == height &&
+                  callbacks.audio_frames <= AUDIO_CAPACITY && callbacks.sample_calls == 0u &&
+                  ym_numeric(height, (unsigned)callbacks.audio_frames, index, callbacks.video_calls,
+                             callbacks.batch_calls, callbacks.poll_calls),
+              "YM numeric/callback observation failed");
+    /* XRGB integers have a canonical little-endian encoding in receipts. */
+    muhtari__sha256 hash;
+    uint8_t digest[32];
+    muhtari__sha256_init(&hash);
+    for (size_t pixel = 0u; pixel < (size_t)VIDEO_WIDTH * height; pixel++) {
+        uint32_t value;
+        memcpy(&value, callbacks.video + 4u * pixel, sizeof value);
+        uint8_t bytes[4] = {(uint8_t)value, (uint8_t)(value >> 8), (uint8_t)(value >> 16),
+                            (uint8_t)(value >> 24)};
+        muhtari__sha256_update(&hash, bytes, sizeof bytes);
+    }
+    muhtari__sha256_final(&hash, digest);
+    muhtari__sha256_hex(digest, out->video_sha256);
+    for (size_t i = 0u; i < callbacks.audio_frames; i++)
+        OBS_CHECK(callbacks.audio[2u * i] == callbacks.audio[2u * i + 1u],
+                  "YM duplicated mono differs");
+    pcm_hash(callbacks.audio, callbacks.audio_frames, 2u, out->audio_sha256);
+    out->index = index;
+    out->audio_count = (unsigned)callbacks.audio_frames;
+    return 1;
+}
+
+static int ym_controls(void)
+{
+    char reason[256];
+    OBS_CHECK(self_test() == 0, "existing observer controls failed");
+    OBS_CHECK(ym_numeric(242u, 801u, 1u, 1u, 1u, 1u) && ym_numeric(292u, 962u, 1u, 1u, 1u, 1u),
+              "valid YM numbers refused");
+    OBS_CHECK(!ym_numeric(242u, 801u, 1u, 0u, 1u, 1u) && !ym_numeric(292u, 801u, 1u, 1u, 1u, 1u) &&
+                  !ym_numeric(242u, 800u, 0u, 1u, 1u, 1u),
+              "bad YM numbers accepted");
+    OBS_CHECK(ym_workload("wrong") == NULL, "wrong fixture identity accepted");
+    OBS_CHECK(fail_reason(reason, sizeof reason, "control") == 0, "reason control");
+    return 1;
+}
+
+static int observe_ym(const char *fixture_path, const char *output_path)
+{
+    uint8_t *image = NULL;
+    size_t image_bytes = 0u;
+    char fixture_hash[65];
+    OBS_CHECK(read_file(fixture_path, &image, &image_bytes), "cannot read YM fixture");
+    hash_hex(image, image_bytes, fixture_hash);
+    const char *workload = ym_workload(fixture_hash);
+    OBS_CHECK(workload != NULL, "unrecognized YM fixture identity");
+    FILE *out = fopen(output_path, "wb");
+    OBS_CHECK(out != NULL, "cannot create YM receipt");
+    fprintf(out,
+            "{\"schema\":2,\"workload\":\"%s\",\"fixture_sha256\":\"%s\","
+            "\"source_identity\":\"%s\",\"toolchain\":{\"compiler_id\":\"%s\","
+            "\"compiler_version\":\"%s\"},\"abi\":{\"environment\":{"
+            "\"get_core_options_version\":%u,\"set_core_options\":%u,\"get_variable\":%u,"
+            "\"get_variable_update\":%u,\"set_pixel_format\":%u,\"set_support_no_game\":%u,"
+            "\"set_controller_info\":%u,\"set_input_descriptors\":%u,\"set_memory_maps\":%u,"
+            "\"set_support_achievements\":%u,\"set_message\":%u,\"get_savestate_context\":%u},"
+            "\"pixel_format_xrgb8888\":%u,\"device_joypad\":%u,\"joypad_up\":%u,"
+            "\"memory_system_ram\":%u},\"regions\":[\n",
+            workload, fixture_hash, MUHTARI_CORE_SOURCE_ID, MUHTARI_NATIVE_COMPILER_ID,
+            MUHTARI_NATIVE_COMPILER_VERSION, (unsigned)RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION,
+            (unsigned)RETRO_ENVIRONMENT_SET_CORE_OPTIONS, (unsigned)RETRO_ENVIRONMENT_GET_VARIABLE,
+            (unsigned)RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE,
+            (unsigned)RETRO_ENVIRONMENT_SET_PIXEL_FORMAT,
+            (unsigned)RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME,
+            (unsigned)RETRO_ENVIRONMENT_SET_CONTROLLER_INFO,
+            (unsigned)RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS,
+            (unsigned)RETRO_ENVIRONMENT_SET_MEMORY_MAPS,
+            (unsigned)RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS,
+            (unsigned)RETRO_ENVIRONMENT_SET_MESSAGE,
+            (unsigned)RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT,
+            (unsigned)RETRO_PIXEL_FORMAT_XRGB8888, (unsigned)RETRO_DEVICE_JOYPAD,
+            (unsigned)RETRO_DEVICE_ID_JOYPAD_UP, (unsigned)RETRO_MEMORY_SYSTEM_RAM);
+    for (unsigned pal = 0u; pal < 2u; pal++) {
+        unsigned height = pal ? 292u : 242u;
+        uint32_t region = pal ? MUHTARI_REGION_PAL : MUHTARI_REGION_NTSC;
+        ym_region = pal ? "pal" : "ntsc";
+        retro_set_environment(environment);
+        retro_set_video_refresh(video_refresh);
+        retro_set_audio_sample(audio_sample);
+        retro_set_audio_sample_batch(audio_batch);
+        retro_set_input_poll(input_poll);
+        retro_set_input_state(input_state);
+        retro_init();
+        retro_set_controller_port_device(0u, RETRO_DEVICE_JOYPAD);
+        retro_set_controller_port_device(1u, RETRO_DEVICE_JOYPAD);
+        struct retro_game_info game = {0};
+        game.data = image;
+        game.size = image_bytes;
+        OBS_CHECK(retro_load_game(&game), "YM adapter load failed");
+        muhtari *reference = NULL;
+        muhtari_config cfg = {0};
+        cfg.size = (uint32_t)sizeof cfg;
+        cfg.allocator.alloc = observer_alloc;
+        cfg.allocator.free = observer_free;
+        OBS_CHECK(muhtari_create(&cfg, &reference) == MUHTARI_STATUS_OK, "YM create failed");
+        muhtari_media media = {0};
+        media.size = (uint32_t)sizeof media;
+        media.image = image;
+        media.image_size = image_bytes;
+        media.region = region;
+        media.expansion = MUHTARI_EXPANSION_XM;
+        OBS_CHECK(muhtari_load(reference, &media) == MUHTARI_STATUS_OK, "YM public load failed");
+        frame_observation frames[6] = {{0}};
+        uint8_t *saved = NULL, *finish = NULL;
+        size_t saved_bytes = 0u, finish_bytes = 0u;
+        int minimum = 32767, maximum = -32768;
+        for (unsigned i = 0u; i < 6u; i++) {
+            uint8_t video[VIDEO_WIDTH * 292u];
+            int16_t audio[AUDIO_CAPACITY];
+            muhtari_frame frame = {0};
+            frame.size = (uint32_t)sizeof frame;
+            frame.video_pitch = VIDEO_WIDTH;
+            frame.video = video;
+            frame.audio = audio;
+            frame.audio_capacity = AUDIO_CAPACITY;
+            muhtari_input_ex input = {0};
+            input.size = (uint32_t)sizeof input;
+            OBS_CHECK(muhtari_set_input_ex(reference, &input) == MUHTARI_STATUS_OK &&
+                          muhtari_run_frame(reference, &frame) == MUHTARI_STATUS_OK &&
+                          ym_capture(height, i, &frames[i]),
+                      "YM paired frame failed");
+            OBS_CHECK(frame.audio_count == callbacks.audio_frames &&
+                          pcm_matches(audio, callbacks.audio, frame.audio_count),
+                      "YM PCM differs");
+            for (size_t pixel = 0u; pixel < (size_t)VIDEO_WIDTH * height; pixel++) {
+                uint32_t value;
+                memcpy(&value, callbacks.video + pixel * 4u, sizeof value);
+                OBS_CHECK(value == muhtari__palette_rgb_region(video[pixel], region),
+                          "YM video differs");
+            }
+            for (unsigned j = 0u; j < frame.audio_count; j++) {
+                if (audio[j] < minimum)
+                    minimum = audio[j];
+                if (audio[j] > maximum)
+                    maximum = audio[j];
+            }
+            if (i == 1u)
+                OBS_CHECK(save_adapter_state(&saved, &saved_bytes), "YM checkpoint failed");
+        }
+        uint8_t *ram = retro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+        OBS_CHECK(ram != NULL && retro_get_memory_size(RETRO_MEMORY_SYSTEM_RAM) >= 0xb00u &&
+                      ram[0xa00u] == 0x80u && ram[0xa01u] == 1u && ram[0xa02u] != 0u &&
+                      ram[0xa03u] == 2u && minimum < 0 && maximum > 0,
+                  "YM numeric mailbox/PCM failed");
+        OBS_CHECK(save_adapter_state(&finish, &finish_bytes), "YM finish state failed");
+        char saved_hash[65], finish_hash[65];
+        hash_hex(saved, saved_bytes, saved_hash);
+        hash_hex(finish, finish_bytes, finish_hash);
+        OBS_CHECK(retro_unserialize(saved, saved_bytes), "YM restore failed");
+        for (unsigned i = 2u; i < 6u; i++) {
+            frame_observation replay = {0};
+            OBS_CHECK(ym_capture(height, i, &replay) && same_frame(&replay, &frames[i]),
+                      "YM replay differs");
+        }
+        uint8_t *replayed = NULL;
+        size_t replay_bytes = 0u;
+        OBS_CHECK(save_adapter_state(&replayed, &replay_bytes) && replay_bytes == finish_bytes &&
+                      memcmp(replayed, finish, finish_bytes) == 0,
+                  "YM ending state differs");
+        free(replayed);
+        fprintf(out,
+                "%s{\"name\":\"%s\",\"height\":%u,\"sample_rate\":48000,\"minimum\":%d,"
+                "\"maximum\":%d,\"mailbox\":[128,1,%u,2],\"state_bytes\":%lu,"
+                "\"saved_sha256\":\"%s\",\"continuation_sha256\":\"%s\",\"frames\":[\n",
+                pal ? ",\n" : "", ym_region, height, minimum, maximum, (unsigned)ram[0xa02u],
+                (unsigned long)saved_bytes, saved_hash, finish_hash);
+        for (unsigned i = 0u; i < 6u; i++)
+            fprintf(out,
+                    "%s{\"index\":%u,\"audio_count\":%u,\"video_sha256\":\"%s\","
+                    "\"audio_sha256\":\"%s\"}",
+                    i ? ",\n" : "", i, frames[i].audio_count, frames[i].video_sha256,
+                    frames[i].audio_sha256);
+        for (unsigned i = 6u; i < 12u; i++) {
+            frame_observation ignored = {0};
+            OBS_CHECK(ym_capture(height, i, &ignored), "YM warmup failed");
+        }
+        free(saved);
+        saved = NULL;
+        OBS_CHECK(save_adapter_state(&saved, &saved_bytes), "YM benchmark baseline failed");
+        fprintf(out,
+                "],\"performance\":{\"warmup_frames\":12,\"frames_per_window\":60,\"windows\":[");
+        for (unsigned window = 0u; window < 3u; window++) {
+            OBS_CHECK(retro_unserialize(saved, saved_bytes), "YM benchmark restore failed");
+            double start = monotonic_seconds();
+            for (unsigned i = 0u; i < 60u; i++) {
+                frame_observation ignored = {0};
+                OBS_CHECK(ym_capture(height, i + 12u, &ignored), "YM benchmark frame failed");
+            }
+            double elapsed = monotonic_seconds() - start;
+            OBS_CHECK(isfinite(elapsed) && elapsed > 0.0, "YM benchmark duration invalid");
+            fprintf(out, "%s{\"elapsed_seconds\":%.9g,\"frames_per_second\":%.9g}",
+                    window ? "," : "", elapsed, 60.0 / elapsed);
+        }
+        fprintf(out, "]}}");
+        free(saved);
+        free(finish);
+        muhtari_destroy(reference);
+        retro_unload_game();
+        retro_deinit();
+    }
+    ym_region = NULL;
+    free(image);
+    fprintf(out, "]}\n");
+    OBS_CHECK(fclose(out) == 0, "YM receipt write failed");
+    return 1;
+}
+
 int main(int argc, char **argv)
 {
+    if (argc == 2 && strcmp(argv[1], "--ym-self-test") == 0)
+        return ym_controls() ? 0 : 1;
+    if (argc == 5 && strcmp(argv[1], "--ym-fixture") == 0 && strcmp(argv[3], "--ym-output") == 0)
+        return observe_ym(argv[2], argv[4]) ? 0 : 1;
     const char *fixture = NULL, *output = NULL;
     if (argc == 2 && strcmp(argv[1], "--self-test") == 0)
         return self_test();

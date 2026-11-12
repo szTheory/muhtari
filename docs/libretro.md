@@ -148,7 +148,7 @@ the two existing screenshot and save-roundtrip cases.
 | Left difficulty (`muhtari_left_difficulty`) | B (default), A | at load and Restart; a change sets the switch at once |
 | Right difficulty (`muhtari_right_difficulty`) | B (default), A | at load and Restart; a change sets the switch at once |
 | High Score Cartridge (`muhtari_hsc`) | Auto (default), On, Off | at content load |
-| Expansion (`muhtari_expansion`) | Auto (default), Off, XBoard, XM | at content load; reload required |
+| Expansion (`muhtari_expansion`) | Auto (default), Off, XBoard, XM | at content load; reload required; XM includes the selected YM2151 digital profile |
 | Port 1/2 battery device (`muhtari_battery_port1`, `muhtari_battery_port2`) | Auto (default), None, SaveKey, AtariVox | at content load |
 
 Auto region follows content metadata; an explicit choice overrides it at load.
@@ -184,9 +184,13 @@ HSC Off suppresses it. This physical attachment stays fixed even while XM's CPU 
 Firmware discovery uses that same effective attachment before load. Changing effective expansion or HSC
 requires reload, including Restart; no live option reinterprets SAVE_RAM. Equivalent explicit and Auto
 selections need no warning. Load logs distinguish cartridge requests from effective hardware, preserve
-noncanonical XM warnings and name refused sound devices. Off suppresses only expansion: independently
-declared YM2151, Covox and ADPCM still fail load with a named log/message.
+noncanonical XM warnings and name refused sound devices. Auto selects XM when the cartridge declares it;
+the explicit XM option can enable the selected YM2151 profile only for a cartridge declaring the supported
+XM topology. Off suppresses expansion, so a declared YM2151 without effective XM still fails load. Covox
+and ADPCM remain refused with a named log/message.
 
+The YM2151 support is a deterministic digital profile qualified through the public library, runner and
+loaded module. It does not establish analog gain, hardware listening quality, or broad cartridge compatibility.
 XM is an implementation-backed RAM/POKEY/HSC subset with medium physical confidence. Internal XM BIOS,
 top-slot switching, flash, PIA, flat48KiB mode, write protection, sticky locks, ROF aliases and PAL firmware
 selection are unavailable. No full-XM service or gameplay compatibility is claimed.

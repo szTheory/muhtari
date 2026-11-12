@@ -6,7 +6,7 @@ muhtari is an Atari 7800 ProSystem emulator core written in C. It ships as a lib
 headless command-line runner for automation, and a libretro core so that RetroArch and other hosts can play 7800
 games with it. It is for people who build emulator hosts and want an accurate, fast, permissively licensed 7800
 core; for players, homebrew developers, ROM hackers, speedrunners, TAS authors and AI researchers who use those
-hosts; and for the owner, who tries every release on a Mac in RetroArch with cartridges from a personal collection.
+hosts. The qualified XM/YM2151 profile adds deterministic FM sound through the same three deliverables and portable artifact.
 
 ## Core Value
 
@@ -15,11 +15,19 @@ that any host can embed.
 
 ## Current State
 
-v5.0 Downloadable WebAssembly core is verified locally and archived on 2026-11-11: all six requirements, two phases and the independent integration audit passed. The source-bound fourteen-member portable ZIP carries matched loader/Wasm, source/toolchain identities, qualified runtime notices and reproducible instructions. Existing release contracts now include nineteen ZIPs/twenty assets while preserving all eighteen native archives. This is local readiness; publication and its external checks retain separate authority.
+v6.0 YM2151 homebrew sound is implemented, verified and archived locally. Both phases, all nine current requirements, required local gates and independent review/integration pass. Shipping is separate: no new remote dispatch, push, merge, tag or publication occurred. The current published result remains v5.0/package v0.13.1.
 
-v4.0 shipped through PR #47 and package v0.12.0, which remains the published package. The nine v3.0 gaps and original denied/spent host/remote scopes are unchanged. Root remains canonical and older dirty worktrees remain preserved.
+Nine v3.0 gaps and every original denied/spent Phase12/14 host/remote scope remain unchanged. Older dirty worktrees stay preserved and root remains canonical. [Milestone audit](milestones/v6.0-MILESTONE-AUDIT.md) and [requirements](milestones/v6.0-REQUIREMENTS.md) retain the exact accepted scope.
 
-## Latest Verified Milestone: v5.0 Downloadable WebAssembly core
+## Latest Locally Verified Milestone: v6.0 YM2151 homebrew sound
+
+**Delivered:** One documented selected/header-auto XM/YM2151 profile; permissive C17 integer synthesis; deterministic bounded mono audio; complete transactional state/lifecycle; actual public C, runner, loaded libretro, emitted Wasm and clean installed/extracted consumers. Independent numeric and exact-seed evidence, genuine old/current legacy continuation, notices, source/fixture identity and fault controls pass.
+
+API8/ABI1 remain unchanged. Global latest behavior7/format2 is distinct from unchanged non-YM machine snapshots6/1. Complete ordinary/adverse native/Node windows, memory/state extents and justified arithmetic/work bounds are recorded with their host-specific limits. Unavailable supplemental GCC/BE/WASI lanes have no inferred pass. There is no physical audibility/calibration, retail, browser/player or handheld acceptance claim.
+
+**Next boundary:** Clear context and run `$gsd-ship 20` in this root checkout. The agent owns service-health, current receipt and source checks. Future implementation scope is unselected; no additional milestone starts automatically.
+
+## Last Published Milestone: v5.0 Downloadable WebAssembly core
 
 **Goal:** Host integrators can obtain a source-bound Emscripten libretro bundle, verified from its extracted contents and ready for the existing release pipeline.
 
@@ -131,6 +139,8 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 ### Validated
 
+- ✓ YM-01–08: one qualified XM/YM2151 profile, deterministic C17 mono synthesis, complete lifecycle/state, native/portable/package consumers and measured bounds — v6.0, Phase20; locally verified, publication pending.
+
 - ✓ TUNE-09: current v4 publication records and source-specific measured baseline; required checks retained — v5.0, Phase 17.
 - ✓ WASM-05–09: matched source-bound portable ZIP, clean-extracted offline oracle, pinned runtime notices, existing release contracts and host instructions — v5.0, Phase 18.
 
@@ -169,12 +179,11 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 - ✓ Evidence-backed library accounting and isolated local evaluation — COMP-01–03 — v2.0, Phase 11 merged in PR40.
 - ✓ Portable validated machine state through the library, runner and libretro core — STATE-01–06 and FRONT-01 — v3.0 Phase 13, verification passed 44/44.
+- ✓ Current publication/docs and proportionate measured quality/efficiency baseline — TUNE-10, v6.0 Phase 19.
 
 ### Active
 
-No unverified v5.0 implementation requirement remains. Local archive and cleanup are complete; public shipping retains separate authority.
-
-The nine unmet v3.0 requirements remain deferred, with their original evidence and host/remote stops unchanged.
+No current implementation requirement remains. The next action is the separate shipping boundary above. New milestone scope is not selected. The nine unmet v3.0 requirements remain deferred with their original evidence and stops; see the [v6.0 archive](milestones/v6.0-REQUIREMENTS.md).
 
 ### Out of Scope
 
@@ -187,7 +196,9 @@ The nine unmet v3.0 requirements remain deferred, with their original evidence a
 - A separate fast or low-accuracy mode — one accurate core keeps one set of bugs and one set of hashes.
 - Signed or notarised macOS artifacts — the script install path does not need them.
 - A test framework dependency — plain CTest executables with an in-repo check header cover the need.
-- Atari 2600 cartridges, Souper/BupChip, YM2151, Covox/ADPCM, ACE, full OpenHSC, AtariVox speech,
+- Atari 2600 emulation — owned by the sibling project `twentysixhundo` (owner correction, 2026-11-11);
+  SEED-006 is retired. Existing image recognition/refusal remains supported.
+- Souper/BupChip, other YM2151 topologies, Covox/ADPCM, ACE, full OpenHSC, AtariVox speech,
   measured-accuracy oracles, the browser player, full movie recording/generalized continuation, advanced AI/TAS tools and ports — later milestones;
   see `.planning/seeds/` and `.planning/PRODUCT-ROADMAP.md`.
 
@@ -255,6 +266,10 @@ The nine unmet v3.0 requirements remain deferred, with their original evidence a
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
+| One source-qualified XM/YM2151 digital profile and approved exact-pin BSD-3 OPM specialization | Preserve C17 integer instance ownership, existing scheduler and evidence boundaries | ✓ v6.0: native/portable/package diagnostics, exact-seed parity and maintained notices |
+| Preserve non-YM native6/1 bytes while YM alone uses7/2; API8/ABI1 unchanged | Add full YM continuation without breaking existing machine envelopes | ✓ v6.0: genuine independent old/current two-way matrix and transactional semantic refusal |
+| Merge every coinstalled audio source before advancing the mixer | Cross-route equality can share a clock-ordering bug | ✓ v6.0: Release monotonic all12-source stress and qualified sanitizer reproduce before/fix after; existing bounds retained |
+| Measure actual named native/Wasm workloads without inventing speed or space quotas | Host timing and structural proofs support different claims | ✓ v6.0: complete both-region ordinary/adverse windows and concrete extents, unavailable platforms explicitly unaccepted |
 | Install expansion topology once and share the electrical bus owner | Preserve physical storage and CPU/MARIA ownership without a second scheduler | ✓ v2.0 Phase 10: BankSet/XBoard/XM diagnostics and 3088 retained observations |
 | Judge claims by public evidence class | Metadata and title screens cannot establish gameplay | ✓ v2.0 Phase 11: generated claims, 204 explicit dispositions and required ratchet |
 | Load/refuse before optional firmware I/O in the runner | Preserve canonical refused-image exits and avoid irrelevant file reads | ✓ v2.0 Phase 10: exit77 regression coverage |
@@ -310,4 +325,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-11 after v5.0 local milestone closeout*
+*Last updated: 2026-11-12 after verified local v6.0 closeout; publication pending*

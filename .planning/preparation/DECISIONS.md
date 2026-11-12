@@ -2,7 +2,7 @@
 title: "Decisions already made"
 summary: "One line per settled choice for muhtari, with its reason and the file and section that support it; open questions at the end."
 read_when: "Before reopening any choice, and whenever a phase needs to know what is settled. Reopen a decision only with new evidence, and record the change here with its date."
-updated: 2026-11-10
+updated: 2026-11-11
 ---
 
 # Decisions already made
@@ -15,7 +15,7 @@ evidence. IDs use a dot (`DEC.07`) so they never collide with GSD's `D-NN` phase
 |---|---|---|---|
 | DEC.01 | Three deliverables: C library, headless runner `muhtari-run`, libretro core; no GUI, window, audio-device or input-device code | Owner rule that core repositories own no GUI; RetroArch is the Mac frontend; Playstead launches processes | HOSTS-AND-INTEGRATION 1, 4 |
 | DEC.02 | MIT licence | Compatible with every frontend's licence; same as the siblings | PROVENANCE 1 |
-| DEC.03 | Atari 2600 cartridges come after the 7800 library (SEED-006); until then they are recognised and refused with "unsupported: 2600 (planned)" | Owner decision 2026-10-15; Stella covers 2600 meanwhile | A7800-CARTRIDGES-AND-PERIPHERALS 1 |
+| DEC.03 | Revised 2026-11-11: Atari 2600 emulation belongs to the sibling project `twentysixhundo`; retire SEED-006 and keep Muhtari focused on Atari 7800. Existing 2600 image recognition/refusal remains supported | Owner started a separate 2600 emulator; this supersedes the 2026-10-15 proposal to add 2600 mode here | AGENTS owner scope correction; SEED-006; PRODUCT-ROADMAP |
 | DEC.04 | Exact timing is a feature: hosts are told 39375000/656711 Hz NTSC and 3546894/71051 Hz PAL; nothing on by default changes speed | Existing 7800 emulators run at 60/50 Hz or the 2600's rate, which skews speedrun and TAS timing | A7800-ECOSYSTEM-AND-USERS 3; A7800-MARIA 6 |
 | DEC.05 | Horizon order: players and homebrew developers (v1.0–v2.0), states and movies (v3.0), measured accuracy (v4.0), tools and AI (v5.0), everywhere (v6.0) | Personas ranked by reach and dependency | A7800-ECOSYSTEM-AND-USERS 3; PRODUCT-ROADMAP |
 

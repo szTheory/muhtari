@@ -273,3 +273,17 @@ triggered the run. That initial eligibility check arms auto-merge; it does not r
 auto-merge after every later human push. Its `decide` step reads the update type: a patch or minor update turns on squash auto-merge with an App token, which merges once `CI required`
 passes; a major update waits for a person to read its release notes and merge it. `policy.dependabot` runs that
 decision on synthetic events.
+
+
+## YM updates
+
+The OPM-only C17 specialization keeps the complete BSD-3 notice and exact
+upstream pin. Before changing it, run the independent Yamaha numeric tests and
+the receipt-bound sample-by-sample oracle; fixed hashes alone are insufficient.
+Keep signed shifts/narrowing explicitly defined, caches and timing instance-owned,
+and validation complete before restore. The [YM evidence recipe](hardware/ym2151.md#reproducing-the-evidence)
+covers genuine old/new compatibility, real C/runner/loaded-module/Wasm and clean
+package consumers. Do not substitute a regenerated current state for an old
+producer or a producer loader for an extracted archive. Repeat complete ordinary
+and adverse workload windows after a relevant product change; report their
+identities and limits separately from structural bounds. No-YM vectors stay fixed.

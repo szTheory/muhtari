@@ -257,7 +257,8 @@ static struct retro_core_option_v2_definition options_v2[] = {
     {.key = "muhtari_expansion",
      .desc = "Expansion hardware",
      .info = "Load-time selection; changes require content reload. XM RAM/POKEY/HSC subset, "
-             "without YM2151, Covox/ADPCM, internal BIOS or full-XM services.",
+             "with the selected YM2151 digital profile; without Covox/ADPCM, internal BIOS or "
+             "full-XM services.",
      .values = {{"auto", "Auto (cartridge request)"},
                 {"off", "Off"},
                 {"xboard", "XBoard"},
@@ -1359,6 +1360,49 @@ static bool lr_load_content(const struct retro_game_info *game)
     return true;
 }
 
+/* Mirror the public loader's declared YM board/physical-owner refusals before
+   tearing down the current game. Keep this predicate and its reload cases in
+   step with muhtari_load; the core remains authoritative when staging load. */
+static bool lr_refuses_ym_reload(const struct retro_game_info *game)
+{
+    if (inst == NULL || content == NULL || game == NULL || game->data == NULL || game->size == 0u ||
+        game->size > MUHTARI_IMAGE_SIZE_MAX)
+        return false;
+
+    muhtari_cart_info incoming;
+    memset(&incoming, 0, sizeof incoming);
+    incoming.size = (uint32_t)sizeof incoming;
+    muhtari_status status = muhtari_probe(game->data, game->size, &incoming);
+    /* Unsupported-board probes intentionally return populated metadata so a
+       host can refuse the declaration without destroying the current game. */
+    if ((status != MUHTARI_STATUS_OK && status != MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD) ||
+        (incoming.sound & MUHTARI_SOUND_YM2151) == 0u)
+        return false;
+
+    uint32_t expansion =
+        lr_option_is("muhtari_expansion", "auto")
+            ? ((incoming.devices & MUHTARI_DEVICE_XM) != 0u ? MUHTARI_EXPANSION_XM
+                                                            : MUHTARI_EXPANSION_OFF)
+        : lr_option_is("muhtari_expansion", "xm") ? MUHTARI_EXPANSION_XM
+                                                  : MUHTARI_EXPANSION_OFF;
+    uint32_t primary = incoming.sound & (MUHTARI_SOUND_POKEY_4000 | MUHTARI_SOUND_POKEY_450 |
+                                         MUHTARI_SOUND_POKEY_800);
+    bool unsupported = status == MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD ||
+                       (incoming.devices & MUHTARI_DEVICE_XM) == 0u ||
+                       expansion != MUHTARI_EXPANSION_XM ||
+                       (incoming.sound & (MUHTARI_SOUND_COVOX | MUHTARI_SOUND_ADPCM)) != 0u ||
+                       (primary != 0u && (primary & (primary - 1u)) != 0u) ||
+                       (primary & (MUHTARI_SOUND_POKEY_4000 | MUHTARI_SOUND_POKEY_800)) != 0u;
+    if (!unsupported)
+        return false;
+
+    LR_LOG(
+        RETRO_LOG_ERROR,
+        "muhtari: YM reload refused before replacing current content: unsupported configuration\n");
+    lr_message("Unsupported YM configuration");
+    return true;
+}
+
 /* Adds the CPU addresses [start, end) to the map, backed by ptr + offset,
    or by nothing when ptr is NULL. A descriptor whose select is 0 must have
    a power-of-two length (L3634), so the span goes in aligned power-of-two
@@ -1516,6 +1560,8 @@ bool retro_load_game(const struct retro_game_info *game)
     if (env_cb == NULL) {
         return false;
     }
+    if (lr_refuses_ym_reload(game))
+        return false;
     memset(&log, 0, sizeof log);
     log_cb = env_cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &log) ? log.log : NULL;
     lr_release();

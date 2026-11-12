@@ -79,6 +79,49 @@ muhtari_add_test(NAME pokey.clock COMMAND muhtari-test-pokey clock
 muhtari_add_test(NAME pokey.maps COMMAND muhtari-test-pokey maps
   LABELS pokey portable TIMEOUT 10)
 
+add_executable(muhtari-test-ym2151 ${CMAKE_CURRENT_LIST_DIR}/test_ym2151.c
+  ${CMAKE_CURRENT_LIST_DIR}/../cart/images.c)
+target_include_directories(muhtari-test-ym2151 PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(muhtari-test-ym2151 PRIVATE muhtari::muhtari)
+set_target_properties(muhtari-test-ym2151 PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+muhtari_warnings(muhtari-test-ym2151)
+set(ym_fixture_dir ${PROJECT_BINARY_DIR}/tests/ym2151)
+file(MAKE_DIRECTORY ${ym_fixture_dir})
+muhtari_add_test(NAME ym.fixture COMMAND muhtari-test-ym2151 --fixture-out ${ym_fixture_dir}
+  LABELS audio TIMEOUT 5)
+set_tests_properties(ym.fixture PROPERTIES FIXTURES_SETUP ym_carts)
+string(REPLACE ";" "$<SEMICOLON>" ym_runner_emulator "${CMAKE_CROSSCOMPILING_EMULATOR}")
+muhtari_add_test(NAME ym.public_runner COMMAND ${CMAKE_COMMAND}
+  "-DRUN=$<TARGET_FILE:muhtari-run>" "-DDRIVER=$<TARGET_FILE:muhtari-test-ym2151>"
+  "-DEMULATOR=${ym_runner_emulator}" "-DDIR=${ym_fixture_dir}"
+  "-DWORK=${PROJECT_BINARY_DIR}/tests/ym-public-runner" -DCASE=ym.public_runner
+  -P ${PROJECT_SOURCE_DIR}/tests/runner/tests.cmake
+  LABELS audio portable runner TIMEOUT 60)
+set_tests_properties(ym.public_runner PROPERTIES FIXTURES_REQUIRED ym_carts)
+muhtari_add_test(NAME ym.tracer COMMAND muhtari-test-ym2151 tracer
+  LABELS audio portable TIMEOUT 30)
+muhtari_add_test(NAME ym.numeric COMMAND muhtari-test-ym2151 numeric
+  LABELS audio portable TIMEOUT 10)
+muhtari_add_test(NAME ym.synthesis COMMAND muhtari-test-ym2151 synthesis
+  LABELS audio portable TIMEOUT 10)
+muhtari_add_test(NAME ym.controls COMMAND muhtari-test-ym2151 controls
+  LABELS audio portable TIMEOUT 10)
+muhtari_add_test(NAME ym.clock COMMAND muhtari-test-ym2151 clock
+  LABELS audio portable TIMEOUT 30)
+muhtari_add_test(NAME ym.irq COMMAND muhtari-test-ym2151 irq
+  LABELS audio portable TIMEOUT 10)
+muhtari_add_test(NAME ym.profile COMMAND muhtari-test-ym2151 profile
+  LABELS audio portable TIMEOUT 30)
+muhtari_add_test(NAME ym.mix COMMAND muhtari-test-ym2151 mix
+  LABELS audio portable TIMEOUT 20)
+muhtari_add_test(NAME ym.observer COMMAND muhtari-test-ym2151 observer
+  LABELS audio portable TIMEOUT 30)
+muhtari_add_test(NAME ym.lifecycle COMMAND muhtari-test-ym2151 lifecycle
+  LABELS audio portable TIMEOUT 30)
+muhtari_add_test(NAME ym.hostile COMMAND muhtari-test-ym2151 hostile
+  LABELS audio portable TIMEOUT 30)
+
 add_executable(muhtari-test-irq ${CMAKE_CURRENT_LIST_DIR}/test_irq.c
   ${CMAKE_CURRENT_LIST_DIR}/../cart/images.c)
 target_include_directories(muhtari-test-irq PRIVATE ${CMAKE_SOURCE_DIR}/src)

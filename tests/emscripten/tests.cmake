@@ -84,3 +84,20 @@ muhtari_add_test(NAME emscripten.bundle.controls
     -P "${bundle_script}"
   LABELS emscripten portable TIMEOUT 30)
 set_tests_properties(emscripten.bundle.controls PROPERTIES DEPENDS emscripten.bundle)
+
+foreach(mode IN ITEMS verify controls)
+  set(name emscripten.ym)
+  if(mode STREQUAL controls)
+    string(APPEND name .controls)
+  endif()
+  muhtari_add_test(NAME ${name}
+    COMMAND "${CMAKE_COMMAND}"
+      "-DNODE=${MUHTARI_EMSCRIPTEN_NODE}"
+      "-DHOST=${host}"
+      "-DMODULE=${MUHTARI_EMSCRIPTEN_MODULE}"
+      "-DFIXTURES=${PROJECT_SOURCE_DIR}/build/ci/tests/ym2151"
+      "-DNATIVE_DIR=${PROJECT_SOURCE_DIR}/build/ci/tests/emscripten"
+      "-DMODE=${mode}"
+      -P "${PROJECT_SOURCE_DIR}/tests/emscripten/ym.cmake"
+    LABELS emscripten portable TIMEOUT 30)
+endforeach()

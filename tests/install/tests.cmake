@@ -67,6 +67,21 @@ foreach(install_crt IN ITEMS static dll)
   set_tests_properties(${install_name} PROPERTIES
     FIXTURES_REQUIRED install_staged
     PASS_REGULAR_EXPRESSION "consumer: one frame, 800 samples")
+  muhtari_add_test(NAME ${install_name}.ym
+    COMMAND ${CMAKE_CTEST_COMMAND} --build-and-test
+      ${CMAKE_CURRENT_LIST_DIR}/../consumer ${PROJECT_BINARY_DIR}/${install_dir}_ym
+      --build-generator ${CMAKE_GENERATOR}
+      ${install_config}
+      --build-options
+        -DCMAKE_PREFIX_PATH=${PROJECT_BINARY_DIR}/stage
+        -DCMAKE_MSVC_RUNTIME_LIBRARY=${install_runtime}
+        ${install_build_options}
+      --test-command ${CMAKE_CROSSCOMPILING_EMULATOR} consumer --ym-fixture
+        ${PROJECT_BINARY_DIR}/tests/ym2151/ym2151.a78
+    LABELS install TIMEOUT 120)
+  set_tests_properties(${install_name}.ym PROPERTIES
+    FIXTURES_REQUIRED "install_staged;ym_carts"
+    PASS_REGULAR_EXPRESSION "consumer: YM NTSC and PAL")
 endforeach()
 
 # A C project embeds the source tree with add_subdirectory, gets only the

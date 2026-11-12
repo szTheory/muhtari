@@ -1,52 +1,62 @@
 ---
 gsd_state_version: "1.0"
-milestone: v5.0
-milestone_name: Downloadable WebAssembly core (verified local closeout)
-status: Awaiting next milestone
-stopped_at: Phase 18 shipped via PR 49 — release receipts tracked in PR 50
-last_updated: "2026-11-11T17:47:21.514731Z"
-last_activity: 2026-11-11
-last_activity_desc: "Phase 18 shipped via PR #49; versioned release tracked in PR #50"
-state_head: e8cc934a6eeb274df18bff690fdb6eb23645b310
+milestone: v6.0
+status: milestone_complete
+stopped_at: v6.0 verified and archived locally; shipping next
+last_updated: "2026-11-12T13:35:52.107Z"
+last_activity: 2026-11-12
+last_activity_desc: "Phase 20 shipped as PR #54"
+state_head: 9056b682960c19e287e8e6abdd77f0547ffac6c0
 progress:
   total_phases: 2
   completed_phases: 2
-  total_plans: 3
-  completed_plans: 3
+  total_plans: 8
+  completed_plans: 8
   percent: 100
-current_phase: 18
+milestone_name: YM2151 homebrew sound
+current_phase: 20
 ---
 
 # Project State
 
 ## Project Reference
 
-See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-10.
+See [PROJECT.md](PROJECT.md), [archived requirements](milestones/v6.0-REQUIREMENTS.md), [ROADMAP.md](ROADMAP.md) and [milestone synthesis](research/next-milestone/SUMMARY.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** v5.0 source shipped in PR #49 after exact-source CI, full release rehearsal, install and cleanup passed. Six native outputs and full native/PowerPC equality match. The versioned package is tracked in release PR #50 and the existing release automation; the agent owns its exact-source CI/publication receipt checks. The next owner boundary is `$gsd-new-milestone`, with automatic service/receipt reconciliation first. Earlier Phase 12/14 host stops and nine v3.0 gaps remain intact.
+**Current focus:** v6.0 locally complete; separate shipping boundary next
 
 ## Current Position
 
-Milestone: v5.0 complete (phases 17–18); source shipped via PR #49
-Status: Source shipped; versioned release receipts are agent-owned
-Last activity: 2026-11-11 -- Phase 18 shipped via PR #49; release PR #50 tracks the versioned package
-Progress: [██████████] 100%
+Phase: Milestone v6.0 complete
+Plan: —
+Status: Locally complete; publication pending
+Last activity: 2026-11-12 -- Phase 20 shipped as PR #54
 
 ## Performance Metrics
 
-Three plans and seven tasks completed across two verified phases. Final native/release, pinned SDK, extracted package, publisher and hygiene gates passed at the source recorded in the Phase 18 summary. Measurements are headless local evidence; no browser/device or remote release outcome is inferred.
+v6.0 has two verified phases, eight completed plans and nineteen actual plan task blocks. All nine current requirements, required local gates and independent review/integration pass. Current publication remains the v5.0/package result.
+**Per-Plan Metrics:**
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 19 P01 | 76min | 1 task | 1 file |
+| Phase 20 P01 | 80min | 2 tasks | 20 files |
+| Phase 20 P02 | 84min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
 - v3.0 closed with deferred scope: only Phase 13 verified; nine requirements remain unchecked in the [archive](milestones/v3.0-MILESTONE-AUDIT.md). v4.0 promotes no old host acceptance claim.
 - Root remains canonical; stale dirty worktrees stay preserved and require content/ancestry reconciliation before import. See [workspace reconciliation](debug/workspace-reconciliation-2026-11-10.md).
+- Owner-selected v6.0 keeps one source-qualified XM/YM2151 profile, public mono PCM and C17 integer-only instance ownership. Profile, finite resource bounds and concrete API/behavior/native-format compatibility consequences are qualified before implementation; materially new consequences remain owner decisions.
+- Required chip/bus/audio/state, library/runner/libretro/Wasm/package acceptance, tests, docs and cost stay together in Phase 20. All seven plans, required local gates, goal verification and milestone integration are complete. YM state now uses format 2/behavior 7 while no-YM snapshots retain format 1/behavior 6; independent genuine old/new continuation remains in Plan 20-06. Reuse saved research, current mechanisms and [fan-out guidance](research/fan-out/prompt.txt); do not add a validation-tail phase or repeat upstream research.
 
-Inherited todos and optional seeds retain their dispositions; no extra v4.0 requirement is inferred. [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md) carries future horizons.
+Inherited todos and optional seeds retain their dispositions except selected YM/XM and recurring tune-up contributions. Atari 2600 belongs to twentysixhundo; LibFuturo owns its existing host/browser routes. [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md) carries future horizons.
 
 ### Blockers/Concerns
 
-- No local v4.0 acceptance gap remains. PR #46’s combined-source hosted native/Emscripten checks passed, but its inherited input capture gate failed. PR #47 carries only the approved v4.0 source and preserves main’s existing checks. Candidate-specific hosted acceptance passed; PR #47 and release PR #48 merged, and v0.12.0 is published. No old host retry is authorized. Phase 12's exact diagnostic-app request was denied before preflight/content and must not be retried; its host/remote stops and Phase 14's spent host scope remain binding. This milestone renews none of them.
-- The loader contract is settled and verified offline. Browser/device behavior, Playstead and prior host scopes remain outside acceptance; hosted Windows native/quality execution passed at the exact source recorded in the ship receipt.
+- No current local roadmap blocker. The exact profile, compatibility policy, final native/portable/package evidence and clean bounded review are complete; phase goal verification and local milestone audit/archival are complete. The optional GCC13 no-FP attempt is unqualified because it lacks a required warning flag; no unavailable platform pass is claimed.
+- Phase 12's exact diagnostic-app request was denied before preflight/content and must not be retried. Original Phase 12 host/remote stops, Phase 14's spent host scope, expired windows and specific no-retry limits remain binding. No v6.0 action renews them or accepts the nine deferred v3.0 requirements.
+- Publication, merge, new remote dispatch and host/device/identity-bound actions remain outside autonomous local authority. Browser/player, Playstead, physical audibility, calibrated hardware accuracy, public stereo and full XM are excluded. Earlier combined-source/failed release evidence remains source-specific in archived receipts.
 
 ## Deferred Items
 
@@ -94,21 +104,30 @@ At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Sou
 
 ## Session Continuity
 
-Last session: 2026-11-11
-Stopped at: Immutable v0.13.1 publication in progress; non-release fixture-margin maintenance and current-main CI closure agent-owned
+Last session: 2026-11-12T08:32:40.865Z
+Stopped at: Phase 20 complete — all phases complete
 Resume file: None
-Next action: the active agent completes v0.13.1 publication/public-byte verification and the non-release fixture-margin correction on `phase/18-ci-fixture-margins`, including exact-source PR/main CI. If context is cleared before those receipts pass, resume with `$gsd-ship 18`; the agent reconciles service health, PR #52 and the maintenance branch itself, preserving closed attempts. `$gsd-new-milestone` becomes valid after publication and current-main CI closure. No owner metadata repair, checkout switch or routine CI confirmation is needed.
+
+Next action: After clearing context, run `$gsd-autonomous` for v6.0. It will reconcile the live plan index and continue Phase 20 planning and authorized local work. No user action is needed for routine continuation.
 
 ## Operator Next Steps
 
-- Continue v0.13.1 publication and ordinary non-release fixture-margin maintenance. Do not start `$gsd-new-milestone` until public-byte verification and current-main CI receipts pass; the agent owns all checks.
-- The [ship receipt](milestones/v5.0-SHIP.md) records accepted source/merge/rehearsal evidence, prior failures, calibrated Windows cases and the extended Nightly property limitation. The current release status is available from [PR #50](https://github.com/szTheory/muhtari/pull/50) and [releases](https://github.com/szTheory/muhtari/releases).
-- Preserve the original Phase 12/14 denied/spent scopes and nine deferred v3.0 requirements. No old host scope is renewed. No owner directory switch or routine confirmation is needed.
+
+- Start the next milestone with $gsd-new-milestone
 
 
-### Current publication recovery
+## Decisions
 
-v0.13.0 is tagged but unpublished: exact-source Release run43078250838 hits a stale14s Windows fuzz replay limit. A measured Windows x64-only28s correction is prepared on `fix/windows-fuzz-replay-deadline`, with local registration/pass/fault checks complete. The owner explicitly approved the one-time CI-only v0.13.1 recovery exception on2026-11-11. The agent continues PR #51 CI/review/merge and normal patch publication; preserve the failed tag/draft and all older host stops. Do not start another milestone before agent-owned release receipts pass. See [the shipping receipt](milestones/v5.0-SHIP.md#unpublished-tagged-release-replay-deadline-correction).
+- [Phase 19]: Reused the fef5691 v0.13.1 record correction; current records need no second edit.
+- [Phase 19]: Retain CI deadlines, caches, topology, quality floors and required/advisory membership; the few exact-source samples do not support a safe pipeline change.
+- [Phase 19]: Preserve the hygiene tree timeout and same-source outside-sandbox passes; qualify execution context without claiming a specific root cause or changing the deadline.
+- [Phase 20]: YM2151 production busy follows Yamaha's 68 phiM specification; the exact seed's 64-clock convention is separately reported as a four-clock parity difference.
+- [Phase 20]: Timer IRQ flags remain latched when carry-enable bits are cleared; reset bits clear them, and mode-write/carry ordering is covered against the exact seed.
+- [Phase 20]: Phase 20 Plan 20-02: The public API remains at 48 kHz; integrated YM PCM checks cover NTSC and PAL at that supported rate.
+- [Phase 20]: Phase 20 Plan 20-02: Power-cycle clears clocked YM state and derived caches to a deterministic fresh-instance baseline.
+- [Phase 20]: Phase 20 Plan 20-03: YM snapshots use format 2/behavior 7; no-YM snapshots retain format 1/behavior 6, and global latest reporting is API 8/ABI 1/behavior 7/format 2.
+- [Phase 20]: Phase 20 Plan 20-03: YM clock history is validated from its existing last-tick, clock-count and remainder tuple; no extra runtime epoch field is needed.
 
+## Next action
 
-The fresh qualification of PR #52 passes after the artifact-service outage; the patch merges as f62a74819985513cbed70259747607d4a5069c21 and runs the normal immutable-source publisher. Direct main CI separately reproduces a1s OpenBIOS fixture timeout with15 dependent tests unrun. The actual release build passes that fixture. A bounded non-release maintenance branch restores the measured Windows fixture/PAL/directions margins without changing product behavior, version files, tags, assertions, scales or job caps. This work remains inside the approved shipping recovery; the earlier one-time patch exception is not generalized.
+Context can be cleared. Run `$gsd-ship 20` from the current root checkout. The agent owns service-health, current receipt and source checks. Shipping authority remains separate; no push, merge, new remote run, tag or publication was performed here. All original host/remote stops remain binding.

@@ -2,7 +2,7 @@
 title: "Lesson exchange"
 summary: "Lessons imported from the owner's sibling emulators (hypotheses until reproduced here) and the template for exporting this project's lessons."
 read_when: "At each phase or milestone boundary, when a sibling lesson might apply, or when the owner asks to export lessons."
-updated: 2026-11-10
+updated: 2026-11-12
 ---
 
 # Lesson exchange
@@ -92,6 +92,10 @@ Exported to the sibling projects on 2026-10-15 (preparation, `8ab05fa`). GSD fin
 | MU-GSD-005 | A marker-free `.claude/CLAUDE.md` is left untouched by GSD's instruction-file generator; one with GSD markers gets a "run /gsd-profile-user" placeholder and generated sections in a tracked, public file | `bin/lib/profile-output.cjs` | adopted (hand-written pointer) |
 | MU-GSD-006 | `branching_strategy: phase` forks the branch only at execute, so discuss and plan commits land on whatever branch is checked out; branch before the first committing step and let a pre-commit hook refuse `main` once a remote exists | `workflows/execute-phase.md` handle_branching; `execute-phase/steps/protected-branch.md` | adopted (AGENTS rule 9; hygiene) |
 | MU-GSD-007 | Dry-run the roadmap step before the real kickoff: copy the tree, `git init`, `query init.new-project`, run the `gsd-roadmapper` agent with the step's prompt, then `validate.consistency`, `roadmap.analyze`, `init.progress`, `list-seeds` | two green dry runs (GSD-HANDOFF 8) | adopted (preparation) |
+| MU-GSD-027 | A generic plan checker may flag file/task counts even when project engineering policy explicitly says numerical thresholds alone do not block. Preserve coherent plans unless there is a concrete ownership, coupling, or execution failure; fix demonstrated defects such as a lossy public state path. | Phase 20 checker recheck passed after the YM state-unavailable guard was added to 20-01 and atomically replaced by full 2/7 state in 20-03; advisory count findings were retained in `20-SOURCE-AUDIT.md`. Automated plan command syntax check: `python3` one-off extractor plus `sh -n`, exit 0 (N/A-local). | reproduced (AGENTS rule 7; ENGINEERING §11) |
+| MU-AUDIO-001 | Public mono PCM can appear bipolar after the DC blocker even when the raw YM DAC path has lost negative-half polarity. Assert positive and negative signed raw values on both channels and compare before mono mixing. | Phase 20-01 first matched phase/envelope/step but failed signed seed parity (`seed −3656`, C `+4384`); phase-bit-9 polarity fix and raw-DAC controls pass the receipt-bound oracle and `ym.synthesis`, N/A-local ([evidence](milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-01-SUMMARY.md#recorded-results)). | reproduced |
+| MU-TEST-015 | Synthetic chip-clock tests must consume PCM through the real bounded renderer. Advancing clocks without rendering fills the private FIFO; Release builds can hide the existing capacity assertion. Keep test drivers on half-open frame-cadence render/discard and preserve production bounds. | Before `757d72b`, AppleClang combined ASan/UBSan `ctest` stopped at the existing FIFO assertion; after the test-only consumer fix, the four YM C tests, receipt-bound oracle, and same focused sanitizer pass, N/A-local ([commands and exits](milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-01-SUMMARY.md#recorded-results)). | reproduced |
+| MU-CI-019 | Qualify sanitizer runtime startup and fault controls before attributing a timeout to product code; keep an alternate local compiler result separate from the pinned CI runtime. | Homebrew Clang 21.1.8 tiny C probe: plain and UBSan exit 0 (0.261s/0.541s); ASan and combined probes timed out before `main` at 5s, including the controlled outside-sandbox boundary. AppleClang 21.0.0 with the same combined address/undefined flags started (0.455s), detected deliberate heap-OOB and signed-overflow faults, and passed focused YM `ctest` 4/4 after `757d72b`, N/A-local ([evidence](milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-01-SUMMARY.md#recorded-results)). No kernel or sandbox root cause is claimed. | reproduced (environment-specific) |
 | MU-REL-001 | release-please 17.6.0: `initial-version` applies only while the manifest says `0.0.0` (default 1.0.0); `feat` bumps minor before 1.0 only with `bump-patch-for-minor-pre-major: false`; the `release-as` key is deprecated and sticky — use a `Release-As:` footer | release-please `src/versioning-strategies/default.ts`, `strategies/base.ts` at v17.6.0 | adopted (ENGINEERING 5) |
 | MU-REL-002 | Events caused by `GITHUB_TOKEN` start no workflow runs and its PRs wait for approval; Dependabot-triggered runs see only Dependabot secrets — mint a GitHub App token for every bot merge and store its key as a Dependabot secret too | GitHub docs on token triggers and Dependabot; gabbaboy PR #41 and #70 | adopted (owner task) |
 | MU-REL-003 | Version-free asset names plus `releases/latest/download/` leave `version.txt` the only machine-edited version string, which removes formatter breakage and release-induced verification staleness | nesturbator `b8e2824`, v1–v3 override closeouts | adopted (ENGINEERING 5) |
@@ -186,7 +190,7 @@ no-ack outcome alone authorizes no retry or wider window.
 | MU-TEST-008 | A deterministic mock of a platform API must preserve its argument type. WASI's clock identifier is a pointer; native integer-like identifiers do not establish portability. | Latest [WASI job124397648745](https://github.com/szTheory/muhtari/actions/runs/41150939552/job/124397648745) fails three diagnostics before tests. `python3 /tmp/muhtari-wasi-clock.SSDai9/check.py` exits0,N/A-local: complete original mock compile1 reproduces all three; a private conditional int/clockid_t alias compiles0 for WASI/native/no-clock fallback, while signature-only clockid_t fails fallback1. Source repair awaits separate authority; no runtime or hosted acceptance is inferred. |
 | MU-TEST-009 | Exit-code transport is part of a portable negative-control contract. A native127 assertion can fail before it reaches the observer when the selected runtime rejects that status. | [WASI job124418953566](https://github.com/szTheory/muhtari/actions/runs/41158640754/job/124418953566) compiles the repaired clock mock and passes its ordinary valid/fault test;605/606tests pass. Child-exit control prints its required argv/no-input/no-wait marker, then the runtime explicitly rejects127 as outside[0..126) and returns1. `python3 /tmp/muhtari-diagnostic-exec.Hak1cS/audit_outcome.py` exits0; required audit1 solely host. Runtime remains advisory/unaccepted, native127 contract unchanged; no new repair or pin/semantic change is authorized. |
 | MU-TEST-010 | A WASI host-file observer cannot depend on `tmpfile()`; bind a fresh exclusive fixture to the test's existing build preopen and test both valid observation and content/cursor faults. | Plan 12-20: native and pinned Wasmtime battery tracers pass once, preserving the marker and cursor and rejecting wrong-cursor/changed-marker controls; the file is absent after each run. Full `cmake --workflow --preset wasm32` exits8 and the exact portable JUnit audit exits1 on three unrelated cases (direct execution of a WASI driver without its emulator and two existing timeout limits). The local fixture is portable, but the full WASI gate and hosted/Playstead acceptance remain unproved. |
-| MU-TEST-013 | A generated CMake script that directly executes a cross-compiled test driver must carry `CMAKE_CROSSCOMPILING_EMULATOR` as a CMake list. Omitting it makes `execute_process` attempt to launch the WASI module as a native binary before its controls run. | Plan 12-21: the preserved generated `retroarch.states.controls` script lacked the emulator on `--fault-controls` and `--prelaunch-controls`, and the full WASI lane reported `exec format error`. The corrected native script expands to an empty emulator list; the WASI script expands to the pinned Wasmtime argv list. Native and WASI owning CTests each pass once, with both control modes executed and no skips. See [Plan 12-21 local evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-21-LOCAL-EVIDENCE.md). |
+| MU-TEST-013 | A generated CMake script that directly executes a cross-compiled test driver must carry `CMAKE_CROSSCOMPILING_EMULATOR` as a CMake list. Omitting it makes `execute_process` attempt to launch the target binary as a native executable before its controls run. | Plan 12-21: the preserved `retroarch.states.controls` script lacked the emulator on its fault controls and the WASI lane reported `exec format error`; the corrected native and WASI CTests pass with no skipped controls. The same omission recurred in `libretro.observe.ym`: [Release equality job 131218399043](https://github.com/szTheory/muhtari/actions/runs/43228680727/job/131218399043) shows the shell parsing the PowerPC ELF instead of running it through qemu. Pass the emulator list into the wrapper and expand it as command arguments. See [Plan 12-21 local evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-21-LOCAL-EVIDENCE.md). |
 | MU-TEST-014 | An offline API mock must validate the compiled binary before execution; source edits do not protect a stale executable when the build helper reuses an existing output. | Plan 12-26: the mock receipt records one real `CGRequestPostEventAccess` call (`denied`, exit 77); `nm -u` confirms `_CGRequestPostEventAccess` remained in the unbundled mock. The source aliases were moved around the request path afterward, but `build_controls()` skipped rebuilding because the output already existed. The prepared app was not launched. Recovery compiled to a fresh path and rejected all unresolved `CG*`, `AX*`, and `CFRelease` symbols before execution; `python3 build/phase12-gap26-evidence/launcher.py recheck-offline-controls` exited 0 with all 11 mock controls passing and zero additional real calls. See [Plan 12-26 launcher evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-26-LAUNCHER-EVIDENCE.md). |
 
 MU-TEST-009 local follow-up: the separately approved mock-only WASI transport125
@@ -549,6 +553,19 @@ It does not establish that overlap caused the earlier timeout or that the schedu
 improves all hosted runs. The actual-host step remained unverified because its preceding battery
 job exited at the existing 300-line source guard; no frontend state behavior is inferred.
 
+2026-11-12 follow-up: comparable macOS x64 replay runs on this source completed in 15.46 seconds
+and 13.63 seconds in [run 43275573348](https://github.com/szTheory/muhtari/actions/runs/43275573348),
+and in 16.45 seconds and 8.09 seconds in [run 43269185595](https://github.com/szTheory/muhtari/actions/runs/43269185595).
+The Release CI child in [run 43275573770](https://github.com/szTheory/muhtari/actions/runs/43275573770/job/131383247545)
+exceeded the existing 18-second deadline; CTest reported teardown at 28.12 seconds. The completed
+samples supported an initial 33-second deadline (`ceil(2 x 16.45s)`). On that bound, the
+exact-head normal inventory took 19.72 seconds and the Release inventory took 13.78 seconds in
+[run 43279984898](https://github.com/szTheory/muhtari/actions/runs/43279984898/job/131398697083).
+The Release workflow's macOS x64 child completed the same inventories in 15.24 and 7.78 seconds
+in [run 43279985008](https://github.com/szTheory/muhtari/actions/runs/43279985008/job/131399403453).
+Calibrate the bound to 40 seconds (`ceil(2 x 19.72s)`). The replay inputs and serial execution are
+unchanged. The timeout receipt does not establish why that runner was slower.
+
 MU-CI-018 (observed): With ctest --preset ci, a relative --output-junit path
 resolves under the preset's binary directory. A source-root receipt check can
 therefore fail with a missing-file error even after CTest passed and wrote the
@@ -586,6 +603,21 @@ Reproduced with OpenGSD 1.20.0: `milestone.complete v4.0 --dry-run` and the conf
 Evidence: `query verification.status` returned `stale` for moved PLAN/SUMMARY paths; five moved covered files matched the pre-archive source, and both archived reports then returned `passed` after verifier-owned relocation. `query roadmap.analyze` reports both 15 and 16 complete; `query init.phase-op 16` resolves the archive. All commands exited 0; run URL N/A-local. No implementation, acceptance verdict, host authority or remote allowance changed.
 
 The installed `cmdInitPhaseOp` intentionally masks an archived directory when its phase number appears in the roadmap; minimal detail sections alone do not solve this. The project handoff documents the same-runtime `find-phase` adapter while retaining canonical verification and roadmap-completion gates. This requires no runtime modification or phase re-execution.
+
+## Qualify shell-heavy hygiene timeouts by execution boundary (2026-11-11)
+
+The unchanged one-slot hygiene preset can exceed its per-process tree-test deadline
+inside the sandbox even when the same test and full preset pass outside it. At
+`fc7d0cb`, `python3 build/phase18-hygiene-gate.py` inside the sandbox exits 8:
+only `hygiene.tree` times out at 60.02s, while 29 other checks pass. The unchanged
+`ctest --test-dir build/hygiene --output-on-failure -R '^hygiene[.]tree$'` outside
+the sandbox exits 0 in 37.52s at the same 60s deadline; the full unchanged helper
+outside exits 0 with 30/30 checks in 87.57s. Scoped process inspection finds no
+leftover attributable process. This supports execution-boundary overhead, not a
+specific kernel or process cause. Qualify the boundary before widening limits or
+changing membership; do not weaken the check or recommend a global restart from a
+timeout alone. All commands are local (`N/A-local`); ignored output is in
+`build/v6-phase19-hygiene-qualified.log` and other build-only receipts.
 
 ## Shipping consumer coverage (2026-11-10)
 
@@ -640,3 +672,138 @@ A one-time release-policy exception still has to satisfy the existing title and 
 ## Calibrate the remaining native fixture margins as a class (2026-11-11)
 
 A required one-second OpenBIOS setup can time out at1.01s and leave15 required dependents unrun even when another exact-source CI build completes the same fixture. Separate censored failures from complete measurements and separate target cohorts. Four completed Windows run pairs give OpenBIOS maxima0.52s x64/0.79s ARM64, PAL BIOS3.60s x64 and directions1.73s x64; DEC.47 yields2/2/8/4s. A bounded scan of the already observed near-limit cases avoids further one-case publication loops; all assertions, fixture relationships, scales and job caps stay intact. Keep immutable tagged-source publication distinct from ordinary non-release CI maintenance on current main. [Measurements and checks](milestones/v5.0-SHIP.md#non-release-fixture-margin-maintenance).
+
+## Incoming integration hypotheses — not locally reproduced (2026-11-11)
+
+LibFuturo's PAL evidence corrections are relevant when another Muhtari consumer
+is added: identify the actual submitted input bytes, bind each source/installed
+route to its own anchored records, and validate PAL extents independently of
+NTSC. The sibling changes and retained local verification are source-backed;
+their applicability as a new Muhtari control remains a hypothesis until a local
+fault/control reproduces the need. Do not add another generic evidence layer
+solely because the sibling has one.
+
+## Merge every active audio source before advancing the mixer (2026-11-12)
+
+The YM+dual-POKEY+TIA stress workload passed Release consumers while assertion-enabled
+Apple ASan/UBSan stopped at the mixer's pending-timestamp ordering assertion. YM was
+catching up after a later POKEY edge had already emitted. Register activity and
+cross-route equality did not expose the shared scheduling error. Registering the
+existing monotonic raw observer on that same stress workload reproduces the defect
+in Release, with all twelve sources actually changing in both regions.
+
+The fix merges YM through each TIA event and then the existing POKEY half-edge
+limit, preserving actual slow/held-cycle timing, timer batch bounds and the no-YM
+path. Never advance an independent audio source to the end of a batch after another
+source has already queued a later event. Keep a Release-mode ordering assertion
+alongside debug assertions when the maximum coinstalled topology is supported.
+
+Evidence: focused CTest hostile case in build/v6-phase20-ordering-before.log exits8
+before the production fix; seventeen focused Release and qualified Apple sanitizer
+tests exit0 after it. Final complete native, hygiene, compatibility and actual
+emitted/extracted Wasm gates also exit0 at the reviewed product snapshot. Commands,
+source identities and limits are retained in the Phase20 cost report; URLs N/A-local.
+No hardware, retail or other platform acceptance is inferred.
+
+Provenance: LibFuturo local commits `ce9028e`, `98f935c`, `4fb7d1c` and the later
+core-profiles Phase 2 verification; the read-only successor snapshot and exact
+paths are retained in [CONSUMERS](research/next-milestone/CONSUMERS.md). No sibling
+build/test/host/CI was launched here. Browser `lf_*` proof, native snapshot proof,
+Muhtari `retro_*` artifact proof and hardware accuracy keep separate acceptance
+boundaries. Revisit on a concrete new input/package/profile mismatch.
+
+## Reset private audio observation state after a machine rewind (2026-11-12)
+
+The audio observer's pending and carried events are derived from one forward
+timeline and are not part of serialized machine state. Loading an earlier
+checkpoint while retaining a carry from the later timeline makes the next frame
+compare its new deadline with an event from the abandoned future; ASan exposed
+this in both YM PAL numeric-hash consumers. After a successful state apply,
+discard pending/carry records and sync the raw cache to the restored synthesis
+state, while preserving the timing cursor. The public-region observer regression
+compares the exact replay summary with a control continuation after advancing
+through an abandoned future.
+
+Reproduced on the initial shipping head in [ASan job 131232281140](https://github.com/szTheory/muhtari/actions/runs/43232708698/job/131232281140) and [ASan job 131218504292](https://github.com/szTheory/muhtari/actions/runs/43228680727/job/131218504292); the PAL numeric report aborts at `muhtari__observe_begin` after a state rewind. Review then caught that discarding the carry alone left its future level in the raw cache. The final fix resets that cache from restored synth state. The updated assertion-enabled local checks pass: `cmake --build build/v6-ym-sanitize-apple --target muhtari-test-ym2151 muhtari-test-state muhtari-run --parallel 4` (exit 0); `ctest --test-dir build/v6-ym-sanitize-apple --output-on-failure -R '^(ym\.observer|core\.state\.equality_report)$'` (exit 0, 2/2); and `cmake -DCASE=hashes_state_control -DHASHES=$PWD/tests/cmake/hashes.cmake -DSTATE_TEST=$PWD/build/v6-ym-sanitize-apple/tests/muhtari-test-state -DOUT=$PWD/build/v6-ym-sanitize-apple -DEMULATOR= -P tests/runner/tests.cmake` (exit 0, including all 78 state rows and semantic fault controls). `ctest --test-dir build/v6-ym-sanitize-apple --output-on-failure -R '^policy\.lane_equality\.controls$'` passed with its fixture setup tests (exit 0). The broader `runner.hashes_file` attempt in this local sanitizer build timed out at its 286-second CTest bound while processing the expansion matrix (exit 8); it is not counted as a pass. The first corrected-head CI attempt caught a formatting-only issue at `tests/audio/test_ym2151.c:1355` ([hygiene job](https://github.com/szTheory/muhtari/actions/runs/43248680525/job/131288210655)); after formatting with `/opt/homebrew/opt/llvm@21/bin/clang-format -i tests/audio/test_ym2151.c`, `cmake --workflow --preset hygiene` passes locally (exit 0, 30/30). Fresh hosted CI on the follow-up commit remains the shipping check.
+
+## Keep compiler-visible masks within their destination width (2026-11-12)
+
+With MSVC `/W4 /WX`, casting a complemented unsigned constant to `uint8_t` warns C4310 because the complement is wider than the destination. The warning becomes a Windows x64 and ARM64 build failure in both production and test-fixture code. Express the equivalent low-byte mask directly (for example `UINT8_C(0xfb)`) so the operation preserves its bit behavior without a truncating constant cast. The production warning appears in [CI run 43228680657](https://github.com/szTheory/muhtari/actions/runs/43228680657); after that correction, the compatibility fixture warning appears in [CI run 43231743577](https://github.com/szTheory/muhtari/actions/runs/43231743577).
+
+## Keep quality observations within each lane's registered inventory (2026-11-12)
+
+The hygiene preset registers repository checks and deliberately returns before registering product tests. A quality report must therefore mark the YM workload as not measured in that lane instead of invoking a test executable that is absent from its clean build. Product lanes still execute the workload and fail if its binary or report is missing. The hosted hygiene job reproduces the hidden artifact dependency with `hashes: YM numeric report ntsc: no such file or directory`: [CI run 43228680657](https://github.com/szTheory/muhtari/actions/runs/43228680657).
+
+## Scale nested observer deadlines with the emulated lane (2026-11-12)
+
+`muhtari_add_test` scales CTest's outer deadline, but a CMake script's
+`execute_process(TIMEOUT ...)` is independent. On the `dff2f7b` merge commit,
+`libretro.observe.ym` passed in the native inventory and timed out at the
+wrapper's fixed 25-second child bound in the PowerPC/QEMU inventory; the outer
+CTest bound was 390 seconds. This is a harness deadline mismatch, not an
+observer-output mismatch. Pass `25 * MUHTARI_TIMEOUT_SCALE` to each observer
+child while keeping the existing CTest multiplier and nonzero-exit failure.
+
+The original `cmake --workflow --preset be32-full` lane failed at that child
+timeout in [Nightly equality job 131292885760](https://github.com/szTheory/muhtari/actions/runs/43250000793/job/131292885760).
+After the fix, the native script invocation passes with `OBSERVER_TIMEOUT=25`
+(exit 0, N/A-local); `OBSERVER_TIMEOUT=0` fails with the expected positive-bound
+diagnostic (exit 1); and a `/usr/bin/false` observer still fails with the
+observer-failure diagnostic (exit 1). `qemu-ppc` is unavailable locally, so
+only the exact-source hosted BE32 run can establish the scaled emulated path.
+
+## Apply the configured emulator inside CMake script-mode consumers (2026-11-12)
+
+CTest does not prepend `CMAKE_CROSSCOMPILING_EMULATOR` to binaries that a
+`cmake -P` script starts with `execute_process`. In the full BE32 release
+inventory, `release.ym_consumers` successfully extracted and built the package,
+then the host shell tried to interpret its PowerPC consumer and returned
+`Syntax error: ")" unexpected`. Pass the build emulator list to the script and
+prefix every guest executable it starts, including nested runner checks and
+the libretro host. Native direct invocation remains an empty emulator list.
+
+This occurred on the exact shipping head in [Release equality job
+131316658115](https://github.com/szTheory/muhtari/actions/runs/43256470708/job/131316658115);
+the uploaded JUnit report identifies only `release.ym_consumers` in
+`build/be32/junit-release.xml`, while both normal native and BE32 inventories
+completed. The targeted local Apple sanitizer build has Debug package members,
+so it cannot exercise this Release package check; `qemu-ppc` is unavailable
+locally. A fresh hosted BE32 run after the correction is the required proof.
+
+## Keep equality workflow source paths aligned with its shared identity check (2026-11-12)
+
+The BE32 equality and native CI hash workflows build their identities with
+separate `git ls-tree` path lists. When `hashes_lane_identity` began including
+`tests/audio/test_ym2151.c` and `tests/cart/images.c`, the workflow's two lane
+identities still matched each other but both omitted those source files. The
+gate rejected the evidence against the source commit after completing both
+normal and release inventories. Keep each producer's path list aligned with
+the shared identity helper so its artifacts prove the same committed inputs.
+
+Reproduced on the exact shipping head in [Release equality job
+131340814070](https://github.com/szTheory/muhtari/actions/runs/43263319919/job/131340814070).
+The BE32 release consumer check passed under QEMU; the only reported failure
+was the final source-identity comparison. Adding both missing paths restores
+the workflow's source identity to the shared helper's expected value.
+
+The native CI workflow had the same two omitted paths. In exact-head [Release
+run 43283961544](https://github.com/szTheory/muhtari/actions/runs/43283961544),
+the Linux x64 and ARM64 artifacts had matching commit SHAs and identities, but
+both identities omitted those paths; the shared checker rejected
+`hashes-linux-arm64`.
+The WASM32 configure in that run also registered `release.ym_consumers`, which
+was absent from `tests/inventory/wasm32.txt`. Align the native CI identity list
+and WASM32 inventory with their shared sources and registered tests.
+
+## Keep large WASI test frames off its bounded stack (2026-11-12)
+
+Adding the registered `release.ym_consumers` entry reached the full WASM32
+inventory. Exact-head [Release run 43292786817, job
+131466450576](https://github.com/szTheory/muhtari/actions/runs/43292786817/job/131466450576)
+and [CI run 43292786483, job
+131468642513](https://github.com/szTheory/muhtari/actions/runs/43292786483/job/131468642513)
+each passed 631 of 632 tests; `ym.hostile` trapped while accessing linear
+memory outside the 256 KiB memory. The WASI test stack is 64 KiB, while that
+test's 320 by 292 video frame occupies about 91 KiB on the stack. Keep the frame
+in static test storage; retain the frame guards, hostile execution and
+allocation checks.

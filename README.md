@@ -2,7 +2,8 @@
 
 An Atari 7800 ProSystem emulator core in C: a small library, a headless runner and a libretro core for RetroArch.
 
-**Status: early.** Evidence covers the rows listed; there is no claim of universal title compatibility.
+**Status: early.** Includes a declared XM/[YM2151 digital sound profile](docs/hardware/ym2151.md).
+Evidence covers the rows listed; there is no claim of universal title compatibility.
 See the [compatibility page](docs/compatibility.md) for what has evidence and what does not, and
 [controls and bindings](docs/libretro.md#devices) for the devices the core exposes. Releases are published
 automatically.

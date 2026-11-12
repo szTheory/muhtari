@@ -53,8 +53,8 @@ typedef struct muhtari_versions {
     uint32_t library_major, library_minor, library_patch;
     uint32_t api;                /* MUHTARI_API_VERSION */
     uint32_t abi;                /* 1 */
-    uint32_t behaviour_revision; /* reported by muhtari_get_versions */
-    uint32_t state_format;       /* 1 */
+    uint32_t behaviour_revision; /* latest supported by muhtari_get_versions */
+    uint32_t state_format;       /* latest supported; actual envelope is machine-dependent */
 } muhtari_versions;
 
 typedef struct muhtari_info {

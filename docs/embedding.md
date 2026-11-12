@@ -540,12 +540,19 @@ and every payload field before applying anything. It rejects input/output ranges
 that overlap the instance or its cartridge/expansion allocation. All RAM and
 battery span addresses remain stable across a restore.
 
-State format 1 is versioned and byte-wise little-endian. Its CRC-32 detects
-accidental corruption; it is not authentication. The effective machine identity
-uses SHA-256 over installed media and machine-affecting configuration, not a
-filename or header CRC. Clock values are checked against current hardware
-producers and their cross-field timing relationships; the format does not impose
-an arbitrary absolute tick ceiling.
+State envelopes are versioned and byte-wise little-endian. Unchanged machines
+without YM use format 1 / behaviour revision 6; the selected XM/YM profile uses
+format 2 / behaviour revision 7 and includes a domain-separated YM profile
+identity. The CRC-32 detects accidental corruption; it is not authentication.
+The effective machine identity uses SHA-256 over installed media and
+machine-affecting configuration, not a filename or header CRC. Clock values are
+checked against current hardware producers and their cross-field timing
+relationships; the format does not impose an arbitrary absolute tick ceiling.
+
+Ten NTSC/PAL cases against pre-YM code prove identical states and both
+continuation directions for linear, SuperGame RAM, XBoard, XM/HSC and pending
+SaveKey. Old code safely refuses YM; length checks may precede version refusal.
+See the [compatibility check](../tests/core/state_compat.cmake).
 
 Both functions return `MUHTARI_STATUS_ERR_ARGUMENT` for a NULL instance or
 buffer. A non-NULL instance without content returns
@@ -605,19 +612,22 @@ Statuses are only ever added. Those after the probe's:
 `MUHTARI_API_VERSION` in the header is the API the program was compiled against. At run time,
 `muhtari_get_versions` fills a `muhtari_versions`:
 
-The current interface is API 8, ABI 1, behaviour revision 6 and state format 1.
-API 8 appends portable state operations and the state-format version field.
-The earlier API 7 additions, original media/info prefixes, prior status values
-and size minima remain compatible. Revision 6 includes the corrected slow-edge
-DMA handoff; state format 1 does not change emulation behavior.
+The current interface is API 8, ABI 1, latest supported behaviour revision 7
+and latest supported state format 2. These global values report the library's
+latest support; a saved state's envelope is selected by its installed machine.
+API 8 appends portable state operations and the state-format version field. The
+earlier API 7 additions, original media/info prefixes, prior status values and
+size minima remain compatible. Revision 6 includes the corrected slow-edge DMA
+handoff; revision 7 adds the selected YM profile. No-YM frame, audio and state
+bytes remain on their revision-6/format-1 path.
 
 | Field | Meaning |
 |---|---|
 | `library_major`, `library_minor`, `library_patch` | The release. `library_major` is 0 before version 1.0. |
 | `api` | The API the library implements. |
 | `abi` | The binary interface: struct layouts and calling conventions. |
-| `behaviour_revision` | Changes when the same inputs give a different frame, audio or state hash. |
-| `state_format` | The version of the portable state byte format. |
+| `behaviour_revision` | Latest supported behavior; changes when the same inputs give a different frame, audio or state hash. |
+| `state_format` | Latest supported portable state byte format; the actual envelope is machine-dependent. |
 
 `api`, `abi` and `behaviour_revision` start at 1, so zero means absent: a field that a library older than your
 header does not know stays at the zero you wrote. The same applies to `state_format`; the library version

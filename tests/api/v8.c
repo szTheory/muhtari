@@ -33,8 +33,8 @@ static void api_surface(void)
     CHECK_EQ_U64(muhtari_get_versions(&versions), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(versions.api, 8u);
     CHECK_EQ_U64(versions.abi, 1u);
-    CHECK_EQ_U64(versions.behaviour_revision, 6u);
-    CHECK_EQ_U64(versions.state_format, 1u);
+    CHECK_EQ_U64(versions.behaviour_revision, 7u);
+    CHECK_EQ_U64(versions.state_format, 2u);
 
     struct {
         struct versions_v7 old;
@@ -45,7 +45,7 @@ static void api_surface(void)
     CHECK_EQ_U64(muhtari_get_versions((muhtari_versions *)(void *)&older.old), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(older.old.api, 8u);
     CHECK_EQ_U64(older.old.abi, 1u);
-    CHECK_EQ_U64(older.old.behaviour_revision, 6u);
+    CHECK_EQ_U64(older.old.behaviour_revision, 7u);
     for (size_t i = 0u; i < sizeof older.tail; i++)
         CHECK_EQ_U64(older.tail[i], 0xA5u);
 }

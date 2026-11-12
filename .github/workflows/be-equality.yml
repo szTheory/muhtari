@@ -48,7 +48,11 @@ jobs:
             mkdir -p evidence/$lane
             cp build/$preset/hashes.txt evidence/$lane/hashes.txt
             git rev-parse HEAD > evidence/$lane/commit.txt
-            git ls-tree -r HEAD -- pins.txt tests/roms tests/built tests/diag include/muhtari.h version.txt CMakePresets.json CMakeLists.txt > evidence/$lane/identity.txt
+            git ls-tree -r HEAD -- \
+              pins.txt tests/roms tests/built tests/diag \
+              tests/cart/images.c tests/audio/test_ym2151.c \
+              include/muhtari.h version.txt CMakePresets.json CMakeLists.txt \
+              > evidence/$lane/identity.txt
             printf '%s\n' 'Release warnings=error tests=ON libretro=ON short_runs=OFF inventory=ci normal+release' >> evidence/$lane/identity.txt
           done
           cmake -DNATIVE=evidence/native -DBE=evidence/be "-DEXPECTED_SHA=$(git rev-parse HEAD)" -P tests/cmake/lane_equality.cmake

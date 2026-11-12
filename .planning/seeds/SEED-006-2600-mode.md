@@ -1,9 +1,11 @@
 ---
 id: SEED-006
-status: dormant
+status: retired
+retired: 2026-11-11
+retirement_reason: Atari 2600 emulation belongs to the sibling project twentysixhundo
 planted: 2026-10-15
 planted_during: preparation, before milestone v1.0
-trigger_when: milestone v2.0 (the whole 7800 library) has closed and the owner promotes 2600 mode
+trigger_when: none; retired by owner direction
 scope: large
 audit_acknowledged:
   milestone: v1.0
@@ -13,6 +15,13 @@ audit_acknowledged:
 
 # SEED-006: Atari 2600 cartridges in 7800 mode
 
+## Disposition — retired
+
+Owner correction, 2026-11-11: the separate `twentysixhundo` project owns Atari
+2600 emulation. Muhtari remains focused on Atari 7800. This supersedes the
+original proposal below; it is retained only as historical context. Existing
+2600 image recognition/refusal remains supported.
+
 ## Why This Matters
 
 The real console plays nearly every 2600 cartridge. Owner decision (2026-10-15): support it after the 7800 library
@@ -21,7 +30,7 @@ images and refuse them with a distinct "unsupported: 2600 (planned)" status, and
 
 ## When to Surface
 
-**Trigger:** v2.0 closed and the owner promotes it at a milestone boundary.
+No active trigger. Retired; exclude this seed from milestone candidates.
 
 ## Scope Estimate
 

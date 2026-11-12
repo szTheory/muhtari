@@ -9,16 +9,16 @@ relevant source links instead of scanning every historical plan.
 | Shared goals, gamer priorities, writing voice, research posture and provenance | [INTENT.md](INTENT.md) |
 | What ships today and binding constraints | [PROJECT.md](PROJECT.md), [../AGENTS.md](../AGENTS.md) |
 | Current position and next allowed step | [STATE.md](STATE.md) |
-| This milestone's execution contract | [REQUIREMENTS.md](REQUIREMENTS.md), [ROADMAP.md](ROADMAP.md) |
+| Current execution contract / last completed requirements | [ROADMAP.md](ROADMAP.md), [v6.0 requirements](milestones/v6.0-REQUIREMENTS.md); implementation is complete locally and publication is pending |
 | Immediate, next, mid-term and long-term horizons | [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md) |
 | Where hardware/API/engineering facts live | [preparation/README.md](preparation/README.md) |
 | Settled choices and reasons | [preparation/DECISIONS.md](preparation/DECISIONS.md) |
 | Reproduced lessons versus imported hypotheses | [LESSONS.md](LESSONS.md) |
-| Current research synthesis and phase questions | [v5.0 research synthesis](research/v5.0/SUMMARY.md) |
+| Successor scoping, recommendation, evidence confidence and revisit triggers | [v6.0 scoping synthesis](research/next-milestone/SUMMARY.md), [proposal](research/next-milestone/PROPOSAL.md); [v5.0 research](research/v5.0/SUMMARY.md) is historical |
 | Playstead quick route, native-host north star and pasteable handoff | [research/PLAYSTEAD-HANDOFF.md](research/PLAYSTEAD-HANDOFF.md) |
 | Reusable bounded specialist brief | [research/fan-out/prompt.txt](research/fan-out/prompt.txt) |
-| Separate browser/libretro player idea, existing alternatives and Playstead fit | [Browser-player seed](seeds/SEED-261030-tt4-browser-libretro-player.md), [bounded research](research/browser-player/RECOMMENDATION.md) |
-| Possible emulator interface alongside libretro; automation and observability gaps | [Interface seed](seeds/SEED-261030-zk3-emulator-interface.md), [initial read and future-session handoff](research/emulator-interface/RECOMMENDATION.md) |
+| Historical browser-player idea and alternatives; reconcile with implemented LibFuturo routes in the current synthesis | [Browser-player seed](seeds/SEED-261030-tt4-browser-libretro-player.md), [bounded research](research/browser-player/RECOMMENDATION.md) |
+| Historical interface exploration; LibFuturo now implements the interface/consumer routes, with qualification/adoption limits in current research | [Interface seed](seeds/SEED-261030-zk3-emulator-interface.md), [initial read and future-session handoff](research/emulator-interface/RECOMMENDATION.md) |
 | Every owner ask and its disposition | [preparation/PROMPT-COVERAGE.md](preparation/PROMPT-COVERAGE.md) |
 | Shipped evidence and historical limits | [MILESTONES.md](MILESTONES.md), [milestones/](milestones/) |
 
@@ -35,4 +35,20 @@ Refresh this index, intent links and rolling horizons when a milestone begins or
 closes. Keep useful findings in ordinary project artifacts; no external memory
 service or bulk lesson export is needed. Detailed plans stay in their phase.
 
-Latest completion: [v4.0 audit](milestones/v4.0-MILESTONE-AUDIT.md), [phase archive](milestones/v4.0-phases/) and [current state](STATE.md). Offline implementation, verification and cleanup are complete; the isolated source shipped through PR #47 and package v0.12.0. Source-specific publication receipts are in [v4.0 ship](milestones/v4.0-SHIP.md).
+Latest completion: [v5.0 audit](milestones/v5.0-MILESTONE-AUDIT.md) and
+[final shipping receipt](milestones/v5.0-SHIP.md#final-publication-and-current-main-closure--reconciled-2026-11-11).
+Package v0.13.1 public-byte verification, installation and current-main CI are
+closed. The successor is being scoped upstream; [STATE](STATE.md) and the
+[current research synthesis](research/next-milestone/SUMMARY.md) own its status.
+Atari 2600 emulation belongs to twentysixhundo; LibFuturo owns the shared interface
+and native/browser consumer qualification. Keep those responsibilities distinct
+from Muhtari's machine behavior and release artifacts.
+
+## Active milestone — v6.0
+
+YM2151 homebrew sound is selected for autonomous local follow-through. The
+[current roadmap](ROADMAP.md), [requirements](REQUIREMENTS.md) and [state](STATE.md)
+are authoritative over earlier successor-pending text. Phase 19 is the measured
+tune-up; Phase 20 is the complete qualified chip/bus/audio/state and consumer
+slice. [Owner authority](INTENT.md#ym2151-milestone-authority--2026-11-11) preserves
+all older host stops and publication/merge boundaries.

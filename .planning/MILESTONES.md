@@ -1,6 +1,23 @@
 # Project Milestones: muhtari
 
-## v5.0 Downloadable WebAssembly core (Source shipped: 2026-11-11)
+## v6.0 YM2151 homebrew sound (Locally completed: 2026-11-12)
+
+**Scope:** Two phases, eight plans, nineteen actual plan task blocks. The runtime summary fallback counted eight tasks; the plan blocks are authoritative.
+
+**Delivered:**
+- One qualified selected/header-auto XM/YM2151 profile, integer instance-owned OPM and source-qualified digital bus/timer/IRQ behavior.
+- Deterministic bounded mono audio, complete transactional YM states and genuine bidirectional legacy6/1 compatibility with unchanged API8/ABI1.
+- Actual public library, runner, loaded libretro, emitted Wasm and clean installed/extracted package consumers with current notices and fault controls.
+- Complete ordinary/adverse native/Node cost windows, concrete space/headroom/bounds, accurate evidence limits and clean required review.
+
+**Closeout:** `verified_closeout`; nine current requirements, both phases and all five integration flows pass. Zero newly acknowledged items;49 previously acknowledged items retain their verdicts. The nine deferred v3 requirements and original Phase12/14 stops remain unchanged.
+**Publication:** Pending. No push, remote dispatch, merge, tag or publication occurred. Current published package remains the v5.0 result below.
+**Archive:** [roadmap](milestones/v6.0-ROADMAP.md), [requirements](milestones/v6.0-REQUIREMENTS.md), [audit](milestones/v6.0-MILESTONE-AUDIT.md), [phase records](milestones/v6.0-phases/).
+**Next:** Clear context and run `$gsd-ship 20`; the agent owns service-health, current receipt and source checks.
+
+---
+
+## v5.0 Downloadable WebAssembly core (Shipped: 2026-11-11)
 
 **Phases completed:** 2 phases, 3 plans, 7 tasks (actual plan blocks; SDK prose count was 4)
 
@@ -10,9 +27,9 @@
 - The source-bound Emscripten ZIP now travels through the existing exact-source release path with local native, SDK, and hygiene gates passing.
 
 **Closeout type:** `verified_closeout`; all six scoped requirements and both phases pass. Known verification overrides: 0 newly acknowledged, 50 carried forward from prior closes. The nine v3.0 requirement gaps and original host/remote stops remain unchanged.
-**Publication:** [PR #49](https://github.com/szTheory/muhtari/pull/49) merged after full candidate CI and public rehearsal/install/cleanup acceptance. The versioned package is tracked by [release PR #50](https://github.com/szTheory/muhtari/pull/50) and the existing release automation. [Ship receipt](milestones/v5.0-SHIP.md).
+**Publication:** [v0.13.1](https://github.com/szTheory/muhtari/releases/tag/v0.13.1) is published; exact-source release, public-download verification and latest installation passed. Non-release maintenance PR #53 and current-main CI passed. Failed v0.13.0 is retained separately. [Final ship receipt](milestones/v5.0-SHIP.md#final-publication-and-current-main-closure--reconciled-2026-11-11).
 **Archive:** [roadmap](milestones/v5.0-ROADMAP.md), [requirements](milestones/v5.0-REQUIREMENTS.md), [audit](milestones/v5.0-MILESTONE-AUDIT.md), [phase records](milestones/v5.0-phases/).
-**Next:** `$gsd-new-milestone`; the agent checks release/main receipts automatically first.
+**Next:** Continue the existing `$gsd-new-milestone` discussion after cross-project feedback; successor scope remains unselected. [Handoff](continue.md).
 
 ---
 
@@ -179,3 +196,10 @@ exit 0. Archive integrity check — exit 0: all 177 phase files retained, includ
 73 plans, 73 summaries and four unchanged verification reports; only the deferred
 item acknowledgment modifies a moved phase artifact. `query audit-open --json` —
 exit 0: zero open, 15 acknowledged. Hosted release evidence is linked above.
+
+## Current successor — selected 2026-11-11
+
+The owner selected v6.0 YM2151 homebrew sound and authorized autonomous local
+follow-through. [Current roadmap](ROADMAP.md): Phase 19 measured tune-up, then
+Phase 20 complete qualified YM/XM sound. Earlier v5.0 successor-pending notes
+are historical. Publication/merge and prior host stops remain separate.

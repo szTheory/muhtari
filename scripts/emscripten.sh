@@ -129,12 +129,18 @@ if [ "$mode" = 'preflight' ]; then
 fi
 
 check_perl_timeout_fallback
-cmake --build --preset ci --target muhtari-test-libretro-observe muhtari-test-input
-ctest --test-dir build/ci --output-on-failure -R '^input\.cart_files$' --no-tests=error
+cmake --build --preset ci --target muhtari-test-libretro-observe muhtari-test-input muhtari-test-ym2151
+ctest --test-dir build/ci --output-on-failure -R '^(input[.]cart_files|ym[.]fixture)$' --no-tests=error
 mkdir -p build/ci/tests/emscripten
 build/ci/tests/muhtari-test-libretro-observe \
   --fixture build/ci/tests/input-carts/input.a78 \
   --output build/ci/tests/emscripten/native.json
+
+for suffix in '' '-worst'; do
+  build/ci/tests/muhtari-test-libretro-observe \
+    --ym-fixture "build/ci/tests/ym2151/ym2151${suffix}.a78" \
+    --ym-output "build/ci/tests/emscripten/ym${suffix}-native.json"
+done
 
 host_description="$(uname -sm); Docker daemon ${daemon_os}/$(docker info --format '{{.Architecture}}'); selected container leaf linux/amd64"
 expected_sha=$(git -C "$root_dir" rev-parse --verify HEAD) || fail 'cannot resolve the exact checkout commit'
@@ -142,7 +148,9 @@ container_name="muhtari-emscripten-$$"
 mkdir -p build/emscripten build/ci/tests/emscripten
 rm -f build/emscripten/junit.xml \
   build/ci/tests/emscripten/measurement.json \
-  build/ci/tests/emscripten/wasm-surface.json
+  build/ci/tests/emscripten/wasm-surface.json \
+  build/ci/tests/emscripten/ym-measurement.json \
+  build/ci/tests/emscripten/ym-worst-measurement.json
 cleanup_container() { docker rm -f "$container_name" >/dev/null 2>&1 || true; }
 trap cleanup_container 0 HUP INT TERM
 bounded 1200 docker run --rm --name "$container_name" --network none --platform "$platform" \
@@ -168,12 +176,21 @@ bounded 1200 docker run --rm --name "$container_name" --network none --platform 
       --module build/emscripten/libretro/muhtari_libretro.mjs \
       --fixture build/ci/tests/input-carts/input.a78 \
       --native build/ci/tests/emscripten/native.json \
-      --mode report --report build/ci/tests/emscripten/measurement.json
+      --mode report --report build/ci/tests/emscripten/measurement.json &&
+    for suffix in "" "-worst"; do
+      node tests/emscripten/host.mjs \
+        --module build/emscripten/libretro/muhtari_libretro.mjs \
+        --fixture "build/ci/tests/ym2151/ym2151${suffix}.a78" \
+        --native "build/ci/tests/emscripten/ym${suffix}-native.json" \
+        --mode report --report "build/ci/tests/emscripten/ym${suffix}-measurement.json" || exit 1
+    done
   '
 trap - 0 HUP INT TERM
 cleanup_container
 
 test -s build/ci/tests/emscripten/measurement.json || fail 'fixed-workload measurement was not produced'
+test -s build/ci/tests/emscripten/ym-measurement.json || fail 'ordinary YM measurement missing'
+test -s build/ci/tests/emscripten/ym-worst-measurement.json || fail 'worst YM measurement missing'
 test -s build/ci/tests/emscripten/wasm-surface.json || fail 'actual Wasm import/export evidence was not produced'
 test -s build/emscripten/junit.xml || fail 'required Emscripten JUnit inventory was not produced'
 echo 'Emscripten artifact, no-skip test inventory, import/export surface and measurement passed.'

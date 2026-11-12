@@ -2,6 +2,9 @@
 
 ## Communication and workflow preferences
 
+- Owner direction (2026-11-11): run the selected v6.0 YM2151 homebrew-sound milestone in gsd-autonomous style through dependent local work and closeout, following ordinary in-scope recommendations without routine acceptance prompts. Preserve material compatibility decisions and separate remote/host/publication/merge boundaries.
+
+- Owner scope correction (2026-11-11): Atari 2600 emulation belongs to the sibling project `twentysixhundo`. Keep Muhtari focused on Atari 7800; SEED-006 is retired. Existing 2600 image recognition/refusal remains supported.
 - Keep isolated Git checkouts inside the repository under `.worktrees/`, using an ignored directory, so they stay together without cluttering the parent projects folder.
 - Owner correction (2026-11-11): do not hand back the shipping command the owner just invoked as a substitute for diagnosing its blocker. The explicit instruction to fix and unblock v5.0 shipping authorizes bounded hosted package-route diagnosis, evidence-supported corrections and the dependent shipping checks. Preserve the earlier failed attempts and unrelated Phase 12/14 host stops; do not require repeated routine invocations within this recovery scope.
 

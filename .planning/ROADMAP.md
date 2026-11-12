@@ -7,29 +7,17 @@
 - [x] **v3.0 — Playstead-ready play and states** — phases 12–14; closed 2026-11-10 with deferred scope (`override_closeout`). Phase 13 passed; Phase 12 remains accepted 0/4 and Phase 14 remains `gaps_found` at 20/27. Nine requirements remain unchecked. [Audit](milestones/v3.0-MILESTONE-AUDIT.md) · [Archive](milestones/v3.0-ROADMAP.md)
 - [x] **v4.0 — Browser/WebAssembly core readiness** — phases 15–16; shipped through PR #47 and package v0.12.0. [Audit](milestones/v4.0-MILESTONE-AUDIT.md) · [Archive](milestones/v4.0-ROADMAP.md) · [Ship receipt](milestones/v4.0-SHIP.md). Earlier failed combined-source evidence and host stops remain preserved.
 
-- [x] **v5.0 — Downloadable WebAssembly core** — phases 17–18; source shipped through PR #49 on 2026-11-11; versioned release tracked in PR #50. [Audit](milestones/v5.0-MILESTONE-AUDIT.md) · [Archive](milestones/v5.0-ROADMAP.md) · [Requirements](milestones/v5.0-REQUIREMENTS.md)
+- [x] **v5.0 — Downloadable WebAssembly core** — phases 17–18; shipped as v0.13.1 on 2026-11-11; public-byte verification and current-main CI passed. [Audit](milestones/v5.0-MILESTONE-AUDIT.md) · [Archive](milestones/v5.0-ROADMAP.md) · [Requirements](milestones/v5.0-REQUIREMENTS.md)
+- [x] **v6.0 — YM2151 homebrew sound** — phases19–20; verified locally2026-11-12; publication pending. [Audit](milestones/v6.0-MILESTONE-AUDIT.md) · [Archive](milestones/v6.0-ROADMAP.md)
 
-## v5.0 — Downloadable WebAssembly core (verified local closeout)
+## Completed phases
 
-## Phases
-
-- [x] **Phase 17: Measured milestone tune-up** — 1/1 plans complete (completed 2026-11-10)
-- [x] **Phase 18: Source-bound Emscripten release bundle** — 2/2 plans complete (completed 2026-11-11)
-
-## Phase Details
-
-### Phase 17: Measured milestone tune-up
-
-**Goal:** Current publication/docs and source-specific measured baseline without weakening checks or historical failures.
-**Requirements:** TUNE-09
-**Plans:** 1/1 complete; verification passed. [Records](milestones/v5.0-phases/17-measured-milestone-tune-up/)
-
-### Phase 18: Source-bound Emscripten release bundle
-
-**Goal:** Exact-source, permissively distributable portable ZIP, clean-extracted offline oracle and local readiness for the existing release pipeline.
-**Requirements:** WASM-05, WASM-06, WASM-07, WASM-08, WASM-09
-**Plans:** 2/2 complete; verification passed. [Records](milestones/v5.0-phases/18-source-bound-emscripten-release-bundle/)
+- [x] **Phase 19** (Measured milestone tune-up) — 1/1 plans; verified complete2026-11-11.
+- [x] **Phase 20** (Complete YM2151 homebrew sound) — 7/7 plans; verified complete2026-11-12.
 
 ## Next boundary
 
-All six v5.0 requirements passed local acceptance; exact-source hosted CI and the complete public rehearsal/install/cleanup also passed before PR #49 merged. [Ship receipt](milestones/v5.0-SHIP.md). Versioned release automation is tracked in [PR #50](https://github.com/szTheory/muhtari/pull/50). The next command is `$gsd-new-milestone`; the agent first checks release/main receipts automatically. No owner metadata repair or directory switch is needed. Earlier denied/spent host scopes and nine deferred v3.0 requirements remain unchanged.
+All current implementation requirements are complete. Shipping is separate:
+clear context and run `$gsd-ship 20` from this root checkout. The agent owns the
+next service-health and receipt checks. Earlier Phase12/14 stops, nine deferred
+v3 requirements and unaccepted hardware/platform evidence remain unchanged.

@@ -1,6 +1,6 @@
 # Testing
 
-Run CI locally with inventory and release checks.
+Local and CI checks.
 
 ## The entry point
 
@@ -8,7 +8,7 @@ Run CI locally with inventory and release checks.
 cmake --workflow --preset ci
 ```
 
-Needs CMake 4.3+, Ninja and C/C++ compilers:
+Needs CMake 4.3+, Ninja and C/C++:
 
 1. configure `build/ci` (Release, warnings fatal, macOS deployment target 10.13);
 2. build;
@@ -32,7 +32,9 @@ The [PAL diagnostic](pal-tests.md) runs startup plus 600 full frames even under 
 arithmetic carry alone cannot replace execution.
 [Package acceptance](quality.md) still requires all six native lanes.
 
-`-DMUHTARI_TESTS=OFF` builds products without tests or sample tools. Used by `perf` (head/base), nightly's `bench` and `bench-wasm32`.
+`-DMUHTARI_TESTS=OFF` builds products only.
+
+YM recipes: [numeric, parity, compatibility, consumers and costs](hardware/ym2151.md#reproducing-the-evidence).
 
 ## Lanes
 

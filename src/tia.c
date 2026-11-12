@@ -125,6 +125,11 @@ void muhtari__tia_catch_up(muhtari *m, uint64_t tick)
         muhtari__tia_reset(m);
     }
     while (m->tia.next_tick <= tick) {
+        /* YM may emit between TIA edges. Merge through this minimum tick
+           before either TIA channel, then through the caller's CLK2 edge
+           before POKEY emits (hardware/ym2151.md, Clock and mixing). */
+        if (m->synth.ym_installed != 0u)
+            muhtari__ym2151_catch_up(m, m->tia.next_tick);
         for (unsigned ch = 0u; ch < 2u; ch++) {
             struct muhtari__tia_channel *c = &m->tia.channel[ch];
             if ((m->tia.phase & 1u) == 0u) {
@@ -141,6 +146,8 @@ void muhtari__tia_catch_up(muhtari *m, uint64_t tick)
         m->tia.next_tick += spacing[m->tia.phase];
         m->tia.phase = (uint8_t)((m->tia.phase + 1u) & 3u);
     }
+    if (m->synth.ym_installed != 0u)
+        muhtari__ym2151_catch_up(m, tick);
 }
 
 void muhtari__tia_write(muhtari *m, uint16_t addr, uint8_t v, uint64_t data_tick)

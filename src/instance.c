@@ -10,7 +10,7 @@
    absent; the behaviour revision changes when a frame, audio or state hash
    changes for the same inputs. */
 #define MUHTARI__ABI 1u
-#define MUHTARI__BEHAVIOUR_REVISION 6u
+#define MUHTARI__BEHAVIOUR_REVISION 7u
 
 /* The largest size tag accepted, far above any struct's planned growth. A tag
    promises that many readable bytes; the cap bounds how far a wrong tag can
@@ -61,7 +61,7 @@ muhtari_status muhtari_get_versions(muhtari_versions *out)
     v.api = MUHTARI_API_VERSION;
     v.abi = MUHTARI__ABI;
     v.behaviour_revision = MUHTARI__BEHAVIOUR_REVISION;
-    v.state_format = 1u;
+    v.state_format = 2u;
     muhtari__write_out(out, &v, (uint32_t)sizeof v);
     return MUHTARI_STATUS_OK;
 }
@@ -353,7 +353,11 @@ muhtari_status muhtari_load(muhtari *m, const muhtari_media *media)
        (cartridge preparation section 2.1, XBoard). */
     uint32_t primary =
         info.sound & (MUHTARI_SOUND_POKEY_4000 | MUHTARI_SOUND_POKEY_450 | MUHTARI_SOUND_POKEY_800);
-    if ((info.sound & (MUHTARI_SOUND_YM2151 | MUHTARI_SOUND_COVOX | MUHTARI_SOUND_ADPCM)) != 0u ||
+    uint32_t ym = (info.sound & MUHTARI_SOUND_YM2151) != 0u;
+    int ym_topology =
+        ym != 0u && (info.devices & MUHTARI_DEVICE_XM) != 0u && expansion == MUHTARI_EXPANSION_XM;
+    if ((ym != 0u && ym_topology == 0) ||
+        (info.sound & (MUHTARI_SOUND_COVOX | MUHTARI_SOUND_ADPCM)) != 0u ||
         (primary != 0u && (primary & (primary - 1u)) != 0u) ||
         (expansion != MUHTARI_EXPANSION_OFF &&
          (primary & (MUHTARI_SOUND_POKEY_4000 | MUHTARI_SOUND_POKEY_800)) != 0u)) {
