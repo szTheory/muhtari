@@ -5,17 +5,17 @@ milestone_name: YM2151 homebrew sound
 current_phase: 20
 current_phase_name: Complete YM2151 homebrew sound
 status: executing
-stopped_at: Completed 20-02-PLAN.md
-last_updated: "2026-11-12T07:31:16.815Z"
+stopped_at: Completed 20-03-PLAN.md
+last_updated: "2026-11-12T08:32:40.892Z"
 last_activity: 2026-11-12
-last_activity_desc: Phase 20 Plan 20-02 complete; Plan 20-03 next
-state_head: f440775098a2d99d83f691a0db80e335846c470b
+last_activity_desc: Phase 20 Plan 20-03 complete; Plan 20-04 next
+state_head: 0acc1cdb9c0b24d31b7dd0629f981c1823d84fde
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 8
-  completed_plans: 3
-  percent: 38
+  completed_plans: 4
+  percent: 50
 ---
 
 # Project State
@@ -24,20 +24,20 @@ progress:
 
 See [PROJECT.md](PROJECT.md), [current requirements](REQUIREMENTS.md), [ROADMAP.md](ROADMAP.md) and [milestone synthesis](research/next-milestone/SUMMARY.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** Phase 20 — Complete YM2151 homebrew sound; Plan 20-02 complete, Plan 20-03 next
+**Current focus:** Phase 20 — Complete YM2151 homebrew sound; Plan 20-03 complete, Plan 20-04 next
 
 ## Current Position
 
 Phase: 20 (Complete YM2151 homebrew sound) — EXECUTING
-Plan: 3 of 7
+Plan: 4 of 7
 Status: Ready to execute
-Last activity: 2026-11-12 — Phase 20 Plan 20-02 complete; Plan 20-03 next
+Last activity: 2026-11-12 — Phase 20 Plan 20-03 complete; Plan 20-04 next
 
-Progress: [████░░░░░░] 38%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
-v6.0 has three completed plans and one completed phase. Phase 20 Plans 20-01 and 20-02 are complete; Plan 20-03 is next. Phase 19 records the source-specific baseline and local gate outcomes in its summary; prior v5.0 ship evidence remains in the final ship receipt.
+v6.0 has four completed plans and one completed phase. Phase 20 Plans 20-01 through 20-03 are complete; Plan 20-04 is next. Phase 19 records the source-specific baseline and local gate outcomes in its summary; prior v5.0 ship evidence remains in the final ship receipt.
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
@@ -51,7 +51,7 @@ v6.0 has three completed plans and one completed phase. Phase 20 Plans 20-01 and
 - v3.0 closed with deferred scope: only Phase 13 verified; nine requirements remain unchecked in the [archive](milestones/v3.0-MILESTONE-AUDIT.md). v4.0 promotes no old host acceptance claim.
 - Root remains canonical; stale dirty worktrees stay preserved and require content/ancestry reconciliation before import. See [workspace reconciliation](debug/workspace-reconciliation-2026-11-10.md).
 - Owner-selected v6.0 keeps one source-qualified XM/YM2151 profile, public mono PCM and C17 integer-only instance ownership. Profile, finite resource bounds and concrete API/behavior/native-format compatibility consequences are qualified before implementation; materially new consequences remain owner decisions.
-- Required chip/bus/audio/state, library/runner/libretro/Wasm/package acceptance, tests, docs and cost stay together in Phase 20. Reuse saved research, current mechanisms and [fan-out guidance](research/fan-out/prompt.txt); do not add a validation-tail phase or repeat upstream research.
+- Required chip/bus/audio/state, library/runner/libretro/Wasm/package acceptance, tests, docs and cost stay together in Phase 20. Plans 20-01 through 20-03 are complete; the next runnable plan is 20-04. YM state now uses format 2/behavior 7 while no-YM snapshots retain format 1/behavior 6; independent genuine old/new continuation remains in Plan 20-06. Reuse saved research, current mechanisms and [fan-out guidance](research/fan-out/prompt.txt); do not add a validation-tail phase or repeat upstream research.
 
 Inherited todos and optional seeds retain their dispositions except selected YM/XM and recurring tune-up contributions. Atari 2600 belongs to twentysixhundo; LibFuturo owns its existing host/browser routes. [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md) carries future horizons.
 
@@ -107,8 +107,8 @@ At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Sou
 
 ## Session Continuity
 
-Last session: 2026-11-12T07:27:56.103Z
-Stopped at: Completed 20-02-PLAN.md
+Last session: 2026-11-12T08:32:40.865Z
+Stopped at: Completed 20-03-PLAN.md
 Resume file: None
 
 Next action: After clearing context, run `$gsd-autonomous` for v6.0. It will reconcile the live plan index and continue Phase 20 planning and authorized local work. No user action is needed for routine continuation.
@@ -129,4 +129,5 @@ Next action: After clearing context, run `$gsd-autonomous` for v6.0. It will rec
 - [Phase 20]: Timer IRQ flags remain latched when carry-enable bits are cleared; reset bits clear them, and mode-write/carry ordering is covered against the exact seed.
 - [Phase 20]: Phase 20 Plan 20-02: The public API remains at 48 kHz; integrated YM PCM checks cover NTSC and PAL at that supported rate.
 - [Phase 20]: Phase 20 Plan 20-02: Power-cycle clears clocked YM state and derived caches to a deterministic fresh-instance baseline.
-- [Phase 20]: Phase 20 Plan 20-02: YM state remains unavailable until Plan 20-03 atomically installs format-2/behavior-7 continuation.
+- [Phase 20]: Phase 20 Plan 20-03: YM snapshots use format 2/behavior 7; no-YM snapshots retain format 1/behavior 6, and global latest reporting is API 8/ABI 1/behavior 7/format 2.
+- [Phase 20]: Phase 20 Plan 20-03: YM clock history is validated from its existing last-tick, clock-count and remainder tuple; no extra runtime epoch field is needed.
