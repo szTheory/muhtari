@@ -1499,6 +1499,29 @@ static void ym_observer_public_region(uint32_t region)
     CHECK(events.negative[0] > 0u && events.positive[0] > 0u);
     CHECK(events.negative[1] > 0u && events.positive[1] > 0u);
     CHECK(pcm_min < 0 && pcm_max > 0);
+
+    /* Observation carries belong to the current timeline, not the serialized
+       machine state. Rewinding must clear them before the observer sees the
+       restored frame deadlines. */
+    size_t state_bytes = muhtari_state_size(m);
+    uint8_t *state = malloc(state_bytes);
+    CHECK(state != NULL);
+    if (state != NULL) {
+        CHECK_EQ_U64(muhtari_save_state(m, state, state_bytes), MUHTARI_STATUS_OK);
+        for (unsigned frame_index = 0u; frame_index < 3u; frame_index++) {
+            io.audio_capacity = ym_frame_sample_count(m);
+            CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+        }
+        CHECK_EQ_U64(muhtari_load_state(m, state, state_bytes), MUHTARI_STATUS_OK);
+        memset(&events, 0, sizeof events);
+        required = ym_frame_sample_count(m);
+        io.audio_capacity = required;
+        uint64_t replay_end = m->frame_deadline;
+        CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+        CHECK(events.count > 0u);
+        CHECK(events.previous.tick < replay_end);
+        free(state);
+    }
     muhtari_destroy(m);
     CHECK_EQ_U64(allocations.allocs, allocations.frees);
 }

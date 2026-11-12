@@ -1441,6 +1441,7 @@ void muhtari__state_payload_apply(muhtari *m, const uint8_t *bytes, size_t size)
     size_t battery_at = size - m->battery.bytes - ym_bytes;
     int battery_changed = memcmp(m->battery.data, bytes + battery_at, m->battery.bytes) != 0;
     (void)state_walk(m, m, STATE_APPLY, bytes, NULL, size);
+    muhtari__synth_observe_reset(m);
     m->ports.pending_ex.size = (uint32_t)sizeof m->ports.pending_ex;
     m->ports.applied_ex.size = (uint32_t)sizeof m->ports.applied_ex;
     m->maria.rows = NULL;

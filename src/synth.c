@@ -315,6 +315,15 @@ muhtari_status muhtari__synth_observe(muhtari *m, muhtari__audio_observer callba
     return MUHTARI_STATUS_OK;
 }
 
+void muhtari__synth_observe_reset(muhtari *m)
+{
+    if (m->observation == NULL)
+        return;
+    memset(m->observation, 0, sizeof *m->observation);
+    m->observation->end = UINT64_MAX;
+    memcpy(m->observation->raw, m->synth.raw, sizeof m->observation->raw);
+}
+
 static void observe_flush(muhtari *m)
 {
     struct muhtari__observation *o = m->observation;

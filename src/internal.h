@@ -459,6 +459,7 @@ struct muhtari__boot {
 typedef void (*muhtari__audio_observer)(void *user, uint64_t tick, uint8_t source, uint16_t raw);
 struct muhtari__observation;
 muhtari_status muhtari__synth_observe(muhtari *m, muhtari__audio_observer callback, void *user);
+void muhtari__synth_observe_reset(muhtari *m);
 void muhtari__synth_raw(muhtari *m, uint64_t tick, unsigned source, uint16_t raw);
 void muhtari__observe_begin(muhtari *m, uint64_t end);
 void muhtari__observe_end(muhtari *m);

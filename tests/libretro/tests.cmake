@@ -114,6 +114,7 @@ if(TARGET muhtari_libretro)
     muhtari_add_test(NAME libretro.observe.ym
       COMMAND ${CMAKE_COMMAND}
         "-DOBSERVER=$<TARGET_FILE:muhtari-test-libretro-observe>"
+        "-DEMULATOR=${CMAKE_CROSSCOMPILING_EMULATOR}"
         "-DFIXTURE_DIR=${PROJECT_BINARY_DIR}/tests/ym2151"
         "-DOUT=${observer_output_dir}"
         -P ${PROJECT_SOURCE_DIR}/tests/libretro/ym_observe.cmake
