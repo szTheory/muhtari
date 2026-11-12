@@ -30,7 +30,7 @@ recommendations and local verification proceed without another approval.
 ## Phases
 
 - [x] **Phase 19: Measured milestone tune-up** — Maintainers start from current publication/docs and an evidenced, proportionate quality baseline. (completed 2026-11-11)
-- [ ] **Phase 20: Complete YM2151 homebrew sound** — One qualified profile delivers FM sound, complete lifecycle/state and verified native/Wasm/package consumers.
+- [x] **Phase 20: Complete YM2151 homebrew sound** — One qualified profile delivers FM sound, complete lifecycle/state and verified native/Wasm/package consumers. (completed 2026-11-12)
 
 ## Phase Details
 
@@ -57,7 +57,7 @@ recommendations and local verification proceed without another approval.
   3. A host can reset, unload/reload, isolate instances and save/restore every YM state component mid-stream with identical subsequent audio, no post-load allocation, finite work and bounded output writes; invalid or incompatible state preserves the live machine and committed battery bytes under the compatibility policy documented before implementation.
   4. The same owned diagnostic passes through the actual public C library, headless runner, loaded libretro core, portable Wasm artifact and clean extracted/installed package consumers. Independent numeric expectations precede cross-route hashes; source/package identity, notices and existing callback/batch/fallback/refusal/integrity fault controls remain effective.
   5. Integrators can identify the exact supported request/profile and evidence limits in existing docs; maintainers can inspect justified finite work, integer headroom and memory/state bounds plus representative ordinary/worst-legal native/Wasm cost measurements using current mechanisms. The C17 seed specialization retains its license, provenance pin and update duty without adding a runtime C++ dependency.
-**Plans:** 7/7 plans executed
+**Plans:** 7/7 plans complete
 Plans:
 **Wave 1**
 - [x] 20-01-PLAN.md — Public YM tracer, fail-closed state guard and exact-seed OPM parity
@@ -97,7 +97,7 @@ and verification gates pass.
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
 | 19. Measured milestone tune-up | 1/1 | Complete    | 2026-11-11 |
-| 20. Complete YM2151 homebrew sound | 6/7 | In Progress | - |
+| 20. Complete YM2151 homebrew sound | 7/7 | Complete    | 2026-11-12 |
 
 ## Next boundary
 
