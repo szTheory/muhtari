@@ -701,7 +701,7 @@ boundaries. Revisit on a concrete new input/package/profile mismatch.
 
 ## Keep compiler-visible masks within their destination width (2026-11-12)
 
-With MSVC `/W4 /WX`, casting `~4u` to `uint8_t` warns C4310 because the unsigned complement is wider than the destination; the warning becomes a Windows x64 and ARM64 build failure. Express the equivalent low-byte mask directly (`UINT8_C(0xfb)`) so the operation remains clear-bit-2 without a truncating constant cast. The first hosted run reproduces the same diagnostic on both Windows architectures: [CI run 43228680657](https://github.com/szTheory/muhtari/actions/runs/43228680657).
+With MSVC `/W4 /WX`, casting a complemented unsigned constant to `uint8_t` warns C4310 because the complement is wider than the destination. The warning becomes a Windows x64 and ARM64 build failure in both production and test-fixture code. Express the equivalent low-byte mask directly (for example `UINT8_C(0xfb)`) so the operation preserves its bit behavior without a truncating constant cast. The production warning appears in [CI run 43228680657](https://github.com/szTheory/muhtari/actions/runs/43228680657); after that correction, the compatibility fixture warning appears in [CI run 43231743577](https://github.com/szTheory/muhtari/actions/runs/43231743577).
 
 ## Keep quality observations within each lane's registered inventory (2026-11-12)
 

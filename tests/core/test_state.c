@@ -643,7 +643,7 @@ static void test_ym(void)
         CHECK(legacy != NULL);
         if (legacy != NULL) {
             size_t legacy_bytes = images_ym2151(identity_image);
-            identity_image[67] &= (uint8_t)~0x08u;
+            identity_image[67] = (uint8_t)(identity_image[67] & UINT8_C(0xf7));
             images_footer(identity_image + IMAGES_HEADER, (uint32_t)(legacy_bytes - IMAGES_HEADER));
             muhtari_media legacy_media = state_media_for_image(identity_image, legacy_bytes);
             legacy_media.expansion = MUHTARI_EXPANSION_XM;
