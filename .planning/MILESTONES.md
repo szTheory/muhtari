@@ -1,6 +1,6 @@
 # Project Milestones: muhtari
 
-## v5.0 Downloadable WebAssembly core (Source shipped: 2026-11-11)
+## v5.0 Downloadable WebAssembly core (Shipped: 2026-11-11)
 
 **Phases completed:** 2 phases, 3 plans, 7 tasks (actual plan blocks; SDK prose count was 4)
 
@@ -10,9 +10,9 @@
 - The source-bound Emscripten ZIP now travels through the existing exact-source release path with local native, SDK, and hygiene gates passing.
 
 **Closeout type:** `verified_closeout`; all six scoped requirements and both phases pass. Known verification overrides: 0 newly acknowledged, 50 carried forward from prior closes. The nine v3.0 requirement gaps and original host/remote stops remain unchanged.
-**Publication:** [PR #49](https://github.com/szTheory/muhtari/pull/49) merged after full candidate CI and public rehearsal/install/cleanup acceptance. The versioned package is tracked by [release PR #50](https://github.com/szTheory/muhtari/pull/50) and the existing release automation. [Ship receipt](milestones/v5.0-SHIP.md).
+**Publication:** [v0.13.1](https://github.com/szTheory/muhtari/releases/tag/v0.13.1) is published; exact-source release, public-download verification and latest installation passed. Non-release maintenance PR #53 and current-main CI passed. Failed v0.13.0 is retained separately. [Final ship receipt](milestones/v5.0-SHIP.md#final-publication-and-current-main-closure--reconciled-2026-11-11).
 **Archive:** [roadmap](milestones/v5.0-ROADMAP.md), [requirements](milestones/v5.0-REQUIREMENTS.md), [audit](milestones/v5.0-MILESTONE-AUDIT.md), [phase records](milestones/v5.0-phases/).
-**Next:** `$gsd-new-milestone`; the agent checks release/main receipts automatically first.
+**Next:** Continue the existing `$gsd-new-milestone` discussion after cross-project feedback; successor scope remains unselected. [Handoff](continue.md).
 
 ---
 
@@ -179,3 +179,10 @@ exit 0. Archive integrity check — exit 0: all 177 phase files retained, includ
 73 plans, 73 summaries and four unchanged verification reports; only the deferred
 item acknowledgment modifies a moved phase artifact. `query audit-open --json` —
 exit 0: zero open, 15 acknowledged. Hosted release evidence is linked above.
+
+## Current successor — selected 2026-11-11
+
+The owner selected v6.0 YM2151 homebrew sound and authorized autonomous local
+follow-through. [Current roadmap](ROADMAP.md): Phase 19 measured tune-up, then
+Phase 20 complete qualified YM/XM sound. Earlier v5.0 successor-pending notes
+are historical. Publication/merge and prior host stops remain separate.

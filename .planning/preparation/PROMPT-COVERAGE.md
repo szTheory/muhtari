@@ -1,8 +1,8 @@
 ---
 title: "Prompt coverage: every owner ask and where it lives"
-summary: "Maps each of the owner's 62 asks (the preparation brief, all layers, plus later messages) to the file section, rule, seed or milestone that carries it, with a status and what remains."
+summary: "Maps each of the owner's 66 asks (the preparation brief, all layers, plus later messages) to the file section, rule, seed or milestone that carries it, with a status and what remains."
 read_when: "At kickoff review and at every milestone close; also before calling an owner ask done, deferred or out of scope."
-updated: 2026-11-10
+updated: 2026-11-11
 ---
 
 # Prompt coverage
@@ -29,7 +29,7 @@ at the root; LESSONS, PRODUCT-ROADMAP, SEED-NNN under `.planning/`. "v1.0 ph2" =
 
 | # | Owner ask | Home | Status | Remaining / when |
 |---|---|---|---|---|
-| 1 | An Atari 7800 emulator named muhtari, not another console | AGENTS preamble; SYSTEM; CARTRIDGES 1.5 (2600 images refused as "planned"); LESSONS protocol (no cross-console timing claims) | Documented | 2600 mode after the 7800 library (SEED-006, owner decision) |
+| 1 | An Atari 7800 emulator named muhtari, not another console | AGENTS; PROJECT out of scope; DECISIONS DEC.03; retired SEED-006 | Documented | Owner correction 2026-11-11: twentysixhundo owns Atari 2600 emulation. Existing image recognition/refusal remains; shared tools and reproduced lessons can transfer. |
 | 2 | Learn from gabbaboy, glueyneo, nesturbator and the unpublished Genesis sibling, especially the fastest | LESSONS XFER-001–024; PROVENANCE 4 (nesturbator seeds CPU, bus, synthesiser, state, runner, adapter, CI); DECISIONS (pre-seeded bootstrap, the fastest sibling's path); GSD-HANDOFF 1 | Documented | Imports stay hypotheses until reproduced (AGENTS 11); each phase appends `MU-` lessons |
 | 3 | Playstead's lessons, incl. high-quality homebrew usable directly in CI | CONFORMANCE 1, 2, 4, 7 (own MIT diagnostics; 7800basic samples and OpenBIOS built in CI from pins, only hashes committed); ASSET_POLICY 2–3; HOSTS 4 (Playstead pin and continuation protocol) | Documented | LESSONS XFER-025 now records it. Its phase 03-01 (playstead `edea152`) replaced licence-ambiguous freeware homebrew with a self-authored MIT test ROM, the same answer as CONFORMANCE 4: record it as an XFER row. No permissively licensed 7800 homebrew *game* is admitted yet (unlicensed ones stay local); CONFORMANCE 7 admits one when found |
 | 4 | The DNA of the owner's mature OSS projects (CI/CD, release, docs) | ENGINEERING 5 (release-please, App token, attested archives), 7 (lattice_stripe issue forms), 11 (lattice_stripe README order, docs ladder, budgets); LESSONS XFER-008, -021, -022 | Documented | — |
@@ -88,15 +88,22 @@ at the root; LESSONS, PRODUCT-ROADMAP, SEED-NNN under `.planning/`. "v1.0 ph2" =
 | 56 | Gamer-facing README: short clear value/status, GUI and CLI happy paths, current instructions, voice matching the product | Root README; PROJECT onboarding constraint; INTENT; PLAY-01 | Documented | Install line and existing wording/budget controls remain; detail stays in docs. |
 | 57 | Discoverable high-signal second brain with provenance, rolling horizons refreshed at milestone boundaries and bidirectional emulator-family learning | Planning README/INTENT; research fan-out prompt; LESSONS; PRODUCT-ROADMAP | Documented | Owner direction 2026-10-29. Muhtari is the current leading example; sibling mechanisms stay hypotheses until reproduced locally; no shared framework or bulk export presumed. |
 
-| 58 | Bank a possible separate open-source browser/libretro player for Playstead and other sites; research existing products and high-level scope with bounded primary-source fan-out and small dependencies | INTENT; PRODUCT-ROADMAP Next; seeds/SEED-261030-tt4-browser-libretro-player; research/browser-player/RECOMMENDATION | Later | Owner direction 2026-10-30. Idea/research only; no project creation, full specification or promotion into active muhtari work. |
+| 58 | Bank a possible separate open-source browser/libretro player for Playstead and other sites; research existing products and scope with bounded primary-source fan-out and small dependencies | INTENT; PRODUCT-ROADMAP sibling boundaries; research/browser-player; research/next-milestone | Documented | Initial 2026-10-30 idea is historical. LibFuturo now implements a C-adapter/browser reference route; product-host adoption and broader qualification remain separate, not another Muhtari deliverable. |
 
-| 59 | Bank a possible interface project alongside libretro, exploring observability, AI/automated play, configuration and performance; leave a source-backed initial read for a deeper session | INTENT; PRODUCT-ROADMAP Long; seeds/SEED-261030-zk3-emulator-interface; research/emulator-interface/RECOMMENDATION | Later | Owner direction 2026-10-30. Keep libretro; compare host remedies/optional profiles/new standard, with no unmeasured superiority claim or full specification. |
+| 59 | Bank a possible interface alongside libretro, investigating observability, automated play, configuration and performance | INTENT; PRODUCT-ROADMAP sibling boundaries; research/emulator-interface; research/next-milestone | Documented | LibFuturo implements an experimental interface and real native/browser consumers. Its existence is no longer exploratory-only; stability, broader qualification, adoption and superiority remain unproved. Keep libretro support. |
 
 | 60 | When a host or identity-bound acceptance gate is denied, preserve that exact stop but continue independently buildable local core work; choose a truthful override closeout and downscope when needed | AGENTS rules 6–8; v3.0 audit and retrospective; PRODUCT-ROADMAP | Documented | v3.0 closes with nine requirements deferred and original Phase 12/14 verdicts intact; v4.0 proceeds on offline WebAssembly work without another permission request. |
-| 61 | At handoff, reconcile the current artifacts and give one exact command that starts the next useful implementation step | AGENTS handoff preferences; GSD-HANDOFF; STATE.md | Documented | v4.0 shipped through PR #47 and package v0.12.0. v5.0 autonomous local execution, verification and archive are complete. The next exact command is `$gsd-ship 18` under new remote shipping authority; the agent owns receipt preflight and earlier host/remote stops remain preserved. |
+| 61 | Reconcile artifacts and give the exact next valid OpenGSD command at handoff | AGENTS; GSD-HANDOFF; STATE; continue.md; final v5.0 ship receipt | Documented | v0.13.1 public-byte verification, installation and current-main CI are finished. v6.0 is selected; continue the autonomous local run from its live plan index. |
 | 62 | For an explicitly requested milestone run, continue through phases and closeout, fan out relevant decisions, reuse reviewed plans, auto-follow routine recommendations, and automate useful verification while preserving real owner-only boundaries | AGENTS rules 6 and 8; `.planning/research/fan-out/prompt.txt`; GSD-HANDOFF 3 and 6; ENGINEERING 4, 8, 11 and 12 | Documented | `$gsd-autonomous` is opt-in; use no `--auto`/`--chain` flags. Human checks are limited to genuinely owner-only evidence or material authority/risk decisions; inspect CI/release queue, critical path, durations and cancellations without weakening required coverage. |
 
-Totals: Documented 54, Partial 3, Later 5, Inapplicable 0.
+| 63 | Remove Atari 2600 emulation from Muhtari's candidates because twentysixhundo owns it; retain shared lessons/tools | AGENTS; DEC.03; PROJECT; PRODUCT-ROADMAP; retired SEED-006 | Documented | Owner correction 2026-11-11 supersedes the old after-7800 proposal. |
+| 64 | Verify current LibFuturo routes and qualification limits before proposing Muhtari successor scope; preserve source-specific stops | continue.md; research/next-milestone; PRODUCT-ROADMAP sibling boundaries | Documented | Read actual primary checkout, commits, workstreams and dirty inputs; old branch labels/shared summaries alone do not establish freshness or acceptance. No sibling writes. |
+| 65 | Scope the next milestone upstream with bounded relevant-role fan-out, primary-source provenance and an adversarial synthesis; retain high-signal findings in the project second brain and rolling horizons | research/fan-out/prompt.txt; research/next-milestone; README; INTENT; PRODUCT-ROADMAP | Documented | Upstream recommendations guide milestone and phase choices; do not turn hypotheses into reproduced lessons or prematurely implement downstream phases. Small permissive seeds before justified dependencies. |
+
+| 66 | Add YM2151 homebrew sound and carry this milestone in gsd-autonomous style | INTENT; PROJECT current v6.0; REQUIREMENTS TUNE-10/YM-01–08; ROADMAP phases 19–20 | Documented | Agent continues dependent local planning, implementation, verification/review and closeout; material compatibility, publication/merge, new host/remote boundaries still pause. |
+
+Totals: Documented 60, Partial 3, Later 3, Inapplicable 0.
+
 
 ## 2. Owner constraints vs agent recommendations
 
@@ -105,7 +112,7 @@ Totals: Documented 54, Partial 3, Later 5, Inapplicable 0.
 - GPL, LGPL and unlicensed emulator source is never opened; such emulators run only as binaries. Reuse is
   strangler-fig and permissive only; KISS/YAGNI by the ponytail.dev ladder.
 - No GUI in the core repository; RetroArch is the Mac test frontend until Playstead is ready.
-- Atari 2600 mode only after the 7800 library is complete (decided 2026-10-15).
+- Atari 2600 emulation belongs to twentysixhundo; the 2026-11-11 owner correction retires SEED-006 and supersedes the older after-7800 proposal.
 - OpenGSD; stop after every phase; PRs only, auto-merge and auto-release on green CI; automation-first
   verification, never re-litigated; subagents for context.
 - 12-factor secrets; a rolling roadmap; recurring CI-efficiency and weakest-dimension reviews; lesson exchange.

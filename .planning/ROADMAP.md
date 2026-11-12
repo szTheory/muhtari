@@ -7,29 +7,89 @@
 - [x] **v3.0 — Playstead-ready play and states** — phases 12–14; closed 2026-11-10 with deferred scope (`override_closeout`). Phase 13 passed; Phase 12 remains accepted 0/4 and Phase 14 remains `gaps_found` at 20/27. Nine requirements remain unchecked. [Audit](milestones/v3.0-MILESTONE-AUDIT.md) · [Archive](milestones/v3.0-ROADMAP.md)
 - [x] **v4.0 — Browser/WebAssembly core readiness** — phases 15–16; shipped through PR #47 and package v0.12.0. [Audit](milestones/v4.0-MILESTONE-AUDIT.md) · [Archive](milestones/v4.0-ROADMAP.md) · [Ship receipt](milestones/v4.0-SHIP.md). Earlier failed combined-source evidence and host stops remain preserved.
 
-- [x] **v5.0 — Downloadable WebAssembly core** — phases 17–18; source shipped through PR #49 on 2026-11-11; versioned release tracked in PR #50. [Audit](milestones/v5.0-MILESTONE-AUDIT.md) · [Archive](milestones/v5.0-ROADMAP.md) · [Requirements](milestones/v5.0-REQUIREMENTS.md)
+- [x] **v5.0 — Downloadable WebAssembly core** — phases 17–18; shipped as v0.13.1 on 2026-11-11; public-byte verification and current-main CI passed. [Audit](milestones/v5.0-MILESTONE-AUDIT.md) · [Archive](milestones/v5.0-ROADMAP.md) · [Requirements](milestones/v5.0-REQUIREMENTS.md)
+- [ ] **v6.0 — YM2151 homebrew sound** — phases 19–20; selected 2026-11-11 for autonomous local follow-through.
 
-## v5.0 — Downloadable WebAssembly core (verified local closeout)
+## v6.0 — YM2151 homebrew sound
+
+A declared, qualified XM/YM2151 cartridge profile produces deterministic FM sound
+through the C library, headless runner and libretro core, including the portable
+Wasm artifact. The owner selected this milestone and authorized autonomous local
+follow-through on 2026-11-11. Scope is the nine current
+[requirements](REQUIREMENTS.md), informed by the saved
+[synthesis](research/next-milestone/SUMMARY.md),
+[proposal](research/next-milestone/PROPOSAL.md) and
+[operations boundaries](research/next-milestone/OPERATIONS.md).
+
+Public mono PCM, C17 integer-only instance ownership, bounded calls and no
+post-load allocation remain binding. The exact source-qualified profile and
+concrete compatibility policy must be settled before implementation. A new
+material compatibility consequence requires an owner decision; routine in-scope
+recommendations and local verification proceed without another approval.
 
 ## Phases
 
-- [x] **Phase 17: Measured milestone tune-up** — 1/1 plans complete (completed 2026-11-10)
-- [x] **Phase 18: Source-bound Emscripten release bundle** — 2/2 plans complete (completed 2026-11-11)
+- [ ] **Phase 19: Measured milestone tune-up** — Maintainers start from current publication/docs and an evidenced, proportionate quality baseline.
+- [ ] **Phase 20: Complete YM2151 homebrew sound** — One qualified profile delivers FM sound, complete lifecycle/state and verified native/Wasm/package consumers.
 
 ## Phase Details
 
-### Phase 17: Measured milestone tune-up
+### Phase 19: Measured milestone tune-up
 
-**Goal:** Current publication/docs and source-specific measured baseline without weakening checks or historical failures.
-**Requirements:** TUNE-09
-**Plans:** 1/1 complete; verification passed. [Records](milestones/v5.0-phases/17-measured-milestone-tune-up/)
+**Goal:** Maintainers can identify the current shipped baseline and begin YM work with a measured small correction or bounded no-change disposition that preserves required checks and historical failures.
+**Depends on:** v5.0 shipped; no unfinished predecessor phase.
+**Requirements:** TUNE-10
+**Success Criteria** (what must be TRUE):
+  1. Maintainers can follow current release/install/docs records to the verified publication and source-specific baseline without mistaking earlier failed sources for accepted evidence or restarting closed shipping recovery.
+  2. Maintainers can reproduce the relevant quality/efficiency baseline and inspect either one measured small correction or a bounded no-change disposition; required pass/fault coverage, workload limits and prior failed receipts remain intact.
+**Plans:** TBD
+**UI hint:** no
 
-### Phase 18: Source-bound Emscripten release bundle
+### Phase 20: Complete YM2151 homebrew sound
 
-**Goal:** Exact-source, permissively distributable portable ZIP, clean-extracted offline oracle and local readiness for the existing release pipeline.
-**Requirements:** WASM-05, WASM-06, WASM-07, WASM-08, WASM-09
-**Plans:** 2/2 complete; verification passed. [Records](milestones/v5.0-phases/18-source-bound-emscripten-release-bundle/)
+**Goal:** A host can load one documented XM/YM2151 profile and obtain deterministic FM sound with complete lifecycle/state behavior through every existing deliverable and portable/package consumer.
+**Depends on:** Phase 19
+**Requirements:** YM-01, YM-02, YM-03, YM-04, YM-05, YM-06, YM-07, YM-08
+**Success Criteria** (what must be TRUE):
+  1. A host can load the qualified selected/autodetected XM/YM2151 profile and observe source-qualified map, enable, clock, busy/status, timer and established IRQ behavior; unsupported requests refuse before allocation or live-machine mutation.
+  2. An owned homebrew workload produces independently checked non-silent, bounded mono PCM and canonical audio observations at supported rates/regions, including partial-frame carry and maximum legal mix. Exact-pin BSD-3 OPM synthesis parity is identified separately from hardware accuracy, and existing TIA/POKEY-only observations and duplicated-mono libretro output remain unchanged.
+  3. A host can reset, unload/reload, isolate instances and save/restore every YM state component mid-stream with identical subsequent audio, no post-load allocation, finite work and bounded output writes; invalid or incompatible state preserves the live machine and committed battery bytes under the compatibility policy documented before implementation.
+  4. The same owned diagnostic passes through the actual public C library, headless runner, loaded libretro core, portable Wasm artifact and clean extracted/installed package consumers. Independent numeric expectations precede cross-route hashes; source/package identity, notices and existing callback/batch/fallback/refusal/integrity fault controls remain effective.
+  5. Integrators can identify the exact supported request/profile and evidence limits in existing docs; maintainers can inspect justified finite work, integer headroom and memory/state bounds plus representative ordinary/worst-legal native/Wasm cost measurements using current mechanisms. The C17 seed specialization retains its license, provenance pin and update duty without adding a runtime C++ dependency.
+**Plans:** TBD
+**UI hint:** no
+
+Chip, bus, audio, state, all deliverables, package acceptance, tests, documentation
+and measured cost belong to Phase 20. No chip-only intermediate or separate
+validation-tail phase completes this outcome. Phase planning reuses
+[project lessons](LESSONS.md), the
+[preparation index](preparation/README.md),
+[settled decisions](preparation/DECISIONS.md) and
+[engineering rules](preparation/ENGINEERING.md).
+
+## Progress
+
+**Execution order:** 19 → 20. All nine requirements are assigned exactly once;
+neither phase has been planned or accepted.
+
+| Phase | Plans Complete | Status | Completed |
+|---|---|---|---|
+| 19. Measured milestone tune-up | 0/TBD | Not started | - |
+| 20. Complete YM2151 homebrew sound | 0/TBD | Not started | - |
 
 ## Next boundary
 
-All six v5.0 requirements passed local acceptance; exact-source hosted CI and the complete public rehearsal/install/cleanup also passed before PR #49 merged. [Ship receipt](milestones/v5.0-SHIP.md). Versioned release automation is tracked in [PR #50](https://github.com/szTheory/muhtari/pull/50). The next command is `$gsd-new-milestone`; the agent first checks release/main receipts automatically. No owner metadata repair or directory switch is needed. Earlier denied/spent host scopes and nine deferred v3.0 requirements remain unchanged.
+The agent continues the owner-authorized autonomous local run into Phase 19
+discussion/planning using the saved research; no routine roadmap acceptance is
+pending. After clearing context, resume with `$gsd-autonomous` for v6.0 and
+reconcile the live plan index before selecting the next step.
+
+Publication, merge, new remote dispatch and host/device/identity-bound actions
+remain separate boundaries. Phase 12's exact diagnostic-app request was denied
+before preflight/content and must not be retried. All original Phase 12/14
+spent attempts, expired windows and specific no-retry conditions remain binding;
+the nine deferred v3.0 requirements are not accepted or renewed by v6.0. Keep
+full XM, extra sound devices, public stereo, browser/player work and calibrated
+hardware/gameplay claims outside this milestone. If source qualification,
+licensing or bounded integer feasibility fails, resolve that material scope
+decision instead of silently widening the feature or accepting a chip-only result.

@@ -1,52 +1,58 @@
 ---
 gsd_state_version: "1.0"
-milestone: v5.0
-milestone_name: Downloadable WebAssembly core (verified local closeout)
-status: Awaiting next milestone
-stopped_at: Phase 18 shipped via PR 49 — release receipts tracked in PR 50
-last_updated: "2026-11-11T17:47:21.514731Z"
+milestone: v6.0
+milestone_name: YM2151 homebrew sound
+current_phase: 19
+current_phase_name: Measured milestone tune-up
+status: planning
+stopped_at: v6.0 roadmap and requirement traceability written; agent continues autonomous local work into Phase 19
+last_updated: "2026-11-12T02:21:40.299Z"
 last_activity: 2026-11-11
-last_activity_desc: "Phase 18 shipped via PR #49; versioned release tracked in PR #50"
-state_head: e8cc934a6eeb274df18bff690fdb6eb23645b310
+state_head: 12953bcf615d6e13575f41644bad81f0bb627743
 progress:
   total_phases: 2
-  completed_phases: 2
-  total_plans: 3
-  completed_plans: 3
-  percent: 100
-current_phase: 18
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
+last_activity_desc: v6.0 roadmap created; all nine requirements mapped exactly once
 ---
 
 # Project State
 
 ## Project Reference
 
-See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-10.
+See [PROJECT.md](PROJECT.md), [current requirements](REQUIREMENTS.md), [ROADMAP.md](ROADMAP.md) and [milestone synthesis](research/next-milestone/SUMMARY.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** v5.0 source shipped in PR #49 after exact-source CI, full release rehearsal, install and cleanup passed. Six native outputs and full native/PowerPC equality match. The versioned package is tracked in release PR #50 and the existing release automation; the agent owns its exact-source CI/publication receipt checks. The next owner boundary is `$gsd-new-milestone`, with automatic service/receipt reconciliation first. Earlier Phase 12/14 host stops and nine v3.0 gaps remain intact.
+**Current focus:** v6.0 YM2151 homebrew sound is selected for autonomous local follow-through. Phase 19 establishes the measured tune-up; Phase 20 delivers one complete XM/YM vertical slice through all native/Wasm/package consumers. All nine current requirements are mapped; no routine scope/roadmap approval is pending. v5.0 shipping is closed. Preserve all Phase 12/14 stops and nine deferred v3.0 gaps.
 
 ## Current Position
 
-Milestone: v5.0 complete (phases 17–18); source shipped via PR #49
-Status: Source shipped; versioned release receipts are agent-owned
-Last activity: 2026-11-11 -- Phase 18 shipped via PR #49; release PR #50 tracks the versioned package
-Progress: [██████████] 100%
+Phase: 19 (Measured milestone tune-up)
+Plan: 0 of TBD in current phase
+Status: Ready to plan
+Last activity: 2026-11-11
+
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
-Three plans and seven tasks completed across two verified phases. Final native/release, pinned SDK, extracted package, publisher and hygiene gates passed at the source recorded in the Phase 18 summary. Measurements are headless local evidence; no browser/device or remote release outcome is inferred.
+v6.0: zero completed plans; two unplanned phases. Prior v5.0 completed three plans and seven tasks across two verified phases. Exact-source publication, downloaded-byte/install and current-main CI evidence remains in the [final ship receipt](milestones/v5.0-SHIP.md#final-publication-and-current-main-closure--reconciled-2026-11-11); local headless results establish no browser/device acceptance.
 
 ## Accumulated Context
 
 - v3.0 closed with deferred scope: only Phase 13 verified; nine requirements remain unchecked in the [archive](milestones/v3.0-MILESTONE-AUDIT.md). v4.0 promotes no old host acceptance claim.
 - Root remains canonical; stale dirty worktrees stay preserved and require content/ancestry reconciliation before import. See [workspace reconciliation](debug/workspace-reconciliation-2026-11-10.md).
+- Owner-selected v6.0 keeps one source-qualified XM/YM2151 profile, public mono PCM and C17 integer-only instance ownership. Profile, finite resource bounds and concrete API/behavior/native-format compatibility consequences are qualified before implementation; materially new consequences remain owner decisions.
+- Required chip/bus/audio/state, library/runner/libretro/Wasm/package acceptance, tests, docs and cost stay together in Phase 20. Reuse saved research, current mechanisms and [fan-out guidance](research/fan-out/prompt.txt); do not add a validation-tail phase or repeat upstream research.
 
-Inherited todos and optional seeds retain their dispositions; no extra v4.0 requirement is inferred. [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md) carries future horizons.
+Inherited todos and optional seeds retain their dispositions except selected YM/XM and recurring tune-up contributions. Atari 2600 belongs to twentysixhundo; LibFuturo owns its existing host/browser routes. [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md) carries future horizons.
 
 ### Blockers/Concerns
 
-- No local v4.0 acceptance gap remains. PR #46’s combined-source hosted native/Emscripten checks passed, but its inherited input capture gate failed. PR #47 carries only the approved v4.0 source and preserves main’s existing checks. Candidate-specific hosted acceptance passed; PR #47 and release PR #48 merged, and v0.12.0 is published. No old host retry is authorized. Phase 12's exact diagnostic-app request was denied before preflight/content and must not be retried; its host/remote stops and Phase 14's spent host scope remain binding. This milestone renews none of them.
-- The loader contract is settled and verified offline. Browser/device behavior, Playstead and prior host scopes remain outside acceptance; hosted Windows native/quality execution passed at the exact source recorded in the ship receipt.
+- No current local roadmap blocker. Exact source-qualified map/enable/clock/status/timer/IRQ profile, seed feasibility and compatibility policy remain Phase 20 prerequisites; unresolved material consequences stop that decision, not independent authorized local work.
+- Phase 12's exact diagnostic-app request was denied before preflight/content and must not be retried. Original Phase 12 host/remote stops, Phase 14's spent host scope, expired windows and specific no-retry limits remain binding. No v6.0 action renews them or accepts the nine deferred v3.0 requirements.
+- Publication, merge, new remote dispatch and host/device/identity-bound actions remain outside autonomous local authority. Browser/player, Playstead, physical audibility, calibrated hardware accuracy, public stereo and full XM are excluded. Earlier combined-source/failed release evidence remains source-specific in archived receipts.
 
 ## Deferred Items
 
@@ -95,20 +101,13 @@ At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Sou
 ## Session Continuity
 
 Last session: 2026-11-11
-Stopped at: Immutable v0.13.1 publication in progress; non-release fixture-margin maintenance and current-main CI closure agent-owned
-Resume file: None
-Next action: the active agent completes v0.13.1 publication/public-byte verification and the non-release fixture-margin correction on `phase/18-ci-fixture-margins`, including exact-source PR/main CI. If context is cleared before those receipts pass, resume with `$gsd-ship 18`; the agent reconciles service health, PR #52 and the maintenance branch itself, preserving closed attempts. `$gsd-new-milestone` becomes valid after publication and current-main CI closure. No owner metadata repair, checkout switch or routine CI confirmation is needed.
+Stopped at: v6.0 roadmap and requirement traceability written; agent continues autonomous local work into Phase 19
+Resume file: [Milestone synthesis](research/next-milestone/SUMMARY.md), [proposal](research/next-milestone/PROPOSAL.md) and current [roadmap](ROADMAP.md)
+Next action: Agent reconciles the live plan index, then discusses/plans Phase 19 using the saved research and follows dependent authorized local work. Context may be cleared after the orchestrator records the current checkpoint; exact resume command: `$gsd-autonomous` for v6.0. No user action is needed for routine local continuation.
 
 ## Operator Next Steps
 
-- Continue v0.13.1 publication and ordinary non-release fixture-margin maintenance. Do not start `$gsd-new-milestone` until public-byte verification and current-main CI receipts pass; the agent owns all checks.
-- The [ship receipt](milestones/v5.0-SHIP.md) records accepted source/merge/rehearsal evidence, prior failures, calibrated Windows cases and the extended Nightly property limitation. The current release status is available from [PR #50](https://github.com/szTheory/muhtari/pull/50) and [releases](https://github.com/szTheory/muhtari/releases).
-- Preserve the original Phase 12/14 denied/spent scopes and nine deferred v3.0 requirements. No old host scope is renewed. No owner directory switch or routine confirmation is needed.
-
-
-### Current publication recovery
-
-v0.13.0 is tagged but unpublished: exact-source Release run43078250838 hits a stale14s Windows fuzz replay limit. A measured Windows x64-only28s correction is prepared on `fix/windows-fuzz-replay-deadline`, with local registration/pass/fault checks complete. The owner explicitly approved the one-time CI-only v0.13.1 recovery exception on2026-11-11. The agent continues PR #51 CI/review/merge and normal patch publication; preserve the failed tag/draft and all older host stops. Do not start another milestone before agent-owned release receipts pass. See [the shipping receipt](milestones/v5.0-SHIP.md#unpublished-tagged-release-replay-deadline-correction).
-
-
-The fresh qualification of PR #52 passes after the artifact-service outage; the patch merges as f62a74819985513cbed70259747607d4a5069c21 and runs the normal immutable-source publisher. Direct main CI separately reproduces a1s OpenBIOS fixture timeout with15 dependent tests unrun. The actual release build passes that fixture. A bounded non-release maintenance branch restores the measured Windows fixture/PAL/directions margins without changing product behavior, version files, tags, assertions, scales or job caps. This work remains inside the approved shipping recovery; the earlier one-time patch exception is not generalized.
+- Shipping execution is complete: v0.13.1 public downloads/attestations and installation passed; PR #53 merged and current-main CI passed. Commands, exits, source distinctions and run URLs are in [the final ship receipt](milestones/v5.0-SHIP.md#final-publication-and-current-main-closure--reconciled-2026-11-11). Earlier pending recovery paragraphs there are historical checkpoints, not new work.
+- v6.0 scope/requirements/roadmap are selected under the owner’s autonomous direction. The agent proceeds into Phase 19; [research synthesis](research/next-milestone/SUMMARY.md), [YM2151 scope](research/next-milestone/PROPOSAL.md), role reports and adversarial disposition preserve source confidence, alternatives and revisit triggers even where their original proposed-status wording predates selection.
+- Preserve denied/spent Phase 12/14 scopes, their specific no-retry limits and the nine deferred v3.0 requirements. The shipping recovery renewed none of them. No owner checkout switch, blanket UAT or routine CI confirmation is needed.
+- These planning changes and earlier owner corrections are saved locally but uncommitted on the canonical root. Preserve them and sibling dirt; branch from origin/main before the first committing step, without committing on main. No remote action, host launch, publication or merge is selected here.

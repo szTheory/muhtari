@@ -13,6 +13,16 @@ audit_acknowledged:
 
 # A reusable browser emulator player for Playstead and other sites
 
+## Current disposition — 2026-11-11
+
+LibFuturo now implements the independent interface and native/browser reference
+consumer routes using Muhtari. Reconcile this historical seed with that actual
+project before proposing another interface or host. Consumer qualification and
+product adoption remain unfinished and separately scoped; see the
+[successor research](../research/next-milestone/SUMMARY.md) for pinned/dirty source
+evidence, current ownership and promotion triggers. This does not change
+Muhtari's three deliverables or establish a released player.
+
 ## Why This Matters
 
 Owner direction, 2026-10-30: explore whether a browser equivalent of RetroArch

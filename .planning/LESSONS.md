@@ -640,3 +640,20 @@ A one-time release-policy exception still has to satisfy the existing title and 
 ## Calibrate the remaining native fixture margins as a class (2026-11-11)
 
 A required one-second OpenBIOS setup can time out at1.01s and leave15 required dependents unrun even when another exact-source CI build completes the same fixture. Separate censored failures from complete measurements and separate target cohorts. Four completed Windows run pairs give OpenBIOS maxima0.52s x64/0.79s ARM64, PAL BIOS3.60s x64 and directions1.73s x64; DEC.47 yields2/2/8/4s. A bounded scan of the already observed near-limit cases avoids further one-case publication loops; all assertions, fixture relationships, scales and job caps stay intact. Keep immutable tagged-source publication distinct from ordinary non-release CI maintenance on current main. [Measurements and checks](milestones/v5.0-SHIP.md#non-release-fixture-margin-maintenance).
+
+## Incoming integration hypotheses — not locally reproduced (2026-11-11)
+
+LibFuturo's PAL evidence corrections are relevant when another Muhtari consumer
+is added: identify the actual submitted input bytes, bind each source/installed
+route to its own anchored records, and validate PAL extents independently of
+NTSC. The sibling changes and retained local verification are source-backed;
+their applicability as a new Muhtari control remains a hypothesis until a local
+fault/control reproduces the need. Do not add another generic evidence layer
+solely because the sibling has one.
+
+Provenance: LibFuturo local commits `ce9028e`, `98f935c`, `4fb7d1c` and the later
+core-profiles Phase 2 verification; the read-only successor snapshot and exact
+paths are retained in [CONSUMERS](research/next-milestone/CONSUMERS.md). No sibling
+build/test/host/CI was launched here. Browser `lf_*` proof, native snapshot proof,
+Muhtari `retro_*` artifact proof and hardware accuracy keep separate acceptance
+boundaries. Revisit on a concrete new input/package/profile mismatch.

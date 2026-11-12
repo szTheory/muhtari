@@ -15,9 +15,29 @@ that any host can embed.
 
 ## Current State
 
-v5.0 Downloadable WebAssembly core is verified locally and archived on 2026-11-11: all six requirements, two phases and the independent integration audit passed. The source-bound fourteen-member portable ZIP carries matched loader/Wasm, source/toolchain identities, qualified runtime notices and reproducible instructions. Existing release contracts now include nineteen ZIPs/twenty assets while preserving all eighteen native archives. This is local readiness; publication and its external checks retain separate authority.
+v5.0 shipped as package v0.13.1. Public downloads, attestations, installation and
+current-main CI passed; the final ship receipt preserves exact-source and failed
+history. v6.0 is selected for autonomous local implementation. Nine v3.0 gaps and
+all original denied/spent host/remote scopes remain unchanged; older dirty
+worktrees stay preserved and root remains canonical.
 
-v4.0 shipped through PR #47 and package v0.12.0, which remains the published package. The nine v3.0 gaps and original denied/spent host/remote scopes are unchanged. Root remains canonical and older dirty worktrees remain preserved.
+## Current Milestone: v6.0 YM2151 homebrew sound
+
+**Goal:** A declared, qualified XM/YM2151 cartridge profile produces deterministic
+FM sound through the library, runner and libretro core, including the portable
+Wasm artifact, with complete lifecycle/state and refusal coverage.
+
+**Target features:**
+- Short measured milestone tune-up using existing shipping/quality evidence.
+- One source-qualified map/enable/clock/status/timer/IRQ profile and a lawful
+  integer C17 specialization of the approved BSD-3 ymfm OPM seed.
+- Existing mono PCM/audio observations, complete transactional state and owned
+  non-silent diagnostic acceptance through all three deliverables and packages.
+
+The owner authorized autonomous local follow-through on 2026-11-11. Exact profile,
+resource measurements and concrete compatibility consequences are qualified before
+implementation. Public stereo, full XM, other new chips and host/device proof are
+excluded; publication, merge and materially new remote/host actions remain separate.
 
 ## Latest Verified Milestone: v5.0 Downloadable WebAssembly core
 
@@ -172,9 +192,13 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 ### Active
 
-No unverified v5.0 implementation requirement remains. Local archive and cleanup are complete; public shipping retains separate authority.
+- [ ] TUNE-10: current release/docs and proportionate measured quality baseline.
+- [ ] YM-01–08: one qualified XM/YM2151 profile, permissive C17 synthesis,
+  deterministic mono audio, complete state/lifecycle, all deliverables and
+  portable consumers, measured bounded cost and accurate supported-profile docs.
 
-The nine unmet v3.0 requirements remain deferred, with their original evidence and host/remote stops unchanged.
+See [requirements](REQUIREMENTS.md) for the testable contract. The nine unmet
+v3.0 requirements remain deferred with their original evidence and stops.
 
 ### Out of Scope
 
@@ -187,7 +211,9 @@ The nine unmet v3.0 requirements remain deferred, with their original evidence a
 - A separate fast or low-accuracy mode — one accurate core keeps one set of bugs and one set of hashes.
 - Signed or notarised macOS artifacts — the script install path does not need them.
 - A test framework dependency — plain CTest executables with an in-repo check header cover the need.
-- Atari 2600 cartridges, Souper/BupChip, YM2151, Covox/ADPCM, ACE, full OpenHSC, AtariVox speech,
+- Atari 2600 emulation — owned by the sibling project `twentysixhundo` (owner correction, 2026-11-11);
+  SEED-006 is retired. Existing image recognition/refusal remains supported.
+- Souper/BupChip, other YM2151 topologies, Covox/ADPCM, ACE, full OpenHSC, AtariVox speech,
   measured-accuracy oracles, the browser player, full movie recording/generalized continuation, advanced AI/TAS tools and ports — later milestones;
   see `.planning/seeds/` and `.planning/PRODUCT-ROADMAP.md`.
 
@@ -310,4 +336,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-11 after v5.0 local milestone closeout*
+*Last updated: 2026-11-11 after v6.0 selection and autonomous authorization*
