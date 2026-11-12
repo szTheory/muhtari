@@ -1,6 +1,6 @@
 ---
 phase: 20-complete-ym2151-homebrew-sound
-verified: 2026-11-12T15:22:14Z
+verified: 2026-11-12T15:36:15Z
 status: passed
 score: 5/5 goal truths verified
 covered_files:
@@ -42,7 +42,7 @@ covered_files:
   - "tests/emscripten/bundle.cmake"
   - "tests/emscripten/host.mjs"
   - "tests/release/ym_consumers.cmake"
-covered_digest: "v4:sha256:5461430768d35f31c4bdf7e5172526cc849ba8006463df4e8cc49e1541c09ce9"
+covered_digest: "v4:sha256:ed2d5decdae7ef6feede6741d8db38c6fedbe7deea3d648419277545632d3893"
 behavior_unverified: 0
 overrides_applied: 0
 decision_coverage:
@@ -54,9 +54,10 @@ decision_coverage:
 # Phase 20: Complete YM2151 homebrew sound Verification Report
 
 **Phase Goal:** A host can load one documented XM/YM2151 profile and obtain deterministic FM sound with complete lifecycle/state behavior through every existing deliverable and portable/package consumer.
-**Verified:** 2026-11-12T15:22:14Z
+**Verified:** 2026-11-12T15:36:15Z
 **Status:** passed
 **Re-verification:** No — the prior report had no gaps section. This initial-mode pass rechecked the archived contract and the current observer-restore change.
+**Refresh check:** The only intervening test-source change reformats a wrapped hash assignment in tests/audio/test_ym2151.c. The expression and behavior are unchanged; previously recorded targeted runtime results remain applicable. No tests were rerun.
 
 ## Goal Achievement
 
@@ -118,6 +119,7 @@ The generic key-link query reports false negatives where links are expressed thr
 | Rewind observer cache and carry reset | cmake --build build/v6-ym-sanitize-apple --target muhtari-test-ym2151 muhtari-test-state muhtari-run --parallel 4 | Exit 0 after the final fix; exact current command recorded in .planning/LESSONS.md. | ✓ PASS |
 | Observer replay plus state equality report | ctest --test-dir build/v6-ym-sanitize-apple --output-on-failure -R '^(ym\\.observer|core\\.state\\.equality_report)$' | Exit 0, 2/2 after the final fix. | ✓ PASS |
 | State hash report and semantic fault controls | cmake -DCASE=hashes_state_control -DHASHES=$PWD/tests/cmake/hashes.cmake -DSTATE_TEST=$PWD/build/v6-ym-sanitize-apple/tests/muhtari-test-state -DOUT=$PWD/build/v6-ym-sanitize-apple -DEMULATOR= -P tests/runner/tests.cmake | Exit 0; all 78 state rows and semantic fault controls passed after the final fix. | ✓ PASS |
+| Formatting-only hygiene inventory | cmake --workflow --preset hygiene | Exit 0, 30/30 checks after the formatter change; supplied by the orchestrator. | ✓ PASS |
 | Lane equality regression controls | ctest --test-dir build/v6-ym-sanitize-apple --output-on-failure -R '^policy\\.lane_equality\\.controls$' | Exit 0 after the observer reset implementation, before the last extra observer assertion; not treated as a post-assertion run. | ✓ PASS (earlier snapshot) |
 | Broad runner hash/equality matrix | runner.hashes_file in the local Apple sanitizer build | Timed out at its configured 286-second CTest bound while processing the expansion matrix (exit 8). This is not a pass and is not evidence of a product assertion failure. | ? INCOMPLETE |
 | Prior full native, compatibility, exact-seed, hygiene, portable and package gates | Exact command and source identity in 20-COST-EVIDENCE.md | Required final gates passed for the preceding final product snapshot; the new code only resets private observer state after successful state restore. | ✓ PASS (prior snapshot) |
@@ -179,5 +181,5 @@ No must-have truth failed and no human-verification item remains. The targeted c
 
 ---
 
-_Verified: 2026-11-12T15:22:14Z_
+_Verified: 2026-11-12T15:36:15Z_
 _Verifier: the agent (gsd-verifier)_

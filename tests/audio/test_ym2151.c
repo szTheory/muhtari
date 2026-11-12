@@ -1352,8 +1352,8 @@ static void ym_observe_collect(void *user, uint64_t tick, uint8_t source, uint16
     }
     events->count++;
     events->sequence_hash = (events->sequence_hash ^ tick) * UINT64_C(1099511628211);
-    events->sequence_hash = (events->sequence_hash ^ ((uint64_t)source << 16u) ^ raw) *
-                            UINT64_C(1099511628211);
+    events->sequence_hash =
+        (events->sequence_hash ^ ((uint64_t)source << 16u) ^ raw) * UINT64_C(1099511628211);
     events->source_mask |= (uint16_t)(1u << source);
     events->previous = (struct ym_observed_event){tick, raw, source};
     events->have_previous = 1u;
