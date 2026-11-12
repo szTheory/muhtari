@@ -181,7 +181,7 @@ if(MUHTARI_FUZZ)
     FIXTURES_REQUIRED fuzz_run_seeds WORKING_DIRECTORY ${fuzz_run_work})
   muhtari_add_test(NAME fuzz.regress.run
     COMMAND muhtari-fuzz-run-replay --seeds ${fuzz_run_regress}
-    LABELS fuzz TIMEOUT 18)  # ceil(2 x 8.89s), complete instrumented run40412835859/job121887620405; all122 inputs retained.
+    LABELS fuzz TIMEOUT 33)  # ceil(2 x 16.45s), macOS x64 run43269185595/job131361807822; 122 inputs retained.
   # The regression's short deadline must not compete with three active
   # libFuzzer jobs (run 40152408965); keep the complete workload and bound.
   set_tests_properties(fuzz.regress.run PROPERTIES RUN_SERIAL TRUE)

@@ -553,6 +553,14 @@ It does not establish that overlap caused the earlier timeout or that the schedu
 improves all hosted runs. The actual-host step remained unverified because its preceding battery
 job exited at the existing 300-line source guard; no frontend state behavior is inferred.
 
+2026-11-12 follow-up: comparable macOS x64 replay runs on this source completed in 15.46 seconds
+and 13.63 seconds in [run 43275573348](https://github.com/szTheory/muhtari/actions/runs/43275573348),
+and in 16.45 seconds and 8.09 seconds in [run 43269185595](https://github.com/szTheory/muhtari/actions/runs/43269185595).
+The Release CI child in [run 43275573770](https://github.com/szTheory/muhtari/actions/runs/43275573770/job/131383247545)
+exceeded the existing 18-second deadline; CTest reported teardown at 28.12 seconds. The completed
+samples support a 33-second deadline (`ceil(2 x 16.45s)`). The replay inputs and serial execution
+are unchanged. The timeout receipt does not establish why that runner was slower.
+
 MU-CI-018 (observed): With ctest --preset ci, a relative --output-junit path
 resolves under the preset's binary directory. A source-root receipt check can
 therefore fail with a missing-file error even after CTest passed and wrote the
