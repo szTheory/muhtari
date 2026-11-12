@@ -794,3 +794,16 @@ both identities omitted those paths; the shared checker rejected
 The WASM32 configure in that run also registered `release.ym_consumers`, which
 was absent from `tests/inventory/wasm32.txt`. Align the native CI identity list
 and WASM32 inventory with their shared sources and registered tests.
+
+## Keep large WASI test frames off its bounded stack (2026-11-12)
+
+Adding the registered `release.ym_consumers` entry reached the full WASM32
+inventory. Exact-head [Release run 43292786817, job
+131466450576](https://github.com/szTheory/muhtari/actions/runs/43292786817/job/131466450576)
+and [CI run 43292786483, job
+131468642513](https://github.com/szTheory/muhtari/actions/runs/43292786483/job/131468642513)
+each passed 631 of 632 tests; `ym.hostile` trapped while accessing linear
+memory outside the 256 KiB memory. The WASI test stack is 64 KiB, while that
+test's 320 by 292 video frame occupies about 91 KiB on the stack. Keep the frame
+in static test storage; retain the frame guards, hostile execution and
+allocation checks.

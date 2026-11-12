@@ -1827,7 +1827,8 @@ static void ym_hostile_run(int jammed)
     uint32_t frees_after_load = allocations.frees;
     uint64_t clock_origin_tick = m->ym.last_tick;
     int16_t audio[AUDIO_CAPACITY + 8u];
-    uint8_t video[320u * 292u + 8u];
+    /* WASI uses a 64 KiB test stack; keep this 91 KiB frame buffer off it. */
+    static uint8_t video[320u * 292u + 8u];
     unsigned active_frames = 0u;
     while ((m->ym.timer_running[0] == 0u || events.source_count[0] == 0u ||
             events.source_count[1] == 0u || (jammed != 0 && m->cpu.jammed == 0u) ||
