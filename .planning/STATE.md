@@ -6,10 +6,10 @@ current_phase: 20
 current_phase_name: Complete YM2151 homebrew sound
 status: executing
 stopped_at: Completed 20-01-PLAN.md
-last_updated: "2026-11-12T06:01:35.505Z"
+last_updated: "2026-11-12T06:02:20.556Z"
 last_activity: 2026-11-12
 last_activity_desc: Phase 20 execution started
-state_head: 9f1675adabf7d1e9306b1d1cce054805112c231d
+state_head: f624d5725ed90b43efbd9446c7e2df43b162ac6c
 progress:
   total_phases: 2
   completed_phases: 1
@@ -37,7 +37,7 @@ Progress: [███░░░░░░░] 25%
 
 ## Performance Metrics
 
-v6.0: one completed plan and one completed phase; Phase 20 is ready to plan. Phase 19 records the source-specific baseline and local gate outcomes in [its summary](phases/19-measured-milestone-tune-up/19-01-SUMMARY.md). Prior v5.0 completed three plans and seven tasks across two verified phases. Exact-source publication, downloaded-byte/install and current-main CI evidence remains in the [final ship receipt](milestones/v5.0-SHIP.md#final-publication-and-current-main-closure--reconciled-2026-11-11); local headless results establish no browser/device acceptance.
+v6.0: v6.0 has two completed plans and one completed phase. Phase 20 Plan 01 is complete and Plan 02 is next. Phase 19 records the source-specific baseline and local gate outcomes in its summary; prior v5.0 ship evidence remains in the final ship receipt.
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
