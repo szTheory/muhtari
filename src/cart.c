@@ -875,10 +875,18 @@ muhtari_status muhtari__cart_install(muhtari *m, const void *image, const muhtar
     m->cart.info = *info;
     /* Only an accepted v4 block supplies wiring; raw probe fields survive
        an ignored block (cartridge.md, The v4 block). */
-    m->cart.irq_mask =
-        info->a78_version >= 4u && (info->warnings & MUHTARI_CART_WARN_HEADER_V4_IGNORED) == 0u
-            ? (uint8_t)(info->a78_irq & 3u)
-            : 0u;
+    if (info->a78_version >= 4u &&
+        (info->warnings & MUHTARI_CART_WARN_HEADER_V4_IGNORED) == 0u) {
+        /* IRQ bit 2 is the YM line only for a validated, installed XM/YM
+           topology. Keep legacy identity semantics for every other cart. */
+        uint8_t mask = (uint8_t)(info->a78_irq & 3u);
+        if ((info->sound & MUHTARI_SOUND_YM2151) != 0u &&
+            (info->devices & MUHTARI_DEVICE_XM) != 0u && expansion == MUHTARI_EXPANSION_XM)
+            mask |= (uint8_t)(info->a78_irq & 4u);
+        m->cart.irq_mask = mask;
+    } else {
+        m->cart.irq_mask = 0u;
+    }
     muhtari__cart_reset(m);
     return MUHTARI_STATUS_OK;
 }
@@ -903,6 +911,10 @@ void muhtari__cart_reset(muhtari *m)
     uint8_t count = (uint8_t)((m->cart.pokey_at[0] != 0u) + (m->cart.pokey_at[1] != 0u));
     muhtari__synth_reset(m, m->bus.clock_origin_tick, count);
     m->synth.secondary = (uint8_t)(count == 1u && m->cart.pokey_at[1] != 0u);
+    m->synth.ym_installed = (uint8_t)((sound & MUHTARI_SOUND_YM2151) != 0u &&
+                                      (m->cart.info.devices & MUHTARI_DEVICE_XM) != 0u &&
+                                      m->cart.expansion.kind == MUHTARI_EXPANSION_XM);
+    muhtari__ym2151_reset(m);
     muhtari__pokey_reset(m, 0u);
     muhtari__pokey_reset(m, 1u);
     /* Only the zero fill exists so far; every RAM_FILL value gives it. */
@@ -1022,6 +1034,13 @@ static const uint8_t *cart_bankset_rom_at(const struct muhtari__cart *c, uint16_
     return &c->rom[(maria ? half : 0u) + offset];
 }
 
+static int cart_ym_decoded(const struct muhtari__cart *c)
+{
+    return c->expansion.kind == MUHTARI_EXPANSION_XM &&
+           (c->info.sound & MUHTARI_SOUND_YM2151) != 0u &&
+           (c->expansion.control & 0x80u) != 0u;
+}
+
 /* A linear board maps its ROM so that it ends at $FFFF; below the ROM's
    start nothing drives the bus. A SuperGame board maps three 16 KiB
    windows from $4000 (A7800-CARTRIDGES-AND-PERIPHERALS, section 2.1).
@@ -1038,6 +1057,8 @@ static uint8_t cart_peek_view(const muhtari *m, uint16_t addr, int maria)
     if (expansion != NULL) {
         return *expansion;
     }
+    if (maria == 0 && addr >= 0x0460u && addr <= 0x0461u && cart_ym_decoded(c))
+        return muhtari__ym2151_peek(m, addr);
     /* HSC pass-through decode (docs/hardware/cartridge.md, HSC). The bus
        has already applied MEN/BIOS gates; CPU audio decode precedes this. */
     if (cart_hsc_decoded(m)) {
@@ -1120,10 +1141,12 @@ uint8_t muhtari__cart_dma_read(muhtari *m, uint16_t addr, uint64_t tick)
     return muhtari__cart_read(m, addr, 1);
 }
 
-uint8_t muhtari__cart_read(muhtari *m, uint16_t addr, int by_maria)
+uint8_t muhtari__cart_read_at(muhtari *m, uint16_t addr, int by_maria, uint64_t tick)
 {
     /* DMA and observation see board memory, never register side effects. */
     if (!by_maria) {
+        if (addr >= 0x0460u && addr <= 0x0461u && cart_ym_decoded(&m->cart))
+            return muhtari__ym2151_read(m, addr, tick);
         for (unsigned chip = 0; chip < 2u; chip++) {
             uint16_t at = m->cart.pokey_at[chip];
             uint16_t size = at == 0x4000u ? 0x4000u : at == 0x0800u ? 0x0800u : 16u;
@@ -1142,13 +1165,18 @@ uint8_t muhtari__cart_read(muhtari *m, uint16_t addr, int by_maria)
                                (m->cart.info.board == MUHTARI_BOARD_LINEAR &&
                                 m->cart.info.rom_size > 32768u));
                 if (!overlap) {
-                    return muhtari__pokey_read(m, chip, (uint8_t)(addr & 15u),
-                                               m->bus.ticks + (m->bus.cycle_len == 6u ? 5u : 4u));
+                    return muhtari__pokey_read(m, chip, (uint8_t)(addr & 15u), tick);
                 }
             }
         }
     }
     return muhtari__cart_peek(m, addr);
+}
+
+uint8_t muhtari__cart_read(muhtari *m, uint16_t addr, int by_maria)
+{
+    uint64_t tick = m->bus.ticks + (m->bus.cycle_len == 6u ? 5u : 4u);
+    return muhtari__cart_read_at(m, addr, by_maria, tick);
 }
 
 /* A write to the board's RAM stores; on a SuperGame board a write to
@@ -1157,7 +1185,7 @@ uint8_t muhtari__cart_read(muhtari *m, uint16_t addr, int by_maria)
    $8000. A banked-RAM board
    takes the RAM half from D5 of the same write
    (A7800-CARTRIDGES-AND-PERIPHERALS section 2.1). ROM ignores a write. */
-void muhtari__cart_write(muhtari *m, uint16_t addr, uint8_t v)
+void muhtari__cart_write_at(muhtari *m, uint16_t addr, uint8_t v, uint64_t tick)
 {
     struct muhtari__cart *c = &m->cart;
     if (c->rom == NULL) {
@@ -1181,6 +1209,10 @@ void muhtari__cart_write(muhtari *m, uint16_t addr, uint8_t v)
                 c->expansion.maria_pages = v;
             return;
         }
+        if (addr >= 0x0460u && addr <= 0x0461u && cart_ym_decoded(c)) {
+            muhtari__ym2151_write(m, addr, v, tick);
+            return;
+        }
     }
     uint8_t *expansion = cart_expansion_at(c, addr, 0);
     if (expansion != NULL) {
@@ -1192,8 +1224,7 @@ void muhtari__cart_write(muhtari *m, uint16_t addr, uint8_t v)
         uint16_t size = at == 0x4000u ? 0x4000u : at == 0x0800u ? 0x0800u : 16u;
         if (at != 0u && cart_pokey_decoded(c, chip) && addr >= at &&
             (uint32_t)addr < (uint32_t)at + size) {
-            muhtari__pokey_write(m, chip, (uint8_t)(addr & 15u), v,
-                                 m->bus.ticks + (m->bus.cycle_len == 6u ? 5u : 4u));
+            muhtari__pokey_write(m, chip, (uint8_t)(addr & 15u), v, tick);
             if (c->info.board != MUHTARI_BOARD_BANKSET)
                 return;
         }
@@ -1256,4 +1287,10 @@ void muhtari__cart_write(muhtari *m, uint16_t addr, uint8_t v)
     default:
         break;
     }
+}
+
+void muhtari__cart_write(muhtari *m, uint16_t addr, uint8_t v)
+{
+    uint64_t tick = m->bus.ticks + (m->bus.cycle_len == 6u ? 5u : 4u);
+    muhtari__cart_write_at(m, addr, v, tick);
 }

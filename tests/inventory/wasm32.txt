@@ -666,3 +666,4 @@ title.pin.recipe	portable,title
 title.pin.self_test	portable,title
 title.simple.bios	portable,title
 title.simple.fast	portable,title
+ym.tracer	audio,portable

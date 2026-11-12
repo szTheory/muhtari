@@ -79,6 +79,16 @@ muhtari_add_test(NAME pokey.clock COMMAND muhtari-test-pokey clock
 muhtari_add_test(NAME pokey.maps COMMAND muhtari-test-pokey maps
   LABELS pokey portable TIMEOUT 10)
 
+add_executable(muhtari-test-ym2151 ${CMAKE_CURRENT_LIST_DIR}/test_ym2151.c
+  ${CMAKE_CURRENT_LIST_DIR}/../cart/images.c)
+target_include_directories(muhtari-test-ym2151 PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(muhtari-test-ym2151 PRIVATE muhtari::muhtari)
+set_target_properties(muhtari-test-ym2151 PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+muhtari_warnings(muhtari-test-ym2151)
+muhtari_add_test(NAME ym.tracer COMMAND muhtari-test-ym2151 tracer
+  LABELS audio portable TIMEOUT 30)
+
 add_executable(muhtari-test-irq ${CMAKE_CURRENT_LIST_DIR}/test_irq.c
   ${CMAKE_CURRENT_LIST_DIR}/../cart/images.c)
 target_include_directories(muhtari-test-irq PRIVATE ${CMAKE_SOURCE_DIR}/src)

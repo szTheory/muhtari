@@ -138,3 +138,58 @@ size_t images_bankset(uint8_t *buf, uint32_t half_kib, uint8_t ram)
     }
     return IMAGES_HEADER + half * 2u;
 }
+
+static void ym_program_write(uint8_t *program, size_t *length, uint8_t reg, uint8_t value)
+{
+    static const uint8_t address_store[] = {0xA9u, 0x00u, 0x8Du, 0x60u, 0x04u};
+    static const uint8_t data_store[] = {0xA9u, 0x00u, 0x8Du, 0x61u, 0x04u};
+    uint8_t address[sizeof address_store];
+    uint8_t data[sizeof data_store];
+    memcpy(address, address_store, sizeof address);
+    memcpy(data, data_store, sizeof data);
+    address[1] = reg;
+    data[1] = value;
+    memcpy(program + *length, address, sizeof address);
+    *length += sizeof address;
+    memcpy(program + *length, data, sizeof data);
+    *length += sizeof data;
+}
+
+size_t images_ym2151(uint8_t *buf)
+{
+    const uint32_t body_size = 16u * IMAGES_KIB;
+    images_header(buf, 4u, "XM YM tracer", body_size, 0u);
+    buf[58] = 0x02u; /* a persistent SaveKey, for state-refusal immutability */
+    buf[63] = 1u;    /* installed XM device */
+    buf[66] = 0u;
+    buf[67] = 0x08u; /* v4 audio YM flag */
+    buf[68] = 0u;
+    buf[69] = 0x04u; /* YM IRQ qualification */
+
+    uint8_t *body = buf + IMAGES_HEADER;
+    memset(body, 0xEA, body_size);
+    size_t length = 0u;
+    static const uint8_t enable[] = {0xA9u, 0x80u, 0x8Du, 0x70u, 0x04u};
+    memcpy(body + length, enable, sizeof enable);
+    length += sizeof enable;
+    ym_program_write(body, &length, 0x20u, 0xC7u); /* both outputs, algorithm 7 */
+    ym_program_write(body, &length, 0x28u, 0x4Cu);
+    ym_program_write(body, &length, 0x30u, 0x00u);
+
+    static const uint8_t reg_bases[] = {0x60u, 0x80u, 0xA0u, 0xC0u, 0xE0u, 0x40u};
+    static const uint8_t values[] = {0x00u, 0x1Fu, 0x00u, 0x00u, 0x0Fu, 0x01u};
+    static const uint8_t slots[] = {0u, 8u, 16u, 24u};
+    for (unsigned group = 0u; group < sizeof reg_bases; group++) {
+        for (unsigned slot = 0u; slot < sizeof slots; slot++) {
+            ym_program_write(body, &length, (uint8_t)(reg_bases[group] + slots[slot]),
+                             values[group]);
+        }
+    }
+    ym_program_write(body, &length, 0x08u, 0x78u); /* key on all four channel-zero operators */
+    uint16_t loop = (uint16_t)(0xC000u + length);
+    body[length++] = 0x4Cu;
+    body[length++] = (uint8_t)loop;
+    body[length++] = (uint8_t)(loop >> 8);
+    images_footer(body, body_size);
+    return IMAGES_HEADER + body_size;
+}

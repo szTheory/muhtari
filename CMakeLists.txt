@@ -82,6 +82,7 @@ add_library(muhtari_objs OBJECT
   src/instance.c
   src/frame.c
   src/synth.c
+  src/ym2151.c
   src/testcard.c
   src/bus.c
   src/tia.c

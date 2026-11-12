@@ -1248,6 +1248,8 @@ static uint32_t state_crc32(const uint8_t *bytes, size_t size)
 
 size_t muhtari_state_size(const muhtari *m)
 {
+    if (m == NULL || (m->loaded != 0u && m->synth.ym_installed != 0u))
+        return 0u;
     size_t payload = muhtari__state_payload_size(m);
     if (payload == 0u || payload > SIZE_MAX - STATE_HEADER_BYTES ||
         payload + STATE_HEADER_BYTES > UINT32_MAX)
@@ -1261,6 +1263,8 @@ muhtari_status muhtari_save_state(const muhtari *m, void *buffer, size_t capacit
     if (m == NULL || buffer == NULL)
         return MUHTARI_STATUS_ERR_ARGUMENT;
     if (m->loaded == 0u)
+        return MUHTARI_STATUS_ERR_STATE_UNAVAILABLE;
+    if (m->synth.ym_installed != 0u)
         return MUHTARI_STATUS_ERR_STATE_UNAVAILABLE;
 
     size_t total = muhtari_state_size(m);
@@ -1298,6 +1302,8 @@ muhtari_status muhtari_load_state(muhtari *m, const void *buffer, size_t bytes)
     if (m == NULL || buffer == NULL)
         return MUHTARI_STATUS_ERR_ARGUMENT;
     if (m->loaded == 0u)
+        return MUHTARI_STATUS_ERR_STATE_UNAVAILABLE;
+    if (m->synth.ym_installed != 0u)
         return MUHTARI_STATUS_ERR_STATE_UNAVAILABLE;
 
     size_t expected = muhtari_state_size(m);

@@ -340,12 +340,16 @@ static void end(muhtari *m, uint32_t len)
         timed_events(m, m->bus.ticks);
         muhtari__bus_rearm(m);
     }
+    if (m->synth.ym_installed != 0u)
+        muhtari__ym2151_catch_up(m, m->bus.ticks);
     /* Both chips have consumed this cycle's actual falling edge before
        the CPU can poll it (hardware/pokey.md, Interrupts). */
     unsigned requested = (unsigned)(((m->cart.irq_mask & 1u) != 0u && m->cart.pokey_at[0] != 0u &&
                                      m->pokey[0].irq_signal != 0u) ||
                                     ((m->cart.irq_mask & 2u) != 0u && m->cart.pokey_at[1] != 0u &&
-                                     m->pokey[1].irq_signal != 0u));
+                                     m->pokey[1].irq_signal != 0u) ||
+                                    ((m->cart.irq_mask & 4u) != 0u &&
+                                     m->synth.ym_installed != 0u && muhtari__ym2151_irq(m)));
     /* The manual's common three-unhalted-cycle status-to-entry delay:
        two synchronization cycles, then the CPU's final instruction cycle.
        Held batches advance the source above, but never this CPU pipeline. */
@@ -405,7 +409,7 @@ uint8_t muhtari__bus_read(muhtari *m, uint16_t addr)
     } else if (dev == DEV_MARIA) {
         v = muhtari__maria_read(m, addr);
     } else if (dev == DEV_CART) {
-        v = muhtari__cart_read(m, addr, 0);
+        v = muhtari__cart_read_at(m, addr, 0, m->bus.ticks + data_at(len));
     } else if (dev == DEV_BIOS) {
         v = muhtari__boot_bios_byte(m, addr);
     }
@@ -494,7 +498,7 @@ void muhtari__bus_write(muhtari *m, uint16_t addr, uint8_t v)
         muhtari__maria_write(m, addr, v, m->bus.ticks + data_at(len));
         muhtari__bus_rearm(m);
     } else if (dev == DEV_CART) {
-        muhtari__cart_write(m, addr, v);
+        muhtari__cart_write_at(m, addr, v, m->bus.ticks + data_at(len));
     }
     m->bus.open_bus = v;
     end(m, len);

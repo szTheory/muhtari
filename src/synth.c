@@ -246,7 +246,19 @@ static void flush(struct muhtari__synth *s)
     uint64_t maximum = (uint64_t)MUHTARI__MIX_Q24 * MUHTARI__TIA_CURRENT +
                        (uint64_t)s->pokeys * muhtari__pokey_mix[824] * MUHTARI__POKEY_CURRENT *
                            MUHTARI__CART_GAIN_Q12 / 4096u;
-    int32_t level = (int32_t)((current * MUHTARI__SYNTH_MAX_LEVEL + maximum / 2u) / maximum);
+    int32_t base_level =
+        (int32_t)((current * MUHTARI__SYNTH_MAX_LEVEL + maximum / 2u) / maximum);
+    int32_t level = base_level;
+    if (s->ym_installed != 0u) {
+        uint16_t left_bits = s->raw[10];
+        uint16_t right_bits = s->raw[11];
+        int32_t left = (left_bits & 0x8000u) != 0u ? (int32_t)left_bits - 65536 : (int32_t)left_bits;
+        int32_t right =
+            (right_bits & 0x8000u) != 0u ? (int32_t)right_bits - 65536 : (int32_t)right_bits;
+        int32_t mono = (left + right) / 2;
+        int32_t ym_level = (mono * 4590) / 32768;
+        level = base_level / 2 + ym_level;
+    }
     int32_t delta = level - s->mixed_level;
     if (delta != 0) {
         int32_t coefficients[16];
@@ -260,22 +272,24 @@ static void flush(struct muhtari__synth *s)
     s->pending = 0u;
 }
 
-/* At most ten source changes per master tick, including both half-edge
-   subevents and a CPU write. Only instruction overshoot is retained;
-   docs/hardware/audio.md derives the shared tick bound. */
-#define OBS_CARRY (10u * (MUHTARI__SYNTH_OVERSHOOT_TICKS + 1u))
+/* At most twelve source changes per master tick: the ten existing sources
+   plus the two YM DAC sides. YM changes only at its fixed output cadence;
+   CPU register writes are applied after a coincident chip sample. */
+#define OBS_CARRY (12u * (MUHTARI__SYNTH_OVERSHOOT_TICKS + 1u))
 #define OBS_PENDING 32u
 struct raw_record {
-    uint8_t source, level;
+    uint8_t source;
+    uint16_t level;
 };
 struct carry_record {
     uint16_t offset;
-    uint8_t source, level;
+    uint8_t source;
+    uint16_t level;
 };
 struct muhtari__observation {
     uint64_t end, tick, base;
     uint32_t count, carried;
-    uint8_t raw[10];
+    uint16_t raw[12];
     struct raw_record pending[OBS_PENDING];
     struct carry_record carry[OBS_CARRY];
 };
@@ -305,7 +319,7 @@ static void observe_flush(muhtari *m)
 {
     struct muhtari__observation *o = m->observation;
     /* Stable source order preserves multiple subevents on one source. */
-    for (unsigned source = 0; source < 10u; source++) {
+    for (unsigned source = 0; source < 12u; source++) {
         for (uint32_t i = 0; i < o->count; i++) {
             struct raw_record r = o->pending[i];
             if (r.source != source)
@@ -326,12 +340,16 @@ static void observe_flush(muhtari *m)
     o->count = 0u;
 }
 
-void muhtari__synth_raw(muhtari *m, uint64_t tick, unsigned source, uint8_t raw)
+void muhtari__synth_raw(muhtari *m, uint64_t tick, unsigned source, uint16_t raw)
 {
     if (m->observer == NULL)
         return;
     struct muhtari__observation *o = m->observation;
-    assert(source < 10u && raw <= 15u);
+    assert(source < 12u);
+    if (source < 2u)
+        assert(raw <= 15u);
+    else if (source < 10u)
+        assert(raw <= 206u);
     if (o->raw[source] == raw)
         return;
     if (o->count != 0u && o->tick != tick) {
@@ -386,8 +404,11 @@ void muhtari__synth_reset(muhtari *m, uint64_t origin, uint8_t pokeys)
 void muhtari__synth_level(muhtari *m, uint64_t tick, unsigned source, uint16_t level)
 {
     struct muhtari__synth *s = &m->synth;
-    assert(source < 10u);
-    assert(level <= (source < 2u ? 15u : 206u));
+    assert(source < 12u);
+    if (source < 2u)
+        assert(level <= 15u);
+    else if (source < 10u)
+        assert(level <= 206u);
     assert(tick >= s->tick);
     assert(s->pending == 0u || tick >= s->pending_tick);
     if (s->pending != 0u && tick != s->pending_tick) {

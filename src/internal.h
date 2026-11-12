@@ -72,8 +72,8 @@ struct muhtari__synth {
     uint32_t sample_num, sample_den, max_samples;
     uint32_t kernel_adds, kernel_adds_per_sample, carry_high_water;
     int32_t mixed_level;
-    uint16_t raw[10];
-    uint8_t head, pending, pokeys, secondary;
+    uint16_t raw[12];
+    uint8_t head, pending, pokeys, secondary, ym_installed;
     int16_t pcm[MUHTARI__SYNTH_PCM_CAPACITY];
 };
 
@@ -110,6 +110,45 @@ struct muhtari__pokey {
     uint8_t irq_enable[3], irq_signal; /* section 5.7 propagation, pokey.md */
     struct muhtari__pokey_channel channel[4];
 };
+
+/* The fixed OPM specialization (docs/hardware/ym2151.md). Clock, timer and
+   synthesis state is owned by one machine; waveform/rate tables are const. */
+struct muhtari__ym_cache {
+    uint32_t phase_step, total_level, block_freq;
+    int32_t detune;
+    uint32_t multiple, eg_sustain;
+    uint8_t eg_rate[6], eg_shift;
+};
+struct muhtari__ym_operator {
+    uint32_t channel, offset, phase;
+    uint16_t attenuation;
+    uint8_t envelope_state, ssg_inverted, key_state, keyon_live;
+    struct muhtari__ym_cache cache;
+};
+struct muhtari__ym_channel {
+    int16_t feedback[2];
+    int16_t feedback_in;
+};
+struct muhtari__ym2151 {
+    uint64_t last_tick, clocks, busy_end, timer_deadline[2];
+    uint32_t lfo_counter, noise_lfsr, env_counter, active_channels, modified_channels;
+    uint16_t sample_divider;
+    int16_t output[2];
+    uint8_t clock_remainder, address, status, clock_prescale, irq_mask, irq_state;
+    uint8_t timer_running[2], total_clocks;
+    uint16_t prepare_count;
+    uint8_t lfo_am, noise_counter, noise_state, noise_lfo, initialized;
+    uint8_t registers[256];
+    uint16_t lfo_noise[256];
+    struct muhtari__ym_operator operators[32];
+    struct muhtari__ym_channel channels[8];
+};
+void muhtari__ym2151_reset(muhtari *m);
+void muhtari__ym2151_catch_up(muhtari *m, uint64_t tick);
+uint8_t muhtari__ym2151_read(muhtari *m, uint16_t addr, uint64_t tick);
+uint8_t muhtari__ym2151_peek(const muhtari *m, uint16_t addr);
+void muhtari__ym2151_write(muhtari *m, uint16_t addr, uint8_t value, uint64_t tick);
+int muhtari__ym2151_irq(const muhtari *m);
 void muhtari__pokey_reset(muhtari *m, unsigned chip);
 void muhtari__pokey_write(muhtari *m, unsigned chip, uint8_t reg, uint8_t v, uint64_t tick);
 uint8_t muhtari__pokey_read(muhtari *m, unsigned chip, uint8_t reg, uint64_t tick);
@@ -419,7 +458,7 @@ struct muhtari__boot {
 typedef void (*muhtari__audio_observer)(void *user, uint64_t tick, uint8_t source, uint16_t raw);
 struct muhtari__observation;
 muhtari_status muhtari__synth_observe(muhtari *m, muhtari__audio_observer callback, void *user);
-void muhtari__synth_raw(muhtari *m, uint64_t tick, unsigned source, uint8_t raw);
+void muhtari__synth_raw(muhtari *m, uint64_t tick, unsigned source, uint16_t raw);
 void muhtari__observe_begin(muhtari *m, uint64_t end);
 void muhtari__observe_end(muhtari *m);
 
@@ -473,6 +512,7 @@ struct muhtari {
     struct muhtari__synth synth;
     struct muhtari__tia tia;
     struct muhtari__pokey pokey[2];
+    struct muhtari__ym2151 ym;
     int16_t audio_work[962];
     uint64_t frames;                /* frames run since the last load or power cycle */
     uint64_t lag_frames;            /* of those, frames with no CPU read of an input */
@@ -683,8 +723,10 @@ muhtari_status muhtari__cart_install(muhtari *m, const void *image, const muhtar
    at power-on and fills the RAM by ram_fill. */
 void muhtari__cart_reset(muhtari *m);
 uint8_t muhtari__cart_read(muhtari *m, uint16_t addr, int by_maria);
+uint8_t muhtari__cart_read_at(muhtari *m, uint16_t addr, int by_maria, uint64_t tick);
 uint8_t muhtari__cart_dma_read(muhtari *m, uint16_t addr, uint64_t tick);
 void muhtari__cart_write(muhtari *m, uint16_t addr, uint8_t v);
+void muhtari__cart_write_at(muhtari *m, uint16_t addr, uint8_t v, uint64_t tick);
 uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr);
 
 /* The fast-boot hand-off: puts the machine where the NTSC BIOS leaves it as

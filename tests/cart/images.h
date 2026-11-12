@@ -71,4 +71,7 @@ size_t images_activision(uint8_t *buf);
    block or 16 KiB switched bank. ram is the v4 device code (0, 1 or 3). */
 size_t images_bankset(uint8_t *buf, uint32_t half_kib, uint8_t ram);
 
+/* A public-path XM/YM note program with valid v4 YM IRQ wiring. */
+size_t images_ym2151(uint8_t *buf);
+
 #endif /* MUHTARI_TEST_IMAGES_H */
