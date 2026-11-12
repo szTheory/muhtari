@@ -57,7 +57,7 @@ recommendations and local verification proceed without another approval.
   3. A host can reset, unload/reload, isolate instances and save/restore every YM state component mid-stream with identical subsequent audio, no post-load allocation, finite work and bounded output writes; invalid or incompatible state preserves the live machine and committed battery bytes under the compatibility policy documented before implementation.
   4. The same owned diagnostic passes through the actual public C library, headless runner, loaded libretro core, portable Wasm artifact and clean extracted/installed package consumers. Independent numeric expectations precede cross-route hashes; source/package identity, notices and existing callback/batch/fallback/refusal/integrity fault controls remain effective.
   5. Integrators can identify the exact supported request/profile and evidence limits in existing docs; maintainers can inspect justified finite work, integer headroom and memory/state bounds plus representative ordinary/worst-legal native/Wasm cost measurements using current mechanisms. The C17 seed specialization retains its license, provenance pin and update duty without adding a runtime C++ dependency.
-**Plans:** 4/7 plans executed
+**Plans:** 5/7 plans executed
 Plans:
 **Wave 1**
 - [x] 20-01-PLAN.md — Public YM tracer, fail-closed state guard and exact-seed OPM parity
@@ -72,7 +72,7 @@ Plans:
 - [x] 20-04-PLAN.md — Public C, runner and loaded native libretro diagnostic consumers
 
 **Wave 5** *(blocked on Wave 4 completion)*
-- [ ] 20-05-PLAN.md — Emitted Wasm and clean installed/extracted package consumers
+- [x] 20-05-PLAN.md — Emitted Wasm and clean installed/extracted package consumers
 - [ ] 20-06-PLAN.md — Genuine old/new state compatibility and legacy byte identity
 
 **Wave 6** *(blocked on Wave 5 completion)*
@@ -97,7 +97,7 @@ and verification gates pass.
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
 | 19. Measured milestone tune-up | 1/1 | Complete    | 2026-11-11 |
-| 20. Complete YM2151 homebrew sound | 4/7 | In Progress | - |
+| 20. Complete YM2151 homebrew sound | 5/7 | In Progress | - |
 
 ## Next boundary
 
