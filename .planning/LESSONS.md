@@ -703,14 +703,15 @@ boundaries. Revisit on a concrete new input/package/profile mismatch.
 
 The audio observer's pending and carried events are derived from one forward
 timeline and are not part of serialized machine state. Loading an earlier
-checkpoint while retaining those records makes the next frame compare its new
-deadline with a carry from the later timeline; assertion-enabled ASan exposed
+checkpoint while retaining a carry from the later timeline makes the next frame
+compare its new deadline with an event from the abandoned future; ASan exposed
 this in both YM PAL numeric-hash consumers. After a successful state apply,
-discard pending/carry records and seed the observer's raw cache from restored
-synthesis state. The public-region observer regression now saves, advances,
-restores and runs another frame.
+discard pending/carry records and sync the raw cache to the restored synthesis
+state, while preserving the timing cursor. The public-region observer regression
+compares the exact replay summary with a control continuation after advancing
+through an abandoned future.
 
-Reproduced on the initial shipping head in [ASan job 131232281140](https://github.com/szTheory/muhtari/actions/runs/43232708698/job/131232281140) and [ASan job 131218504292](https://github.com/szTheory/muhtari/actions/runs/43228680727/job/131218504292); the PAL numeric report aborts at `muhtari__observe_begin` after a state rewind. After the fix, the assertion-enabled local `ym.observer` test passes with `ctest --test-dir build/v6-ym-sanitize-apple --output-on-failure -R '^ym\.observer$'` (exit 0, N/A-local).
+Reproduced on the initial shipping head in [ASan job 131232281140](https://github.com/szTheory/muhtari/actions/runs/43232708698/job/131232281140) and [ASan job 131218504292](https://github.com/szTheory/muhtari/actions/runs/43228680727/job/131218504292); the PAL numeric report aborts at `muhtari__observe_begin` after a state rewind. Review then caught that discarding the carry alone left its future level in the raw cache. The final fix resets that cache from restored synth state. The updated assertion-enabled local checks pass: `cmake --build build/v6-ym-sanitize-apple --target muhtari-test-ym2151 muhtari-test-state muhtari-run --parallel 4` (exit 0); `ctest --test-dir build/v6-ym-sanitize-apple --output-on-failure -R '^(ym\.observer|core\.state\.equality_report)$'` (exit 0, 2/2); and `cmake -DCASE=hashes_state_control -DHASHES=$PWD/tests/cmake/hashes.cmake -DSTATE_TEST=$PWD/build/v6-ym-sanitize-apple/tests/muhtari-test-state -DOUT=$PWD/build/v6-ym-sanitize-apple -DEMULATOR= -P tests/runner/tests.cmake` (exit 0, including all 78 state rows and semantic fault controls). `ctest --test-dir build/v6-ym-sanitize-apple --output-on-failure -R '^policy\.lane_equality\.controls$'` passed with its fixture setup tests (exit 0). The broader `runner.hashes_file` attempt in this local sanitizer build timed out at its 286-second CTest bound while processing the expansion matrix (exit 8); it is not counted as a pass. The fresh hosted CI result on the corrected head remains the shipping check.
 
 ## Keep compiler-visible masks within their destination width (2026-11-12)
 

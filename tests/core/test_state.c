@@ -1363,6 +1363,10 @@ static void continuation_row_run(const struct continuation_row *row, muhtari *so
         CHECK(muhtari__bus_request_halt(source, halt_at, halt_until));
         CHECK(muhtari__bus_raise_nmi(source, nmi_at));
     }
+    /* Keep the private observer baseline consistent with this direct mixer
+       seed; production sources notify it through muhtari__synth_raw first. */
+    muhtari__synth_raw(source, source->synth.tick, 0u, 15u);
+    muhtari__observe_end(source);
     muhtari__synth_level(source, source->synth.tick, 0u, 15u);
     CHECK_EQ_U64(source->synth.pending, 1u);
     CHECK_EQ_U64(source->synth.raw[0], 15u);

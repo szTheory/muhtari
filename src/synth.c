@@ -319,8 +319,8 @@ void muhtari__synth_observe_reset(muhtari *m)
 {
     if (m->observation == NULL)
         return;
-    memset(m->observation, 0, sizeof *m->observation);
-    m->observation->end = UINT64_MAX;
+    m->observation->count = 0u;
+    m->observation->carried = 0u;
     memcpy(m->observation->raw, m->synth.raw, sizeof m->observation->raw);
 }
 
@@ -378,6 +378,13 @@ void muhtari__observe_begin(muhtari *m, uint64_t end)
         return;
     struct muhtari__observation *o = m->observation;
     o->end = end;
+    /* A state restore can rewind frame deadlines without restoring this
+       private cursor. Drop any abandoned carries before replaying the frame. */
+    if (o->carried != 0u && o->base >= end) {
+        o->count = 0u;
+        o->carried = 0u;
+        return;
+    }
     for (uint32_t i = 0; i < o->carried; i++) {
         struct carry_record c = o->carry[i];
         assert(o->base + c.offset < end);

@@ -1316,10 +1316,13 @@ struct ym_observed_event {
 };
 struct ym_observed_events {
     uint32_t count;
+    uint64_t sequence_hash;
     uint16_t source_mask;
     uint32_t source_count[2];
     uint32_t negative[2];
     uint32_t positive[2];
+    uint8_t ym_source_mask;
+    struct ym_observed_event first_ym[2];
     uint8_t have_previous;
     struct ym_observed_event previous;
     uint8_t first_count;
@@ -1342,8 +1345,15 @@ static void ym_observe_collect(void *user, uint64_t tick, uint8_t source, uint16
         events->source_count[channel]++;
         events->negative[channel] += value < 0;
         events->positive[channel] += value > 0;
+        if ((events->ym_source_mask & (uint8_t)(1u << channel)) == 0u) {
+            events->first_ym[channel] = (struct ym_observed_event){tick, raw, source};
+            events->ym_source_mask |= (uint8_t)(1u << channel);
+        }
     }
     events->count++;
+    events->sequence_hash = (events->sequence_hash ^ tick) * UINT64_C(1099511628211);
+    events->sequence_hash = (events->sequence_hash ^ ((uint64_t)source << 16u) ^ raw) *
+                            UINT64_C(1099511628211);
     events->source_mask |= (uint16_t)(1u << source);
     events->previous = (struct ym_observed_event){tick, raw, source};
     events->have_previous = 1u;
@@ -1500,17 +1510,43 @@ static void ym_observer_public_region(uint32_t region)
     CHECK(events.negative[1] > 0u && events.positive[1] > 0u);
     CHECK(pcm_min < 0 && pcm_max > 0);
 
-    /* Observation carries belong to the current timeline, not the serialized
-       machine state. Rewinding must clear them before the observer sees the
-       restored frame deadlines. */
+    /* Rewind the observer to the saved synthesis baseline. The first forward
+       frame is the control; replay after an abandoned future must match it. */
     size_t state_bytes = muhtari_state_size(m);
     uint8_t *state = malloc(state_bytes);
     CHECK(state != NULL);
     if (state != NULL) {
         CHECK_EQ_U64(muhtari_save_state(m, state, state_bytes), MUHTARI_STATUS_OK);
+        memset(&events, 0, sizeof events);
+        io.audio_capacity = ym_frame_sample_count(m);
+        CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+        struct ym_observed_events expected_events = events;
+        CHECK(expected_events.count > 0u);
+        CHECK(expected_events.first_count > 0u);
+        CHECK(expected_events.ym_source_mask != 0u);
+
         for (unsigned frame_index = 0u; frame_index < 3u; frame_index++) {
             io.audio_capacity = ym_frame_sample_count(m);
             CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+        }
+        struct ym_observed_event abandoned = {0};
+        for (unsigned channel = 0u; channel < 2u; channel++) {
+            if ((expected_events.ym_source_mask & (uint8_t)(1u << channel)) != 0u) {
+                struct ym_observed_event candidate = expected_events.first_ym[channel];
+                if (m->synth.raw[candidate.source] != candidate.raw) {
+                    abandoned = candidate;
+                    break;
+                }
+            }
+        }
+        CHECK(abandoned.source == 10u || abandoned.source == 11u);
+        if (abandoned.source == 10u || abandoned.source == 11u) {
+            /* Queue an abandoned-future carry with the same level the saved
+               replay will emit; retaining this stale cache would suppress it. */
+            uint64_t future_end = m->frame_deadline;
+            muhtari__observe_begin(m, future_end);
+            muhtari__synth_raw(m, future_end + 1u, abandoned.source, abandoned.raw);
+            muhtari__observe_end(m);
         }
         CHECK_EQ_U64(muhtari_load_state(m, state, state_bytes), MUHTARI_STATUS_OK);
         memset(&events, 0, sizeof events);
@@ -1518,7 +1554,13 @@ static void ym_observer_public_region(uint32_t region)
         io.audio_capacity = required;
         uint64_t replay_end = m->frame_deadline;
         CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
-        CHECK(events.count > 0u);
+        CHECK_EQ_U64(events.count, expected_events.count);
+        CHECK_EQ_U64(events.sequence_hash, expected_events.sequence_hash);
+        CHECK_EQ_U64(events.source_mask, expected_events.source_mask);
+        CHECK(memcmp(events.source_count, expected_events.source_count,
+                     sizeof events.source_count) == 0);
+        CHECK(memcmp(events.negative, expected_events.negative, sizeof events.negative) == 0);
+        CHECK(memcmp(events.positive, expected_events.positive, sizeof events.positive) == 0);
         CHECK(events.previous.tick < replay_end);
         free(state);
     }

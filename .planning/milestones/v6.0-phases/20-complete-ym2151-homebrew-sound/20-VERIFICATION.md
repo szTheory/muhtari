@@ -1,129 +1,48 @@
 ---
 phase: 20-complete-ym2151-homebrew-sound
-verified: 2026-11-12T11:32:16Z
+verified: 2026-11-12T15:22:14Z
 status: passed
 score: 5/5 goal truths verified
 covered_files:
-  - .github/workflows/ci.yml
-  - .planning/milestones/v6.0-phases/19-measured-milestone-tune-up/19-01-SUMMARY.md
-  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-01-PLAN.md
-  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-01-SUMMARY.md
-  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-02-PLAN.md
-  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-02-SUMMARY.md
-  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-03-PLAN.md
-  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-03-SUMMARY.md
-  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-04-PLAN.md
-  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-04-SUMMARY.md
-  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-05-PLAN.md
-  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-05-SUMMARY.md
-  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-06-PLAN.md
-  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-06-SUMMARY.md
-  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-07-PLAN.md
-  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-07-SUMMARY.md
-  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-CONTEXT.md
-  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-COST-EVIDENCE.md
-  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-RESEARCH.md
-  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-REVIEW-DISPOSITION.md
-  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-REVIEW.md
-  - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-SOURCE-AUDIT.md
-  - .worktrees/ym-state-baseline/include/muhtari.h
-  - CMakeLists.txt
-  - PROVENANCE.md
-  - README.md
-  - THIRD-PARTY-NOTICES.md
-  - build/ci/libmuhtari.a
-  - build/ci/libretro/muhtari_libretro.dylib
-  - build/ci/runner/muhtari-run
-  - build/ci/tests/emscripten/ym-measurement.json
-  - build/ci/tests/emscripten/ym-native.json
-  - build/ci/tests/emscripten/ym-worst-measurement.json
-  - build/ci/tests/emscripten/ym-worst-native.json
-  - build/ci/tests/muhtari-test-libretro-observe
-  - build/emscripten/libretro/muhtari_libretro.mjs
-  - build/emscripten/libretro/muhtari_libretro.wasm
-  - build/emscripten/muhtari-libretro-emscripten.zip
-  - build/v6-instance-footprint-new.json
-  - build/v6-phase20-final-compat-controls.log
-  - build/v6-phase20-final-compat.log
-  - build/v6-phase20-final-gates.json
-  - build/v6-phase20-final-hygiene.log
-  - build/v6-phase20-final-identities.json
-  - build/v6-phase20-final-native-reviewed.log
-  - build/v6-phase20-final-nofp.log
-  - build/v6-phase20-final-oracle.log
-  - build/v6-phase20-final-portable.log
-  - build/v6-phase20-final-publisher.log
-  - build/v6-phase20-final-quality.log
-  - build/v6-phase20-final-sanitizer-fault-heap_oob.log
-  - build/v6-phase20-final-sanitizer-fault-signed_overflow.log
-  - build/v6-phase20-final-sanitizer.junit.xml
-  - build/v6-phase20-final-sanitizer.log
-  - build/v6-state-baseline-receipt.json
-  - build/v6-state-baseline/libmuhtari.a
-  - build/v6-state-compat/result.json
-  - build/v6-ym-extents-new.json
-  - build/v6-ym-seed/source-receipt.json
-  - build/v6-ym-seed/ymfm_opm.o
-  - docs/embedding.md
-  - docs/hardware/audio.md
-  - docs/hardware/cartridge.md
-  - docs/hardware/ym2151.md
-  - docs/libretro.md
-  - docs/maintaining.md
-  - docs/runner.md
-  - docs/testing.md
-  - include/muhtari.h
-  - libretro/libretro.c
-  - libretro/muhtari_libretro.info.in
-  - scripts/emscripten.sh
-  - src/bus.c
-  - src/cart.c
-  - src/instance.c
-  - src/internal.h
-  - src/state.c
-  - src/synth.c
-  - src/tia.c
-  - src/ym2151.c
-  - tests/api/v8.c
-  - tests/audio/expected.txt
-  - tests/audio/test_ym2151.c
-  - tests/audio/tests.cmake
-  - tests/audio/ym_oracle.cmake
-  - tests/audio/ym_oracle.cpp
-  - tests/audio/ym_vectors.h
-  - tests/built/expected.txt
-  - tests/cart/images.c
-  - tests/cart/images.h
-  - tests/cmake/hashes.cmake
-  - tests/cmake/quality.cmake
-  - tests/cmake/quality_evidence.cmake
-  - tests/consumer/main.c
-  - tests/core/state_compat.c
-  - tests/core/state_compat.cmake
-  - tests/core/test_core.c
-  - tests/core/test_state.c
-  - tests/core/tests.cmake
-  - tests/diag/driver.c
-  - tests/emscripten/bundle.cmake
-  - tests/emscripten/host.mjs
-  - tests/emscripten/tests.cmake
-  - tests/emscripten/ym.cmake
-  - tests/install/tests.cmake
-  - tests/inventory/ci.txt
-  - tests/inventory/emscripten.txt
-  - tests/inventory/wasm32.txt
-  - tests/libretro/host.c
-  - tests/libretro/observe.c
-  - tests/libretro/tests.cmake
-  - tests/libretro/ym_observe.cmake
-  - tests/policy/publish.cmake
-  - tests/policy/quality.cmake
-  - tests/policy/tests.cmake
-  - tests/release/tests.cmake
-  - tests/release/ym_consumers.cmake
-  - tests/runner/tests.cmake
-  - tests/state-compat/CMakeLists.txt
-covered_digest: "v4:sha256:6d00506814c78dfbdb2df775ae502a13f4c4ff6f4ac939ff3f09a9af9b2c9cb1"
+  - ".planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-01-PLAN.md"
+  - ".planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-01-SUMMARY.md"
+  - ".planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-02-PLAN.md"
+  - ".planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-02-SUMMARY.md"
+  - ".planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-03-PLAN.md"
+  - ".planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-03-SUMMARY.md"
+  - ".planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-04-PLAN.md"
+  - ".planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-04-SUMMARY.md"
+  - ".planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-05-PLAN.md"
+  - ".planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-05-SUMMARY.md"
+  - ".planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-06-PLAN.md"
+  - ".planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-06-SUMMARY.md"
+  - ".planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-07-PLAN.md"
+  - ".planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-07-SUMMARY.md"
+  - ".planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-COST-EVIDENCE.md"
+  - ".planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-REVIEW-DISPOSITION.md"
+  - ".planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-REVIEW.md"
+  - "build/v6-ym-sanitize-apple/runner/muhtari-run"
+  - "build/v6-ym-sanitize-apple/tests/muhtari-test-state"
+  - "build/v6-ym-sanitize-apple/tests/muhtari-test-ym2151"
+  - "docs/embedding.md"
+  - "docs/hardware/ym2151.md"
+  - "scripts/emscripten.sh"
+  - "src/bus.c"
+  - "src/cart.c"
+  - "src/internal.h"
+  - "src/state.c"
+  - "src/synth.c"
+  - "src/ym2151.c"
+  - "tests/audio/test_ym2151.c"
+  - "tests/audio/ym_oracle.cmake"
+  - "tests/audio/ym_oracle.cpp"
+  - "tests/core/state_compat.c"
+  - "tests/core/state_compat.cmake"
+  - "tests/core/test_state.c"
+  - "tests/emscripten/bundle.cmake"
+  - "tests/emscripten/host.mjs"
+  - "tests/release/ym_consumers.cmake"
+covered_digest: "v4:sha256:5461430768d35f31c4bdf7e5172526cc849ba8006463df4e8cc49e1541c09ce9"
 behavior_unverified: 0
 overrides_applied: 0
 decision_coverage:
@@ -132,58 +51,133 @@ decision_coverage:
   not_honored: []
 ---
 
-# Complete YM2151 homebrew sound verification
+# Phase 20: Complete YM2151 homebrew sound Verification Report
 
-The selected one-profile digital sound capability meets the phase goal through the existing library, runner, native/portable libretro and clean package consumers. This is local feature acceptance; publication and hardware/host acceptance are separate. The executed source is daab4c82c0bb3393b3e93ee2b23ead09236f16ec, with production reviewed at5158bb6. Current product files are unchanged from that executed snapshot. Later changes are planning prose only.
+**Phase Goal:** A host can load one documented XM/YM2151 profile and obtain deterministic FM sound with complete lifecycle/state behavior through every existing deliverable and portable/package consumer.
+**Verified:** 2026-11-12T15:22:14Z
+**Status:** passed
+**Re-verification:** No — the prior report had no gaps section. This initial-mode pass rechecked the archived contract and the current observer-restore change.
 
-## Goal truths
+## Goal Achievement
 
-| Truth | Status | Concrete evidence |
-|---|---|---|
-| The documented selected/header-auto XM/YM request follows the qualified ports, enable, clock, status, timers and IRQ policy, and unsupported requests refuse transactionally. | Verified | src/cart.c, bus.c, ym2151.c and libretro.c implement the declared profile. Actual ym.profile/clock/irq, runner and loaded-module tests cover map/gate/status/manual numeric periods, refusal before allocation and supported/unsupported reload behavior in both regions. |
-| The homebrew produces independently checked non-silent, bounded mono PCM and canonical observations, with retained legacy output. | Verified | C17 OPM specialization and frozen exact-pin BSD-3 oracle agree on synthesis/nonbusy status/IRQ; manual busy68 versus seed64 is explicitly checked separately. ym.mix/observer/hostile exercise signed gain, rounding, headroom, FIFO/carry, all12 actual mixed sources and both regions. Historical equality aggregates remain pinned, and native/Wasm libretro duplicate mono. |
-| Complete reset/reload/isolation and YM state continuation remain bounded and transactional. | Verified | Lifecycle/hostile cases check allocator and output guards, real IRQ/JAM traffic and reset. Full YM visitor/prevalidation in state.c includes reset-relative clocks; repaired-CRC semantic faults preserve live state/battery. Genuine independently linked kickoff/current public drivers prove exact non-YM checkpoint bytes and both continuation directions in10 topology/region cases, including pending SaveKey, plus actual old/new cross-capability refusals. |
-| The same owned diagnostic reaches every required native/portable/clean-package consumer with identity and existing controls intact. | Verified | ym.public_runner compares public C with fresh runner processes. libretro.host.ym loads the actual module. Schema2 native/Node observers judge independent numeric records before hashes. Actual pinned emitted Wasm and clean extracted ZIP execute six exact-inventory tests, callbacks/fallback/reset/state/isolation/refusal controls and both workloads. Native release.ym_consumers executes extracted/installed library, runner and loaded module. Actual-archive offline publisher validates transferred evidence and integrity/signer/ref faults. |
-| Maintainers have accurate support, compatibility, provenance, numerical/resource and measured cost documentation. | Verified | Hardware/profile, audio/cartridge, embedding, runner/libretro, testing/maintaining and notices match implementation. No public API/ABI change; global7/2 and non-YM6/1 envelopes are distinguished. Final exact-source ordinary/adverse native/Node reports contain12-frame warmup plus3 restored60-frame windows for each region. Actual public allocator/private observer probes give concrete extents. Existing doc budgets pass; no new numerical quota or hardware/retail claim is introduced. |
+### Observable Truths
 
-## Requirements
-
-| Requirement | Source plans | Status | Evidence |
+| # | Truth | Status | Evidence |
 |---|---|---|---|
-| YM-01 | 20-01,02 | Satisfied | Numeric profile/clock/IRQ tests, transactional loader and loaded-module refusal; final native log. |
-| YM-02 | 20-01,07 | Satisfied | Unchanged six-file seed/object receipt; exact oracle exit0; signed numeric tests and full notices. |
-| YM-03 | 20-02,03,04,07 | Satisfied | Integer mix/carry and all-source chronology; pinned retained digests; actual duplicated mono; final sanitizer and native/Node results. |
-| YM-04 | 20-02,03,04,07 | Satisfied | Lifecycle, hostile IRQ/JAM, no post-load allocation and borrowed-buffer guards; native and portable reset/isolation/refusal. |
-| YM-05 | 20-03,06,07 | Satisfied | Full YM state/repaired-integrity semantics and BIOS origin replay; genuine old/current independent ten-case bidirectional matrix and controls. |
-| YM-06 | 20-04,07 | Satisfied | Public C, real runner and loaded libretro module, independent numeric checks and callback controls before equality hashes. |
-| YM-07 | 20-05,07 | Satisfied | Actual emitted/extracted portable artifacts, installed/extracted native consumers, retained notices/integrity and transferred-evidence publisher controls. |
-| YM-08 | 20-01..07 | Satisfied | Final source-bound cost reports, extents and arithmetic/bounded-work proof; current docs and clean required review. |
+| 1 | Hosts can load the documented selected or header-autodetected XM/YM profile, with qualified ports, D7 gate, regional clock, busy/status, timers and v4-only IRQ; unsupported combinations refuse transactionally. | ✓ VERIFIED | src/cart.c routes the XM ports into src/ym2151.c; src/bus.c schedules timer deadlines and samples the YM IRQ. The active profile tests and loaded-module checks are registered in the existing audio/libretro inventories. Phase 20's final native gates passed before the current observer-only correction. The archived hardware profile names the numeric/manual evidence and physical-XM limits. |
+| 2 | The homebrew produces deterministic, non-silent bounded mono FM and chronological signed observations while preserving no-YM results and duplicated-mono libretro output. | ✓ VERIFIED | The current OPM implementation emits its two signed channel samples into src/synth.c; the mixer consumes real queued source levels into frame PCM. The fixed-pinned seed oracle is separately linked and receipt-checked; source-independent busy/timer values are judged separately. The current targeted ym.observer test passes in both NTSC and PAL after the fix. Existing exact no-YM identity/audio checks and actual native/Node consumers passed in the recorded final gates. |
+| 3 | YM state resumes with identical output, refusals preserve live and battery state, genuine non-YM snapshots retain their envelope, and observer replay cannot leak a discarded future carry. | ✓ VERIFIED | The state visitor validates the full YM payload before apply. After a successful apply, muhtari__synth_observe_reset clears pending/carry records and copies restored synthesis raw values into the observer cache; it leaves the timing cursor intact. The regression in tests/audio/test_ym2151.c saves a checkpoint, records a control frame, advances into an abandoned future, queues a matching future carry, restores, and compares the replay's count, sequence hash, source mask, per-channel counts and polarity totals. The lesson records current build success, ym.observer plus core.state.equality_report 2/2, and hashes_state_control success (including 78 state rows and semantic-fault controls). The genuine independent old/current ten-case, two-direction matrix and refusal controls passed in the preceding final-source compatibility gates. |
+| 4 | The owned diagnostic reaches the public library, runner, loaded libretro, emitted Wasm and clean package consumers with numeric judgments before cross-route equality. | ✓ VERIFIED | The archived final native and portable receipts show public C, real runner, dynamically loaded libretro, emitted Wasm, clean extracted/installed packages and actual archive controls passing. The current correction is confined to the private observer; ordinary instances return immediately from the reset helper when no observer is registered. Current state-report and observer regression tests pass. The full cross-consumer gates have not been rerun after this observer-only change; their recorded receipts are from the immediately preceding product snapshot. |
+| 5 | Integrators can reproduce the support/compatibility policy and maintainers can reproduce measured native/Wasm cost, extents and finite bounds without broader hardware claims. | ✓ VERIFIED | The archived requirements, hardware and embedding docs cover the supported profile, API 8/ABI 1, machine-specific state envelopes, seed/update duties, costs and evidence limits. The cost report records ordinary/adverse workloads in both regions, actual Wasm/Node windows, extents and structural limits. All 16 trackable context decisions are honored. Plan 07's declared cost artifact path points to the pre-archive .planning/phases/ location; the real artifact exists at this archived phase directory and was read directly. |
 
-All eight appear in plan requirement sets, the final summary's requirements-completed and current REQUIREMENTS checkboxes/traceability. Phase19's separate TUNE-10 result and original receipts remain unchanged. No requirement is orphaned or deferred from this phase.
+**Score:** 5/5 truths verified (0 present, behavior-unverified)
 
-## Artifact and wiring checks
+## Required Artifacts
 
-All seven plans' declared artifact checks pass. The generic key-link matcher reports false negatives for some C/CMake source-path patterns; direct source tracing and actual consumer execution establish those links instead of treating an unattempted text pattern as a product failure. CMake builds ym2151.c into the same shipped object/archive/module path; cartridge decode reaches the bus and YM instance; existing clock edges merge TIA/YM/POKEY before synthesis; state visitor/prevalidation owns the conditional YM payload; runner and libretro call the public library; package CMake, native host and Node tests execute their actual installed/extracted products. Source, fixture, exported surface, notices and upload receipt identities are judged by the corresponding recurring controls.
+| Artifact | Expected | Status | Details |
+|---|---|---|---|
+| src/ym2151.c | Integer, per-instance OPM engine and bounded interfaces | ✓ VERIFIED | Substantive implementation is included in the shipped library; YM clock, register, timer and output paths are called from the cart/bus owners. |
+| src/state.c | Complete conditional YM state with prevalidation and transactional apply | ✓ VERIFIED | YM fields are included in the topology-aware visitor; validation precedes mutation. Successful apply now resets the private observer cache from restored synth state. |
+| src/synth.c | Signed source observation, bounded mixer and observer reset | ✓ VERIFIED | muhtari__synth_observe_reset drops pending/carry records and synchronizes observer raw levels; muhtari__synth_render drains queued PCM into caller output. |
+| tests/audio/test_ym2151.c | Profile, numeric sound, lifecycle, bounded output and observer replay checks | ✓ VERIFIED | Current regression asserts exact replay-summary equality; the targeted named test passes in both regions. |
+| tests/core/test_state.c, tests/core/state_compat.c, tests/core/state_compat.cmake | Recurring state invariants and independent old/current compatibility | ✓ VERIFIED | Existing state report and semantic controls pass after the fix; compatibility driver has separate source/header/library provenance checks and independent continuation comparisons. |
+| tests/emscripten/host.mjs, tests/emscripten/bundle.cmake, tests/release/ym_consumers.cmake | Actual portable and clean-package consumers | ✓ VERIFIED | Current sources connect native receipts to the Node consumer and actual extracted archive validation. Recorded final portable and release gates passed before the observer-only correction. |
+| docs/hardware/ym2151.md, docs/embedding.md, 20-COST-EVIDENCE.md | Profile, compatibility, measured cost and evidence limits | ✓ VERIFIED | Docs were inspected. The plan's old live-phase path for the cost report is stale from archive relocation; the archived report is present. |
 
-The final identity receipt binds64 product paths, seven actual artifacts and four measurement reports; all75 hashes match actual files. The product tree is byte-identical to the executed source. All16 locked CONTEXT decisions have implementation/evidence coverage; the selected runtime's explicit phase-directory/context query reports16/16 honored.
+The selected runtime's artifact query passed 21 of 21 declared artifacts across plans 20-01 through 20-06. Plan 20-07 reported one missing cost report because its declared path still points to the former live phase directory; direct inspection confirms the report at the archived path above. This is a path relocation issue, not a missing artifact.
 
-## Executable evidence
+## Key Link Verification
 
-Exact commands, exits, source and artifact identities are in 20-COST-EVIDENCE.md and ignored build/v6-phase20-final-gates.json plus final-identities.json. All URLs are N/A-local. Required final native713main+8release, unchanged hygiene30, exact frozen oracle, genuine compatibility and controls, qualified Apple combined ASan/UBSan17focused, full-JUnit production quality, actual pinned portable6exact tests/measurements and actual-archive offline publisher all exit0 after final production edits. Deliberate sanitizer memory/overflow faults abort with their expected diagnostics. Direct named lifecycle, hostile and YM-state spot checks also pass after the planning-only changes.
+| From | To | Via | Status | Details |
+|---|---|---|---|---|
+| tests/cart/images.c | src/cart.c | Generated CPU program writes selected XM/YM ports | ✓ WIRED | Cart read/write dispatch calls YM register read/write; profile and clock tests execute the generated diagnostic. |
+| src/bus.c | src/ym2151.c | Timer deadlines and IRQ sampling | ✓ WIRED | Bus rearming consults YM timer deadlines and samples muhtari__ym2151_irq; chip access catches up to absolute ticks. |
+| src/ym2151.c | src/synth.c | Signed YM outputs reach mix and observer | ✓ WIRED | Each channel is reported to observer and mixer; the mixer queues and renders PCM into the frame buffer. |
+| src/state.c | src/ym2151.c | State visitor covers mutable YM state | ✓ WIRED | Visitor traverses the YM structure; current YM state and semantic-refusal tests exercise save/restore and validation. |
+| runner/main.c / libretro/libretro.c | Public library | Runner and loaded module call public create/load/frame/state APIs | ✓ WIRED | Runner calls muhtari_load, muhtari_load_state and muhtari_run_frame; loaded libretro calls the same library APIs and has a real-module test. |
+| tests/libretro/observe.c | tests/emscripten/host.mjs | Source-bound native receipts feed actual Node/Wasm judgment | ✓ WIRED | The portable producer invokes the host in report/verify modes with native receipts and named YM fixtures. |
+| scripts/emscripten.sh | tests/emscripten/bundle.cmake | Build, inventory, archive extraction and package acceptance | ✓ WIRED | The producer executes the bundle acceptance path; the actual emitted/extracted gates passed on the prior final product snapshot. |
+| tests/core/state_compat.cmake | Genuine kickoff and current libraries | Independently linked producer/consumer drivers | ✓ WIRED | The helper checks source/header/library identity and runs ten region/topology cases in both continuation directions plus fault controls. |
+| docs/testing.md | tests/core/state_compat.cmake | Documented reproducible compatibility command | ✓ WIRED | The docs name the actual helper command and its genuine-old-source prerequisites. |
 
-Original failed attempts remain failures: stale hash-row assertion, public state/open-bus/reload faults and mixed-chip chronology are separately reproduced before fixes and pass afterward. The mixed-source Release regression now observes all12 sources and catches the error without relying on assertions. Independent standard review is clean after two bounded fix rounds, with no required finding open and no formal gap round used. No full gate was repeated solely for planning prose.
+The generic key-link query reports false negatives where links are expressed through CMake composition, API dispatch or path arguments rather than target-path text. Direct source and command tracing above establishes those connections. The archive relocation explains the one stale planning path.
 
-## Scope and unclaimed evidence
+## Data-Flow Trace (Level 4)
 
-Available GCC13 cannot recognize the existing required warning flag; its optional no-FP attempt exits2 before product compilation. No warning was dropped and no no-FP pass is inferred. Qualified PowerPC/qemu and WASI/Wasmtime are absent. Homebrew sanitizer startup hangs before main in an unrelated probe; qualified AppleClang uses the same combined flags and passes actual fault controls and final tests. Plan07 requires available qualified supplemental lanes, so these honest availability limits do not override a failed required contract. Actual emitted Emscripten Wasm is proven separately.
+| Artifact | Data Variable | Source | Produces Real Data | Status |
+|---|---|---|---|---|
+| src/ym2151.c → src/synth.c | ym->output[0..1] → synth.raw[]/pending events | Actual register-driven OPM clocks and channel output | Yes | ✓ FLOWING |
+| src/synth.c → caller | PCM queue → muhtari_frame.audio and audio_count | Integer mixer/filter over queued TIA, POKEY and YM levels | Yes | ✓ FLOWING |
+| libretro/libretro.c | Rendered mono frame | Current library frame buffer, delivered through callback or duplicated-mono batch | Yes | ✓ FLOWING |
+| tests/emscripten/host.mjs | Native and portable observation reports | Actual native observer and actual emitted Wasm module on the named generated fixture | Yes | ✓ FLOWING |
 
-Owned diagnostic conformance, source-qualified digital modeling, seed translation parity, actual native/Wasm/package execution and observed-host cost retain distinct evidence. There is no physical XM oscillator/gain/audibility, retail library, browser/player or handheld acceptance claim. API8/ABI1, public mono, bounded instance ownership and all original unrelated bounds remain. The nine deferred v3 requirements and original Phase12/14 denied/spent host/remote stops remain untouched. No UI/device run, remote dispatch, push, merge or publication was used. No owner judgment item is needed for the selected local scope.
+## Behavioral Spot-Checks
 
-## Verdict
+| Behavior | Command / evidence | Result | Status |
+|---|---|---|---|
+| Rewind observer cache and carry reset | cmake --build build/v6-ym-sanitize-apple --target muhtari-test-ym2151 muhtari-test-state muhtari-run --parallel 4 | Exit 0 after the final fix; exact current command recorded in .planning/LESSONS.md. | ✓ PASS |
+| Observer replay plus state equality report | ctest --test-dir build/v6-ym-sanitize-apple --output-on-failure -R '^(ym\\.observer|core\\.state\\.equality_report)$' | Exit 0, 2/2 after the final fix. | ✓ PASS |
+| State hash report and semantic fault controls | cmake -DCASE=hashes_state_control -DHASHES=$PWD/tests/cmake/hashes.cmake -DSTATE_TEST=$PWD/build/v6-ym-sanitize-apple/tests/muhtari-test-state -DOUT=$PWD/build/v6-ym-sanitize-apple -DEMULATOR= -P tests/runner/tests.cmake | Exit 0; all 78 state rows and semantic fault controls passed after the final fix. | ✓ PASS |
+| Lane equality regression controls | ctest --test-dir build/v6-ym-sanitize-apple --output-on-failure -R '^policy\\.lane_equality\\.controls$' | Exit 0 after the observer reset implementation, before the last extra observer assertion; not treated as a post-assertion run. | ✓ PASS (earlier snapshot) |
+| Broad runner hash/equality matrix | runner.hashes_file in the local Apple sanitizer build | Timed out at its configured 286-second CTest bound while processing the expansion matrix (exit 8). This is not a pass and is not evidence of a product assertion failure. | ? INCOMPLETE |
+| Prior full native, compatibility, exact-seed, hygiene, portable and package gates | Exact command and source identity in 20-COST-EVIDENCE.md | Required final gates passed for the preceding final product snapshot; the new code only resets private observer state after successful state restore. | ✓ PASS (prior snapshot) |
 
-Passed for all five phase goal truths and all eight requirements. No blocking gap, acceptance override or human verification item remains in this phase. The orchestrator owns phase completion, milestone audit and local archival; shipping retains its separate authority boundary.
+The narrow current checks exercise the state transition introduced by this fix. The broader timed-out matrix remains an incomplete local check; it does not invalidate the passing named transition tests. A hosted PR run that failed state equality was on the older head 3cce920 and is the reason for this correction. The corrected-head hosted result remains part of shipping and is not claimed here.
 
+## Probe Execution
 
-## Archive relocation audit — 2026-11-12
+No phase-declared probe or conventional scripts/*/tests/probe-*.sh was found. Probe execution is not applicable.
 
-The local archive moved phase files byte-for-byte, then rebased live Markdown links. Product and execution-receipt bytes remain unchanged. The verifier remapped covered paths and recomputed the fingerprint through the selected runtime; the original source-specific verdict, qualifications and failed history remain intact. Previous fingerprint: `v4:sha256:8a3299ffede327b678794a46e59f560211798652e3d29bc25912afbce0ec632c`. No product gate was repeated for relocation.
+## Test Quality Audit
+
+| Test File | Linked Req | Active | Skipped | Circular | Assertion Level | Verdict |
+|---|---|---:|---:|---:|---|---|
+| tests/audio/test_ym2151.c | YM-01–04 | Yes | 0 | No | Numeric values, state transitions, exact replay sequence | ✓ ADEQUATE |
+| tests/audio/ym_oracle.cpp + tests/audio/ym_oracle.cmake | YM-02 | Yes | 0 | No | Receipt-bound actual C-vs-pinned-seed sample/status/IRQ comparison | ✓ ADEQUATE |
+| tests/core/test_state.c | YM-05 | Yes | 0 | No | Repaired-integrity semantic faults, equality report, unchanged state/battery | ✓ ADEQUATE |
+| tests/core/state_compat.c + tests/core/state_compat.cmake | YM-05 | Yes | 0 | No | Independent old/current bytes and multi-frame two-way continuation | ✓ ADEQUATE |
+| tests/runner/tests.cmake, tests/libretro/host.c, tests/libretro/observe.c | YM-06 | Yes | 0 | No | Actual process/module execution and numeric output judgment | ✓ ADEQUATE |
+| tests/emscripten/host.mjs, tests/emscripten/bundle.cmake, tests/release/ym_consumers.cmake | YM-07 | Yes | 0 | No | Actual emitted/extracted artifacts, identity checks and fault controls | ✓ ADEQUATE |
+| tests/audio/test_ym2151.c, tests/emscripten/host.mjs | YM-08 | Yes | 0 | No | Positive complete timing windows, source/workload identities and extent/bound judgments | ✓ ADEQUATE |
+
+**Disabled tests on requirements:** 0.
+**Circular expected-value patterns:** 0. Writers in the mapped suites produce runtime state, fixtures, receipts or reports; the pinned C++ oracle is a separately receipt-bound seed, not the C implementation under test.
+**Insufficient assertions:** 0.
+
+## Requirements Coverage
+
+| Requirement | Source Plan | Description | Status | Evidence |
+|---|---|---|---|---|
+| YM-01 | 20-01, 20-02 | Selected/autodetected profile, qualified ports/timing/IRQ, transactional refusal | ✓ SATISFIED | Actual profile, clock, timer/IRQ, runner and loaded-module checks; direct cart/bus/chip trace. |
+| YM-02 | 20-01, 20-07 | Integer C17 OPM, non-silent FM, exact pinned seed parity and retained BSD-3 notices | ✓ SATISFIED | Numeric YM tests, exact-pinned oracle result, notices and provenance. |
+| YM-03 | 20-02, 20-03, 20-04, 20-07 | Deterministic bounded mono/canonical audio, signed carry/mix, retained no-YM results | ✓ SATISFIED | Current observer regression and state equality report pass; final audio and consumer gates were recorded on the preceding product snapshot. |
+| YM-04 | 20-02, 20-03, 20-04, 20-07 | Reset/reload/isolation, finite work, no late allocation and guarded output | ✓ SATISFIED | Lifecycle/hostile and consumer tests in final native/portable receipts; current code reset helper returns without mutation when no private observer exists. |
+| YM-05 | 20-03, 20-06, 20-07 | Complete YM state and transactional refusal plus unchanged legacy compatibility | ✓ SATISFIED | Current observer rewind/state checks pass; genuine independent ten-case, two-direction legacy matrix and refusal controls passed in final compatibility receipts. |
+| YM-06 | 20-04, 20-07 | Same diagnostic through public C, runner and loaded libretro | ✓ SATISFIED | Actual public, fresh runner process and loaded module tests, independent numeric checks before hashes; final native receipt. |
+| YM-07 | 20-05, 20-07 | Actual portable artifact and clean extracted/installed packages with identity/notices/controls | ✓ SATISFIED | Actual emitted Wasm, extracted archive, installed consumers and offline publisher control receipts. These precede the private observer reset fix. |
+| YM-08 | 20-01–20-07 | Supported profile/evidence limits and measured ordinary/adverse cost, extent and finite bounds | ✓ SATISFIED | Archived profile/embedding/cost docs and exact-source cost reports, reviewed directly. |
+
+The archived requirements file maps YM-01 through YM-08 exactly once to Phase 20. No phase requirement is orphaned. TUNE-10 belongs to Phase 19 and is out of this phase's requirements set.
+
+## Anti-Patterns Found
+
+| File | Line | Pattern | Severity | Impact |
+|---|---:|---|---|---|
+| — | — | No unreferenced debt markers or live-path stubs found in the inspected changed code. The return-NULL matches in state tests are legitimate test lookup/allocation failure paths. | — | — |
+
+## Decision Coverage
+
+Selected runtime result: 16/16 trackable context decisions honored; not_honored is empty. Decision coverage is a non-blocking consistency check.
+
+## Human Verification Required
+
+N/A — this is a core-library/emulator phase with no user-facing visual or external-service workflow to judge manually. The requested digital behavior and the observer state transition have automated numeric/runtime evidence. Physical XM wiring, clock calibration, analog gain, audibility, retail compatibility and handheld/browser acceptance are explicitly outside this phase and are not being claimed.
+
+## Gaps Summary
+
+No must-have truth failed and no human-verification item remains. The targeted current restore/equality checks pass. The broader local runner.hashes_file sanitizer attempt timed out at 286 seconds and is explicitly not counted as passed; current corrected-head hosted CI remains a shipping check. The earlier hosted failure was on old head 3cce920, not this correction. Plan 20-07's cost-evidence path is stale after archive relocation, but the archived evidence file exists. These are recorded evidence/scope limits, not an observed failure of the phase goal.
+
+---
+
+_Verified: 2026-11-12T15:22:14Z_
+_Verifier: the agent (gsd-verifier)_
