@@ -5,17 +5,17 @@ milestone_name: YM2151 homebrew sound
 current_phase: 20
 current_phase_name: Complete YM2151 homebrew sound
 status: executing
-stopped_at: Phase 19 complete; ready to plan Phase 20
-last_updated: "2026-11-12T04:33:27.862Z"
-last_activity: 2026-11-11
-last_activity_desc: Phase 19 complete, transitioned to Phase 20
-state_head: ed4fab49b6fe6dce0815595034e2f67e59dea82b
+stopped_at: Completed 20-01-PLAN.md
+last_updated: "2026-11-12T06:01:35.505Z"
+last_activity: 2026-11-12
+last_activity_desc: Phase 20 execution started
+state_head: 9f1675adabf7d1e9306b1d1cce054805112c231d
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 8
-  completed_plans: 1
-  percent: 13
+  completed_plans: 2
+  percent: 25
 ---
 
 # Project State
@@ -24,16 +24,16 @@ progress:
 
 See [PROJECT.md](PROJECT.md), [current requirements](REQUIREMENTS.md), [ROADMAP.md](ROADMAP.md) and [milestone synthesis](research/next-milestone/SUMMARY.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** v6.0 YM2151 homebrew sound is selected for autonomous local follow-through. Phase 19's measured tune-up is verified complete; Phase 20 delivers one complete XM/YM vertical slice through all native/Wasm/package consumers. All nine current requirements remain mapped; no routine scope/roadmap approval is pending. v5.0 shipping is closed. Preserve all Phase 12/14 stops and nine deferred v3.0 gaps.
+**Current focus:** Phase 20 — Complete YM2151 homebrew sound; Plan 20-01 complete, Plan 20-02 next
 
 ## Current Position
 
-Phase: 20 (Complete YM2151 homebrew sound) — READY TO EXECUTE
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-11-11 — Phase 19 complete, transitioned to Phase 20
+Phase: 20 (Complete YM2151 homebrew sound) — EXECUTING
+Plan: 2 of 7
+Status: Executing Phase 20
+Last activity: 2026-11-12 — Phase 20 execution started
 
-Progress: [█░░░░░░░░░] 13%
+Progress: [███░░░░░░░] 25%
 
 ## Performance Metrics
 
@@ -43,6 +43,7 @@ v6.0: one completed plan and one completed phase; Phase 20 is ready to plan. Pha
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 19 P01 | 76min | 1 task | 1 file |
+| Phase 20 P01 | 80min | 2 tasks | 20 files |
 
 ## Accumulated Context
 
@@ -105,9 +106,9 @@ At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Sou
 
 ## Session Continuity
 
-Last session: 2026-11-12T03:45:18.943Z
-Stopped at: Phase 19 complete; ready to plan Phase 20
-Resume file: research/next-milestone/SUMMARY.md
+Last session: 2026-11-12T06:01:35.483Z
+Stopped at: Completed 20-01-PLAN.md
+Resume file: None
 
 Next action: After clearing context, run `$gsd-autonomous` for v6.0. It will reconcile the live plan index and continue Phase 20 planning and authorized local work. No user action is needed for routine continuation.
 
@@ -123,3 +124,5 @@ Next action: After clearing context, run `$gsd-autonomous` for v6.0. It will rec
 - [Phase 19]: Reused the fef5691 v0.13.1 record correction; current records need no second edit.
 - [Phase 19]: Retain CI deadlines, caches, topology, quality floors and required/advisory membership; the few exact-source samples do not support a safe pipeline change.
 - [Phase 19]: Preserve the hygiene tree timeout and same-source outside-sandbox passes; qualify execution context without claiming a specific root cause or changing the deadline.
+- [Phase 20]: YM2151 production busy follows Yamaha's 68 phiM specification; the exact seed's 64-clock convention is separately reported as a four-clock parity difference.
+- [Phase 20]: Timer IRQ flags remain latched when carry-enable bits are cleared; reset bits clear them, and mode-write/carry ordering is covered against the exact seed.
