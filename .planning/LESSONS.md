@@ -756,3 +756,19 @@ the uploaded JUnit report identifies only `release.ym_consumers` in
 completed. The targeted local Apple sanitizer build has Debug package members,
 so it cannot exercise this Release package check; `qemu-ppc` is unavailable
 locally. A fresh hosted BE32 run after the correction is the required proof.
+
+## Keep equality workflow source paths aligned with its shared identity check (2026-11-12)
+
+The BE32 equality workflow builds its identity with a separate `git ls-tree`
+path list. When `hashes_lane_identity` began including
+`tests/audio/test_ym2151.c` and `tests/cart/images.c`, the workflow's two lane
+identities still matched each other but both omitted those source files. The
+gate rejected the evidence against the source commit after completing both
+normal and release inventories. Keep the workflow path list aligned with the
+shared identity helper so both lanes prove the same committed inputs.
+
+Reproduced on the exact shipping head in [Release equality job
+131340814070](https://github.com/szTheory/muhtari/actions/runs/43263319919/job/131340814070).
+The BE32 release consumer check passed under QEMU; the only reported failure
+was the final source-identity comparison. Adding both missing paths restores
+the workflow's source identity to the shared helper's expected value.
