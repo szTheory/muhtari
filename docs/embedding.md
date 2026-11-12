@@ -549,6 +549,11 @@ machine-affecting configuration, not a filename or header CRC. Clock values are
 checked against current hardware producers and their cross-field timing
 relationships; the format does not impose an arbitrary absolute tick ceiling.
 
+Ten NTSC/PAL cases against pre-YM code prove identical states and both
+continuation directions for linear, SuperGame RAM, XBoard, XM/HSC and pending
+SaveKey. Old code safely refuses YM; length checks may precede version refusal.
+See the [compatibility check](../tests/core/state_compat.cmake).
+
 Both functions return `MUHTARI_STATUS_ERR_ARGUMENT` for a NULL instance or
 buffer. A non-NULL instance without content returns
 `MUHTARI_STATUS_ERR_STATE_UNAVAILABLE`; a short save capacity returns
