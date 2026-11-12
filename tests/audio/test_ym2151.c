@@ -243,6 +243,31 @@ static void ym_write_reg(muhtari *m, uint8_t reg, uint8_t value, uint64_t tick)
     muhtari__ym2151_write(m, 0x0461u, value, tick);
 }
 
+/* Test-only chip advancement uses the normal half-open PCM consumer at each
+   frame boundary, keeping numeric and synthesis loops within the real FIFO. */
+static void ym_advance_and_discard(muhtari *m, uint64_t target)
+{
+    const struct muhtari__timing timing = muhtari__timing(m);
+    CHECK(timing.frame_ticks != 0u);
+    CHECK(target >= m->synth.horizon);
+    if (timing.frame_ticks == 0u || target < m->synth.horizon)
+        return;
+
+    while (target - m->synth.horizon >= timing.frame_ticks) {
+        const uint64_t end = m->synth.horizon + timing.frame_ticks;
+        CHECK(end <= target);
+        muhtari__ym2151_catch_up(m, end);
+        CHECK(m->synth.pcm_count <= MUHTARI__SYNTH_PCM_CAPACITY);
+        const uint32_t discarded = muhtari__synth_render(m, end, NULL);
+        CHECK(discarded <= timing.max_samples);
+        CHECK_EQ_U64(m->synth.horizon, end);
+        CHECK(m->synth.pcm_count <= MUHTARI__SYNTH_PCM_CAPACITY);
+    }
+
+    muhtari__ym2151_catch_up(m, target);
+    CHECK(m->synth.pcm_count <= MUHTARI__SYNTH_PCM_CAPACITY);
+}
+
 static void ym_numeric_timer(uint32_t timer, uint32_t value, uint64_t expected_period)
 {
     muhtari *m = ym_test_chip();
@@ -267,10 +292,13 @@ static void ym_numeric_timer(uint32_t timer, uint32_t value, uint64_t expected_p
     uint64_t just_before = (expected_period - 1u) * 2u;
     uint64_t exact = expected_period * 2u;
     uint64_t just_after = (expected_period + 1u) * 2u;
+    ym_advance_and_discard(m, just_before);
     CHECK_EQ_U64(muhtari__ym2151_read(m, 0x0461u, just_before) & flag, 0u);
     CHECK_EQ_U64(muhtari__ym2151_irq(m), 0u);
+    ym_advance_and_discard(m, exact);
     CHECK_EQ_U64(muhtari__ym2151_read(m, 0x0461u, exact) & flag, flag);
     CHECK_EQ_U64(muhtari__ym2151_irq(m), 1u);
+    ym_advance_and_discard(m, just_after);
     CHECK_EQ_U64(muhtari__ym2151_read(m, 0x0461u, just_after) & flag, flag);
     CHECK_EQ_U64(muhtari__ym2151_irq(m), 1u);
     CHECK_EQ_U64(m->ym.timer_running[timer], 1u);
@@ -296,8 +324,11 @@ static void ym_numeric(void)
     CHECK(m != NULL);
     if (m != NULL) {
         ym_write_reg(m, 0x20u, 0u, 0u);
+        ym_advance_and_discard(m, 67u * 2u);
         CHECK_EQ_U64(muhtari__ym2151_read(m, 0x0461u, 67u * 2u) & 0x80u, 0x80u);
+        ym_advance_and_discard(m, 68u * 2u);
         CHECK_EQ_U64(muhtari__ym2151_read(m, 0x0461u, 68u * 2u) & 0x80u, 0u);
+        ym_advance_and_discard(m, 69u * 2u);
         CHECK_EQ_U64(muhtari__ym2151_read(m, 0x0461u, 69u * 2u) & 0x80u, 0u);
         CHECK_EQ_U64(m->ym.busy_end, 68u);
         free(m);
@@ -315,6 +346,7 @@ static void ym_numeric(void)
         ym_write_reg(same_edge, 0x10u, 0xffu, 0u);
         ym_write_reg(same_edge, 0x11u, 3u, 0u);
         ym_write_reg(same_edge, 0x14u, 0x05u, 0u);
+        ym_advance_and_discard(same_edge, 128u);
         CHECK_EQ_U64(muhtari__ym2151_read(same_edge, 0x0461u, 128u) & 1u, 1u);
         ym_write_reg(same_edge, 0x14u, 0x15u, 128u);
         CHECK_EQ_U64(muhtari__ym2151_read(same_edge, 0x0461u, 128u) & 1u, 0u);
@@ -396,7 +428,7 @@ static uint64_t ym_run_case(const struct ym_case_vector *test, uint32_t *sample_
         for (uint16_t step = 0u; step < item->samples; step++) {
             now += 64u;
             for (uint8_t chip = 0u; chip < test->chip_count; chip++) {
-                muhtari__ym2151_catch_up(machines[chip], now * 2u);
+                ym_advance_and_discard(machines[chip], now * 2u);
                 hash = ym_hash_sample(hash, machines[chip]->ym.output[0],
                                       machines[chip]->ym.output[1]);
                 for (unsigned channel = 0u; channel < 2u; channel++) {

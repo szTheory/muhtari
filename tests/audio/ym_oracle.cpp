@@ -137,6 +137,24 @@ struct Pair {
         }
     }
 
+    void discard_completed_frames(uint64_t tick)
+    {
+        const struct muhtari__timing timing = muhtari__timing(c);
+        if (timing.frame_ticks == 0u || tick < c->synth.horizon)
+            throw std::runtime_error("invalid audio frame boundary");
+        while (tick - c->synth.horizon >= timing.frame_ticks) {
+            const uint64_t end = c->synth.horizon + timing.frame_ticks;
+            if (end > tick || c->synth.pcm_count > MUHTARI__SYNTH_PCM_CAPACITY)
+                throw std::runtime_error("YM audio exceeded the bounded render interval");
+            const uint32_t discarded = muhtari__synth_render(c, end, nullptr);
+            if (discarded > timing.max_samples || c->synth.horizon != end ||
+                c->synth.pcm_count > MUHTARI__SYNTH_PCM_CAPACITY)
+                throw std::runtime_error("YM frame discard exceeded its bounded capacity");
+        }
+        if (c->synth.pcm_count > MUHTARI__SYNTH_PCM_CAPACITY)
+            throw std::runtime_error("YM PCM FIFO exceeded its declared capacity");
+    }
+
     void clock_one()
     {
         interface.now++;
@@ -144,7 +162,8 @@ struct Pair {
             if (interface.timer_running[timer] && interface.deadline[timer] <= interface.now)
                 seed.expire_timer(timer);
         }
-        muhtari__ym2151_catch_up(c, interface.now * 2u);
+        const uint64_t tick = interface.now * 2u;
+        muhtari__ym2151_catch_up(c, tick);
         if ((interface.now & 63u) == 0u) {
             seed.generate(&last_output, 1u);
             if (c->ym.output[0] != last_output.data[0] ||
@@ -173,6 +192,7 @@ struct Pair {
                                          std::to_string(c->ym.output[1]) + ")");
             }
         }
+        discard_completed_frames(tick);
         compare_state("clock");
     }
 };
