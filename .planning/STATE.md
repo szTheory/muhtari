@@ -5,17 +5,17 @@ milestone_name: YM2151 homebrew sound
 current_phase: 20
 current_phase_name: Complete YM2151 homebrew sound
 status: executing
-stopped_at: Completed 20-01-PLAN.md
-last_updated: "2026-11-12T06:02:20.556Z"
+stopped_at: Completed 20-02-PLAN.md
+last_updated: "2026-11-12T07:27:56.121Z"
 last_activity: 2026-11-12
 last_activity_desc: Phase 20 execution started
-state_head: f624d5725ed90b43efbd9446c7e2df43b162ac6c
+state_head: 3d9b85dd36f46458dfcfdeaa559615a265dd29e0
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 8
-  completed_plans: 2
-  percent: 25
+  completed_plans: 3
+  percent: 38
 ---
 
 # Project State
@@ -29,11 +29,11 @@ See [PROJECT.md](PROJECT.md), [current requirements](REQUIREMENTS.md), [ROADMAP.
 ## Current Position
 
 Phase: 20 (Complete YM2151 homebrew sound) — EXECUTING
-Plan: 2 of 7
-Status: Executing Phase 20
+Plan: 3 of 7
+Status: Ready to execute
 Last activity: 2026-11-12 — Phase 20 execution started
 
-Progress: [███░░░░░░░] 25%
+Progress: [████░░░░░░] 38%
 
 ## Performance Metrics
 
@@ -44,6 +44,7 @@ v6.0: v6.0 has two completed plans and one completed phase. Phase 20 Plan 01 is 
 |------|----------|-------|-------|
 | Phase 19 P01 | 76min | 1 task | 1 file |
 | Phase 20 P01 | 80min | 2 tasks | 20 files |
+| Phase 20 P02 | 84min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -106,8 +107,8 @@ At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Sou
 
 ## Session Continuity
 
-Last session: 2026-11-12T06:01:35.483Z
-Stopped at: Completed 20-01-PLAN.md
+Last session: 2026-11-12T07:27:56.103Z
+Stopped at: Completed 20-02-PLAN.md
 Resume file: None
 
 Next action: After clearing context, run `$gsd-autonomous` for v6.0. It will reconcile the live plan index and continue Phase 20 planning and authorized local work. No user action is needed for routine continuation.
@@ -126,3 +127,6 @@ Next action: After clearing context, run `$gsd-autonomous` for v6.0. It will rec
 - [Phase 19]: Preserve the hygiene tree timeout and same-source outside-sandbox passes; qualify execution context without claiming a specific root cause or changing the deadline.
 - [Phase 20]: YM2151 production busy follows Yamaha's 68 phiM specification; the exact seed's 64-clock convention is separately reported as a four-clock parity difference.
 - [Phase 20]: Timer IRQ flags remain latched when carry-enable bits are cleared; reset bits clear them, and mode-write/carry ordering is covered against the exact seed.
+- [Phase 20]: Phase 20 Plan 20-02: The public API remains at 48 kHz; integrated YM PCM checks cover NTSC and PAL at that supported rate.
+- [Phase 20]: Phase 20 Plan 20-02: Power-cycle clears clocked YM state and derived caches to a deterministic fresh-instance baseline.
+- [Phase 20]: Phase 20 Plan 20-02: YM state remains unavailable until Plan 20-03 atomically installs format-2/behavior-7 continuation.

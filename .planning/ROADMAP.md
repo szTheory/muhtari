@@ -57,13 +57,13 @@ recommendations and local verification proceed without another approval.
   3. A host can reset, unload/reload, isolate instances and save/restore every YM state component mid-stream with identical subsequent audio, no post-load allocation, finite work and bounded output writes; invalid or incompatible state preserves the live machine and committed battery bytes under the compatibility policy documented before implementation.
   4. The same owned diagnostic passes through the actual public C library, headless runner, loaded libretro core, portable Wasm artifact and clean extracted/installed package consumers. Independent numeric expectations precede cross-route hashes; source/package identity, notices and existing callback/batch/fallback/refusal/integrity fault controls remain effective.
   5. Integrators can identify the exact supported request/profile and evidence limits in existing docs; maintainers can inspect justified finite work, integer headroom and memory/state bounds plus representative ordinary/worst-legal native/Wasm cost measurements using current mechanisms. The C17 seed specialization retains its license, provenance pin and update duty without adding a runtime C++ dependency.
-**Plans:** 1/7 plans executed
+**Plans:** 2/7 plans executed
 Plans:
 **Wave 1**
 - [x] 20-01-PLAN.md — Public YM tracer, fail-closed state guard and exact-seed OPM parity
 
 **Wave 2** *(blocked on Wave 1 completion)*
-- [ ] 20-02-PLAN.md — YM bus timing, signed audio mix, observations and lifecycle bounds
+- [x] 20-02-PLAN.md — YM bus timing, signed audio mix, observations and lifecycle bounds
 
 **Wave 3** *(blocked on Wave 2 completion)*
 - [ ] 20-03-PLAN.md — Complete YM save-state continuation and version compatibility
@@ -96,7 +96,7 @@ unaccepted until its implementation and verification gates pass.
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
 | 19. Measured milestone tune-up | 1/1 | Complete    | 2026-11-11 |
-| 20. Complete YM2151 homebrew sound | 1/7 | In Progress | - |
+| 20. Complete YM2151 homebrew sound | 2/7 | In Progress | - |
 
 ## Next boundary
 
