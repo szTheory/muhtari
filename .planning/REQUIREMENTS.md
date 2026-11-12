@@ -8,7 +8,7 @@ from a small MIT-licensed C library hosts can embed.
 
 ### Measured milestone tune-up
 
-- [ ] **TUNE-10**: Maintainers start feature work from current publication/docs and a source-specific quality/efficiency baseline, with one evidenced small correction or a bounded no-change disposition preserving required checks and historical failures.
+- [x] **TUNE-10**: Maintainers start feature work from current publication/docs and a source-specific quality/efficiency baseline, with one evidenced small correction or a bounded no-change disposition preserving required checks and historical failures.
 
 ### Qualified YM2151 sound
 
@@ -43,7 +43,7 @@ work, homebrew chips, browser/player adoption, ports and AI/TAS retain their see
 
 | Requirement | Phase | Status |
 |---|---|---|
-| TUNE-10 | Phase 19 | Pending |
+| TUNE-10 | Phase 19 | Complete |
 | YM-01 | Phase 20 | Pending |
 | YM-02 | Phase 20 | Pending |
 | YM-03 | Phase 20 | Pending |

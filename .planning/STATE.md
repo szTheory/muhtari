@@ -2,20 +2,20 @@
 gsd_state_version: "1.0"
 milestone: v6.0
 milestone_name: YM2151 homebrew sound
-current_phase: 19
-current_phase_name: Measured milestone tune-up
+current_phase: 20
+current_phase_name: Complete YM2151 homebrew sound
 status: planning
-stopped_at: v6.0 roadmap and requirement traceability written; agent continues autonomous local work into Phase 19
-last_updated: "2026-11-12T02:21:40.299Z"
+stopped_at: Phase 19 complete; ready to plan Phase 20
+last_updated: "2026-11-12T03:45:19.003Z"
 last_activity: 2026-11-11
-state_head: 12953bcf615d6e13575f41644bad81f0bb627743
+last_activity_desc: Phase 19 complete, transitioned to Phase 20
+state_head: 100487be3210f33b5580967aa179ee747dd065ee
 progress:
   total_phases: 2
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
-last_activity_desc: v6.0 roadmap created; all nine requirements mapped exactly once
+  completed_phases: 1
+  total_plans: 1
+  completed_plans: 1
+  percent: 50
 ---
 
 # Project State
@@ -24,20 +24,25 @@ last_activity_desc: v6.0 roadmap created; all nine requirements mapped exactly o
 
 See [PROJECT.md](PROJECT.md), [current requirements](REQUIREMENTS.md), [ROADMAP.md](ROADMAP.md) and [milestone synthesis](research/next-milestone/SUMMARY.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** v6.0 YM2151 homebrew sound is selected for autonomous local follow-through. Phase 19 establishes the measured tune-up; Phase 20 delivers one complete XM/YM vertical slice through all native/Wasm/package consumers. All nine current requirements are mapped; no routine scope/roadmap approval is pending. v5.0 shipping is closed. Preserve all Phase 12/14 stops and nine deferred v3.0 gaps.
+**Current focus:** v6.0 YM2151 homebrew sound is selected for autonomous local follow-through. Phase 19's measured tune-up is verified complete; Phase 20 delivers one complete XM/YM vertical slice through all native/Wasm/package consumers. All nine current requirements remain mapped; no routine scope/roadmap approval is pending. v5.0 shipping is closed. Preserve all Phase 12/14 stops and nine deferred v3.0 gaps.
 
 ## Current Position
 
-Phase: 19 (Measured milestone tune-up)
-Plan: 0 of TBD in current phase
+Phase: 20 — Complete YM2151 homebrew sound
+Plan: Not started
 Status: Ready to plan
-Last activity: 2026-11-11
+Last activity: 2026-11-11 — Phase 19 complete, transitioned to Phase 20
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
-v6.0: zero completed plans; two unplanned phases. Prior v5.0 completed three plans and seven tasks across two verified phases. Exact-source publication, downloaded-byte/install and current-main CI evidence remains in the [final ship receipt](milestones/v5.0-SHIP.md#final-publication-and-current-main-closure--reconciled-2026-11-11); local headless results establish no browser/device acceptance.
+v6.0: one completed plan and one completed phase; Phase 20 is ready to plan. Phase 19 records the source-specific baseline and local gate outcomes in [its summary](phases/19-measured-milestone-tune-up/19-01-SUMMARY.md). Prior v5.0 completed three plans and seven tasks across two verified phases. Exact-source publication, downloaded-byte/install and current-main CI evidence remains in the [final ship receipt](milestones/v5.0-SHIP.md#final-publication-and-current-main-closure--reconciled-2026-11-11); local headless results establish no browser/device acceptance.
+**Per-Plan Metrics:**
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 19 P01 | 76min | 1 task | 1 file |
 
 ## Accumulated Context
 
@@ -100,14 +105,21 @@ At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Sou
 
 ## Session Continuity
 
-Last session: 2026-11-11
-Stopped at: v6.0 roadmap and requirement traceability written; agent continues autonomous local work into Phase 19
-Resume file: [Milestone synthesis](research/next-milestone/SUMMARY.md), [proposal](research/next-milestone/PROPOSAL.md) and current [roadmap](ROADMAP.md)
-Next action: Agent reconciles the live plan index, then discusses/plans Phase 19 using the saved research and follows dependent authorized local work. Context may be cleared after the orchestrator records the current checkpoint; exact resume command: `$gsd-autonomous` for v6.0. No user action is needed for routine local continuation.
+Last session: 2026-11-12T03:45:18.943Z
+Stopped at: Phase 19 complete; ready to plan Phase 20
+Resume file: research/next-milestone/SUMMARY.md
+
+Next action: After clearing context, run `$gsd-autonomous` for v6.0. It will reconcile the live plan index and continue Phase 20 planning and authorized local work. No user action is needed for routine continuation.
 
 ## Operator Next Steps
 
 - Shipping execution is complete: v0.13.1 public downloads/attestations and installation passed; PR #53 merged and current-main CI passed. Commands, exits, source distinctions and run URLs are in [the final ship receipt](milestones/v5.0-SHIP.md#final-publication-and-current-main-closure--reconciled-2026-11-11). Earlier pending recovery paragraphs there are historical checkpoints, not new work.
-- v6.0 scope/requirements/roadmap are selected under the owner’s autonomous direction. The agent proceeds into Phase 19; [research synthesis](research/next-milestone/SUMMARY.md), [YM2151 scope](research/next-milestone/PROPOSAL.md), role reports and adversarial disposition preserve source confidence, alternatives and revisit triggers even where their original proposed-status wording predates selection.
+- v6.0 scope/requirements/roadmap are selected under the owner’s autonomous direction. Phase 19 is complete; the agent proceeds into Phase 20 using [research synthesis](research/next-milestone/SUMMARY.md), [YM2151 scope](research/next-milestone/PROPOSAL.md), role reports and integration findings, preserving source confidence, alternatives and revisit triggers.
 - Preserve denied/spent Phase 12/14 scopes, their specific no-retry limits and the nine deferred v3.0 requirements. The shipping recovery renewed none of them. No owner checkout switch, blanket UAT or routine CI confirmation is needed.
-- These planning changes and earlier owner corrections are saved locally but uncommitted on the canonical root. Preserve them and sibling dirt; branch from origin/main before the first committing step, without committing on main. No remote action, host launch, publication or merge is selected here.
+- Phase 19 planning, evidence, review and verification are committed locally on the authorized v6.0 milestone branch. Preserve the independent Phase 20 research and all sibling dirt. No remote action, host launch, publication or merge is selected here.
+
+## Decisions
+
+- [Phase 19]: Reused the fef5691 v0.13.1 record correction; current records need no second edit.
+- [Phase 19]: Retain CI deadlines, caches, topology, quality floors and required/advisory membership; the few exact-source samples do not support a safe pipeline change.
+- [Phase 19]: Preserve the hygiene tree timeout and same-source outside-sandbox passes; qualify execution context without claiming a specific root cause or changing the deadline.

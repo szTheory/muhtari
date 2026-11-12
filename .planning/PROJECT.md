@@ -19,7 +19,8 @@ v5.0 shipped as package v0.13.1. Public downloads, attestations, installation an
 current-main CI passed; the final ship receipt preserves exact-source and failed
 history. v6.0 is selected for autonomous local implementation. Nine v3.0 gaps and
 all original denied/spent host/remote scopes remain unchanged; older dirty
-worktrees stay preserved and root remains canonical.
+worktrees stay preserved and root remains canonical. Phase 19's measured tune-up
+and TUNE-10 are verified complete; Phase 20 is next for the one-profile YM slice.
 
 ## Current Milestone: v6.0 YM2151 homebrew sound
 
@@ -189,10 +190,10 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 - ✓ Evidence-backed library accounting and isolated local evaluation — COMP-01–03 — v2.0, Phase 11 merged in PR40.
 - ✓ Portable validated machine state through the library, runner and libretro core — STATE-01–06 and FRONT-01 — v3.0 Phase 13, verification passed 44/44.
+- ✓ Current publication/docs and proportionate measured quality/efficiency baseline — TUNE-10, v6.0 Phase 19.
 
 ### Active
 
-- [ ] TUNE-10: current release/docs and proportionate measured quality baseline.
 - [ ] YM-01–08: one qualified XM/YM2151 profile, permissive C17 synthesis,
   deterministic mono audio, complete state/lifecycle, all deliverables and
   portable consumers, measured bounded cost and accurate supported-profile docs.

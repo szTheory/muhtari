@@ -587,6 +587,21 @@ Evidence: `query verification.status` returned `stale` for moved PLAN/SUMMARY pa
 
 The installed `cmdInitPhaseOp` intentionally masks an archived directory when its phase number appears in the roadmap; minimal detail sections alone do not solve this. The project handoff documents the same-runtime `find-phase` adapter while retaining canonical verification and roadmap-completion gates. This requires no runtime modification or phase re-execution.
 
+## Qualify shell-heavy hygiene timeouts by execution boundary (2026-11-11)
+
+The unchanged one-slot hygiene preset can exceed its per-process tree-test deadline
+inside the sandbox even when the same test and full preset pass outside it. At
+`fc7d0cb`, `python3 build/phase18-hygiene-gate.py` inside the sandbox exits 8:
+only `hygiene.tree` times out at 60.02s, while 29 other checks pass. The unchanged
+`ctest --test-dir build/hygiene --output-on-failure -R '^hygiene[.]tree$'` outside
+the sandbox exits 0 in 37.52s at the same 60s deadline; the full unchanged helper
+outside exits 0 with 30/30 checks in 87.57s. Scoped process inspection finds no
+leftover attributable process. This supports execution-boundary overhead, not a
+specific kernel or process cause. Qualify the boundary before widening limits or
+changing membership; do not weaken the check or recommend a global restart from a
+timeout alone. All commands are local (`N/A-local`); ignored output is in
+`build/v6-phase19-hygiene-qualified.log` and other build-only receipts.
+
 ## Shipping consumer coverage (2026-11-10)
 
 The v4.0 PR exposed three distinct gates absent from the ordinary native workflow: pinned formatting, genuine-base fixture identity in the quality producer, and sanitizer-sensitive observer PCM parity. An owned fixture addition needs its exact named identity and representative pass/fault controls in the existing quality normalization consumer. The native audio API is mono; compare each sample against both libretro channels before hashing the duplicated stereo stream. Reading twice the native sample count can appear to pass on a silent fixture with zero-looking stack bytes.
