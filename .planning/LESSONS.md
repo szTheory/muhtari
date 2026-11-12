@@ -772,16 +772,25 @@ locally. A fresh hosted BE32 run after the correction is the required proof.
 
 ## Keep equality workflow source paths aligned with its shared identity check (2026-11-12)
 
-The BE32 equality workflow builds its identity with a separate `git ls-tree`
-path list. When `hashes_lane_identity` began including
+The BE32 equality and native CI hash workflows build their identities with
+separate `git ls-tree` path lists. When `hashes_lane_identity` began including
 `tests/audio/test_ym2151.c` and `tests/cart/images.c`, the workflow's two lane
 identities still matched each other but both omitted those source files. The
 gate rejected the evidence against the source commit after completing both
-normal and release inventories. Keep the workflow path list aligned with the
-shared identity helper so both lanes prove the same committed inputs.
+normal and release inventories. Keep each producer's path list aligned with
+the shared identity helper so its artifacts prove the same committed inputs.
 
 Reproduced on the exact shipping head in [Release equality job
 131340814070](https://github.com/szTheory/muhtari/actions/runs/43263319919/job/131340814070).
 The BE32 release consumer check passed under QEMU; the only reported failure
 was the final source-identity comparison. Adding both missing paths restores
 the workflow's source identity to the shared helper's expected value.
+
+The native CI workflow had the same two omitted paths. In exact-head [Release
+run 43283961544](https://github.com/szTheory/muhtari/actions/runs/43283961544),
+the Linux x64 and ARM64 artifacts had matching commit SHAs and identities, but
+both identities omitted those paths; the shared checker rejected
+`hashes-linux-arm64`.
+The WASM32 configure in that run also registered `release.ym_consumers`, which
+was absent from `tests/inventory/wasm32.txt`. Align the native CI identity list
+and WASM32 inventory with their shared sources and registered tests.

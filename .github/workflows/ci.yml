@@ -251,7 +251,11 @@ jobs:
       - name: The commit built
         run: |
           git rev-parse HEAD > build/${{ matrix.preset }}/commit.txt
-          git ls-tree -r HEAD -- pins.txt tests/roms tests/built tests/diag include/muhtari.h version.txt CMakePresets.json CMakeLists.txt > build/${{ matrix.preset }}/identity.txt
+          git ls-tree -r HEAD -- \
+            pins.txt tests/roms tests/built tests/diag \
+            tests/cart/images.c tests/audio/test_ym2151.c \
+            include/muhtari.h version.txt CMakePresets.json CMakeLists.txt \
+            > build/${{ matrix.preset }}/identity.txt
           printf '%s\n' 'Release warnings=error tests=ON libretro=ON short_runs=OFF inventory=ci normal+release' >> build/${{ matrix.preset }}/identity.txt
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
