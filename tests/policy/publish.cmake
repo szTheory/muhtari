@@ -42,6 +42,9 @@ case "$*" in
   'api repos/example/public/releases/7 --jq .draft')
     [ "$PUBLISH_DRAFT" != failed ] || exit 1
     printf '%s\n' "$PUBLISH_DRAFT" ;;
+  'api repos/example/public/releases/7')
+    [ "${PUBLISH_CASE:-}" != target-unavailable ] || { echo 'simulated HTTP 503' >&2; exit 1; }
+    printf '%s\n' "$PUBLISH_TARGET_JSON" ;;
   'api -X PATCH '*) ;;
   'api '*)
     [ "${PUBLISH_DRAFT:-}" != failed ] || exit 1
@@ -696,9 +699,61 @@ foreach(output draft state)
     endif()
   endforeach()
 endforeach()
-foreach(job rehearsal publish)
+foreach(job rehearsal publish release-target)
   string(REGEX MATCH "\n  ${job}:\n((    [^\n]*\n|\n)*)" job_block "${workflow}")
   if(NOT job_block MATCHES "sh scripts/fetch-pin.sh gh-linux-x86_64 [^\n]+\n +echo [^\n]+/bin[^\n]+GITHUB_PATH[^\n]*\n +[^\n]+/bin/gh[^\n]+--version")
     message(FATAL_ERROR "publish provisioning assertion: ${job} must fetch and consume the verified CLI before attestation")
+  endif()
+endforeach()
+
+# A resumed release must resolve only the exact stable draft identity named by
+# the dispatch. Published releases use the existing safe rerun path.
+set(target_sha 0123456789abcdef0123456789abcdef01234567)
+function(publish_target_control label json expected_rc expected_regex)
+  set(requested_tag v0.14.0)
+  if(ARGC GREATER 4)
+    set(requested_tag "${ARGV4}")
+  endif()
+  file(WRITE "${WORK}/target-output" "")
+  execute_process(COMMAND ${cmd} "PUBLISH_CASE=${label}" "PUBLISH_TARGET_JSON=${json}"
+      "GITHUB_OUTPUT=${WORK}/target-output" GITHUB_REPOSITORY=example/public
+      sh "${ROOT}/scripts/publish.sh" resolve-target 7 "${requested_tag}" "${target_sha}"
+    RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+  file(READ "${WORK}/target-output" emitted)
+  if(NOT rc STREQUAL "${expected_rc}" OR (NOT expected_regex STREQUAL "" AND
+      NOT "${out}${err}" MATCHES "${expected_regex}"))
+    message(FATAL_ERROR "publish target assertion: ${label} expected ${expected_rc}/${expected_regex}, got ${rc}: ${out}${err}")
+  endif()
+  if(expected_rc STREQUAL "0")
+    if(NOT emitted STREQUAL "release_created=true\ntag_name=${requested_tag}\nsha=${target_sha}\nid=7\n")
+      message(FATAL_ERROR "publish target assertion: ${label} emitted the wrong target: ${emitted}")
+    endif()
+  elseif(NOT emitted STREQUAL "")
+    message(FATAL_ERROR "publish target assertion: ${label} emitted output after rejection: ${emitted}")
+  endif()
+endfunction()
+
+set(target_draft "{\"id\":7,\"tag_name\":\"v0.14.0\",\"target_commitish\":\"${target_sha}\",\"draft\":true,\"prerelease\":false}")
+publish_target_control(target-valid "${target_draft}" 0 "")
+set(target_published "{\"id\":7,\"tag_name\":\"v0.14.0\",\"target_commitish\":\"${target_sha}\",\"draft\":false,\"prerelease\":false}")
+publish_target_control(target-published "${target_published}" 1 "requested stable identity")
+set(target_wrong_id "{\"id\":8,\"tag_name\":\"v0.14.0\",\"target_commitish\":\"${target_sha}\",\"draft\":true,\"prerelease\":false}")
+publish_target_control(target-wrong-id "${target_wrong_id}" 1 "requested stable identity")
+set(target_wrong_tag "{\"id\":7,\"tag_name\":\"v0.13.0\",\"target_commitish\":\"${target_sha}\",\"draft\":true,\"prerelease\":false}")
+publish_target_control(target-wrong-tag "${target_wrong_tag}" 1 "requested stable identity")
+set(target_wrong_sha "{\"id\":7,\"tag_name\":\"v0.14.0\",\"target_commitish\":\"0123456789abcdef0123456789abcdef01234568\",\"draft\":true,\"prerelease\":false}")
+publish_target_control(target-wrong-sha "${target_wrong_sha}" 1 "requested stable identity")
+set(target_prerelease "{\"id\":7,\"tag_name\":\"v0.14.0\",\"target_commitish\":\"${target_sha}\",\"draft\":true,\"prerelease\":true}")
+publish_target_control(target-prerelease "${target_prerelease}" 1 "requested stable identity")
+publish_target_control(target-unavailable "${target_draft}" 1 "cannot read release")
+publish_target_control(target-bad-tag "${target_draft}" 1 "invalid stable release tag" stable)
+message(STATUS "publish: stable release target validation controls passed")
+
+file(READ "${ROOT}/.github/workflows/release.yml" workflow)
+foreach(fragment "workflow_dispatch:\n    inputs:\n      release_id:" "run: sh scripts/publish.sh resolve-target"
+    "needs: [release-target, release-ci, release-equality]" "needs.release-target.outputs.sha")
+  string(FIND "${workflow}" "${fragment}" position)
+  if(position LESS 0)
+    message(FATAL_ERROR "publish dispatch assertion: workflow is missing ${fragment}")
   endif()
 endforeach()

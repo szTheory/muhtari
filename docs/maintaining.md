@@ -69,8 +69,10 @@ before deleting its tag, and confirms both resources are absent. Failed reads or
 deletions fail cleanup; they never count as proof of absence. Only the trigger, the token and the `latest` alias differ from a real
 release. `docs/testing.md` lists the rehearsal's jobs.
 
-A pull request rehearses rather than a manual run because GitHub starts `workflow_dispatch` only for workflow files
-on the default branch, and a draft without a tag cannot be published or verified.
+A rehearsal stays tied to its pull request because it must build that PR's head and publish a throwaway tag.
+The production workflow's `workflow_dispatch` recovery runs from `main` and requires the exact release ID, tag and
+commit SHA; it validates that identity, reruns CI and native/PowerPC equality on that SHA, then follows the same
+attestation, publication and latest-install checks.
 
 There is no automatic draft-only fallback. Missing token permissions block the
 rehearsal and leave publication/download acceptance unproved.
@@ -80,10 +82,27 @@ prerelease.
 
 ## Re-running a failed release
 
-- **A real release:** open the failed run and choose "Re-run failed jobs". `publish` is safe to re-run: uploads
-  replace the draft's assets, and on a release already published it only runs `verify`, which exits 0 when the
-  release has its 20 verified assets. Do not choose "Re-run all jobs": release-please then sees the release pull
-  request already tagged and skips `publish`.
+- **A real release:** if CI or equality failed before `publish` started, resume the newest release workflow from
+  `main` with the draft's exact identity. Get the ID, tag and target commit from the Releases API:
+
+  ```sh
+  gh api repos/szTheory/muhtari/releases --paginate \
+    --jq '.[] | select(.draft == true and .tag_name == "vX.Y.Z") | [.id, .tag_name, .target_commitish] | @tsv'
+  ```
+
+  Use the three returned fields together:
+
+  ```sh
+  gh workflow run Release --ref main \
+    --field release_id=<release-id> \
+    --field tag_name=vX.Y.Z \
+    --field sha=<release-commit-sha>
+  ```
+
+  The dispatch validates the ID, stable tag and commit SHA before running both checks. `publish` is safe to re-run:
+  uploads replace draft assets, and an already published release only runs `verify`. If only `publish` failed after
+  CI and equality passed, choose "Re-run failed jobs" on that run. Do not choose "Re-run all jobs" on a failed
+  pre-dispatch workflow: release-please may see the release pull request already tagged and skip `publish`.
 - **A failed rehearsal:** choose "Re-run all jobs", which takes a fresh `rehearsal-<run id>-<attempt>` tag, or push
   a new commit. A published tag that was deleted can never be reused under immutable releases. If `cleanup` itself
   failed, inspect its retained draft ID and rerun the guarded cleanup:

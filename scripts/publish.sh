@@ -6,6 +6,7 @@
 #   publish.sh verify TAG DIR              attested, then the published release
 #   publish.sh rehearsal-create TAG        a draft prerelease at EXPECTED_SHA; prints its ID
 #   publish.sh rehearsal-delete TAG [ID]   delete a rehearsal release and its tag
+#   publish.sh resolve-target ID TAG SHA   validate a stable release before resuming its gates
 # Fault prevented: a release with a missing, extra, unverifiable or tampered
 # asset, or with archives built from another commit or carrying firmware or a
 # known ROM, or a release that accepts a pull request's attestation. prepare
@@ -252,10 +253,31 @@ rehearsal_delete() {
   echo "publish: $1 and its release are gone"
 }
 
+# A manual release continuation must name the exact stable draft and immutable
+# source it intends to publish. Published releases use the ordinary safe rerun;
+# rehearsal and prerelease releases are rejected here.
+resolve_target() {
+  case $1 in '' | 0* | *[!0-9]*) fail "invalid release ID" ;; esac
+  jq -ne --arg value "$2" '$value | test("^v(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$")' > /dev/null ||
+    fail "invalid stable release tag"
+  jq -ne --arg value "$3" '$value | test("^[0-9a-f]{40}$")' > /dev/null || fail "invalid release SHA"
+  release=$(gh api "repos/$REPO/releases/$1") || fail "cannot read release $1"
+  printf '%s\n' "$release" | jq -e --argjson id "$1" --arg tag "$2" --arg sha "$3" '
+    type == "object" and .id == $id and .tag_name == $tag and
+    .target_commitish == $sha and .draft == true and .prerelease == false
+  ' > /dev/null || fail "release $1 does not match the requested stable identity"
+  {
+    echo "release_created=true"
+    echo "tag_name=$2"
+    echo "sha=$3"
+    echo "id=$1"
+  } >> "${GITHUB_OUTPUT:?publish: GITHUB_OUTPUT is not set}"
+}
+
 cmd=${1:-}
 [ $# -eq 0 ] || shift
 case $cmd in rehearsal-*) case ${1:-} in rehearsal-*) ;; *) fail "$cmd: '${1:-}' is not a rehearsal tag" ;; esac ;; esac
-case $cmd in upload | attested | verify | rehearsal-*) REPO=${GITHUB_REPOSITORY:?publish: GITHUB_REPOSITORY is not set} ;; esac
+case $cmd in upload | attested | verify | resolve-target | rehearsal-*) REPO=${GITHUB_REPOSITORY:?publish: GITHUB_REPOSITORY is not set} ;; esac
 case $cmd in attested | verify) SOURCE_REF=${SOURCE_REF:?publish: SOURCE_REF is not set} ;; esac
 case "$cmd $#" in
   "prepare 1") prepare "$1" ;;
@@ -264,5 +286,6 @@ case "$cmd $#" in
   "verify 2") verify "$1" "$2" ;;
   "rehearsal-create 1") rehearsal_create "$1" ;;
   "rehearsal-delete 1" | "rehearsal-delete 2") rehearsal_delete "$1" "${2:-}" ;;
-  *) fail "usage: publish.sh prepare DIR | upload TAG RELEASE_ID DIR | attested DIR | verify TAG DIR | rehearsal-create TAG | rehearsal-delete TAG [RELEASE_ID]" ;;
+  "resolve-target 3") resolve_target "$1" "$2" "$3" ;;
+  *) fail "usage: publish.sh prepare DIR | upload TAG RELEASE_ID DIR | attested DIR | verify TAG DIR | rehearsal-create TAG | rehearsal-delete TAG [RELEASE_ID] | resolve-target ID TAG SHA" ;;
 esac
