@@ -379,7 +379,7 @@ static int state_rule_valid(const struct state_cursor *cursor, enum state_rule r
         return value >= lower && value <= upper;
     case STATE_SIGNED_RANGE:
         if (is_signed != 0) {
-            int64_t signed_value = width == 2u ? state_i16_from_bits((uint16_t)value)
+            int64_t signed_value = width == 2u   ? state_i16_from_bits((uint16_t)value)
                                    : width == 4u ? state_i32_from_bits((uint32_t)value)
                                                  : state_i64_from_bits(value);
             int64_t signed_lower = state_i64_from_bits(lower);
@@ -700,9 +700,9 @@ static void state_pokey(struct state_cursor *cursor, const struct muhtari__pokey
 static void state_ym_visit(const muhtari *source, muhtari *target, struct state_cursor *cursor)
 {
     const struct muhtari__ym2151 *ym = &source->ym;
-#define YM_OUT(ptr)                                                                               \
-    (target != NULL                                                                               \
-         ? (void *)((uint8_t *)&target->ym + ((const uint8_t *)(ptr) - (const uint8_t *)ym))      \
+#define YM_OUT(ptr)                                                                                \
+    (target != NULL                                                                                \
+         ? (void *)((uint8_t *)&target->ym + ((const uint8_t *)(ptr) - (const uint8_t *)ym))       \
          : NULL)
 #define YM_FIELD(ptr, ignored_target, width, sign, rule, lower, upper, mark)                       \
     state_scalar(cursor, ptr, YM_OUT(ptr), width, sign, rule, lower, upper, mark, 0)
@@ -711,40 +711,34 @@ static void state_ym_visit(const muhtari *source, muhtari *target, struct state_
 #define YM_U32(ptr) YM_FIELD(ptr, NULL, 4u, 0, STATE_ANY, 0u, 0u, MARK_COUNT)
 #define YM_U64(ptr) YM_FIELD(ptr, NULL, 8u, 0, STATE_ANY, 0u, 0u, MARK_COUNT)
 
-    state_scalar(cursor, &source->synth.raw[10], target != NULL ? &target->synth.raw[10] : NULL,
-                 2u, 0, STATE_ANY, 0u, 0u, MARK_YM_RAW_LEFT, 0);
-    state_scalar(cursor, &source->synth.raw[11], target != NULL ? &target->synth.raw[11] : NULL,
-                 2u, 0, STATE_ANY, 0u, 0u, MARK_YM_RAW_RIGHT, 0);
+    state_scalar(cursor, &source->synth.raw[10], target != NULL ? &target->synth.raw[10] : NULL, 2u,
+                 0, STATE_ANY, 0u, 0u, MARK_YM_RAW_LEFT, 0);
+    state_scalar(cursor, &source->synth.raw[11], target != NULL ? &target->synth.raw[11] : NULL, 2u,
+                 0, STATE_ANY, 0u, 0u, MARK_YM_RAW_RIGHT, 0);
 
     YM_FIELD(&ym->last_tick, NULL, 8u, 0, STATE_ANY, 0u, 0u, MARK_YM_LAST_TICK);
     YM_FIELD(&ym->clocks, NULL, 8u, 0, STATE_ANY, 0u, 0u, MARK_YM_CLOCKS);
     YM_FIELD(&ym->busy_end, NULL, 8u, 0, STATE_ANY, 0u, 0u, MARK_YM_BUSY_END);
-    YM_FIELD(&ym->timer_deadline[0], NULL, 8u, 0, STATE_ANY, 0u, 0u,
-             MARK_YM_TIMER_DEADLINE_0);
-    YM_FIELD(&ym->timer_deadline[1], NULL, 8u, 0, STATE_ANY, 0u, 0u,
-             MARK_YM_TIMER_DEADLINE_1);
+    YM_FIELD(&ym->timer_deadline[0], NULL, 8u, 0, STATE_ANY, 0u, 0u, MARK_YM_TIMER_DEADLINE_0);
+    YM_FIELD(&ym->timer_deadline[1], NULL, 8u, 0, STATE_ANY, 0u, 0u, MARK_YM_TIMER_DEADLINE_1);
     YM_U32(&ym->lfo_counter);
     YM_U32(&ym->noise_lfsr);
     YM_U32(&ym->env_counter);
     YM_FIELD(&ym->active_channels, NULL, 4u, 0, STATE_MASK, 0xffu, 0u, MARK_COUNT);
     YM_FIELD(&ym->modified_channels, NULL, 4u, 0, STATE_MASK, 0xffu, 0u, MARK_COUNT);
-    YM_FIELD(&ym->sample_divider, NULL, 2u, 0, STATE_RANGE, 0u, 63u,
-             MARK_YM_SAMPLE_DIVIDER);
-    YM_FIELD(&ym->output[0], NULL, 2u, 1, STATE_SIGNED_RANGE,
-             (uint64_t)(int64_t)INT16_MIN, INT16_MAX, MARK_YM_OUTPUT_LEFT);
-    YM_FIELD(&ym->output[1], NULL, 2u, 1, STATE_SIGNED_RANGE,
-             (uint64_t)(int64_t)INT16_MIN, INT16_MAX, MARK_YM_OUTPUT_RIGHT);
-    YM_FIELD(&ym->clock_remainder, NULL, 1u, 0, STATE_BOOL, 0u, 0u,
-             MARK_YM_CLOCK_REMAINDER);
+    YM_FIELD(&ym->sample_divider, NULL, 2u, 0, STATE_RANGE, 0u, 63u, MARK_YM_SAMPLE_DIVIDER);
+    YM_FIELD(&ym->output[0], NULL, 2u, 1, STATE_SIGNED_RANGE, (uint64_t)(int64_t)INT16_MIN,
+             INT16_MAX, MARK_YM_OUTPUT_LEFT);
+    YM_FIELD(&ym->output[1], NULL, 2u, 1, STATE_SIGNED_RANGE, (uint64_t)(int64_t)INT16_MIN,
+             INT16_MAX, MARK_YM_OUTPUT_RIGHT);
+    YM_FIELD(&ym->clock_remainder, NULL, 1u, 0, STATE_BOOL, 0u, 0u, MARK_YM_CLOCK_REMAINDER);
     YM_U8(&ym->address);
     YM_FIELD(&ym->status, NULL, 1u, 0, STATE_MASK, 3u, 0u, MARK_YM_STATUS);
     YM_FIELD(&ym->clock_prescale, NULL, 1u, 0, STATE_RANGE, 2u, 2u, MARK_COUNT);
     YM_FIELD(&ym->irq_mask, NULL, 1u, 0, STATE_RANGE, 3u, 3u, MARK_YM_IRQ_MASK);
     YM_FIELD(&ym->irq_state, NULL, 1u, 0, STATE_BOOL, 0u, 0u, MARK_YM_IRQ_STATE);
-    YM_FIELD(&ym->timer_running[0], NULL, 1u, 0, STATE_BOOL, 0u, 0u,
-             MARK_YM_TIMER_RUNNING_0);
-    YM_FIELD(&ym->timer_running[1], NULL, 1u, 0, STATE_BOOL, 0u, 0u,
-             MARK_YM_TIMER_RUNNING_1);
+    YM_FIELD(&ym->timer_running[0], NULL, 1u, 0, STATE_BOOL, 0u, 0u, MARK_YM_TIMER_RUNNING_0);
+    YM_FIELD(&ym->timer_running[1], NULL, 1u, 0, STATE_BOOL, 0u, 0u, MARK_YM_TIMER_RUNNING_1);
     YM_FIELD(&ym->total_clocks, NULL, 1u, 0, STATE_ANY, 0u, 0u, MARK_YM_TOTAL_CLOCKS);
     YM_FIELD(&ym->prepare_count, NULL, 2u, 0, STATE_RANGE, 0u, 4095u, MARK_COUNT);
     YM_U8(&ym->lfo_am);
@@ -773,13 +767,12 @@ static void state_ym_visit(const muhtari *source, muhtari *target, struct state_
         YM_U32(&op->cache.phase_step);
         YM_FIELD(&op->cache.total_level, NULL, 4u, 0, STATE_RANGE, 0u, 1016u, MARK_COUNT);
         YM_FIELD(&op->cache.block_freq, NULL, 4u, 0, STATE_RANGE, 0u, 8191u, MARK_COUNT);
-        YM_FIELD(&op->cache.detune, NULL, 4u, 1, STATE_SIGNED_RANGE,
-                 (uint64_t)(int64_t)-22, 22u, MARK_COUNT);
+        YM_FIELD(&op->cache.detune, NULL, 4u, 1, STATE_SIGNED_RANGE, (uint64_t)(int64_t)-22, 22u,
+                 MARK_COUNT);
         YM_FIELD(&op->cache.multiple, NULL, 4u, 0, STATE_RANGE, 0u, 30u, MARK_COUNT);
         YM_FIELD(&op->cache.eg_sustain, NULL, 4u, 0, STATE_YM_SUSTAIN, 0u, 0u, MARK_COUNT);
         for (unsigned rate = 0u; rate < sizeof op->cache.eg_rate; rate++)
-            YM_FIELD(&op->cache.eg_rate[rate], NULL, 1u, 0, STATE_RANGE, 0u, 63u,
-                     MARK_COUNT);
+            YM_FIELD(&op->cache.eg_rate[rate], NULL, 1u, 0, STATE_RANGE, 0u, 63u, MARK_COUNT);
         YM_FIELD(&op->cache.eg_shift, NULL, 1u, 0, STATE_RANGE, 0u, 31u, MARK_COUNT);
     }
     cursor->field_index = 0u;
@@ -1193,18 +1186,15 @@ static int state_relationships(const struct state_cursor *cursor)
         uint64_t last_tick = v[MARK_YM_LAST_TICK];
         uint64_t remainder = v[MARK_YM_CLOCK_REMAINDER];
         if (last_tick < remainder || last_tick > v[MARK_BUS_TICKS] ||
-            clocks > (last_tick - remainder) / 2u ||
-            v[MARK_YM_SAMPLE_DIVIDER] != clocks % 64u ||
+            clocks > (last_tick - remainder) / 2u || v[MARK_YM_SAMPLE_DIVIDER] != clocks % 64u ||
             v[MARK_YM_TOTAL_CLOCKS] != ((clocks / 64u) & 0xffu) || busy_end > busy_limit ||
-            v[MARK_YM_IRQ_STATE] !=
-                ((v[MARK_YM_STATUS] & v[MARK_YM_IRQ_MASK]) != 0u) ||
+            v[MARK_YM_IRQ_STATE] != ((v[MARK_YM_STATUS] & v[MARK_YM_IRQ_MASK]) != 0u) ||
             v[MARK_YM_RAW_LEFT] != v[MARK_YM_OUTPUT_LEFT] ||
             v[MARK_YM_RAW_RIGHT] != v[MARK_YM_OUTPUT_RIGHT])
             return 0;
         uint64_t mode = v[MARK_YM_MODE];
         const uint64_t running[] = {v[MARK_YM_TIMER_RUNNING_0], v[MARK_YM_TIMER_RUNNING_1]};
-        const uint64_t deadlines[] = {v[MARK_YM_TIMER_DEADLINE_0],
-                                      v[MARK_YM_TIMER_DEADLINE_1]};
+        const uint64_t deadlines[] = {v[MARK_YM_TIMER_DEADLINE_0], v[MARK_YM_TIMER_DEADLINE_1]};
         const uint64_t load_mask[] = {1u, 2u};
         const uint64_t maximum_period[] = {65536u, 262144u};
         for (unsigned timer = 0u; timer < 2u; timer++) {
@@ -1240,6 +1230,12 @@ static int state_public_resume_safe(const muhtari *m, const uint64_t *v)
     const uint64_t phi2 = v[MARK_BUS_PHI2];
     const uint64_t frame_start = v[MARK_FRAME_START];
     const uint64_t deadline = v[MARK_FRAME_DEADLINE];
+
+    /* Every completed bus access and reset has caught YM up to this exact
+       tick. Reject stale chip time before it can replay arbitrary history
+       during the first resumed access (ym2151.md, State and consumer support). */
+    if (m->synth.ym_installed != 0u && v[MARK_YM_LAST_TICK] != tick)
+        return 0;
 
     if (deadline - frame_start > frame || deadline > UINT64_MAX - frame ||
         tick > UINT64_MAX - clock_margin || phi2 > UINT64_MAX - (clock_margin / 4u + 2u))
@@ -1389,7 +1385,8 @@ static int state_walk(const muhtari *m, muhtari *target, enum state_mode mode, c
         cursor.valid = 0u;
     if (cursor.valid != 0u &&
         (mode == STATE_VALIDATE || mode == STATE_PUBLIC_VALIDATE || mode == STATE_LIVE ||
-         mode == STATE_PUBLIC_LIVE) && state_relationships(&cursor) == 0)
+         mode == STATE_PUBLIC_LIVE) &&
+        state_relationships(&cursor) == 0)
         cursor.valid = 0u;
     if (cursor.valid != 0u && (mode == STATE_PUBLIC_VALIDATE || mode == STATE_PUBLIC_LIVE) &&
         state_public_resume_safe(m, cursor.marks) == 0)
@@ -1497,7 +1494,7 @@ muhtari_status muhtari_save_state(const muhtari *m, void *buffer, size_t capacit
     state_put_u32(output + 12u, STATE_HEADER_BYTES);
     state_put_u32(output + 16u, (uint32_t)total);
     state_put_u32(output + 20u, m->synth.ym_installed != 0u ? STATE_YM_BEHAVIOUR_REVISION
-                                                           : STATE_LEGACY_BEHAVIOUR_REVISION);
+                                                            : STATE_LEGACY_BEHAVIOUR_REVISION);
     state_put_u32(output + 24u, 0u);
     memcpy(output + 28u, m->state_identity, sizeof m->state_identity);
     state_put_u32(output + 60u, 0u);
@@ -1523,10 +1520,9 @@ muhtari_status muhtari_load_state(muhtari *m, const void *buffer, size_t bytes)
     if (memcmp(input, magic, sizeof magic) != 0 ||
         state_get_u32(input + 12u) != STATE_HEADER_BYTES || state_get_u32(input + 16u) != expected)
         return MUHTARI_STATUS_ERR_INVALID_STATE;
-    uint32_t expected_format =
-        m->synth.ym_installed != 0u ? STATE_YM_FORMAT : STATE_LEGACY_FORMAT;
-    uint32_t expected_revision = m->synth.ym_installed != 0u ? STATE_YM_BEHAVIOUR_REVISION
-                                                              : STATE_LEGACY_BEHAVIOUR_REVISION;
+    uint32_t expected_format = m->synth.ym_installed != 0u ? STATE_YM_FORMAT : STATE_LEGACY_FORMAT;
+    uint32_t expected_revision =
+        m->synth.ym_installed != 0u ? STATE_YM_BEHAVIOUR_REVISION : STATE_LEGACY_BEHAVIOUR_REVISION;
     if (state_get_u32(input + 8u) != expected_format ||
         state_get_u32(input + 20u) != expected_revision)
         return MUHTARI_STATUS_ERR_UNSUPPORTED_STATE;

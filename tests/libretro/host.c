@@ -2680,14 +2680,13 @@ static void check_ym_public_numbers(unsigned region)
         CHECK_EQ_U64(muhtari_run_frame(machine, &frame_io), MUHTARI_STATUS_OK);
         uint32_t expected_frame_count =
             frame_index == 0u ? (region == RETRO_REGION_PAL ? 960u : 54u)
-                              : (region == RETRO_REGION_PAL
-                                     ? 961u + (frame_index & 1u)
-                                     : frame_index <= 2u ? 801u
-                                                         : 800u + ((frame_index + 1u) & 1u));
+                              : (region == RETRO_REGION_PAL ? 961u + (frame_index & 1u)
+                                 : frame_index <= 2u        ? 801u
+                                                            : 800u + ((frame_index + 1u) & 1u));
         if (frame_io.audio_count != expected_frame_count)
             fprintf(stderr, "%s YM frame %u sample count: %u (expected %u)\n",
-                    region == RETRO_REGION_PAL ? "pal" : "ntsc", frame_index,
-                    frame_io.audio_count, expected_frame_count);
+                    region == RETRO_REGION_PAL ? "pal" : "ntsc", frame_index, frame_io.audio_count,
+                    expected_frame_count);
         CHECK(frame_io.audio_count == expected_frame_count);
         total += frame_io.audio_count;
         for (uint32_t i = 0u; i < frame_io.audio_count; i++) {
@@ -2708,8 +2707,7 @@ static void check_ym_public_numbers(unsigned region)
 
     muhtari_span ram = {0};
     ram.size = (uint32_t)sizeof ram;
-    CHECK_EQ_U64(muhtari_get_memory(machine, MUHTARI_MEMORY_SYSTEM_RAM, &ram),
-                 MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_get_memory(machine, MUHTARI_MEMORY_SYSTEM_RAM, &ram), MUHTARI_STATUS_OK);
     CHECK(ram.data != NULL && ram.bytes >= 0xB00u);
     if (ram.data != NULL && ram.bytes >= 0xB00u) {
         const uint8_t *mailbox = ram.data + 0xA00u;
@@ -2728,7 +2726,8 @@ static void check_ym_public_numbers(unsigned region)
     CHECK_EQ_U64(muhtari_run_frame(machine, &after_reset), MUHTARI_STATUS_OK);
     CHECK(after_reset.audio_count == (region == RETRO_REGION_PAL ? 960u : 54u));
     CHECK(memcmp(video_bytes, first_video, W * height) == 0);
-    CHECK(memcmp(audio_samples, first_audio, after_reset.audio_count * sizeof audio_samples[0]) == 0);
+    CHECK(memcmp(audio_samples, first_audio, after_reset.audio_count * sizeof audio_samples[0]) ==
+          0);
     muhtari_destroy(machine);
 }
 
@@ -2753,8 +2752,8 @@ static void case_ym(void)
     for (unsigned region_index = 0u; region_index < 2u; region_index++) {
         unsigned region = region_index == 0u ? RETRO_REGION_NTSC : RETRO_REGION_PAL;
         const char *region_name = region == RETRO_REGION_PAL ? "pal" : "ntsc";
-        uint32_t native_region = region == RETRO_REGION_PAL ? MUHTARI_REGION_PAL
-                                                            : MUHTARI_REGION_NTSC;
+        uint32_t native_region =
+            region == RETRO_REGION_PAL ? MUHTARI_REGION_PAL : MUHTARI_REGION_NTSC;
         unsigned height = region == RETRO_REGION_PAL ? 292u : 242u;
         check_ym_public_numbers(region);
 
@@ -3277,16 +3276,11 @@ int main(int argc, char **argv)
         void (*run)(void);
         int files;
     } cases[] = {
-        {"ym", case_ym, 1},
-        {"audio", case_audio, 1},
-        {"input", case_input, 1},
-        {"layout", case_layout, 1},
-        {"devices", case_devices, 1},
-        {"reset", case_reset, 1},
-        {"options", case_options, 1},
-        {"memory_map", case_memory_map, 3},
-        {"battery", case_battery, 0},
-        {"battery_order", case_battery_order, 0},
+        {"ym", case_ym, 1},           {"audio", case_audio, 1},
+        {"input", case_input, 1},     {"layout", case_layout, 1},
+        {"devices", case_devices, 1}, {"reset", case_reset, 1},
+        {"options", case_options, 1}, {"memory_map", case_memory_map, 3},
+        {"battery", case_battery, 0}, {"battery_order", case_battery_order, 0},
         {"state", case_state, 2},
     };
     size_t i;

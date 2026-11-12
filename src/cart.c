@@ -875,8 +875,7 @@ muhtari_status muhtari__cart_install(muhtari *m, const void *image, const muhtar
     m->cart.info = *info;
     /* Only an accepted v4 block supplies wiring; raw probe fields survive
        an ignored block (cartridge.md, The v4 block). */
-    if (info->a78_version >= 4u &&
-        (info->warnings & MUHTARI_CART_WARN_HEADER_V4_IGNORED) == 0u) {
+    if (info->a78_version >= 4u && (info->warnings & MUHTARI_CART_WARN_HEADER_V4_IGNORED) == 0u) {
         /* IRQ bit 2 is the YM line only for a validated, installed XM/YM
            topology. Keep legacy identity semantics for every other cart. */
         uint8_t mask = (uint8_t)(info->a78_irq & 3u);
@@ -1037,8 +1036,7 @@ static const uint8_t *cart_bankset_rom_at(const struct muhtari__cart *c, uint16_
 static int cart_ym_decoded(const struct muhtari__cart *c)
 {
     return c->expansion.kind == MUHTARI_EXPANSION_XM &&
-           (c->info.sound & MUHTARI_SOUND_YM2151) != 0u &&
-           (c->expansion.control & 0x80u) != 0u;
+           (c->info.sound & MUHTARI_SOUND_YM2151) != 0u && (c->expansion.control & 0x80u) != 0u;
 }
 
 /* A linear board maps its ROM so that it ends at $FFFF; below the ROM's

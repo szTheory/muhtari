@@ -173,8 +173,7 @@ static void ym_program_wait(uint8_t *program, size_t *length)
     ym_program_branch(program, length, 0x30u, poll); /* BMI while busy. */
 }
 
-static void ym_program_store(uint8_t *program, size_t *length, uint8_t value,
-                             uint16_t address)
+static void ym_program_store(uint8_t *program, size_t *length, uint8_t value, uint16_t address)
 {
     program[(*length)++] = 0xA9u; /* LDA #value */
     program[(*length)++] = value;
@@ -237,13 +236,14 @@ static void ym_program_timer_diagnostic(uint8_t *program, size_t *length)
 
 static void ym_program_irq_handler(uint8_t *body)
 {
-    static const uint8_t handler[] = {0x48u,                   /* PHA */
-                                      0xEEu, 0x02u, 0x22u,     /* INC $2202 */
-                                      0xA9u, 0x14u,             /* LDA #$14 */
-                                      0x8Du, 0x60u, 0x04u,     /* STA $0460 */
-                                      0xA9u, 0x3Au,             /* LDA #$3A: keep B; stop A; clear both flags. */
-                                      0x8Du, 0x61u, 0x04u,     /* STA $0461 */
-                                      0x68u, 0x40u};            /* PLA; RTI */
+    static const uint8_t handler[] = {
+        0x48u,               /* PHA */
+        0xEEu, 0x02u, 0x22u, /* INC $2202 */
+        0xA9u, 0x14u,        /* LDA #$14 */
+        0x8Du, 0x60u, 0x04u, /* STA $0460 */
+        0xA9u, 0x3Au,        /* LDA #$3A: keep B; stop A; clear both flags. */
+        0x8Du, 0x61u, 0x04u, /* STA $0461 */
+        0x68u, 0x40u};       /* PLA; RTI */
     memcpy(body + 0x3F00u, handler, sizeof handler);
 }
 
@@ -254,7 +254,7 @@ static size_t images_ym2151_build(uint8_t *buf, int worst)
     buf[58] = 0x02u; /* a persistent SaveKey, for state-refusal immutability */
     buf[63] = 1u;    /* installed XM device */
     buf[66] = 0u;
-    buf[67] = 0x08u; /* v4 audio YM flag */
+    buf[67] = worst ? 0x0bu : 0x08u; /* YM, plus both POKEYs in the stress profile. */
     buf[68] = 0u;
     buf[69] = 0x04u; /* YM IRQ qualification */
 
@@ -284,13 +284,61 @@ static size_t images_ym2151_build(uint8_t *buf, int worst)
     ym_program_timer_diagnostic(body, &length);
     uint16_t loop = (uint16_t)(0xC000u + length);
     if (worst) {
-        /* Keep a small, legal address/data sequence hot in the CPU bus loop. */
+        /* Stress all installed audio sources. Mask CPU IRQ servicing while
+           address/data pairs are hot; both shortest YM timers still run and
+           assert the declared IRQ. Interrupt overshoot is tested separately. */
+        body[length++] = 0x78u;                       /* SEI */
+        ym_program_store(body, &length, 7u, 0x0001u); /* lock 7800 mapping before TIA writes */
+        ym_program_store(body, &length, 0xf8u, 0x0470u);
+        ym_program_store(body, &length, 0xf0u, 0x0478u);
+        ym_program_store(body, &length, 0xffu, 0x047cu);
+        ym_program_store(body, &length, 4u, 0x0015u);
+        ym_program_store(body, &length, 8u, 0x0016u);
+        ym_program_store(body, &length, 0u, 0x0017u);
+        ym_program_store(body, &length, 0u, 0x0018u);
+        ym_program_store(body, &length, 15u, 0x0019u);
+        ym_program_store(body, &length, 15u, 0x001au);
+        for (unsigned chip = 0u; chip < 2u; chip++) {
+            uint16_t base = chip == 0u ? 0x0450u : 0x0440u;
+            ym_program_store(body, &length, 3u, (uint16_t)(base + 15u));
+            ym_program_store(body, &length, 0x67u, (uint16_t)(base + 8u));
+            for (unsigned channel = 0u; channel < 4u; channel++) {
+                ym_program_store(body, &length, 0u, (uint16_t)(base + channel * 2u));
+                ym_program_store(body, &length, 0xafu, (uint16_t)(base + channel * 2u + 1u));
+            }
+            ym_program_store(body, &length, 15u, (uint16_t)(base + 14u));
+            ym_program_store(body, &length, 0u, (uint16_t)(base + 9u));
+        }
+        ym_program_write(body, &length, 0x0fu, 0x9fu); /* fastest channel-7 noise */
+        ym_program_write(body, &length, 0x18u, 0xffu); /* fastest LFO */
+        ym_program_write(body, &length, 0x19u, 0x7fu); /* full AM depth */
+        ym_program_write(body, &length, 0x19u, 0xffu); /* full PM depth */
+        ym_program_write(body, &length, 0x1bu, 3u);    /* noise waveform */
+        for (unsigned channel = 0u; channel < 8u; channel++) {
+            ym_program_write(body, &length, (uint8_t)(0x20u + channel), 0xffu);
+            ym_program_write(body, &length, (uint8_t)(0x28u + channel), 0x7fu);
+            ym_program_write(body, &length, (uint8_t)(0x30u + channel), 0xfcu);
+            ym_program_write(body, &length, (uint8_t)(0x38u + channel), 0x73u);
+        }
+        for (unsigned op = 0u; op < 32u; op++) {
+            ym_program_write(body, &length, (uint8_t)(0x40u + op), 0x7fu);
+            ym_program_write(body, &length, (uint8_t)(0x60u + op), 0u);
+            ym_program_write(body, &length, (uint8_t)(0x80u + op), 0x1fu);
+            ym_program_write(body, &length, (uint8_t)(0xa0u + op), 0x80u);
+            ym_program_write(body, &length, (uint8_t)(0xc0u + op), 0u);
+            ym_program_write(body, &length, (uint8_t)(0xe0u + op), 0x0fu);
+        }
+        for (unsigned channel = 0u; channel < 8u; channel++)
+            ym_program_write(body, &length, 8u, (uint8_t)(0x78u | channel));
+        ym_program_write(body, &length, 0x10u, 0xffu);
+        ym_program_write(body, &length, 0x11u, 3u);
+        ym_program_write(body, &length, 0x12u, 0xffu);
+        ym_program_write(body, &length, 0x14u, 0x0fu);
         loop = (uint16_t)(0xC000u + length);
         for (unsigned i = 0u; i < 256u; i++) {
-            static const uint8_t regs[] = {0x28u, 0x30u, 0x40u, 0x60u, 0x80u, 0xA0u,
-                                           0xC0u, 0xE0u};
-            ym_program_write(body, &length, regs[i % (sizeof regs / sizeof regs[0])],
-                             (uint8_t)(0x20u + (i & 0x1fu)));
+            /* Every write invalidates the register-derived prepare cache. */
+            ym_program_write(body, &length, (uint8_t)(0x30u + (i & 7u)),
+                             (uint8_t)(0x80u + ((i & 0x1fu) << 2)));
         }
         body[length++] = 0x4Cu;
         body[length++] = (uint8_t)loop;

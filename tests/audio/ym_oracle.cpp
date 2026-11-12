@@ -15,7 +15,8 @@ extern "C" {
 #include <stdexcept>
 #include <string>
 
-namespace {
+namespace
+{
 
 constexpr const char *seed_id = "81aec25ccbb98f4873a255f7551ac4dadac59b4a";
 constexpr uint64_t fnv_offset = UINT64_C(14695981039346656037);
@@ -68,7 +69,9 @@ struct OracleInterface final : ymfm::ymfm_interface {
 };
 
 struct OracleChip final : ymfm::ym2151 {
-    explicit OracleChip(OracleInterface &interface) : ymfm::ym2151(interface) {}
+    explicit OracleChip(OracleInterface &interface) : ymfm::ym2151(interface)
+    {
+    }
 
     void expire_timer(uint32_t which)
     {
@@ -102,7 +105,10 @@ struct Pair {
         seed.reset();
     }
 
-    ~Pair() { std::free(c); }
+    ~Pair()
+    {
+        std::free(c);
+    }
 
     void write(uint8_t reg, uint8_t value)
     {
@@ -119,10 +125,9 @@ struct Pair {
         const uint8_t seed_status = seed.read_status() & 0x7fu;
         const uint8_t c_status = muhtari__ym2151_peek(c, 0x0461u) & 0x7fu;
         if (seed_status != c_status)
-            throw std::runtime_error(std::string(where) + " status differs at phiM " +
-                                     std::to_string(interface.now) + ": seed=" +
-                                     std::to_string(seed_status) + " C=" +
-                                     std::to_string(c_status));
+            throw std::runtime_error(
+                std::string(where) + " status differs at phiM " + std::to_string(interface.now) +
+                ": seed=" + std::to_string(seed_status) + " C=" + std::to_string(c_status));
         if (interface.irq != (muhtari__ym2151_irq(c) != 0))
             throw std::runtime_error(std::string(where) + " IRQ differs at phiM " +
                                      std::to_string(interface.now));
@@ -166,8 +171,7 @@ struct Pair {
         muhtari__ym2151_catch_up(c, tick);
         if ((interface.now & 63u) == 0u) {
             seed.generate(&last_output, 1u);
-            if (c->ym.output[0] != last_output.data[0] ||
-                c->ym.output[1] != last_output.data[1]) {
+            if (c->ym.output[0] != last_output.data[0] || c->ym.output[1] != last_output.data[1]) {
                 for (const uint32_t index : {0u, 16u, 8u, 24u}) {
                     auto *reference = seed.op(index);
                     const auto &ported = c->ym.operators[index];
@@ -181,12 +185,10 @@ struct Pair {
                                  ported.cache.phase_step,
                                  reference->debug_cache().waveform[reference->phase()]);
                 }
-                std::fprintf(stderr, "algorithm seed=%u C=%u regs20=%02x\n",
-                             seed.algorithm(), c->ym.registers[0x20u],
-                             c->ym.registers[0x20u]);
-                throw std::runtime_error("sample differs at phiM " +
-                                         std::to_string(interface.now) + ": seed=(" +
-                                         std::to_string(last_output.data[0]) + "," +
+                std::fprintf(stderr, "algorithm seed=%u C=%u regs20=%02x\n", seed.algorithm(),
+                             c->ym.registers[0x20u], c->ym.registers[0x20u]);
+                throw std::runtime_error("sample differs at phiM " + std::to_string(interface.now) +
+                                         ": seed=(" + std::to_string(last_output.data[0]) + "," +
                                          std::to_string(last_output.data[1]) + ") C=(" +
                                          std::to_string(c->ym.output[0]) + "," +
                                          std::to_string(c->ym.output[1]) + ")");
@@ -240,16 +242,15 @@ void run_vectors()
                     for (uint8_t chip = 0; chip < count; chip++)
                         pairs[chip]->clock_one();
                 for (uint8_t chip = 0; chip < count; chip++)
-                    hash = hash_sample(hash,
-                                       static_cast<int16_t>(pairs[chip]->last_output.data[0]),
+                    hash = hash_sample(hash, static_cast<int16_t>(pairs[chip]->last_output.data[0]),
                                        static_cast<int16_t>(pairs[chip]->last_output.data[1]));
                 samples++;
             }
         }
         if (samples != test.sample_count || samples > 2048u)
-            throw std::runtime_error(std::string(test.name) + " has an invalid sample count: " +
-                                     std::to_string(samples) + " expected " +
-                                     std::to_string(test.sample_count));
+            throw std::runtime_error(std::string(test.name) +
+                                     " has an invalid sample count: " + std::to_string(samples) +
+                                     " expected " + std::to_string(test.sample_count));
         if (hash != test.hash)
             throw std::runtime_error(std::string(test.name) +
                                      " differs from its fixed signed-output vector");

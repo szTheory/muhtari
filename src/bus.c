@@ -367,8 +367,8 @@ static void end(muhtari *m, uint32_t len)
                                      m->pokey[0].irq_signal != 0u) ||
                                     ((m->cart.irq_mask & 2u) != 0u && m->cart.pokey_at[1] != 0u &&
                                      m->pokey[1].irq_signal != 0u) ||
-                                    ((m->cart.irq_mask & 4u) != 0u &&
-                                     m->synth.ym_installed != 0u && muhtari__ym2151_irq(m)));
+                                    ((m->cart.irq_mask & 4u) != 0u && m->synth.ym_installed != 0u &&
+                                     muhtari__ym2151_irq(m)));
     /* The manual's common three-unhalted-cycle status-to-entry delay:
        two synchronization cycles, then the CPU's final instruction cycle.
        Held batches advance the source above, but never this CPU pipeline. */

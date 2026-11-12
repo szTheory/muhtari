@@ -246,13 +246,13 @@ static void flush(struct muhtari__synth *s)
     uint64_t maximum = (uint64_t)MUHTARI__MIX_Q24 * MUHTARI__TIA_CURRENT +
                        (uint64_t)s->pokeys * muhtari__pokey_mix[824] * MUHTARI__POKEY_CURRENT *
                            MUHTARI__CART_GAIN_Q12 / 4096u;
-    int32_t base_level =
-        (int32_t)((current * MUHTARI__SYNTH_MAX_LEVEL + maximum / 2u) / maximum);
+    int32_t base_level = (int32_t)((current * MUHTARI__SYNTH_MAX_LEVEL + maximum / 2u) / maximum);
     int32_t level = base_level;
     if (s->ym_installed != 0u) {
         uint16_t left_bits = s->raw[10];
         uint16_t right_bits = s->raw[11];
-        int32_t left = (left_bits & 0x8000u) != 0u ? (int32_t)left_bits - 65536 : (int32_t)left_bits;
+        int32_t left =
+            (left_bits & 0x8000u) != 0u ? (int32_t)left_bits - 65536 : (int32_t)left_bits;
         int32_t right =
             (right_bits & 0x8000u) != 0u ? (int32_t)right_bits - 65536 : (int32_t)right_bits;
         int32_t mono = (left + right) / 2;

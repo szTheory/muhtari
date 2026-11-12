@@ -1,4 +1,4 @@
-/* Public XM/YM frame path and fail-closed state gate. */
+/* Public XM/YM synthesis, state and bounded consumer checks. */
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -192,8 +192,7 @@ static int ym_public_fixture(const char *image_path, const char *state_path, uin
     muhtari_span ram;
     memset(&ram, 0, sizeof ram);
     ram.size = (uint32_t)sizeof ram;
-    CHECK_EQ_U64(muhtari_get_memory(machine, MUHTARI_MEMORY_SYSTEM_RAM, &ram),
-                 MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_get_memory(machine, MUHTARI_MEMORY_SYSTEM_RAM, &ram), MUHTARI_STATUS_OK);
     CHECK(ram.data != NULL && ram.bytes >= 0xB00u);
     uint8_t mailbox[256] = {0u};
     if (ram.data != NULL && ram.bytes >= 0xB00u)
@@ -223,8 +222,8 @@ static int ym_public_fixture(const char *image_path, const char *state_path, uin
            "audio_frames 6\naudio_samples %lu\naudio_rate 48000/1\n"
            "audio_behaviour_revision 7\naudio_synthesis exact-q23-16x64-dc20\n"
            "audio_min %d\naudio_max %d\naudio_nonzero %llu\ndiagnostic %s\n",
-           fixture_hash, frame_hash, state_hash, pcm_hex, (unsigned long)sample_total,
-           (int)minimum, (int)maximum, (unsigned long long)nonzero, diagnostic);
+           fixture_hash, frame_hash, state_hash, pcm_hex, (unsigned long)sample_total, (int)minimum,
+           (int)maximum, (unsigned long long)nonzero, diagnostic);
     if (ym_lane_mode && state != NULL) {
         uint8_t raw_digest[32];
         char raw_hex[65], end_hex[65], resumed_hex[65];
@@ -287,8 +286,7 @@ static int ym_fixture_out(const char *dir)
         fprintf(stderr, "could not write YM fixture files\n");
         return 1;
     }
-    printf("YM fixtures written: %lu, %lu bytes\n", (unsigned long)ordinary,
-           (unsigned long)worst);
+    printf("YM fixtures written: %lu, %lu bytes\n", (unsigned long)ordinary, (unsigned long)worst);
     return 0;
 }
 
@@ -446,11 +444,9 @@ static void ym_tracer(void)
     memcpy(&before, a, sizeof before);
     memcpy(candidate, state, state_bytes);
     candidate[24] ^= 1u;
-    CHECK_EQ_U64(muhtari_load_state(a, candidate, state_bytes),
-                 MUHTARI_STATUS_ERR_INVALID_STATE);
+    CHECK_EQ_U64(muhtari_load_state(a, candidate, state_bytes), MUHTARI_STATUS_ERR_INVALID_STATE);
     CHECK(memcmp(&before, a, sizeof before) == 0);
-    CHECK(battery_before == NULL ||
-          memcmp(a->battery.data, battery_before, a->battery.bytes) == 0);
+    CHECK(battery_before == NULL || memcmp(a->battery.data, battery_before, a->battery.bytes) == 0);
     memcpy(candidate, state, 64u);
     CHECK_EQ_U64(muhtari_load_state(a, candidate, 64u), MUHTARI_STATUS_ERR_INVALID_STATE);
     for (unsigned i = 0u; i < 4u; i++) {
@@ -721,8 +717,8 @@ static uint64_t ym_hash_sample(uint64_t hash, int16_t left, int16_t right)
     return hash;
 }
 
-static void ym_case_write(muhtari *machines[2], uint8_t count, uint8_t chip,
-                          uint8_t reg, uint8_t value, uint64_t tick)
+static void ym_case_write(muhtari *machines[2], uint8_t count, uint8_t chip, uint8_t reg,
+                          uint8_t value, uint64_t tick)
 {
     if (chip == YM_CASE_ALL) {
         for (uint8_t i = 0u; i < count; i++)
@@ -749,14 +745,13 @@ static uint64_t ym_run_case(const struct ym_case_vector *test, uint32_t *sample_
     for (uint8_t chip = 0u; chip < test->chip_count; chip++)
         machines[chip] = ym_test_chip();
     for (size_t i = 0u; i < sizeof ym_common / sizeof ym_common[0]; i++)
-        ym_case_write(machines, test->chip_count, ym_common[i].chip,
-                      ym_common[i].reg, ym_common[i].value, 0u);
+        ym_case_write(machines, test->chip_count, ym_common[i].chip, ym_common[i].reg,
+                      ym_common[i].value, 0u);
 
     for (uint16_t action = 0u; action < test->action_count; action++) {
         const struct ym_case_action *item = &test->actions[action];
         if (item->reg != YM_CASE_STEP)
-            ym_case_write(machines, test->chip_count, item->chip, item->reg,
-                          item->value, now * 2u);
+            ym_case_write(machines, test->chip_count, item->chip, item->reg, item->value, now * 2u);
         for (uint16_t step = 0u; step < item->samples; step++) {
             now += 64u;
             for (uint8_t chip = 0u; chip < test->chip_count; chip++) {
@@ -787,8 +782,7 @@ static void ym_synthesis(void)
         uint32_t samples = 0u;
         int16_t minimum[2], maximum[2];
         uint64_t hash = ym_run_case(&ym_cases[i], &samples, minimum, maximum);
-        (void)printf("%s %u %016llx\n", ym_cases[i].name, samples,
-                     (unsigned long long)hash);
+        (void)printf("%s %u %016llx\n", ym_cases[i].name, samples, (unsigned long long)hash);
         CHECK_EQ_U64(samples, ym_cases[i].sample_count);
         CHECK_EQ_U64(hash, ym_cases[i].hash);
         if (i == 0u) {
@@ -798,8 +792,8 @@ static void ym_synthesis(void)
     }
 }
 
-static int ym_judge(const struct ym_case_vector *expected, const char *name,
-                    uint32_t samples, uint64_t hash, const char *seed)
+static int ym_judge(const struct ym_case_vector *expected, const char *name, uint32_t samples,
+                    uint64_t hash, const char *seed)
 {
     static const char expected_seed[] = "81aec25ccbb98f4873a255f7551ac4dadac59b4a";
     return strcmp(name, expected->name) == 0 && samples == expected->sample_count &&
@@ -816,17 +810,16 @@ static void ym_controls(void)
     control.name = "control";
     control.sample_count = 1u;
     control.hash = correct;
-    CHECK(ym_judge(&control, control.name, 1u, correct,
-                   "81aec25ccbb98f4873a255f7551ac4dadac59b4a"));
+    CHECK(
+        ym_judge(&control, control.name, 1u, correct, "81aec25ccbb98f4873a255f7551ac4dadac59b4a"));
     CHECK(correct != swapped);
-    CHECK(!ym_judge(&control, control.name, 1u,
-                    control.hash ^ 1u, "81aec25ccbb98f4873a255f7551ac4dadac59b4a"));
-    CHECK(!ym_judge(&control, control.name, 1u, swapped,
+    CHECK(!ym_judge(&control, control.name, 1u, control.hash ^ 1u,
                     "81aec25ccbb98f4873a255f7551ac4dadac59b4a"));
+    CHECK(
+        !ym_judge(&control, control.name, 1u, swapped, "81aec25ccbb98f4873a255f7551ac4dadac59b4a"));
     CHECK(!ym_judge(&control, "missing_case", 1u, correct,
                     "81aec25ccbb98f4873a255f7551ac4dadac59b4a"));
-    CHECK(!ym_judge(&control, control.name, 1u, correct,
-                    "wrong-seed"));
+    CHECK(!ym_judge(&control, control.name, 1u, correct, "wrong-seed"));
 }
 
 static muhtari_status ym_load_variant(muhtari *m, const uint8_t *image, size_t bytes,
@@ -846,8 +839,7 @@ static void ym_profile(void)
     if (m == NULL)
         return;
 
-    CHECK_EQ_U64(ym_load_variant(m, ym_image, bytes, MUHTARI_EXPANSION_XM),
-                 MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(ym_load_variant(m, ym_image, bytes, MUHTARI_EXPANSION_XM), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(m->synth.ym_installed, 1u);
     CHECK_EQ_U64(m->cart.irq_mask, 4u);
 
@@ -962,21 +954,21 @@ static void ym_profile(void)
     if (battery_before != NULL)
         memcpy(battery_before, m->battery.data, battery_bytes);
 
-#define YM_REFUSE(expected_status, expansion_value)                                                 \
-    do {                                                                                            \
-        uint32_t allocs_before = counts.allocs;                                                     \
-        uint32_t frees_before = counts.frees;                                                       \
-        CHECK_EQ_U64(ym_load_variant(m, variant, bytes, (expansion_value)),                        \
-                     (expected_status));                                                           \
-        CHECK_EQ_U64(counts.allocs, allocs_before);                                                 \
-        CHECK_EQ_U64(counts.frees, frees_before);                                                   \
-        CHECK(m->cart.rom == rom_before);                                                            \
-        CHECK_EQ_U64(m->bus.ticks, ticks_before);                                                    \
-        CHECK(memcmp(&m->ym, &ym_before, sizeof ym_before) == 0);                                   \
-        CHECK_EQ_U64(m->battery.generation, generation_before);                                     \
-        CHECK_EQ_U64(m->battery.bytes, battery_bytes);                                              \
-        CHECK(m->ram[0] == 0xa5u);                                                                  \
-        CHECK(battery_before == NULL || memcmp(m->battery.data, battery_before, battery_bytes) == 0); \
+#define YM_REFUSE(expected_status, expansion_value)                                                \
+    do {                                                                                           \
+        uint32_t allocs_before = counts.allocs;                                                    \
+        uint32_t frees_before = counts.frees;                                                      \
+        CHECK_EQ_U64(ym_load_variant(m, variant, bytes, (expansion_value)), (expected_status));    \
+        CHECK_EQ_U64(counts.allocs, allocs_before);                                                \
+        CHECK_EQ_U64(counts.frees, frees_before);                                                  \
+        CHECK(m->cart.rom == rom_before);                                                          \
+        CHECK_EQ_U64(m->bus.ticks, ticks_before);                                                  \
+        CHECK(memcmp(&m->ym, &ym_before, sizeof ym_before) == 0);                                  \
+        CHECK_EQ_U64(m->battery.generation, generation_before);                                    \
+        CHECK_EQ_U64(m->battery.bytes, battery_bytes);                                             \
+        CHECK(m->ram[0] == 0xa5u);                                                                 \
+        CHECK(battery_before == NULL ||                                                            \
+              memcmp(m->battery.data, battery_before, battery_bytes) == 0);                        \
     } while (0)
 
     memcpy(variant, ym_image, bytes);
@@ -1115,8 +1107,7 @@ static void ym_clock_region(uint32_t region)
 
     uint64_t sample_num = region == MUHTARI_REGION_PAL ? 4000u : 88u;
     uint64_t sample_den = region == MUHTARI_REGION_PAL ? 591149u : 13125u;
-    CHECK_EQ_U64(m->synth.phase,
-                 ((m->synth.horizon - sample_origin) * sample_num) % sample_den);
+    CHECK_EQ_U64(m->synth.phase, ((m->synth.horizon - sample_origin) * sample_num) % sample_den);
     muhtari_destroy(m);
 }
 
@@ -1553,13 +1544,10 @@ static void ym_lifecycle(void)
     CHECK_EQ_U64(frame(pal, pal_audio[1], &count[1]), MUHTARI_STATUS_OK);
     uint32_t reference_count[2] = {0u, 0u};
     int16_t reference_audio[2][AUDIO_CAPACITY];
-    CHECK_EQ_U64(frame(pal_reference, reference_audio[0], &reference_count[0]),
-                 MUHTARI_STATUS_OK);
-    CHECK_EQ_U64(frame(pal_reference, reference_audio[1], &reference_count[1]),
-                 MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(frame(pal_reference, reference_audio[0], &reference_count[0]), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(frame(pal_reference, reference_audio[1], &reference_count[1]), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(count[1], reference_count[1]);
-    CHECK(memcmp(pal_audio[1], reference_audio[1],
-                 count[1] * sizeof pal_audio[1][0]) == 0);
+    CHECK(memcmp(pal_audio[1], reference_audio[1], count[1] * sizeof pal_audio[1][0]) == 0);
     CHECK(memcmp(&pal->ym, &pal_reference->ym, sizeof pal->ym) == 0);
     CHECK(memcmp(&pal->synth, &pal_reference->synth, sizeof pal->synth) == 0);
     CHECK(memcmp(&pal->cpu, &pal_reference->cpu, sizeof pal->cpu) == 0);
@@ -1693,9 +1681,9 @@ static size_t ym_hostile_image(uint8_t *image, int jammed)
         body[at++] = 0x58u; /* CLI immediately before the jam. */
         body[at++] = 0x02u; /* JAM after programming the complete profile */
     } else {
-        at = ym_emit_control(body, at, 0x04u); /* D7 off */
+        at = ym_emit_control(body, at, 0x04u);      /* D7 off */
         at = ym_emit_write(body, at, 0x28u, 0x7fu); /* ignored data */
-        at = ym_emit_control(body, at, 0x84u); /* D7 on */
+        at = ym_emit_control(body, at, 0x84u);      /* D7 on */
         at = ym_emit_write(body, at, 0x28u, 0x4au);
         at = ym_emit_write(body, at, 0x28u, 0x4cu);
         at = ym_emit_write(body, at, 0x28u, 0x4au);
@@ -1727,8 +1715,7 @@ static size_t ym_hostile_image(uint8_t *image, int jammed)
     return bytes;
 }
 
-static muhtari_status ym_hostile_frame(muhtari *m, int16_t *audio, uint8_t *video,
-                                       uint32_t *count)
+static muhtari_status ym_hostile_frame(muhtari *m, int16_t *audio, uint8_t *video, uint32_t *count)
 {
     struct muhtari__timing timing = muhtari__timing(m);
     muhtari_frame io;
@@ -1845,10 +1832,51 @@ static void ym_hostile_run(int jammed)
     CHECK_EQ_U64(allocations.allocs, allocations.frees);
 }
 
+static void ym_worst_topology(void)
+{
+    uint8_t image[YM_IMAGE_BYTES];
+    size_t bytes = images_ym2151_worst(image);
+    for (unsigned pal = 0u; pal < 2u; pal++) {
+        struct ym_allocations allocations = {0};
+        muhtari *m = make_machine_counted(&allocations);
+        CHECK(m != NULL);
+        if (m == NULL)
+            continue;
+        muhtari_media media = media_for(image, bytes, MUHTARI_EXPANSION_XM);
+        media.region = pal ? MUHTARI_REGION_PAL : MUHTARI_REGION_NTSC;
+        CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+        uint32_t calls = allocations.allocs;
+        int16_t audio[AUDIO_CAPACITY];
+        for (unsigned i = 0u; i < 6u; i++) {
+            uint32_t count = 0u;
+            CHECK_EQ_U64(frame(m, audio, &count), MUHTARI_STATUS_OK);
+            CHECK(count <= AUDIO_CAPACITY);
+        }
+        CHECK_EQ_U64(m->synth.pokeys, 2u);
+        CHECK_EQ_U64(m->synth.ym_installed, 1u);
+        CHECK_EQ_U64(m->cart.expansion.control, 0xf8u);
+        CHECK_EQ_U64(m->ym.active_channels, 0xffu);
+        CHECK_EQ_U64(m->ym.registers[0x0fu], 0x9fu);
+        CHECK_EQ_U64(m->ym.registers[0x18u], 0xffu);
+        CHECK_EQ_U64(m->ym.registers[0x1bu], 3u);
+        for (unsigned i = 0u; i < 8u; i++)
+            CHECK_EQ_U64(m->ym.registers[0x20u + i], 0xffu);
+        for (unsigned i = 0u; i < 32u; i++)
+            CHECK((m->ym.operators[i].key_state & 1u) != 0u);
+        CHECK_EQ_U64(m->ym.timer_running[0], 1u);
+        CHECK_EQ_U64(m->ym.timer_running[1], 1u);
+        CHECK_EQ_U64(m->ym.irq_state, 1u);
+        CHECK_EQ_U64(allocations.allocs, calls);
+        muhtari_destroy(m);
+        CHECK_EQ_U64(allocations.allocs, allocations.frees);
+    }
+}
+
 static void ym_hostile(void)
 {
     ym_hostile_run(0);
     ym_hostile_run(1);
+    ym_worst_topology();
 }
 
 int main(int argc, char **argv)

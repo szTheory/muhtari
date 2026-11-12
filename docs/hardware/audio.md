@@ -301,3 +301,22 @@ half-edge subevents and register writes before delivery, above the twelve-source
 per-tick bound. These are structural functional bounds, not a claim about
 analog propagation or measured runtime. A BIOS-refused frame may already have
 invoked callbacks: its host must discard tentative evidence.
+
+
+## Declared YM mix
+
+An installed declared XM/YM profile adds signed OPM words to the existing
+48 kHz mono path with conditional attenuation; absent YM keeps all prior PCM,
+raw-source encoding and state bytes. See [YM2151](ym2151.md) for exact gain,
+division, regional clock, 7/2 state, independent Yamaha expectations and
+receipt-bound seed comparisons. The summed level spans -4590 through 13769,
+width 18359, below the existing 18360 input width. The reconstruction/DC peak
+bound remains below 29203.6 without widening unrelated visitor limits.
+
+The private observer now retains full 16-bit source words and 248772 six-byte
+carry records. Its measured allocation is 1492816 bytes, separate from the
+91720-byte native instance and absent unless explicitly registered before load.
+Actual ordinary/stress native and Wasm timings use complete restored windows;
+they establish observed-host cost, not a worst-case speed guarantee or calibrated
+XM analog gain. All 32 OPM operators and eight channels remain instance-owned;
+no C++ or audio-device runtime is linked into products.

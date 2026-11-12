@@ -254,7 +254,7 @@ The boards are one `switch` in `src/cart.c`, so the core keeps no table of funct
 same bytes as the CPU except for BankSet and XM during the shared electrically
 selected MARIA interval.
 
-### XM RAM/POKEY/HSC subset
+### XM RAM/POKEY/HSC and declared YM
 
 XM has sixteen physical 8 KiB RAM pages. Exact writes at $0470 use bits 5/6
 to enable $4000–$5FFF/$6000–$7FFF independently. The low/high nibbles at
@@ -279,8 +279,10 @@ and supplied-firmware validation retain their documented limits.
 This is an implementation-backed compatibility profile with medium confidence
 for physical XM semantics, following the individually BSD-3-licensed `xm.cpp`
 at a7800 revision `7a2afdc1ea08` (cartridge preparation, CART.22). The original
-developer specification remains unavailable. Bits 0–2/7 at $0470, $0471/$0472
-and neighboring aliases have no implemented effect; absent register reads
+developer specification remains unavailable. Bits 0–2 at $0470, $0471/$0472
+and neighboring aliases have no implemented effect. Bit 7 gates the separately
+qualified [YM2151 digital profile](ym2151.md) at $0460/$0461; its clock, IRQ,
+mono gain and evidence limits are documented there. Absent register reads
 retain open bus. ROF aliases, internal BIOS/top-slot switching, flash, PIA,
 flat 48 KiB mode, protection, sticky locks and PAL firmware selection remain
 unavailable. Probing them produces no synthetic service or detection behavior.

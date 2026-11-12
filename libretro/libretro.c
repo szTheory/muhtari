@@ -1367,8 +1367,8 @@ static bool lr_load_content(const struct retro_game_info *game)
    while staging the actual load. */
 static bool lr_refuses_ym_reload(const struct retro_game_info *game)
 {
-    if (inst == NULL || content == NULL || game == NULL || game->data == NULL ||
-        game->size == 0u || game->size > MUHTARI_IMAGE_SIZE_MAX)
+    if (inst == NULL || content == NULL || game == NULL || game->data == NULL || game->size == 0u ||
+        game->size > MUHTARI_IMAGE_SIZE_MAX)
         return false;
 
     muhtari_cart_info incoming;
@@ -1378,12 +1378,12 @@ static bool lr_refuses_ym_reload(const struct retro_game_info *game)
         (incoming.sound & MUHTARI_SOUND_YM2151) == 0u)
         return false;
 
-    uint32_t expansion = lr_option_is("muhtari_expansion", "auto")
-                             ? ((incoming.devices & MUHTARI_DEVICE_XM) != 0u
-                                    ? MUHTARI_EXPANSION_XM
-                                    : MUHTARI_EXPANSION_OFF)
-                         : lr_option_is("muhtari_expansion", "xm") ? MUHTARI_EXPANSION_XM
-                                                                     : MUHTARI_EXPANSION_OFF;
+    uint32_t expansion =
+        lr_option_is("muhtari_expansion", "auto")
+            ? ((incoming.devices & MUHTARI_DEVICE_XM) != 0u ? MUHTARI_EXPANSION_XM
+                                                            : MUHTARI_EXPANSION_OFF)
+        : lr_option_is("muhtari_expansion", "xm") ? MUHTARI_EXPANSION_XM
+                                                  : MUHTARI_EXPANSION_OFF;
     bool unsupported = (incoming.devices & MUHTARI_DEVICE_XM) == 0u ||
                        expansion != MUHTARI_EXPANSION_XM ||
                        (incoming.sound & (MUHTARI_SOUND_COVOX | MUHTARI_SOUND_ADPCM)) != 0u;

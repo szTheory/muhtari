@@ -623,7 +623,7 @@ async function writeMeasurement(options, evidence, result, factory) {
 
 const YM_FIXTURES = {
   ordinary: '65c25495be4a0d73ae83a9f3f742186ffda34bff4058c3a5bc304bed428258d6',
-  worst: '89a0f03290d2442379991c661527ff83e6072fb6e0dd69896b936f64a4aafbd2',
+  worst: '11b6fa4251de4771cfcc19b86ebc9f8c6679ddab211f3b4db42221c47535290b',
 };
 const validHash = (value) => typeof value === 'string' && /^[0-9a-f]{64}$/u.test(value);
 

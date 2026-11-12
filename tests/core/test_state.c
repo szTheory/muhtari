@@ -470,8 +470,8 @@ static void state_ym_checkpoint(muhtari *source, muhtari *restored)
     uint32_t source_samples = state_run_frame(source, public_video_a, public_audio_a);
     uint32_t restored_samples = state_run_frame(restored, public_video_b, public_audio_b);
     CHECK_EQ_U64(restored_samples, source_samples);
-    CHECK(memcmp(public_video_a, public_video_b,
-                 (size_t)320u * muhtari__timing(source).height) == 0);
+    CHECK(memcmp(public_video_a, public_video_b, (size_t)320u * muhtari__timing(source).height) ==
+          0);
     CHECK(memcmp(public_audio_a, public_audio_b,
                  (size_t)source_samples * sizeof public_audio_a[0]) == 0);
     CHECK(memcmp(&source->ym, &restored->ym, sizeof source->ym) == 0);
@@ -520,6 +520,11 @@ static void test_ym(void)
         CHECK_EQ_U64(muhtari_save_state(source, public_snapshot, total), MUHTARI_STATUS_OK);
         CHECK_EQ_U64(get_u32(public_snapshot + 8u), 2u);
         CHECK_EQ_U64(get_u32(public_snapshot + 20u), 7u);
+        /* Every public boundary has completed bus catch-up. A stale YM
+           tick must not schedule an unbounded historical replay on resume. */
+        size_t ym_initial = total - STATE_YM_BYTES;
+        state_ym_corrupt(source, public_snapshot, total, ym_initial + 4u, 8u, 0u);
+        CHECK_EQ_U64(muhtari_load_state(source, public_snapshot, total), MUHTARI_STATUS_OK);
         memcpy(public_first, public_snapshot, total);
         public_first[24] ^= 1u;
         state_ym_expect_refusal(source, public_snapshot, public_first, total,
@@ -579,8 +584,8 @@ static void test_ym(void)
         const size_t operators = 853u;
         const size_t operator_envelope = 14u;
         state_ym_corrupt(source, public_snapshot, total, ym_start + noise_lfo, 2u, 1u);
-        state_ym_corrupt(source, public_snapshot, total,
-                         ym_start + operators + operator_envelope, 1u, 0u);
+        state_ym_corrupt(source, public_snapshot, total, ym_start + operators + operator_envelope,
+                         1u, 0u);
         state_ym_corrupt(source, public_snapshot, total, ym_start + 4u + 72u, 1u,
                          source->ym.timer_running[0] ^ 1u);
         state_ym_corrupt(source, public_snapshot, total, ym_start + 20u, 8u,
@@ -589,8 +594,8 @@ static void test_ym(void)
                          source->ym.clocks + 1u);
         state_ym_corrupt(source, public_snapshot, total, ym_start + 66u, 2u,
                          (uint16_t)source->ym.output[0] ^ 1u);
-        state_ym_corrupt(source, public_snapshot, total,
-                         ym_start + operators + 31u * 49u + 48u, 1u, 32u);
+        state_ym_corrupt(source, public_snapshot, total, ym_start + operators + 31u * 49u + 48u, 1u,
+                         32u);
         state_ym_corrupt(source, public_snapshot, total, 8094u, 4u,
                          MUHTARI__SYNTH_PCM_CAPACITY + 1u);
 
@@ -609,8 +614,7 @@ static void test_ym(void)
         state_rechecksum(public_first, total);
         state_ym_expect_refusal(source, public_snapshot, public_first, total,
                                 MUHTARI_STATUS_ERR_STATE_MISMATCH);
-        expect_state_refusal(source, public_snapshot, total - 1u,
-                             MUHTARI_STATUS_ERR_INVALID_STATE);
+        expect_state_refusal(source, public_snapshot, total - 1u, MUHTARI_STATUS_ERR_INVALID_STATE);
         memcpy(public_first, public_snapshot, total);
         public_first[total - 1u] ^= 1u;
         state_ym_expect_refusal(source, public_snapshot, public_first, total,
@@ -640,8 +644,7 @@ static void test_ym(void)
         if (legacy != NULL) {
             size_t legacy_bytes = images_ym2151(identity_image);
             identity_image[67] &= (uint8_t)~0x08u;
-            images_footer(identity_image + IMAGES_HEADER,
-                          (uint32_t)(legacy_bytes - IMAGES_HEADER));
+            images_footer(identity_image + IMAGES_HEADER, (uint32_t)(legacy_bytes - IMAGES_HEADER));
             muhtari_media legacy_media = state_media_for_image(identity_image, legacy_bytes);
             legacy_media.expansion = MUHTARI_EXPANSION_XM;
             legacy_media.port[1] = MUHTARI_PORT_SAVEKEY;
@@ -1876,7 +1879,7 @@ static void test_fields(void)
     expect_invalid_u32(m, bytes, 8062u, m->synth.sample_den);
     expect_invalid_u32(m, bytes, 8066u, MUHTARI__SYNTH_PCM_CAPACITY);
     expect_invalid_u32(m, bytes, 8070u, MUHTARI__SYNTH_PCM_CAPACITY + 1u);
-    expect_invalid_u32(m, bytes, 8074u, 1u);     /* Sample clock is identity-bound. */
+    expect_invalid_u32(m, bytes, 8074u, 1u); /* Sample clock is identity-bound. */
     expect_invalid_u32(m, bytes, 8094u, MUHTARI__SYNTH_PCM_CAPACITY + 1u);
     /* Synthesized audio carry history cannot exceed its fixed FIFO. */
     expect_invalid_u32(m, bytes, 8098u, 18361u); /* Mixed level is within DAC scale. */
@@ -2710,9 +2713,13 @@ static void test_topologies(void)
 static const struct {
     const char *name;
     void (*run)(void);
-} cases[] = {{"payload", test_payload}, {"fields", test_fields},
-             {"aliases", test_aliases}, {"lifecycle", test_lifecycle},
-             {"battery", test_battery}, {"topologies", test_topologies}, {"ym", test_ym}};
+} cases[] = {{"payload", test_payload},
+             {"fields", test_fields},
+             {"aliases", test_aliases},
+             {"lifecycle", test_lifecycle},
+             {"battery", test_battery},
+             {"topologies", test_topologies},
+             {"ym", test_ym}};
 
 static void test_equality_report(void)
 {
