@@ -19,7 +19,7 @@ Current context and research are sufficient; the existing C17/CMake owners, save
 
 | Wave | Plan | Outcome | Tasks | Dependencies |
 |---|---|---|---:|---|
-| 1 | 20-01 | Public-C note tracer, full C17 OPM, independent numbers and genuine exact-seed comparison | 2 | Existing source and parent-prepared seed |
+| 1 | 20-01 | Public-C note tracer, fail-closed YM state, full C17 OPM, independent numbers and genuine exact-seed comparison | 2 | Existing source and parent-prepared seed |
 | 2 | 20-02 | Complete map/clock/IRQ, signed mix/observation/carry and lifecycle/hostile bounds | 3 | 20-01 |
 | 3 | 20-03 | Complete YM state, semantic refusals, unchanged legacy path and explicit versions | 2 | 20-02 |
 | 4 | 20-04 | Shared owned diagnostic through public C, actual runner, loaded native core and equality consumers | 3 | 20-03 |
@@ -27,11 +27,19 @@ Current context and research are sufficient; the existing C17/CMake owners, save
 | 5 | 20-06 | Genuine old/new byte identity and both continuation directions, safe old refusal | 2 | 20-04 |
 | 6 | 20-07 | Actual ordinary/worst native/Wasm costs, docs/notices, complete local gates and bounded review | 3 | 20-05, 20-06 |
 
-Each plan has two or three tasks and the first phase task is the end-to-end production tracer. Later tasks expand useful behavior or qualify a concrete failure boundary of that path. Plans explicitly name all production/test/CMake files; a real tracer spans multiple existing owners. The parent clarified that five-file counting is not a reason to split this tracer into horizontal setup tasks.
+Each plan has two or three tasks and the first phase task is the end-to-end production tracer. Later tasks expand useful behavior or qualify a concrete failure boundary of that path. Plans explicitly name all production/test/CMake files; a real tracer spans multiple existing owners. ENGINEERING section 11 rejects numerical-only/file-quota blocking; a split needs a concrete ownership, coupling or execution burden. The root and coordinator reconciled the checker revision to preserve these seven coherent plans and their honest file extents. The shared build serialization already addresses the identified execution coupling; no demonstrated burden requires a new plan.
 
 Same-wave plans 20-05 and 20-06 have no modified-file overlap. Both consume the stable current native library. They must serialize access to the shared build/ci build/test/package resource and avoid running a rebuild while another test uses it; independent compatibility drivers and package scratch have separate owned work directories. Project execution currently disables concurrent plan execution, which naturally preserves this ownership. No overlap is hidden by wildcard file ownership.
 
 The orchestrator owns structural ROADMAP/STATE updates and phase acceptance. Executors own only their declared product/test/docs changes, task commits and source-specific SUMMARY evidence. Every summary includes requirements-completed and block-style coverage with verification kind/ref/status and human_judgment false. No owner-only validation is selected.
+
+## Bounded checker revision: state safety and scope disposition
+
+The demonstrated defect was real: accepting YM in the public tracer before adding YM fields to the format-1 visitor would allow a lossy save/restore. Plan 20-01 task 1 now owns src/state.c and adds a YM-only fail-closed guard in the very same commit that enables public YM loading. A loaded YM instance reports state_size zero; valid-argument save/load return state unavailable before legacy visitation, caller writes or input application. Existing argument precedence and every non-YM state path remain unchanged. The actual CI-registered ym.tracer tests size, save and load, caller/tail preservation, battery bytes/generation, stable spans and identical next execution against an independent equivalent instance. A non-YM save/restore control stays active.
+
+Plan 20-03 task 1 replaces that guard only atomically with the complete topology-aware format-2/behavior-7 visitor, full semantic prevalidation and exact continuation. It updates the same public tracer to demand a real YM envelope and replay rather than silently dropping a safety assertion. Both the tracer and core.state.ym run at that switch. The unavailable guard supplies safety, never YM-05 completion; all original YM state/compatibility/delivery acceptance remains mandatory in this phase.
+
+The other six checker findings were based on numerical file/task thresholds. Their resize request was explicitly superseded by the root/coordinator under ENGINEERING section 11: no complexity score, file quota or numerical threshold alone blocks a coherent change. Existing plans retain concrete ownership, exact file lists, runnable consumer tests and their two/three-task boundaries; no file extent is hidden, no required test is separated into a validation-tail phase, and no deferred scope enters the plan. The seven-plan/six-wave shape therefore remains. This is a policy disposition of generic scope warnings, not a claim that every scope estimate is an implementation measurement. The first plan estimate grows from 42000 to 44000 raw/calibrated tokens for the actual guard/test work; the existing factor 1 and low-confidence calibration are unchanged.
 
 ## Parent-prepared prerequisites
 
@@ -70,6 +78,7 @@ The orchestrator owns structural ROADMAP/STATE updates and phase acceptance. Exe
 | RESEARCH | Legacy schema | YM tags/fields/array growth absent from non-YM identities and visitor; actual envelopes selected per machine | 20-03.1–2, 20-06.1–2 | COVERED |
 | RESEARCH | Version consumers | Frozen prefixes/signatures/API8/ABI1; global reporting7/2 versus non-YM6/1; revision-6 movie warning/runner metadata expected | 20-03.2, 20-07.2 | COVERED |
 | RESEARCH | Genuine legacy evidence | Kickoff-produced actual states and both continuation directions plus same-point bytes across regions/RAM/expansion/battery | 20-06.1–2 | COVERED |
+| RESEARCH | Intermediate state safety | Every publicly accepted YM machine has tested size/save/load refusal until complete 2/7 continuation replaces it atomically; non-YM paths stay unchanged | 20-01.1, 20-03.1 | COVERED |
 | RESEARCH | State semantic ownership | Complete mutable fields or proven cache reconstruction; CRC-repaired late semantic faults, exact identity/version/topology refusals, no mutation/allocation/observer/caller-tail changes | 20-03.1–2, 20-06.2 | COVERED |
 | RESEARCH | Numeric diagnostic | One lawful generated CPU-port workload; old refusal and new non-silence; identical bytes through all interfaces | 20-01.1, 20-04.1–2, 20-05.1–3, 20-06.2 | COVERED |
 | RESEARCH | Actual delivery | Real runner, dynamically loaded native core, emitted portable module, staged/extracted public library and clean package replay | 20-04.1–2, 20-05.1–3 | COVERED |
