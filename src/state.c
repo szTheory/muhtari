@@ -1234,8 +1234,14 @@ static int state_public_resume_safe(const muhtari *m, const uint64_t *v)
     /* Every completed bus access and reset has caught YM up to this exact
        tick. Reject stale chip time before it can replay arbitrary history
        during the first resumed access (ym2151.md, State and consumer support). */
-    if (m->synth.ym_installed != 0u && v[MARK_YM_LAST_TICK] != tick)
-        return 0;
+    if (m->synth.ym_installed != 0u) {
+        uint64_t origin = v[MARK_BUS_ORIGIN_TICK];
+        if (v[MARK_YM_LAST_TICK] != tick || origin > tick)
+            return 0;
+        uint64_t elapsed = tick - origin;
+        if (v[MARK_YM_CLOCKS] != elapsed / 2u || v[MARK_YM_CLOCK_REMAINDER] != (elapsed & 1u))
+            return 0;
+    }
 
     if (deadline - frame_start > frame || deadline > UINT64_MAX - frame ||
         tick > UINT64_MAX - clock_margin || phi2 > UINT64_MAX - (clock_margin / 4u + 2u))

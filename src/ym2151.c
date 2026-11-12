@@ -770,12 +770,12 @@ uint64_t muhtari__ym2151_next_timer_tick(const muhtari *m)
 uint8_t muhtari__ym2151_read(muhtari *m, uint16_t addr, uint64_t tick)
 {
     muhtari__ym2151_catch_up(m, tick);
-    return (addr & 1u) != 0u ? ym_status(&m->ym) : 0xffu;
+    return (addr & 1u) != 0u ? ym_status(&m->ym) : m->bus.open_bus;
 }
 
 uint8_t muhtari__ym2151_peek(const muhtari *m, uint16_t addr)
 {
-    return (addr & 1u) != 0u ? ym_status(&m->ym) : 0xffu;
+    return (addr & 1u) != 0u ? ym_status(&m->ym) : m->bus.open_bus;
 }
 
 void muhtari__ym2151_write(muhtari *m, uint16_t addr, uint8_t value, uint64_t tick)

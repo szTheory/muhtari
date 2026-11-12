@@ -859,6 +859,19 @@ static void ym_profile(void)
     }
     CHECK_EQ_U64(m->cart.expansion.control, 0xffu);
 
+    /* The address port never drives the read bus, including private peeks.
+       Its non-FF latch must survive both the access and the next open read. */
+    static const uint8_t latch_values[] = {0u, 0x5au, 0xa5u};
+    for (unsigned i = 0u; i < sizeof latch_values; i++) {
+        uint8_t value = latch_values[i];
+        m->bus.open_bus = value;
+        CHECK_EQ_U64(muhtari__ym2151_peek(m, 0x0460u), value);
+        CHECK_EQ_U64(muhtari__bus_peek(m, 0x0460u), value);
+        CHECK_EQ_U64(muhtari__bus_read(m, 0x0460u), value);
+        CHECK_EQ_U64(m->bus.open_bus, value);
+        CHECK_EQ_U64(muhtari__bus_read(m, 0x0462u), value);
+    }
+
     /* Page registers and all nearby aliases leave the chip address/data
        state alone. Peeks and MARIA reads cannot clock or read YM status. */
     muhtari__bus_write(m, 0x0470u, 0x84u);

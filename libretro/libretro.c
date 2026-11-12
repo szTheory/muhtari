@@ -1360,11 +1360,9 @@ static bool lr_load_content(const struct retro_game_info *game)
     return true;
 }
 
-/* A declared YM configuration has a narrow supported topology: the device
-   must be on XM, and this profile does not combine with Covox or ADPCM. Check
-   that declaration before tearing down a currently loaded game so a refused
-   YM reload leaves the running session intact. The core repeats this check
-   while staging the actual load. */
+/* Mirror the public loader's declared YM board/physical-owner refusals before
+   tearing down the current game. Keep this predicate and its reload cases in
+   step with muhtari_load; the core remains authoritative when staging load. */
 static bool lr_refuses_ym_reload(const struct retro_game_info *game)
 {
     if (inst == NULL || content == NULL || game == NULL || game->data == NULL || game->size == 0u ||
@@ -1374,7 +1372,10 @@ static bool lr_refuses_ym_reload(const struct retro_game_info *game)
     muhtari_cart_info incoming;
     memset(&incoming, 0, sizeof incoming);
     incoming.size = (uint32_t)sizeof incoming;
-    if (muhtari_probe(game->data, game->size, &incoming) != MUHTARI_STATUS_OK ||
+    muhtari_status status = muhtari_probe(game->data, game->size, &incoming);
+    /* Unsupported-board probes intentionally return populated metadata so a
+       host can refuse the declaration without destroying the current game. */
+    if ((status != MUHTARI_STATUS_OK && status != MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD) ||
         (incoming.sound & MUHTARI_SOUND_YM2151) == 0u)
         return false;
 
@@ -1384,15 +1385,21 @@ static bool lr_refuses_ym_reload(const struct retro_game_info *game)
                                                             : MUHTARI_EXPANSION_OFF)
         : lr_option_is("muhtari_expansion", "xm") ? MUHTARI_EXPANSION_XM
                                                   : MUHTARI_EXPANSION_OFF;
-    bool unsupported = (incoming.devices & MUHTARI_DEVICE_XM) == 0u ||
+    uint32_t primary = incoming.sound & (MUHTARI_SOUND_POKEY_4000 | MUHTARI_SOUND_POKEY_450 |
+                                         MUHTARI_SOUND_POKEY_800);
+    bool unsupported = status == MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD ||
+                       (incoming.devices & MUHTARI_DEVICE_XM) == 0u ||
                        expansion != MUHTARI_EXPANSION_XM ||
-                       (incoming.sound & (MUHTARI_SOUND_COVOX | MUHTARI_SOUND_ADPCM)) != 0u;
+                       (incoming.sound & (MUHTARI_SOUND_COVOX | MUHTARI_SOUND_ADPCM)) != 0u ||
+                       (primary != 0u && (primary & (primary - 1u)) != 0u) ||
+                       (primary & (MUHTARI_SOUND_POKEY_4000 | MUHTARI_SOUND_POKEY_800)) != 0u;
     if (!unsupported)
         return false;
 
-    LR_LOG(RETRO_LOG_ERROR,
-           "muhtari: YM reload refused before replacing current content: unsupported device\n");
-    lr_message("Unsupported YM sound configuration");
+    LR_LOG(
+        RETRO_LOG_ERROR,
+        "muhtari: YM reload refused before replacing current content: unsupported configuration\n");
+    lr_message("Unsupported YM configuration");
     return true;
 }
 

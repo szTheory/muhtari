@@ -657,6 +657,55 @@ static void test_ym(void)
                          MUHTARI_STATUS_ERR_INVALID_STATE);
             muhtari_destroy(legacy);
         }
+        /* Preserve modulo counter consistency while forging the reset epoch.
+           Stop timers and let busy expire so neither independently rejects it. */
+        state_ym_write(source, 0x14u, 0x30u);
+        (void)state_run_frame(source, public_video_a, public_audio_a);
+        total = muhtari_state_size(source);
+        CHECK_EQ_U64(muhtari_save_state(source, public_snapshot, total), MUHTARI_STATUS_OK);
+        ym_start = total - STATE_YM_BYTES;
+        CHECK(source->ym.clocks >= 64u);
+        memcpy(public_first, public_snapshot, total);
+        put_u64(public_first + ym_start + 12u, source->ym.clocks - 64u);
+        public_first[ym_start + 78u] = (uint8_t)(source->ym.total_clocks - 1u);
+        state_rechecksum(public_first, total);
+        state_ym_expect_refusal(source, public_snapshot, public_first, total,
+                                MUHTARI_STATUS_ERR_INVALID_STATE);
+        CHECK_EQ_U64(muhtari_load_state(source, public_snapshot, total), MUHTARI_STATUS_OK);
+        state_ym_corrupt(source, public_snapshot, total, ym_start + 70u, 1u,
+                         source->ym.clock_remainder ^ 1u);
+        CHECK_EQ_U64(muhtari_load_state(source, public_snapshot, total), MUHTARI_STATUS_OK);
+        /* BIOS reset starts at bus epoch zero, unlike the fast handoff.
+           A generated JMP loop exercises the same public state clock rule. */
+        alloc_counts bios_counts;
+        muhtari *bios_machine = state_create(&bios_counts);
+        CHECK(bios_machine != NULL);
+        if (bios_machine != NULL) {
+            memset(identity_bios, 0xeau, sizeof identity_bios);
+            identity_bios[0] = 0x4cu;
+            identity_bios[1] = 0u;
+            identity_bios[2] = 0xf0u;
+            identity_bios[4092] = 0u;
+            identity_bios[4093] = 0xf0u;
+            muhtari_media bios_media = media;
+            bios_media.bios = identity_bios;
+            bios_media.bios_size = sizeof identity_bios;
+            CHECK_EQ_U64(muhtari_load(bios_machine, &bios_media), MUHTARI_STATUS_OK);
+            CHECK_EQ_U64(bios_machine->bus.clock_origin_tick, 0u);
+            CHECK_EQ_U64(bios_machine->ym.last_tick, bios_machine->bus.ticks);
+            CHECK_EQ_U64(bios_machine->ym.clocks, bios_machine->bus.ticks / 2u);
+            size_t bios_size = muhtari_state_size(bios_machine);
+            CHECK_EQ_U64(muhtari_save_state(bios_machine, first, bios_size), MUHTARI_STATUS_OK);
+            (void)state_run_frame(bios_machine, public_video_a, public_audio_a);
+            CHECK_EQ_U64(muhtari_save_state(bios_machine, second, bios_size), MUHTARI_STATUS_OK);
+            CHECK_EQ_U64(muhtari_load_state(bios_machine, first, bios_size), MUHTARI_STATUS_OK);
+            (void)state_run_frame(bios_machine, public_video_b, public_audio_b);
+            CHECK_EQ_U64(muhtari_save_state(bios_machine, public_first, bios_size),
+                         MUHTARI_STATUS_OK);
+            CHECK(memcmp(second, public_first, bios_size) == 0);
+            muhtari_destroy(bios_machine);
+            CHECK_EQ_U64(bios_counts.allocs, bios_counts.frees);
+        }
         muhtari_destroy(restored);
         muhtari_destroy(source);
         CHECK_EQ_U64(source_counts.allocs, source_counts.frees);

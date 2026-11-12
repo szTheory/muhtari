@@ -2828,15 +2828,29 @@ static void case_ym(void)
             uint8_t *refusal = (uint8_t *)malloc(file_sizes[0]);
             CHECK(refusal != NULL);
             if (refusal != NULL) {
-                memcpy(refusal, files[0], file_sizes[0]);
-                refusal[67] |= 0x10u; /* YM plus unsupported Covox. */
-                struct retro_game_info rejected = {0};
-                rejected.data = refusal;
-                rejected.size = file_sizes[0];
-                CHECK(!p_load_game(&rejected));
-                CHECK_EQ_U64(p_serialize_size(), state_bytes);
-                CHECK(p_serialize(after_invalid, state_bytes));
-                CHECK(memcmp(after_invalid, saved, state_bytes) == 0);
+                static const uint8_t audio_requests[] = {0x18u, 0x28u, 0x0du, 0x0cu, 0x08u};
+                for (unsigned bad = 0u; bad < sizeof audio_requests; bad++) {
+                    memcpy(refusal, files[0], file_sizes[0]);
+                    refusal[67] = audio_requests[bad];
+                    if (bad == 4u)
+                        refusal[64] = 4u; /* Souper retains metadata on probe refusal. */
+                    struct retro_game_info rejected = {0};
+                    rejected.data = refusal;
+                    rejected.size = file_sizes[0];
+                    CHECK(!p_load_game(&rejected));
+                    CHECK_EQ_U64(p_serialize_size(), state_bytes);
+                    if (p_serialize_size() == state_bytes) {
+                        CHECK(p_serialize(after_invalid, state_bytes));
+                        CHECK(memcmp(after_invalid, saved, state_bytes) == 0);
+                    } else {
+                        /* Isolate each failure in a broken implementation. */
+                        struct retro_game_info original = {0};
+                        original.data = files[0];
+                        original.size = file_sizes[0];
+                        CHECK(p_load_game(&original));
+                        CHECK(p_unserialize(saved, state_bytes));
+                    }
+                }
                 free(refusal);
             }
 
