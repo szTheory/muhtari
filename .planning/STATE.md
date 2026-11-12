@@ -5,16 +5,16 @@ milestone_name: YM2151 homebrew sound
 current_phase: 20
 current_phase_name: Complete YM2151 homebrew sound
 status: executing
-stopped_at: Completed 20-05-PLAN.md
-last_updated: "2026-11-12T09:56:27.758Z"
+stopped_at: Completed 20-06-PLAN.md
+last_updated: "2026-11-12T10:07:11.325Z"
 last_activity: 2026-11-12
-last_activity_desc: Phase 20 Plan 20-05 complete; Plan 20-06 next
-state_head: 4263f203799096b5c9d9fe7e187b13f5b0791eb5
+last_activity_desc: Phase 20 Plan 20-06 complete; Plan 20-07 next
+state_head: 1f8aacd28ec5c6e9a30293da95f866717ee4dbe6
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 8
-  completed_plans: 6
+  completed_plans: 7
   percent: 50
 ---
 
@@ -29,15 +29,15 @@ See [PROJECT.md](PROJECT.md), [current requirements](REQUIREMENTS.md), [ROADMAP.
 ## Current Position
 
 Phase: 20 (Complete YM2151 homebrew sound) — EXECUTING
-Plan: 6 of 7
+Plan: 7 of 7
 Status: Ready to execute
-Last activity: 2026-11-12 — Phase 20 Plan 20-05 complete; Plan 20-06 next
+Last activity: 2026-11-12 — Phase 20 Plan 20-06 complete; Plan 20-07 next
 
 Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
-v6.0 has six completed plans and one completed phase. Phase 20 Plans 20-01 through 20-05 are complete; Plan 20-06 is next. Phase 19 records the source-specific baseline and local gate outcomes in its summary; prior v5.0 ship evidence remains in the final ship receipt.
+v6.0 has seven completed plans and one completed phase. Phase 20 Plans 20-01 through 20-06 are complete; Plan 20-07 is next. Phase 19 records the source-specific baseline and local gate outcomes in its summary; prior v5.0 ship evidence remains in the final ship receipt.
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
@@ -51,7 +51,7 @@ v6.0 has six completed plans and one completed phase. Phase 20 Plans 20-01 throu
 - v3.0 closed with deferred scope: only Phase 13 verified; nine requirements remain unchecked in the [archive](milestones/v3.0-MILESTONE-AUDIT.md). v4.0 promotes no old host acceptance claim.
 - Root remains canonical; stale dirty worktrees stay preserved and require content/ancestry reconciliation before import. See [workspace reconciliation](debug/workspace-reconciliation-2026-11-10.md).
 - Owner-selected v6.0 keeps one source-qualified XM/YM2151 profile, public mono PCM and C17 integer-only instance ownership. Profile, finite resource bounds and concrete API/behavior/native-format compatibility consequences are qualified before implementation; materially new consequences remain owner decisions.
-- Required chip/bus/audio/state, library/runner/libretro/Wasm/package acceptance, tests, docs and cost stay together in Phase 20. Plans 20-01 through 20-05 are complete; the next runnable plan is 20-06. YM state now uses format 2/behavior 7 while no-YM snapshots retain format 1/behavior 6; independent genuine old/new continuation remains in Plan 20-06. Reuse saved research, current mechanisms and [fan-out guidance](research/fan-out/prompt.txt); do not add a validation-tail phase or repeat upstream research.
+- Required chip/bus/audio/state, library/runner/libretro/Wasm/package acceptance, tests, docs and cost stay together in Phase 20. Plans 20-01 through 20-06 are complete; the next runnable plan is 20-07. YM state now uses format 2/behavior 7 while no-YM snapshots retain format 1/behavior 6; independent genuine old/new continuation remains in Plan 20-06. Reuse saved research, current mechanisms and [fan-out guidance](research/fan-out/prompt.txt); do not add a validation-tail phase or repeat upstream research.
 
 Inherited todos and optional seeds retain their dispositions except selected YM/XM and recurring tune-up contributions. Atari 2600 belongs to twentysixhundo; LibFuturo owns its existing host/browser routes. [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md) carries future horizons.
 
@@ -108,7 +108,7 @@ At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Sou
 ## Session Continuity
 
 Last session: 2026-11-12T08:32:40.865Z
-Stopped at: Completed 20-05-PLAN.md
+Stopped at: Completed 20-06-PLAN.md
 Resume file: None
 
 Next action: After clearing context, run `$gsd-autonomous` for v6.0. It will reconcile the live plan index and continue Phase 20 planning and authorized local work. No user action is needed for routine continuation.
