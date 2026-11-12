@@ -1,8 +1,8 @@
 ---
 phase: 20-complete-ym2151-homebrew-sound
-reviewed: 2026-11-12T10:50:20Z
-reviewed_head: 302af89e5f43e4ba667cf4ecfd3d7ad50a4f8bb5
-review_round: 1
+reviewed: 2026-11-12T11:08:56Z
+reviewed_head: 5158bb649160f081f6f1253da3be3099b93c8a03
+review_round: 2
 depth: standard
 files_reviewed: 63
 files_reviewed_list:
@@ -80,15 +80,15 @@ status: clean
 
 # Phase 20: Code Review Report
 
-**Reviewed:** 2026-11-12T10:50:20Z
+**Reviewed:** 2026-11-12T11:08:56Z
 **Depth:** standard
 **Files Reviewed:** 63
-**Reviewed Head:** `302af89e5f43e4ba667cf4ecfd3d7ad50a4f8bb5`
+**Reviewed Head:** `5158bb649160f081f6f1253da3be3099b93c8a03`
 **Status:** clean
 
 ## Summary
 
-Re-reviewed the seven files changed by round one against the three findings from the initial review. All three original issues were reproduced before the fixes and are resolved at the reviewed head; no regression or unresolved issue was found in this delta. The retained findings below include the before-fix reproduction and after-fix evidence. Final native, hygiene, sanitizer, oracle, compatibility and portable refresh gates and cost-document updates remain pending and are outside this review-fix disposition.
+Re-reviewed the five product, test, and documentation files changed in the final delta, including the runner row-count assertion, and traced the YM/TIA/POKEY/bus event paths through normal, slow, and held cycles. The runner total reconciles to 3,088 retained + 78 state equality + 14 YM equality rows = 3,180; historical digests are unchanged. The ordering change fixes the reproduced backward observer timestamps: YM advances through each TIA event, and each POKEY half-edge drains that merged timeline before POKEY emits. Timer deadlines still bound held-cycle batches and bus rearming; the YM-only branches leave the no-YM path unchanged. The previous three findings remain resolved, and no regression or additional issue was found. The Release and qualified Apple ASan/UBSan focused gates pass 17/17 in `build/v6-phase20-ordering-after.log` and `build/v6-phase20-ordering-sanitizer.log`; the before logs capture the ordering failure. Final full native, hygiene, sanitizer, oracle, compatibility, portable refresh gates, and cost-document updates remain pending and are outside this review disposition.
 
 ## Narrative Findings (AI reviewer)
 
@@ -129,7 +129,7 @@ Re-reviewed the seven files changed by round one against the three findings from
 
 ---
 
-_Reviewed: 2026-11-12T10:50:20Z_
+_Reviewed: 2026-11-12T11:08:56Z_
 _Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_
 
@@ -145,7 +145,11 @@ YM/state/native-observer/loaded-module gate passes after fixes
 (`build/v6-phase20-review1-after.log`, exit 0). A generated BIOS loop additionally
 proves reset-relative state replay in both regions
 (`build/v6-phase20-review1-bios.log`, exit 0). URLs N/A-local. Independent
-re-review was completed at `302af89e5f43e4ba667cf4ecfd3d7ad50a4f8bb5`; all
-three findings are resolved, with no unresolved issue found in this delta.
-This records implementation evidence and review disposition, not phase sign-off.
-Final phase gates remain pending. No formal gap round has been used.
+re-review first completed at `302af89e5f43e4ba667cf4ecfd3d7ad50a4f8bb5` and
+the final round completed at `5158bb649160f081f6f1253da3be3099b93c8a03`; all
+three findings are resolved, with no unresolved issue found in either fix
+delta. Final targeted Release and qualified Apple ASan/UBSan ordering gates
+pass 17/17 (`build/v6-phase20-ordering-after.log` and
+`build/v6-phase20-ordering-sanitizer.log`, exit 0). This records implementation
+evidence and review disposition, not phase sign-off. Final phase gates remain
+pending. No formal gap round has been used.
