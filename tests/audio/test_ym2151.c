@@ -1316,6 +1316,7 @@ struct ym_observed_event {
 };
 struct ym_observed_events {
     uint32_t count;
+    uint16_t source_mask;
     uint32_t source_count[2];
     uint32_t negative[2];
     uint32_t positive[2];
@@ -1343,6 +1344,7 @@ static void ym_observe_collect(void *user, uint64_t tick, uint8_t source, uint16
         events->positive[channel] += value > 0;
     }
     events->count++;
+    events->source_mask |= (uint16_t)(1u << source);
     events->previous = (struct ym_observed_event){tick, raw, source};
     events->have_previous = 1u;
 }
@@ -1857,6 +1859,8 @@ static void ym_worst_topology(void)
             continue;
         muhtari_media media = media_for(image, bytes, MUHTARI_EXPANSION_XM);
         media.region = pal ? MUHTARI_REGION_PAL : MUHTARI_REGION_NTSC;
+        struct ym_observed_events events = {0};
+        CHECK_EQ_U64(muhtari__synth_observe(m, ym_observe_collect, &events), MUHTARI_STATUS_OK);
         CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
         uint32_t calls = allocations.allocs;
         int16_t audio[AUDIO_CAPACITY];
@@ -1879,6 +1883,7 @@ static void ym_worst_topology(void)
         CHECK_EQ_U64(m->ym.timer_running[0], 1u);
         CHECK_EQ_U64(m->ym.timer_running[1], 1u);
         CHECK_EQ_U64(m->ym.irq_state, 1u);
+        CHECK_EQ_U64(events.source_mask, 0xfffu);
         CHECK_EQ_U64(allocations.allocs, calls);
         muhtari_destroy(m);
         CHECK_EQ_U64(allocations.allocs, allocations.frees);

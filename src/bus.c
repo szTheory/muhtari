@@ -138,25 +138,18 @@ static uint64_t cycles_until(uint64_t from, uint64_t until)
     return until > from ? (until - from + BUS_FAST_TICKS - 1u) / BUS_FAST_TICKS : 0u;
 }
 
-/* Merge line, controller and cartridge chip events chronologically through
-   the actual access tick (bus.md, Line events; controllers.md, Driving;
-   ym2151.md, Timer clock). */
+/* Merge line and controller events through the actual access tick. Audio
+   clocks merge at each real CLK2 edge below (bus.md; ym2151.md). */
 static void timed_events(muhtari *m, uint64_t limit)
 {
     for (;;) {
         uint64_t maria = muhtari__maria_next_event(m);
         uint64_t ports = muhtari__ports_next_event(m);
-        uint64_t ym = muhtari__ym2151_next_timer_tick(m);
         uint64_t next = maria < ports ? maria : ports;
-        if (ym != 0u && ym < next) {
-            next = ym;
-        }
         if (next > limit) {
             break;
         }
-        if (ym != 0u && ym <= maria && ym <= ports) {
-            muhtari__ym2151_catch_up(m, ym);
-        } else if (maria <= ports) {
+        if (maria <= ports) {
             muhtari__maria_event(m);
         } else {
             muhtari__ports_catch_up(m, ports);
@@ -237,7 +230,7 @@ static void advance(muhtari *m, uint64_t k)
     b->phi2 += k;
     timed_events(m, b->ticks);
     if (m->synth.ym_installed != 0u) {
-        muhtari__ym2151_catch_up(m, b->ticks);
+        muhtari__tia_catch_up(m, b->ticks);
         muhtari__bus_rearm(m);
     }
 }
@@ -339,6 +332,8 @@ static uint32_t begin(muhtari *m, enum bus_device dev, int is_read)
     if (m->synth.pokeys != 0u) {
         muhtari__pokey_half_edge(m, m->bus.ticks + 2u, 0);
         muhtari__pokey_half_edge(m, m->bus.ticks + data_at(len), 1);
+    } else if (m->synth.ym_installed != 0u) {
+        muhtari__tia_catch_up(m, m->bus.ticks + data_at(len));
     }
     return len;
 }
@@ -359,8 +354,10 @@ static void end(muhtari *m, uint32_t len)
         timed_events(m, m->bus.ticks);
         muhtari__bus_rearm(m);
     }
-    if (m->synth.ym_installed != 0u)
-        muhtari__ym2151_catch_up(m, m->bus.ticks);
+    if (m->synth.ym_installed != 0u) {
+        muhtari__tia_catch_up(m, m->bus.ticks);
+        muhtari__bus_rearm(m);
+    }
     /* Both chips have consumed this cycle's actual falling edge before
        the CPU can poll it (hardware/pokey.md, Interrupts). */
     unsigned requested = (unsigned)(((m->cart.irq_mask & 1u) != 0u && m->cart.pokey_at[0] != 0u &&
