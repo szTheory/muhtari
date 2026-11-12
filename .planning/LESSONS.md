@@ -558,8 +558,13 @@ and 13.63 seconds in [run 43275573348](https://github.com/szTheory/muhtari/actio
 and in 16.45 seconds and 8.09 seconds in [run 43269185595](https://github.com/szTheory/muhtari/actions/runs/43269185595).
 The Release CI child in [run 43275573770](https://github.com/szTheory/muhtari/actions/runs/43275573770/job/131383247545)
 exceeded the existing 18-second deadline; CTest reported teardown at 28.12 seconds. The completed
-samples support a 33-second deadline (`ceil(2 x 16.45s)`). The replay inputs and serial execution
-are unchanged. The timeout receipt does not establish why that runner was slower.
+samples supported an initial 33-second deadline (`ceil(2 x 16.45s)`). On that bound, the
+exact-head normal inventory took 19.72 seconds and the Release inventory took 13.78 seconds in
+[run 43279984898](https://github.com/szTheory/muhtari/actions/runs/43279984898/job/131398697083).
+The Release workflow's macOS x64 child completed the same inventories in 15.24 and 7.78 seconds
+in [run 43279985008](https://github.com/szTheory/muhtari/actions/runs/43279985008/job/131399403453).
+Calibrate the bound to 40 seconds (`ceil(2 x 19.72s)`). The replay inputs and serial execution are
+unchanged. The timeout receipt does not establish why that runner was slower.
 
 MU-CI-018 (observed): With ctest --preset ci, a relative --output-junit path
 resolves under the preset's binary directory. A source-root receipt check can
