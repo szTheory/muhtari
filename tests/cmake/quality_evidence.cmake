@@ -86,17 +86,18 @@ include("${CMAKE_CURRENT_LIST_DIR}/quality.cmake")
 # Resolve before producing either side. The recursive current-script invocation
 # reads the same event and Git object; no candidate-supplied digest is accepted.
 if(BUILD_BASE OR EXISTS "$ENV{GITHUB_EVENT_PATH}")
-  file(READ "$ENV{GITHUB_EVENT_PATH}" event)
-  string(JSON base ERROR_VARIABLE absent GET "${event}" pull_request base sha)
-  if(absent)
-    string(JSON base ERROR_VARIABLE absent GET "${event}" before)
-  endif()
-  if(absent AND "$ENV{GITHUB_EVENT_NAME}" STREQUAL "workflow_dispatch")
-    # A reusable workflow can check out an explicit ref while GITHUB_SHA still
-    # names its caller's commit. The checked-out source is the baseline authority.
+  if("$ENV{GITHUB_EVENT_NAME}" STREQUAL "workflow_dispatch")
+    # Reusable workflows may check out an explicit target while GITHUB_SHA
+    # still names the dispatch caller. The checked-out target is authoritative.
     execute_process(COMMAND git -C "${ROOT}" rev-parse HEAD^1 OUTPUT_VARIABLE base
       OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ERROR_IS_FATAL ANY)
     set(absent "")
+  else()
+    file(READ "$ENV{GITHUB_EVENT_PATH}" event)
+    string(JSON base ERROR_VARIABLE absent GET "${event}" pull_request base sha)
+    if(absent)
+      string(JSON base ERROR_VARIABLE absent GET "${event}" before)
+    endif()
   endif()
   string(LENGTH "${base}" length)
   if(absent OR NOT length EQUAL 40 OR NOT base MATCHES "^[0-9a-f]+$" OR
