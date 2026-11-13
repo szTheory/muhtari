@@ -956,3 +956,22 @@ wasm32 configure fail with a registered-but-unlisted test in run 43381459806.
 The `wasm32` inventory now lists it too; a WASI-system CMake configure and the
 focused policy test both pass locally. When adding a shared policy test, update
 every inventory whose configuration includes `tests/policy/tests.cmake`.
+
+## OpenGSD progress over archived milestones (2026-11-13)
+
+At a between-milestones handoff, use the recorded `STATE.md`, `ROADMAP.md` and
+`continue.md` next action. OpenGSD 1.20.0's progress index reads the current
+`.planning/phases/` tree but does not resolve completed phase records from the
+milestone archive: `query init.progress` returned `phase_count: 0` and
+`current_phase: null`; `query roadmap.analyze` returned zero completed phases
+and `no_directory` conflicts for archived phases 19 and 20, although both are
+checked complete and their records exist under `.planning/milestones/v6.0-phases/`.
+This is an archive/index mismatch, not lost phase work. Do not duplicate or move
+archived phase files to satisfy that projection, and do not ask the owner to run
+`$gsd-progress` merely to determine status. Follow the saved handoff; successor
+scope still requires owner direction.
+
+Evidence: both queries exited 0 in the canonical root checkout; `.planning/STATE.md`
+records `status: completed`, 2/2 phases and 8/8 plans; `.planning/ROADMAP.md`
+and `.planning/continue.md` record v6.0 shipped and the next milestone boundary.
+Run URL: N/A-local.
