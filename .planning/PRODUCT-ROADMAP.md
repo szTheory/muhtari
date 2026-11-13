@@ -2,7 +2,7 @@
 title: "Product roadmap (rolling)"
 summary: "Immediate / Near / Mid / Long direction for muhtari with evidence and promotion triggers."
 read_when: "At every new-milestone and complete-milestone step, and when a finding changes priorities."
-updated: 2026-11-12
+updated: 2026-11-13
 ---
 
 # Product roadmap (rolling)
@@ -15,9 +15,9 @@ At every milestone boundary, reconcile shipped and partial work, keep unresolved
 debt visible, re-rank the horizons, record why the order changed, promote only
 scoped work, and snapshot this file at close.
 
-## Immediate — ship the locally verified YM2151 milestone
+## Completed — ship the YM2151 milestone
 
-v6.0 is implemented, verified and archived locally: one source-qualified XM/YM2151
+v6.0 is implemented, verified, archived and shipped: one source-qualified XM/YM2151
 profile, integer deterministic mono sound, complete state/lifecycle, actual native
 and portable deliverables/packages, genuine old/current legacy compatibility and
 measured bounded cost. [Audit](milestones/v6.0-MILESTONE-AUDIT.md) and
@@ -25,24 +25,24 @@ measured bounded cost. [Audit](milestones/v6.0-MILESTONE-AUDIT.md) and
 The source-qualified map/clock/version policy is settled; no blanket approval or
 owner UAT is pending for local implementation.
 
-Publication remains separate. Clear context and run `$gsd-ship 20` from the root
-checkout; the agent owns service-health, source and receipt checks. No new remote
-run, push, merge, tag or publication occurred here. The current published package
-is still the verified v5.0 result in its [ship receipt](milestones/v5.0-SHIP.md).
+v6.0 shipped as [v0.14.0](https://github.com/szTheory/muhtari/releases/tag/v0.14.0).
+The [release run](https://github.com/szTheory/muhtari/actions/runs/43441765548),
+including latest installation, passed. PR [#61](https://github.com/szTheory/muhtari/pull/61)
+merged and current-main CI passed. See the [ship receipt](milestones/v6.0-SHIP.md).
 
 No retail compatibility, physical XM clock/gain/audibility, browser/player,
 handheld or unavailable-platform acceptance is inferred. Muhtari retains exactly
 three deliverables and no device/UI code. No new numerical quota, dependency,
 cache, workflow topology or unrelated deadline was introduced.
 
-## Next — a useful core slice and independent consumer progress
+## Next — select a bounded successor milestone
 
-The selected YM slice now includes load, bus, audio, state, refusal and actual
-runner/libretro/portable-package acceptance. The next implementation milestone
-is unselected; a lawful discriminating correctness counterexample remains a useful
-trigger. Seed synthesis parity is not hardware calibration. Independently, LibFuturo owns
-its underway PAL browser/profile work and the missing qualification/adoption
-outcomes. No new upstream API/package requirement is established by that work.
+The next implementation milestone is unselected pending the cross-project
+feedback recorded in [continue.md](continue.md). A lawful discriminating 7800
+correctness counterexample remains a useful trigger. Seed synthesis parity is
+not hardware calibration. Independently, LibFuturo owns its underway PAL
+browser/profile work and the missing qualification/adoption outcomes. No new
+upstream API/package requirement is established by that work.
 
 The nine v3.0 gaps remain open: TUNE-06/07, PLAY-01–04 and FRONT-02–04. Keep the
 published-core RetroArch/input/battery proof, paired Playstead flow and actual
@@ -102,8 +102,8 @@ builds, host runs or CI were performed.
 ## Mid-term — measured accuracy and qualified progress
 
 Hardware/FPGA/diagnostic comparisons, timing/POKEY corrections, complete
-Souper/BupChip and the composite filter retain SEED-003. YM2151 is the researched
-successor proposal; broader expansion hardware remains deferred.
+Souper/BupChip and the composite filter retain SEED-003. The qualified YM2151
+profile shipped in v6.0; broader expansion hardware remains deferred.
 Promote a specific measured gap sooner if it blocks a title people actually play.
 Keep Playstead-managed state history and exact Continue behind a supported host
 capture/load boundary and recovery policy.

@@ -193,7 +193,7 @@ Final native/release, pinned SDK/extracted consumer, real publisher controls and
 
 ## Milestone: v6.0 — YM2151 homebrew sound
 
-**Locally completed:** 2026-11-12; publication pending. Two phases, eight plans and nineteen actual task blocks.
+**Completed:** 2026-11-12; shipped as v0.14.0 on 2026-11-13. Two phases, eight plans and nineteen actual task blocks. See the [ship receipt](milestones/v6.0-SHIP.md).
 
 ### What Was Built
 

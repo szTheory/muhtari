@@ -1,22 +1,25 @@
-# Current continuation — v6.0 verified locally; shipping next
+# Current continuation — v6.0 shipped as v0.14.0
 
 YM2151 homebrew sound is implemented and verified through public C, real runner,
 loaded libretro, actual emitted Wasm and clean package consumers. Both phases,
 all nine current requirements, required local gates, bounded review and milestone
-integration pass. Local archive/cleanup is complete. Publication is pending.
+integration pass. v6.0 shipped as [v0.14.0](https://github.com/szTheory/muhtari/releases/tag/v0.14.0);
+the [release run](https://github.com/szTheory/muhtari/actions/runs/43441765548),
+latest-install check, merged [PR #61](https://github.com/szTheory/muhtari/pull/61)
+and current-main CI passed. The current receipt is [here](milestones/v6.0-SHIP.md).
 
-Context can be cleared. Run `$gsd-ship 20` from this root checkout; no directory
-switch is needed. The agent owns service-health, current receipt, source/branch
-and shipping checks. Do not ask the owner to interpret a vague review prerequisite.
+Context can be cleared. Run `$gsd-new-milestone` from this root checkout with this
+handoff; no directory switch is needed. Successor scope remains unselected pending
+the cross-project feedback and owner direction below.
 [State](STATE.md), [milestone audit](milestones/v6.0-MILESTONE-AUDIT.md) and
 [Phase20 evidence](milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-COST-EVIDENCE.md)
 carry the current result and precise unavailable-platform limits.
 
-No push, new remote dispatch, merge, tag, publication or host/device run occurred
-under local milestone authority. Original Phase12/14 denied/spent scopes and all
-nine deferred v3 requirements stay unchanged. The frozen kickoff worktree/products
-and unrelated dirty worktrees remain preserved. The material below is historical
-scoping provenance and does not start another milestone.
+The local milestone closeout below predates its release. Original Phase 12/14
+denied/spent scopes and all nine deferred v3 requirements stay unchanged. The
+frozen kickoff worktree/products and unrelated dirty worktrees remain preserved.
+The material below is historical scoping provenance and does not itself start
+another milestone.
 
 > Updated by later owner-requested fan-out: the active successor recommendation,
 > source-confidence register and next action are now in
@@ -54,7 +57,7 @@ qualification toward useful player access. That belongs there; Muhtari work
 would follow only from a demonstrated upstream limitation. Starting another
 browser host here would duplicate implemented work.
 
-## 2. Published baseline and shipping closure
+## 2. Historical v5.0 baseline before v6.0 shipping
 
 [Muhtari v0.13.1](https://github.com/szTheory/muhtari/releases/tag/v0.13.1)
 is published: nineteen ZIPs plus SHA256SUMS, including
@@ -166,9 +169,9 @@ actions and its unrenewed 296-runner-minute ceiling. Expired dispatch windows,
 terminal one-shot diagnostics and expressly prohibited retries stay closed.
 Standing local authorization does not override specific no-retry stops.
 
-Independent read-only research, local receipt/docs reconciliation and already
-authorized shipping bookkeeping may continue. No new tests, host/CI runs,
-sibling edits, package migration or successor execution follows this packet.
+Independent read-only research and local receipt/docs reconciliation may continue.
+No sibling edits, package migration or successor execution follows this packet.
 The owner returns feedback, then selects the bounded outcome and owning project.
-Safe to clear context: local edits are preserved but uncommitted. Resume with
-`$gsd-new-milestone` plus this handoff and feedback; no Phase 19 command is valid yet.
+Safe to clear context: release and verification records are committed. Resume
+with `$gsd-new-milestone` plus this handoff and the feedback; no Phase 19 or
+Phase 20 command is valid.

@@ -1,6 +1,6 @@
 # Project Milestones: muhtari
 
-## v6.0 YM2151 homebrew sound (Locally completed: 2026-11-12)
+## v6.0 YM2151 homebrew sound (Shipped: 2026-11-13)
 
 **Scope:** Two phases, eight plans, nineteen actual plan task blocks. The runtime summary fallback counted eight tasks; the plan blocks are authoritative.
 
@@ -11,9 +11,9 @@
 - Complete ordinary/adverse native/Node cost windows, concrete space/headroom/bounds, accurate evidence limits and clean required review.
 
 **Closeout:** `verified_closeout`; nine current requirements, both phases and all five integration flows pass. Zero newly acknowledged items;49 previously acknowledged items retain their verdicts. The nine deferred v3 requirements and original Phase12/14 stops remain unchanged.
-**Publication:** Pending. No push, remote dispatch, merge, tag or publication occurred. Current published package remains the v5.0 result below.
+**Publication:** [v0.14.0](https://github.com/szTheory/muhtari/releases/tag/v0.14.0) is published with 19 ZIP archives and `SHA256SUMS` (20 assets, matching the release contract). Release run [43441765548](https://github.com/szTheory/muhtari/actions/runs/43441765548) passed, including latest installation. PR [#61](https://github.com/szTheory/muhtari/pull/61) merged; CI on its merge commit passed. See the [ship receipt](milestones/v6.0-SHIP.md).
 **Archive:** [roadmap](milestones/v6.0-ROADMAP.md), [requirements](milestones/v6.0-REQUIREMENTS.md), [audit](milestones/v6.0-MILESTONE-AUDIT.md), [phase records](milestones/v6.0-phases/).
-**Next:** Clear context and run `$gsd-ship 20`; the agent owns service-health, current receipt and source checks.
+**Next:** Clear context and run `$gsd-new-milestone` with [continue.md](continue.md). The owner selects successor scope after cross-project feedback.
 
 ---
 
@@ -197,9 +197,11 @@ exit 0. Archive integrity check — exit 0: all 177 phase files retained, includ
 item acknowledgment modifies a moved phase artifact. `query audit-open --json` —
 exit 0: zero open, 15 acknowledged. Hosted release evidence is linked above.
 
-## Current successor — selected 2026-11-11
+## v6.0 selection and shipment — selected 2026-11-11, shipped 2026-11-13
 
 The owner selected v6.0 YM2151 homebrew sound and authorized autonomous local
-follow-through. [Current roadmap](ROADMAP.md): Phase 19 measured tune-up, then
-Phase 20 complete qualified YM/XM sound. Earlier v5.0 successor-pending notes
-are historical. Publication/merge and prior host stops remain separate.
+follow-through. Both phases and all nine requirements are complete; v6.0 shipped
+as v0.14.0. The [ship receipt](milestones/v6.0-SHIP.md) records publication and
+main closure. Successor scope remains unselected pending cross-project feedback.
+Earlier v5.0 successor-pending notes are historical; prior host stops remain
+separate.

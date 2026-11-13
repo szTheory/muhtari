@@ -1,12 +1,13 @@
 ---
 gsd_state_version: "1.0"
 milestone: v6.0
-status: milestone_complete
-stopped_at: v6.0 verified and archived locally; shipping next
-last_updated: "2026-11-12T13:35:52.107Z"
-last_activity: 2026-11-12
-last_activity_desc: "Phase 20 shipped as PR #54"
-state_head: 9056b682960c19e287e8e6abdd77f0547ffac6c0
+current_phase: 20
+status: completed
+stopped_at: v6.0 shipped as v0.14.0; successor milestone unselected
+last_updated: "2026-11-13T16:30:38Z"
+last_activity: 2026-11-13
+last_activity_desc: v6.0 release receipts reconciled
+state_head: 5f77b85e59da18fc0997c9cde309a417f9f19319
 progress:
   total_phases: 2
   completed_phases: 2
@@ -14,7 +15,6 @@ progress:
   completed_plans: 8
   percent: 100
 milestone_name: YM2151 homebrew sound
-current_phase: 20
 ---
 
 # Project State
@@ -23,18 +23,18 @@ current_phase: 20
 
 See [PROJECT.md](PROJECT.md), [archived requirements](milestones/v6.0-REQUIREMENTS.md), [ROADMAP.md](ROADMAP.md) and [milestone synthesis](research/next-milestone/SUMMARY.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** v6.0 locally complete; separate shipping boundary next
+**Current focus:** v6.0 shipped as v0.14.0; successor scope remains unselected
 
 ## Current Position
 
-Phase: Milestone v6.0 complete
+Phase: v6.0 shipped
 Plan: —
-Status: Locally complete; publication pending
-Last activity: 2026-11-12 -- Phase 20 shipped as PR #54
+Status: All phases complete; successor selection pending
+Last activity: 2026-11-13 — v0.14.0 published and verified
 
 ## Performance Metrics
 
-v6.0 has two verified phases, eight completed plans and nineteen actual plan task blocks. All nine current requirements, required local gates and independent review/integration pass. Current publication remains the v5.0/package result.
+v6.0 has two verified phases, eight completed plans and nineteen actual plan task blocks. All nine current requirements, required local gates and independent review/integration pass. Package v0.14.0 is published; its release workflow, latest-install check and current-main CI pass. See the [v6.0 ship receipt](milestones/v6.0-SHIP.md).
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
@@ -56,7 +56,7 @@ Inherited todos and optional seeds retain their dispositions except selected YM/
 
 - No current local roadmap blocker. The exact profile, compatibility policy, final native/portable/package evidence and clean bounded review are complete; phase goal verification and local milestone audit/archival are complete. The optional GCC13 no-FP attempt is unqualified because it lacks a required warning flag; no unavailable platform pass is claimed.
 - Phase 12's exact diagnostic-app request was denied before preflight/content and must not be retried. Original Phase 12 host/remote stops, Phase 14's spent host scope, expired windows and specific no-retry limits remain binding. No v6.0 action renews them or accepts the nine deferred v3.0 requirements.
-- Publication, merge, new remote dispatch and host/device/identity-bound actions remain outside autonomous local authority. Browser/player, Playstead, physical audibility, calibrated hardware accuracy, public stereo and full XM are excluded. Earlier combined-source/failed release evidence remains source-specific in archived receipts.
+- v6.0 publication and PR #61 merge are complete. Future publication, merge, remote dispatch and host/device/identity-bound actions remain separate boundaries. Browser/player, Playstead, physical audibility, calibrated hardware accuracy, public stereo and full XM are excluded. Earlier combined-source/failed release evidence remains source-specific in archived receipts.
 
 ## Deferred Items
 
@@ -104,16 +104,16 @@ At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Sou
 
 ## Session Continuity
 
-Last session: 2026-11-12T08:32:40.865Z
-Stopped at: Phase 20 complete — all phases complete
-Resume file: None
+Last session: 2026-11-13 — v6.0 release receipts reconciled
+Stopped at: v6.0 shipped — successor selection is the next milestone boundary
+Resume file: continue.md
 
-Next action: After clearing context, run `$gsd-autonomous` for v6.0. It will reconcile the live plan index and continue Phase 20 planning and authorized local work. No user action is needed for routine continuation.
+Next action: After clearing context, run `$gsd-new-milestone` with [continue.md](continue.md). The successor scope remains unselected pending cross-project feedback and owner direction.
 
 ## Operator Next Steps
 
 
-- Start the next milestone with $gsd-new-milestone
+- Continue successor scoping with $gsd-new-milestone and the cross-project feedback in [continue.md](continue.md).
 
 
 ## Decisions
@@ -130,4 +130,4 @@ Next action: After clearing context, run `$gsd-autonomous` for v6.0. It will rec
 
 ## Next action
 
-Context can be cleared. Run `$gsd-ship 20` from the current root checkout. The agent owns service-health, current receipt and source checks. Shipping authority remains separate; no push, merge, new remote run, tag or publication was performed here. All original host/remote stops remain binding.
+Context can be cleared. Run `$gsd-new-milestone` from the current root checkout with [continue.md](continue.md). v6.0 is shipped as v0.14.0; the owner selects successor scope after cross-project feedback. The original Phase 12/14 host and remote stops remain binding.

@@ -15,19 +15,21 @@ that any host can embed.
 
 ## Current State
 
-v6.0 YM2151 homebrew sound is implemented, verified and archived locally. Both phases, all nine current requirements, required local gates and independent review/integration pass. Shipping is separate: no new remote dispatch, push, merge, tag or publication occurred. The current published result remains v5.0/package v0.13.1.
+v6.0 YM2151 homebrew sound is implemented, verified and shipped as package v0.14.0. Both phases, all nine current requirements, required local gates and independent review/integration pass. The release workflow and latest-install check passed; PR #61 merged and main CI passed. See the [v6.0 ship receipt](milestones/v6.0-SHIP.md).
 
 Nine v3.0 gaps and every original denied/spent Phase12/14 host/remote scope remain unchanged. Older dirty worktrees stay preserved and root remains canonical. [Milestone audit](milestones/v6.0-MILESTONE-AUDIT.md) and [requirements](milestones/v6.0-REQUIREMENTS.md) retain the exact accepted scope.
 
-## Latest Locally Verified Milestone: v6.0 YM2151 homebrew sound
+## Latest Shipped Milestone: v6.0 YM2151 homebrew sound
 
 **Delivered:** One documented selected/header-auto XM/YM2151 profile; permissive C17 integer synthesis; deterministic bounded mono audio; complete transactional state/lifecycle; actual public C, runner, loaded libretro, emitted Wasm and clean installed/extracted consumers. Independent numeric and exact-seed evidence, genuine old/current legacy continuation, notices, source/fixture identity and fault controls pass.
 
 API8/ABI1 remain unchanged. Global latest behavior7/format2 is distinct from unchanged non-YM machine snapshots6/1. Complete ordinary/adverse native/Node windows, memory/state extents and justified arithmetic/work bounds are recorded with their host-specific limits. Unavailable supplemental GCC/BE/WASI lanes have no inferred pass. There is no physical audibility/calibration, retail, browser/player or handheld acceptance claim.
 
-**Next boundary:** Clear context and run `$gsd-ship 20` in this root checkout. The agent owns service-health, current receipt and source checks. Future implementation scope is unselected; no additional milestone starts automatically.
+**Publication:** [v0.14.0](https://github.com/szTheory/muhtari/releases/tag/v0.14.0) is published. The [release run](https://github.com/szTheory/muhtari/actions/runs/43441765548) and its latest-install check passed. PR [#61](https://github.com/szTheory/muhtari/pull/61) merged and current-main CI passed. See the [ship receipt](milestones/v6.0-SHIP.md).
 
-## Last Published Milestone: v5.0 Downloadable WebAssembly core
+**Next boundary:** Clear context and run `$gsd-new-milestone` with [continue.md](continue.md). Future implementation scope is unselected; owner direction follows the pending cross-project feedback.
+
+## Previous Published Milestone: v5.0 Downloadable WebAssembly core
 
 **Goal:** Host integrators can obtain a source-bound Emscripten libretro bundle, verified from its extracted contents and ready for the existing release pipeline.
 
@@ -139,7 +141,7 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 ### Validated
 
-- ✓ YM-01–08: one qualified XM/YM2151 profile, deterministic C17 mono synthesis, complete lifecycle/state, native/portable/package consumers and measured bounds — v6.0, Phase20; locally verified, publication pending.
+- ✓ YM-01–08: one qualified XM/YM2151 profile, deterministic C17 mono synthesis, complete lifecycle/state, native/portable/package consumers and measured bounds — v6.0, Phase 20; shipped as v0.14.0.
 
 - ✓ TUNE-09: current v4 publication records and source-specific measured baseline; required checks retained — v5.0, Phase 17.
 - ✓ WASM-05–09: matched source-bound portable ZIP, clean-extracted offline oracle, pinned runtime notices, existing release contracts and host instructions — v5.0, Phase 18.
@@ -183,7 +185,7 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 ### Active
 
-No current implementation requirement remains. The next action is the separate shipping boundary above. New milestone scope is not selected. The nine unmet v3.0 requirements remain deferred with their original evidence and stops; see the [v6.0 archive](milestones/v6.0-REQUIREMENTS.md).
+No current implementation requirement remains. The next action is successor milestone scoping through the handoff above. The nine unmet v3.0 requirements remain deferred with their original evidence and stops; see the [v6.0 archive](milestones/v6.0-REQUIREMENTS.md).
 
 ### Out of Scope
 
@@ -325,4 +327,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-12 after verified local v6.0 closeout; publication pending*
+*Last updated: 2026-11-13 after v6.0 shipped as v0.14.0*

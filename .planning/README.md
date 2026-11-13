@@ -9,7 +9,7 @@ relevant source links instead of scanning every historical plan.
 | Shared goals, gamer priorities, writing voice, research posture and provenance | [INTENT.md](INTENT.md) |
 | What ships today and binding constraints | [PROJECT.md](PROJECT.md), [../AGENTS.md](../AGENTS.md) |
 | Current position and next allowed step | [STATE.md](STATE.md) |
-| Current execution contract / last completed requirements | [ROADMAP.md](ROADMAP.md), [v6.0 requirements](milestones/v6.0-REQUIREMENTS.md); implementation is complete locally and publication is pending |
+| Current execution contract / last completed requirements | [ROADMAP.md](ROADMAP.md), [v6.0 requirements](milestones/v6.0-REQUIREMENTS.md); v6.0 shipped as v0.14.0, and successor selection is pending |
 | Immediate, next, mid-term and long-term horizons | [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md) |
 | Where hardware/API/engineering facts live | [preparation/README.md](preparation/README.md) |
 | Settled choices and reasons | [preparation/DECISIONS.md](preparation/DECISIONS.md) |
@@ -35,20 +35,20 @@ Refresh this index, intent links and rolling horizons when a milestone begins or
 closes. Keep useful findings in ordinary project artifacts; no external memory
 service or bulk lesson export is needed. Detailed plans stay in their phase.
 
-Latest completion: [v5.0 audit](milestones/v5.0-MILESTONE-AUDIT.md) and
-[final shipping receipt](milestones/v5.0-SHIP.md#final-publication-and-current-main-closure--reconciled-2026-11-11).
-Package v0.13.1 public-byte verification, installation and current-main CI are
-closed. The successor is being scoped upstream; [STATE](STATE.md) and the
+Latest completion: [v6.0 audit](milestones/v6.0-MILESTONE-AUDIT.md) and
+[v6.0 ship receipt](milestones/v6.0-SHIP.md). Package v0.14.0 publication,
+latest installation and current-main CI are closed. The successor is being
+scoped; [STATE](STATE.md), [continue.md](continue.md) and the
 [current research synthesis](research/next-milestone/SUMMARY.md) own its status.
 Atari 2600 emulation belongs to twentysixhundo; LibFuturo owns the shared interface
 and native/browser consumer qualification. Keep those responsibilities distinct
 from Muhtari's machine behavior and release artifacts.
 
-## Active milestone — v6.0
+## Latest milestone — v6.0 shipped
 
-YM2151 homebrew sound is selected for autonomous local follow-through. The
-[current roadmap](ROADMAP.md), [requirements](REQUIREMENTS.md) and [state](STATE.md)
-are authoritative over earlier successor-pending text. Phase 19 is the measured
+YM2151 homebrew sound is shipped as v0.14.0. The [current roadmap](ROADMAP.md),
+[requirements](milestones/v6.0-REQUIREMENTS.md) and [state](STATE.md) are
+authoritative over earlier successor-pending text. Phase 19 is the measured
 tune-up; Phase 20 is the complete qualified chip/bus/audio/state and consumer
-slice. [Owner authority](INTENT.md#ym2151-milestone-authority--2026-11-11) preserves
-all older host stops and publication/merge boundaries.
+slice. The successor remains unselected; [owner authority](INTENT.md#ym2151-milestone-authority--2026-11-11)
+preserves the original host stops.

@@ -8,7 +8,7 @@
 - [x] **v4.0 — Browser/WebAssembly core readiness** — phases 15–16; shipped through PR #47 and package v0.12.0. [Audit](milestones/v4.0-MILESTONE-AUDIT.md) · [Archive](milestones/v4.0-ROADMAP.md) · [Ship receipt](milestones/v4.0-SHIP.md). Earlier failed combined-source evidence and host stops remain preserved.
 
 - [x] **v5.0 — Downloadable WebAssembly core** — phases 17–18; shipped as v0.13.1 on 2026-11-11; public-byte verification and current-main CI passed. [Audit](milestones/v5.0-MILESTONE-AUDIT.md) · [Archive](milestones/v5.0-ROADMAP.md) · [Requirements](milestones/v5.0-REQUIREMENTS.md)
-- [x] **v6.0 — YM2151 homebrew sound** — phases19–20; verified locally2026-11-12; publication pending. [Audit](milestones/v6.0-MILESTONE-AUDIT.md) · [Archive](milestones/v6.0-ROADMAP.md)
+- [x] **v6.0 — YM2151 homebrew sound** — phases 19–20; shipped as v0.14.0 on 2026-11-13. [Audit](milestones/v6.0-MILESTONE-AUDIT.md) · [Archive](milestones/v6.0-ROADMAP.md) · [Ship receipt](milestones/v6.0-SHIP.md)
 
 ## Completed phases
 
@@ -17,7 +17,7 @@
 
 ## Next boundary
 
-All current implementation requirements are complete. Shipping is separate:
-clear context and run `$gsd-ship 20` from this root checkout. The agent owns the
-next service-health and receipt checks. Earlier Phase12/14 stops, nine deferred
-v3 requirements and unaccepted hardware/platform evidence remain unchanged.
+v6.0 is shipped. Clear context and run `$gsd-new-milestone` with the
+[successor handoff](continue.md); the owner selects the next bounded outcome
+after cross-project feedback. Earlier Phase 12/14 stops, nine deferred v3
+requirements and unaccepted hardware/platform evidence remain unchanged.
