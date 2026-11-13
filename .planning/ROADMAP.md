@@ -49,7 +49,8 @@ existing resource, provenance, test and review mechanisms.
   1. Maintainers can follow current release and documentation records to the accepted publication and source-specific baseline without mistaking an earlier failed source for accepted evidence or reopening closed shipping recovery.
   2. Maintainers can inspect a source-specific quality/efficiency review and either one evidence-backed low-risk correction or a bounded no-change disposition; required pass/fault coverage, workload limits and historical failures remain intact.
 
-**Plans:** TBD
+**Plans:** 0/1 plans executed
+- [ ] 21-01-PLAN.md — Trace the shipped baseline and record a source-qualified tune-up
 
 ### Phase 22: Complete Souper homebrew mapper
 
@@ -80,7 +81,7 @@ phase; no requirement is orphaned or accepted ahead of verification.
 
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
-| 21. Measured milestone tune-up | 0/TBD | Not started | — |
+| 21. Measured milestone tune-up | 0/1 | Planned     | — |
 | 22. Complete Souper homebrew mapper | 0/TBD | Not started | — |
 
 ## Next boundary
