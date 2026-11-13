@@ -1082,12 +1082,15 @@ foreach(case unchanged additions push dispatch dispatch_ref later_base changed c
   string(JSON value GET "${produced}" metrics archive_bytes value)
   string(JSON tests GET "${produced}" metrics tests.native value)
   string(JSON zero GET "${produced}" metrics warnings value)
-  execute_process(COMMAND git -C "${repo}" show "${event_base}:tests/roms/manifest.txt" OUTPUT_VARIABLE original COMMAND_ERROR_IS_FATAL ANY)
-  string(SHA256 identity "${original}")
+  set(original_manifest "${WORK}/original-manifest.txt")
+  execute_process(COMMAND git -C "${repo}" show "${event_base}:tests/roms/manifest.txt"
+    OUTPUT_FILE "${original_manifest}" COMMAND_ERROR_IS_FATAL ANY)
+  file(SHA256 "${original_manifest}" identity)
   string(JSON environment GET "${produced}" environment)
+  set(original_samples "${WORK}/original-samples.txt")
   execute_process(COMMAND git -C "${repo}" show "${event_base}:tests/built/expected.txt"
-    OUTPUT_VARIABLE original_samples COMMAND_ERROR_IS_FATAL ANY)
-  string(SHA256 sample_identity "${original_samples}")
+    OUTPUT_FILE "${original_samples}" COMMAND_ERROR_IS_FATAL ANY)
+  file(SHA256 "${original_samples}" sample_identity)
   if(NOT value EQUAL 90 OR NOT tests EQUAL 3 OR NOT zero EQUAL 0 OR
       NOT environment STREQUAL "Controlled-1-ControlledOS-controlled;${identity};${sample_identity}")
     message(FATAL_ERROR "quality assertion: producer metrics or trusted environment lost: ${produced}")

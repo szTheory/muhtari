@@ -910,6 +910,14 @@ fixture now copies `.gitattributes` and keeps the Windows-style setting; the
 same `policy.quality.controls` command fails before that correction and passes
 after it. The producer still compares the exact trusted baseline.
 
+A later Windows x64 run, [43378704058](https://github.com/szTheory/muhtari/actions/runs/43378704058),
+failed the control's producer-environment assertion. The assertion derived its
+expected Git-blob hashes from `execute_process(OUTPUT_VARIABLE)` strings, while
+the producer hashes files written from `git show`. The assertion now captures
+both Git objects with `OUTPUT_FILE` and hashes those exact bytes with
+`file(SHA256)`, matching the producer. The focused local control passes after
+this correction; a fresh Windows CI run is needed to confirm the hosted result.
+
 GitHub reports a reusable workflow's required job as `release-ci / CI required`.
 The run auditor now recognizes that suffix; `policy.ci_run.controls` verifies
 both a successful prefixed aggregate and rejection of a failed one. Re-auditing
