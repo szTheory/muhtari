@@ -844,7 +844,8 @@ stopped in `release-target` before CI or equality. Its Actions token had only
 `contents: read`; fetching the exact v0.14.0 draft by ID returned HTTP 403
 (job exit 1). An owner-authenticated read immediately afterward confirmed the
 draft ID, stable tag and target SHA were unchanged. GitHub documents that draft
-releases require push access, so the validation job needs `contents: write`.
+releases require push access, so the main-bound validation job uses a short-lived
+release App token with `contents: write`, while its Actions token remains read-only.
 
 This draft targets `8d73321953f417dc973a4cb93cfb4b8521772150`, while the
 recovery workflow now runs on `b3649cdd0a939708ac9ce420e341d64fa247707b`;
@@ -852,6 +853,7 @@ their `.github/workflows` trees differ. Publishing a release at a commit with
 workflow-file differences from the default branch requires the App's
 `workflows: write` permission, which `GITHUB_TOKEN` cannot receive. For
 workflow-dispatch recovery, mint a repository-scoped release App token for the
-draft state, upload and publish API calls. Keep attestation operations on the
-job's dedicated Actions token. See GitHub's [draft release visibility and
+draft state, upload and publish API calls. Bind all jobs that access the App
+secret to `refs/heads/main`; a dispatch from another ref must skip release work.
+Keep attestation operations on the job's dedicated Actions token. See GitHub's [draft release visibility and
 release update permission rules](https://docs.github.com/en/rest/releases/releases).

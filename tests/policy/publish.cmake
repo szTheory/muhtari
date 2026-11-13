@@ -700,28 +700,35 @@ foreach(output draft state)
   endforeach()
 endforeach()
 
-# Recovery needs push access to inspect a draft, and the release App's
-# Workflows permission to publish an older target whose workflow files differ.
+# Recovery runs only from main. Its target check uses an App token to inspect
+# drafts; publishing also needs the App's Workflows permission for old targets.
 string(REGEX MATCH "\n  release-target:\n((    [^\n]*\n|\n)*)" release_target_block "${workflow}")
-if(NOT release_target_block MATCHES "contents: write")
-  message(FATAL_ERROR "publish dispatch assertion: release-target cannot read draft releases")
+if(NOT release_target_block MATCHES "contents: read" OR NOT release_target_block MATCHES
+    "github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'" OR
+    NOT release_target_block MATCHES "permission-contents: write")
+  message(FATAL_ERROR "publish dispatch assertion: release-target must be main-bound, keep GITHUB_TOKEN read-only and use a scoped App token for drafts")
 endif()
-foreach(fragment
-    "      - id: dispatch-app\n        if: github.event_name == 'workflow_dispatch'\n        uses: actions/create-github-app-token@"
-    "          permission-contents: write\n          permission-workflows: write")
+string(REGEX MATCH "\n  publish:\n((    [^\n]*\n|\n)*)" publish_job_block "${workflow}")
+foreach(fragment "          permission-contents: write\n          permission-workflows: write")
   string(FIND "${workflow}" "${fragment}" position)
   if(position LESS 0)
     message(FATAL_ERROR "publish dispatch assertion: missing scoped App permission ${fragment}")
   endif()
 endforeach()
+string(FIND "${workflow}" "      - id: dispatch-app\n        if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'" dispatch_app_position)
+if(dispatch_app_position LESS 0 OR NOT publish_job_block MATCHES
+    "github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'" OR
+    NOT publish_job_block MATCHES "permission-workflows: write")
+  message(FATAL_ERROR "publish dispatch assertion: publishing token is not main-bound with workflow-file permission")
+endif()
 set(dispatch_token_env [=[GH_TOKEN: ${{ steps.dispatch-app.outputs.token || github.token }}]=])
 string(LENGTH "${workflow}" workflow_length)
 string(REPLACE "${dispatch_token_env}" "" workflow_without_dispatch_token "${workflow}")
 string(LENGTH "${workflow_without_dispatch_token}" workflow_without_dispatch_token_length)
 string(LENGTH "${dispatch_token_env}" dispatch_token_env_length)
 math(EXPR dispatch_token_uses "(${workflow_length} - ${workflow_without_dispatch_token_length}) / ${dispatch_token_env_length}")
-if(NOT dispatch_token_uses EQUAL 3)
-  message(FATAL_ERROR "publish dispatch assertion: App token must scope to draft read, upload and publish calls; found ${dispatch_token_uses} uses")
+if(NOT dispatch_token_uses EQUAL 4)
+  message(FATAL_ERROR "publish dispatch assertion: App token must scope to draft validation, draft state, upload and publish calls; found ${dispatch_token_uses} uses")
 endif()
 
 foreach(job rehearsal publish release-target)

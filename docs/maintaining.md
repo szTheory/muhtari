@@ -99,11 +99,12 @@ prerelease.
     --field sha=<release-commit-sha>
   ```
 
-  The dispatch validates the ID, stable tag and commit SHA before running both checks. Draft lookup needs a token
-  with push access, so the validation job grants `contents: write`. If the release commit's `.github/workflows`
-  files differ from current `main`, publishing also uses the release App's `workflows: write` permission; Actions
-  cannot grant that permission to `GITHUB_TOKEN`. `publish` is safe to re-run: uploads replace draft assets, and an
-  already published release only runs `verify`. If only `publish` failed after
+  Run the dispatch from `main`; other refs do not run the release jobs. It validates the ID, stable tag and commit
+  SHA before running both checks. Draft lookup needs push access, so the validation job uses a short-lived App
+  token with `contents: write` while its Actions token stays read-only. If the release commit's
+  `.github/workflows` files differ from current `main`, publishing also uses the release App's `workflows: write`
+  permission; Actions cannot grant that permission to `GITHUB_TOKEN`. `publish` is safe to re-run: uploads replace
+  draft assets, and an already published release only runs `verify`. If only `publish` failed after
   CI and equality passed, choose "Re-run failed jobs" on that run. Do not choose "Re-run all jobs" on a failed
   pre-dispatch workflow: release-please may see the release pull request already tagged and skip `publish`.
 - **A failed rehearsal:** choose "Re-run all jobs", which takes a fresh `rehearsal-<run id>-<attempt>` tag, or push
