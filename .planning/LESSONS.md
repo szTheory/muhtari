@@ -869,3 +869,18 @@ artifacts, source, tests, docs and scripts restored `verification.status` to
 command results in the report, but exclude disposable build products. Evidence:
 `query verification.status` returned `stale` before the refresh and `passed`
 afterward (exit 0); run URL: N/A-local.
+
+## Override skipped prerequisites without defeating cancellation (2026-11-13)
+
+The manual `workflow_dispatch` continuation skips `release-please` and validates
+the named draft in `release-target`. GitHub still applies skipped-job dependency
+semantics to descendants unless each downstream job overrides the default
+success check. On [Release run 43355803935](https://github.com/szTheory/muhtari/actions/runs/43355803935),
+`release-target` succeeded but CI, equality, publish and latest-install were
+skipped; the v0.14.0 draft remained unchanged. Use `!cancelled()` on those jobs
+to run after a skipped prerequisite while still honoring workflow cancellation.
+Explicitly require successful CI/equality before publishing and successful
+publication before checking the latest install line. The policy check rejects a
+missing status override and a weakened CI result guard. This follows [GitHub's
+job dependency](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-jobs#defining-prerequisite-jobs)
+and [cancellation](https://docs.github.com/en/actions/reference/workflows-and-actions/expressions) rules.

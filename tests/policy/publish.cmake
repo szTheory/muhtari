@@ -790,3 +790,40 @@ foreach(fragment "workflow_dispatch:\n    inputs:\n      release_id:" "run: sh s
     message(FATAL_ERROR "publish dispatch assertion: workflow is missing ${fragment}")
   endif()
 endforeach()
+
+# workflow_dispatch skips release-please. Every downstream release job must
+# override that skipped dependency, while publish/install remain gated on the
+# successful results of the real validation and publication jobs.
+function(publish_dispatch_gates_valid workflow result)
+  string(ASCII 36 dollar)
+  set(dispatch_if "if: ${dollar}{{ !cancelled() &&")
+  set(fragments
+    "  release-ci:\n    needs: release-target\n    ${dispatch_if} needs.release-target.outputs.release_created == 'true' }}"
+    "  release-equality:\n    needs: release-target\n    ${dispatch_if} needs.release-target.outputs.release_created == 'true' }}"
+    "  publish:\n    needs: [release-target, release-ci, release-equality]\n    ${dispatch_if} needs.release-target.outputs.release_created == 'true' && needs.release-ci.result == 'success' && needs.release-equality.result == 'success' }}"
+    "  install-line-latest:\n    needs: [release-target, publish]\n    ${dispatch_if} needs.release-target.outputs.release_created == 'true' && needs.publish.result == 'success' }}")
+  set(valid TRUE)
+  foreach(fragment IN LISTS fragments)
+    string(FIND "${workflow}" "${fragment}" position)
+    if(position LESS 0)
+      set(valid FALSE)
+    endif()
+  endforeach()
+  set(${result} "${valid}" PARENT_SCOPE)
+endfunction()
+
+publish_dispatch_gates_valid("${workflow}" dispatch_gates_valid)
+if(NOT dispatch_gates_valid)
+  message(FATAL_ERROR "publish dispatch assertion: every downstream job must override the skipped push prerequisite and retain successful-result guards")
+endif()
+string(REPLACE "!cancelled() &&" "" workflow_without_status_override "${workflow}")
+publish_dispatch_gates_valid("${workflow_without_status_override}" dispatch_gates_fault)
+if(dispatch_gates_fault)
+  message(FATAL_ERROR "publish dispatch assertion: skipped-prerequisite fault was not detected")
+endif()
+string(REPLACE "needs.release-ci.result == 'success'" "needs.release-ci.result == 'failure'" workflow_without_ci_gate "${workflow}")
+publish_dispatch_gates_valid("${workflow_without_ci_gate}" ci_gate_fault)
+if(ci_gate_fault)
+  message(FATAL_ERROR "publish dispatch assertion: failed-CI publication fault was not detected")
+endif()
+message(STATUS "publish: manual dispatch gates override skipped prerequisites without bypassing CI/equality")

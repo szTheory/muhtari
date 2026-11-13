@@ -267,11 +267,12 @@ jobs:
           EXPECTED_SHA: ${{ inputs.sha }}
         run: sh scripts/publish.sh resolve-target "$RELEASE_ID" "$RELEASE_TAG" "$EXPECTED_SHA"
 
-  # CI on the immutable release commit. A later push can create the release
-  # while its own commit is newer. Same permissions union as the rehearsal.
+  # Manual dispatch skips release-please. !cancelled() overrides that inherited
+  # status while preserving cancellation; later jobs still check each result.
+  # CI runs on the immutable release commit, as in the rehearsal.
   release-ci:
     needs: release-target
-    if: needs.release-target.outputs.release_created == 'true'
+    if: ${{ !cancelled() && needs.release-target.outputs.release_created == 'true' }}
     uses: ./.github/workflows/ci.yml
     with:
       ref: ${{ needs.release-target.outputs.sha }}
@@ -282,7 +283,7 @@ jobs:
 
   release-equality:
     needs: release-target
-    if: needs.release-target.outputs.release_created == 'true'
+    if: ${{ !cancelled() && needs.release-target.outputs.release_created == 'true' }}
     uses: ./.github/workflows/be-equality.yml
     with:
       ref: ${{ needs.release-target.outputs.sha }}
@@ -295,7 +296,7 @@ jobs:
   # is only verified.
   publish:
     needs: [release-target, release-ci, release-equality]
-    if: needs.release-target.outputs.release_created == 'true'
+    if: ${{ !cancelled() && needs.release-target.outputs.release_created == 'true' && needs.release-ci.result == 'success' && needs.release-equality.result == 'success' }}
     runs-on: ubuntu-26.04
     timeout-minutes: 13  # 2 x 379 s, n=1, run 39533130210; provisional
     permissions:
@@ -371,7 +372,7 @@ jobs:
   # The README's install line, verbatim, against the latest release.
   install-line-latest:
     needs: [release-target, publish]
-    if: needs.release-target.outputs.release_created == 'true'
+    if: ${{ !cancelled() && needs.release-target.outputs.release_created == 'true' && needs.publish.result == 'success' }}
     runs-on: macos-15
     timeout-minutes: 5  # network floor; max 7 s, n=1, run 39533130210; provisional
     steps:
