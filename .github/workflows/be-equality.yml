@@ -18,7 +18,7 @@ jobs:
   # runner.hashes_file supplies the same numeric board/frame/audio rows on both.
   equality:
     runs-on: ubuntu-26.04
-    timeout-minutes: 30  # provisional full inventory; portable max 691 s, run 39614595363
+    timeout-minutes: 57  # 2 x 28m20s, n=23, run 42918085345
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

@@ -807,3 +807,32 @@ memory outside the 256 KiB memory. The WASI test stack is 64 KiB, while that
 test's 320 by 292 video frame occupies about 91 KiB on the stack. Keep the frame
 in static test storage; retain the frame guards, hostile execution and
 allocation checks.
+
+## Resume publication after a release gate is cancelled (2026-11-12)
+
+Release equality was cancelled at its 30-minute deadline on exact release SHA
+`8d73321953f417dc973a4cb93cfb4b8521772150` in [Release run
+43318681115, job 131533478415](https://github.com/szTheory/muhtari/actions/runs/43318681115/job/131533478415).
+The slowest of 23 successful equality jobs in the last 40 took 28m20s in
+[Nightly run 42918085345, job 130185591497](https://github.com/szTheory/muhtari/actions/runs/42918085345/job/130185591497),
+so DEC.47 requires a 57-minute cap. A rerun of the old release workflow keeps
+its old timeout, and a follow-up push does not recreate `release_created` for
+an existing draft; because publication depends on CI and equality in the same
+workflow run, a standalone equality pass cannot unblock it. The manual
+continuation validates the draft ID, stable tag and exact SHA, then reruns CI,
+equality, attestation, publish and latest-install checks on that SHA.
+Keep the original cancelled run as failure history; do not count it as a timing
+sample or acceptance.
+
+## Intel macOS CI needs a separate job budget (2026-11-12)
+
+On exact PR head `061da62fbdceac720ce30bd9be8535d1bfe4fffe`, the standard
+`build (macos-x64)` job succeeded in 13m41s in [CI run
+43330805500, job 131574797665](https://github.com/szTheory/muhtari/actions/runs/43330805500/job/131574797665).
+The identical reusable job in [Release run 43330805540, job
+131574799077](https://github.com/szTheory/muhtari/actions/runs/43330805540/job/131574799077)
+hit its 19-minute cap after its tests and package checks had passed. With the
+23 prior successful non-Windows samples, this raises the successful sample to
+`n=24`; twice 13m41s is 27m22s, so round up to 28 minutes for Intel macOS x64
+only. Preserve the other matrix limits and the cancelled run as failure
+history.

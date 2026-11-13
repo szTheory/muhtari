@@ -135,7 +135,7 @@ jobs:
     if: needs.changes.outputs.heavy == 'true'
     name: build (${{ matrix.os }}-${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: ${{ startsWith(matrix.os, 'windows') && 68 || 19 }}  # provisional 2 x Windows2021s/other567s, n=12/23, run 40725919037
+    timeout-minutes: ${{ startsWith(matrix.os, 'windows') && 68 || matrix.os == 'macos' && matrix.arch == 'x64' && 28 || 19 }}  # 2 x 13m41s, n=24, run 43330805500
     # Intel macOS test durations vary up to 40x between runs (runs
     # 40753756094, 40759364140); its current and base builds scale every
     # test timeout by 2.
