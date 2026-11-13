@@ -16,8 +16,8 @@ on:
         description: "Fail the run on purpose, to show the nightly issue being written"
         type: boolean
         default: false
-  # A pull request runs every job when it changes a file whose break could
-  # show only here, not in ci.yml: this workflow, the core and runner
+  # A pull request runs the report jobs when it changes a file whose break
+  # could show only here, not in ci.yml: this workflow, the core and runner
   # sources, the build files and pins, and each job's own tests, scripts and
   # inventories. A new source file also changes CMakeLists.txt, which lists
   # it. The report job writes no issue for pull requests.
@@ -178,8 +178,11 @@ jobs:
   # each test 390 s; the slowest took 190 s at 10,000 cases, run 39381236115.
   # Report-only: 2/10 distinct successful main executions as of 2026-10-22.
   # It stays out of report's needs and keeps continue-on-error until ten,
-  # then gates with a timeout of twice its slowest run.
+  # then gates with a timeout of twice its slowest run. The pull-request CI
+  # already runs these properties at 100 cases; reserve this slow report for
+  # scheduled and manually dispatched runs.
   prop:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-26.04
     timeout-minutes: 9  # 2 x 246 s, n=2, run 39529469620; provisional
     continue-on-error: true

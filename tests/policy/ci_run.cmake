@@ -8,7 +8,7 @@ set(valid [=[{"headSha":"HEAD","attempt":1,"status":"completed","conclusion":"su
 string(REPLACE HEAD "${head}" valid "${valid}")
 set(CMD "${CMAKE_COMMAND}" -DINPUT=${WORK}/run.json -DEXPECTED_SHA=${head}
   -P "${ROOT}/tools/check_ci_run.cmake")
-foreach(case pass skips advisory_failures multiple_failures wrong_source incomplete
+foreach(case pass reusable reusable_failed skips advisory_failures multiple_failures wrong_source incomplete
     missing_required duplicate_required skipped_required malformed malformed_jobs
     malformed_status malformed_source malformed_job_status nonterminal_job
     missing_job_conclusion missing_run_conclusion invalid_url missing_attempt invalid_attempt malformed_attempt empty_jobs)
@@ -17,6 +17,13 @@ foreach(case pass skips advisory_failures multiple_failures wrong_source incompl
   set(want 1)
   if(case STREQUAL "pass")
     set(want 0)
+  elseif(case STREQUAL "reusable")
+    string(JSON run SET "${run}" jobs 2 name "\"release-ci / CI required\"")
+    set(want 0)
+  elseif(case STREQUAL "reusable_failed")
+    string(JSON run SET "${run}" jobs 2 name "\"release-ci / CI required\"")
+    string(JSON run SET "${run}" jobs 2 conclusion "\"failure\"")
+    set(regex "required aggregate is not completed/success")
   elseif(case STREQUAL "skips")
     string(JSON run SET "${run}" jobs 0 name "\"title\"")
     string(JSON run SET "${run}" jobs 0 conclusion "\"skipped\"")
@@ -118,4 +125,4 @@ foreach(case pass skips advisory_failures multiple_failures wrong_source incompl
     message(FATAL_ERROR "ci_run assertion: skipped job omitted: ${out}")
   endif()
 endforeach()
-message(STATUS "ci_run controls: 22 pass/fault cases")
+message(STATUS "ci_run controls: 24 pass/fault cases")

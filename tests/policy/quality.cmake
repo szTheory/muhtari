@@ -471,6 +471,7 @@ quality_windows_base_controls()
 # This tiny repository supplies controlled completed-workflow observations, never ROM bytes.
 set(repo "${WORK}/producer")
 file(MAKE_DIRECTORY "${repo}/tests/roms" "${repo}/tests/built" "${repo}/tests/inventory")
+file(COPY "${ROOT}/.gitattributes" DESTINATION "${repo}")
 set(old "tests/diag/dma.a78\tthis-repo\told\tMIT\t")
 string(REPEAT "a" 64 digest)
 set(old "${old}${digest}\t-\n")
@@ -506,7 +507,8 @@ endforeach()
 string(CONFIGURE "${project}" project @ONLY)
 file(WRITE "${repo}/CMakeLists.txt" "${project}")
 execute_process(COMMAND git init -q "${repo}" COMMAND_ERROR_IS_FATAL ANY)
-execute_process(COMMAND git -C "${repo}" add CMakeLists.txt CMakePresets.json quality.json tests COMMAND_ERROR_IS_FATAL ANY)
+execute_process(COMMAND git -C "${repo}" config core.autocrlf true COMMAND_ERROR_IS_FATAL ANY)
+execute_process(COMMAND git -C "${repo}" add .gitattributes CMakeLists.txt CMakePresets.json quality.json tests COMMAND_ERROR_IS_FATAL ANY)
 execute_process(COMMAND git -C "${repo}" -c user.name=Fixture -c user.email=fixture@users.noreply.github.com commit -qm base COMMAND_ERROR_IS_FATAL ANY)
 execute_process(COMMAND git -C "${repo}" rev-parse HEAD OUTPUT_VARIABLE producer_base OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ERROR_IS_FATAL ANY)
 file(APPEND "${repo}/tests/roms/manifest.txt" "tests/diag/activision.a78\tthis-repo\towned-source\tMIT\t${digest}\t-\n")
@@ -637,7 +639,7 @@ set(run "https://github.com/example/public/actions/runs/1")
 # them once; real independent-base production still runs for every valid case.
 file(MAKE_DIRECTORY "${repo}/build/pins")
 execute_process(COMMAND "${CMAKE_COMMAND}" --workflow --preset ci WORKING_DIRECTORY "${repo}" COMMAND_ERROR_IS_FATAL ANY OUTPUT_QUIET)
-foreach(case unchanged additions push dispatch later_base changed changed_later deleted duplicate_old duplicate_new duplicate_later unrelated malformed source pin license digest comment forged compiler platform producer_base producer_run producer_identity samples sample_revision sample_next sample_equal4 sample_reverse sample_reverse4 sample_revision4 sample_arbitrary sample_missing sample_missing4 sample_duplicate sample_duplicate4 sample_row sample_row4 sample_pin sample_pin4 sample_trailer sample_trailer4 sample_forged sample_forged4 actual_changed actual_duplicate actual_license actual_digest
+foreach(case unchanged additions push dispatch dispatch_ref later_base changed changed_later deleted duplicate_old duplicate_new duplicate_later unrelated malformed source pin license digest comment forged compiler platform producer_base producer_run producer_identity samples sample_revision sample_next sample_equal4 sample_reverse sample_reverse4 sample_revision4 sample_arbitrary sample_missing sample_missing4 sample_duplicate sample_duplicate4 sample_row sample_row4 sample_pin sample_pin4 sample_trailer sample_trailer4 sample_forged sample_forged4 actual_changed actual_duplicate actual_license actual_digest
     controller_additions controller_later controller_changed_light controller_duplicate_light
     controller_changed_light_later controller_duplicate_light_later controller_changed_old controller_deleted_old
     controller_changed_analog controller_duplicate_analog
@@ -665,6 +667,7 @@ foreach(case unchanged additions push dispatch later_base changed changed_later 
   set(candidate_samples "${sample_base}")
   set(event_base "${producer_base}")
   set(regex "quality: unrelated fixture")
+  set(workflow_sha "${producer_head}")
   if(case MATCHES "^expansion_")
     set(candidate "${expansion_manifest}")
     set(candidate_samples "${sample_next}")
@@ -1028,7 +1031,7 @@ foreach(case unchanged additions push dispatch later_base changed changed_later 
   if(case STREQUAL "push")
     set(event_name push)
     file(WRITE "${WORK}/event.json" "{\"before\":\"${event_base}\"}")
-  elseif(case STREQUAL "dispatch")
+  elseif(case STREQUAL "dispatch" OR case STREQUAL "dispatch_ref")
     set(event_name workflow_dispatch)
     set(event_base "${controller_base}")
     # Dispatch resolves the actual head parent, now the controller-addition base.
@@ -1036,9 +1039,13 @@ foreach(case unchanged additions push dispatch later_base changed changed_later 
     file(WRITE "${repo}/tests/roms/manifest.txt" "${candidate}")
     file(WRITE "${WORK}/event.json" "{}")
     set(candidate_samples "${sample_next}")
+    if(case STREQUAL "dispatch_ref")
+      # A reusable workflow can check out an input ref that differs from the caller's SHA.
+      set(workflow_sha "${controller_base}")
+    endif()
   endif()
   file(WRITE "${repo}/tests/built/expected.txt" "${candidate_samples}")
-  set(produce "${CMAKE_COMMAND}" -E env GITHUB_EVENT_PATH=${WORK}/event.json GITHUB_EVENT_NAME=${event_name} GITHUB_SHA=${producer_head}
+  set(produce "${CMAKE_COMMAND}" -E env GITHUB_EVENT_PATH=${WORK}/event.json GITHUB_EVENT_NAME=${event_name} GITHUB_SHA=${workflow_sha}
     "${CMAKE_COMMAND}" -DROOT=${repo} -DBUILD=${repo}/build/ci -DOUT=${WORK}/produced.json
     -DSHA=${producer_head} -DCONFIG=ci -DSOURCE=${run} -DBUILD_BASE=ON
     -P "${ROOT}/tests/cmake/quality_evidence.cmake")
@@ -1048,7 +1055,7 @@ foreach(case unchanged additions push dispatch later_base changed changed_later 
   elseif(case MATCHES "^sample_forged[45]?$")
     list(INSERT produce 10 -DSAMPLE_TRUSTED=${repo}/tests/built/expected.txt -Dsamples=${digest})
   endif()
-  if(NOT case MATCHES "^(unchanged|additions|push|dispatch|later_base|compiler|platform|producer_base|producer_run|producer_identity|samples|sample_revision|sample_next5?|sample_equal[45]|controller_(additions|later|compiler|platform|base|run|identity)|pal_(addition|later|unchanged)|bankset_(addition|later|unchanged)|expansion_(addition|later|unchanged))$")
+  if(NOT case MATCHES "^(unchanged|additions|push|dispatch(_ref)?|later_base|compiler|platform|producer_base|producer_run|producer_identity|samples|sample_revision|sample_next5?|sample_equal[45]|controller_(additions|later|compiler|platform|base|run|identity)|pal_(addition|later|unchanged)|bankset_(addition|later|unchanged)|expansion_(addition|later|unchanged))$")
     quality_expect_failure("${regex}" ${produce})
     continue()
   endif()
@@ -1075,12 +1082,15 @@ foreach(case unchanged additions push dispatch later_base changed changed_later 
   string(JSON value GET "${produced}" metrics archive_bytes value)
   string(JSON tests GET "${produced}" metrics tests.native value)
   string(JSON zero GET "${produced}" metrics warnings value)
-  execute_process(COMMAND git -C "${repo}" show "${event_base}:tests/roms/manifest.txt" OUTPUT_VARIABLE original COMMAND_ERROR_IS_FATAL ANY)
-  string(SHA256 identity "${original}")
+  set(original_manifest "${WORK}/original-manifest.txt")
+  execute_process(COMMAND git -C "${repo}" show "${event_base}:tests/roms/manifest.txt"
+    OUTPUT_FILE "${original_manifest}" COMMAND_ERROR_IS_FATAL ANY)
+  file(SHA256 "${original_manifest}" identity)
   string(JSON environment GET "${produced}" environment)
+  set(original_samples "${WORK}/original-samples.txt")
   execute_process(COMMAND git -C "${repo}" show "${event_base}:tests/built/expected.txt"
-    OUTPUT_VARIABLE original_samples COMMAND_ERROR_IS_FATAL ANY)
-  string(SHA256 sample_identity "${original_samples}")
+    OUTPUT_FILE "${original_samples}" COMMAND_ERROR_IS_FATAL ANY)
+  file(SHA256 "${original_samples}" sample_identity)
   if(NOT value EQUAL 90 OR NOT tests EQUAL 3 OR NOT zero EQUAL 0 OR
       NOT environment STREQUAL "Controlled-1-ControlledOS-controlled;${identity};${sample_identity}")
     message(FATAL_ERROR "quality assertion: producer metrics or trusted environment lost: ${produced}")
