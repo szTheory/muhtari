@@ -823,3 +823,16 @@ continuation validates the draft ID, stable tag and exact SHA, then reruns CI,
 equality, attestation, publish and latest-install checks on that SHA.
 Keep the original cancelled run as failure history; do not count it as a timing
 sample or acceptance.
+
+## Intel macOS CI needs a separate job budget (2026-11-12)
+
+On exact PR head `061da62fbdceac720ce30bd9be8535d1bfe4fffe`, the standard
+`build (macos-x64)` job succeeded in 13m41s in [CI run
+43330805500, job 131574797665](https://github.com/szTheory/muhtari/actions/runs/43330805500/job/131574797665).
+The identical reusable job in [Release run 43330805540, job
+131574799077](https://github.com/szTheory/muhtari/actions/runs/43330805540/job/131574799077)
+hit its 19-minute cap after its tests and package checks had passed. With the
+23 prior successful non-Windows samples, this raises the successful sample to
+`n=24`; twice 13m41s is 27m22s, so round up to 28 minutes for Intel macOS x64
+only. Preserve the other matrix limits and the cancelled run as failure
+history.
