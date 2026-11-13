@@ -637,7 +637,7 @@ set(run "https://github.com/example/public/actions/runs/1")
 # them once; real independent-base production still runs for every valid case.
 file(MAKE_DIRECTORY "${repo}/build/pins")
 execute_process(COMMAND "${CMAKE_COMMAND}" --workflow --preset ci WORKING_DIRECTORY "${repo}" COMMAND_ERROR_IS_FATAL ANY OUTPUT_QUIET)
-foreach(case unchanged additions push dispatch later_base changed changed_later deleted duplicate_old duplicate_new duplicate_later unrelated malformed source pin license digest comment forged compiler platform producer_base producer_run producer_identity samples sample_revision sample_next sample_equal4 sample_reverse sample_reverse4 sample_revision4 sample_arbitrary sample_missing sample_missing4 sample_duplicate sample_duplicate4 sample_row sample_row4 sample_pin sample_pin4 sample_trailer sample_trailer4 sample_forged sample_forged4 actual_changed actual_duplicate actual_license actual_digest
+foreach(case unchanged additions push dispatch dispatch_ref later_base changed changed_later deleted duplicate_old duplicate_new duplicate_later unrelated malformed source pin license digest comment forged compiler platform producer_base producer_run producer_identity samples sample_revision sample_next sample_equal4 sample_reverse sample_reverse4 sample_revision4 sample_arbitrary sample_missing sample_missing4 sample_duplicate sample_duplicate4 sample_row sample_row4 sample_pin sample_pin4 sample_trailer sample_trailer4 sample_forged sample_forged4 actual_changed actual_duplicate actual_license actual_digest
     controller_additions controller_later controller_changed_light controller_duplicate_light
     controller_changed_light_later controller_duplicate_light_later controller_changed_old controller_deleted_old
     controller_changed_analog controller_duplicate_analog
@@ -665,6 +665,7 @@ foreach(case unchanged additions push dispatch later_base changed changed_later 
   set(candidate_samples "${sample_base}")
   set(event_base "${producer_base}")
   set(regex "quality: unrelated fixture")
+  set(workflow_sha "${producer_head}")
   if(case MATCHES "^expansion_")
     set(candidate "${expansion_manifest}")
     set(candidate_samples "${sample_next}")
@@ -1028,7 +1029,7 @@ foreach(case unchanged additions push dispatch later_base changed changed_later 
   if(case STREQUAL "push")
     set(event_name push)
     file(WRITE "${WORK}/event.json" "{\"before\":\"${event_base}\"}")
-  elseif(case STREQUAL "dispatch")
+  elseif(case STREQUAL "dispatch" OR case STREQUAL "dispatch_ref")
     set(event_name workflow_dispatch)
     set(event_base "${controller_base}")
     # Dispatch resolves the actual head parent, now the controller-addition base.
@@ -1036,9 +1037,13 @@ foreach(case unchanged additions push dispatch later_base changed changed_later 
     file(WRITE "${repo}/tests/roms/manifest.txt" "${candidate}")
     file(WRITE "${WORK}/event.json" "{}")
     set(candidate_samples "${sample_next}")
+    if(case STREQUAL "dispatch_ref")
+      # A reusable workflow can check out an input ref that differs from the caller's SHA.
+      set(workflow_sha "${controller_base}")
+    endif()
   endif()
   file(WRITE "${repo}/tests/built/expected.txt" "${candidate_samples}")
-  set(produce "${CMAKE_COMMAND}" -E env GITHUB_EVENT_PATH=${WORK}/event.json GITHUB_EVENT_NAME=${event_name} GITHUB_SHA=${producer_head}
+  set(produce "${CMAKE_COMMAND}" -E env GITHUB_EVENT_PATH=${WORK}/event.json GITHUB_EVENT_NAME=${event_name} GITHUB_SHA=${workflow_sha}
     "${CMAKE_COMMAND}" -DROOT=${repo} -DBUILD=${repo}/build/ci -DOUT=${WORK}/produced.json
     -DSHA=${producer_head} -DCONFIG=ci -DSOURCE=${run} -DBUILD_BASE=ON
     -P "${ROOT}/tests/cmake/quality_evidence.cmake")
@@ -1048,7 +1053,7 @@ foreach(case unchanged additions push dispatch later_base changed changed_later 
   elseif(case MATCHES "^sample_forged[45]?$")
     list(INSERT produce 10 -DSAMPLE_TRUSTED=${repo}/tests/built/expected.txt -Dsamples=${digest})
   endif()
-  if(NOT case MATCHES "^(unchanged|additions|push|dispatch|later_base|compiler|platform|producer_base|producer_run|producer_identity|samples|sample_revision|sample_next5?|sample_equal[45]|controller_(additions|later|compiler|platform|base|run|identity)|pal_(addition|later|unchanged)|bankset_(addition|later|unchanged)|expansion_(addition|later|unchanged))$")
+  if(NOT case MATCHES "^(unchanged|additions|push|dispatch(_ref)?|later_base|compiler|platform|producer_base|producer_run|producer_identity|samples|sample_revision|sample_next5?|sample_equal[45]|controller_(additions|later|compiler|platform|base|run|identity)|pal_(addition|later|unchanged)|bankset_(addition|later|unchanged)|expansion_(addition|later|unchanged))$")
     quality_expect_failure("${regex}" ${produce})
     continue()
   endif()

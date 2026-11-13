@@ -884,3 +884,33 @@ publication before checking the latest install line. The policy check rejects a
 missing status override and a weakened CI result guard. This follows [GitHub's
 job dependency](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-jobs#defining-prerequisite-jobs)
 and [cancellation](https://docs.github.com/en/actions/reference/workflows-and-actions/expressions) rules.
+
+## Reusable workflow checkout ref and dispatch baseline (2026-11-13)
+
+When a release calls reusable `ci.yml` with an explicit `ref`, `GITHUB_SHA`
+still names the caller workflow's commit. Resolve a manual-dispatch quality base
+from the checked-out source's `HEAD^1`. When recursively measuring that base,
+clear the inherited event path and event name so the baseline checkout is not
+treated as another manual dispatch.
+
+Evidence: [Release run 43367755963](https://github.com/szTheory/muhtari/actions/runs/43367755963)
+checked out target `8d73321` but its producers recorded caller parent `6abadfd`,
+while the quality join expected the target's parent `77d9bec`; the quality gate
+failed and publication stayed skipped. The `dispatch_ref` policy case now
+models that caller/checkout mismatch and runs the recursive baseline path;
+`ctest --test-dir build/ci --output-on-failure -R '^policy\.quality\.controls$'`
+passed locally. The hosted failure remains historical evidence; it is not retried.
+
+GitHub reports a reusable workflow's required job as `release-ci / CI required`.
+The run auditor now recognizes that suffix; `policy.ci_run.controls` verifies
+both a successful prefixed aggregate and rejection of a failed one. Re-auditing
+the saved Release receipt now identifies the failed required aggregate instead
+of misreporting it as absent.
+
+Efficiency review: Release run 43367755963 started about four seconds after
+creation, ran 48m52s end to end, and cancelled no jobs. Windows ARM64 took
+44m28s and native/PowerPC equality took 21m15s; the green main CI run's Windows
+ARM64 job took 42m04s. These runs show the critical path is execution time, not
+queueing, but do not justify changing timeouts, caches or parallelism without
+multi-run evidence. The corrective PR title was checked before PR creation with
+`scripts/check-title.sh` (exit 0), avoiding a title correction cycle.

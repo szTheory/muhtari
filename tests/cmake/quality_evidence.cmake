@@ -92,7 +92,9 @@ if(BUILD_BASE OR EXISTS "$ENV{GITHUB_EVENT_PATH}")
     string(JSON base ERROR_VARIABLE absent GET "${event}" before)
   endif()
   if(absent AND "$ENV{GITHUB_EVENT_NAME}" STREQUAL "workflow_dispatch")
-    execute_process(COMMAND git -C "${ROOT}" rev-parse "$ENV{GITHUB_SHA}^1" OUTPUT_VARIABLE base
+    # A reusable workflow can check out an explicit ref while GITHUB_SHA still
+    # names its caller's commit. The checked-out source is the baseline authority.
+    execute_process(COMMAND git -C "${ROOT}" rev-parse HEAD^1 OUTPUT_VARIABLE base
       OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ERROR_IS_FATAL ANY)
     set(absent "")
   endif()
@@ -236,7 +238,10 @@ if(BUILD_BASE)
   execute_process(COMMAND git -C "${ROOT}" worktree add --detach "${tree}" "${base}" COMMAND_ERROR_IS_FATAL ANY)
   file(COPY "${ROOT}/build/pins" DESTINATION "${tree}/build")
   quality_base_workflow("${tree}" "${CONFIG}")
-  execute_process(COMMAND "${CMAKE_COMMAND}" -DROOT=${tree} -DBUILD=${tree}/build/${CONFIG}
+  # Measure the baseline tree on its own bytes. Reusing the caller's dispatch
+  # event here would make the baseline resolve its parent as another input ref.
+  execute_process(COMMAND "${CMAKE_COMMAND}" -E env --unset=GITHUB_EVENT_PATH --unset=GITHUB_EVENT_NAME
+    "${CMAKE_COMMAND}" -DROOT=${tree} -DBUILD=${tree}/build/${CONFIG}
     -DOUT=${BUILD}/quality-base.json -DSHA=${base} -DCONFIG=${CONFIG} -DSOURCE=${SOURCE}
     -P "${CMAKE_CURRENT_LIST_FILE}" COMMAND_ERROR_IS_FATAL ANY)
   file(READ "${BUILD}/quality-base.json" independent)
