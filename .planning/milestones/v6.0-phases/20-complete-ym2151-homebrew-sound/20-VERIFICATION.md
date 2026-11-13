@@ -1,6 +1,6 @@
 ---
 phase: 20-complete-ym2151-homebrew-sound
-verified: 2026-11-12T15:36:15Z
+verified: 2026-11-13T02:06:24Z
 status: passed
 score: 5/5 goal truths verified
 covered_files:
@@ -21,9 +21,6 @@ covered_files:
   - ".planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-COST-EVIDENCE.md"
   - ".planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-REVIEW-DISPOSITION.md"
   - ".planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-REVIEW.md"
-  - "build/v6-ym-sanitize-apple/runner/muhtari-run"
-  - "build/v6-ym-sanitize-apple/tests/muhtari-test-state"
-  - "build/v6-ym-sanitize-apple/tests/muhtari-test-ym2151"
   - "docs/embedding.md"
   - "docs/hardware/ym2151.md"
   - "scripts/emscripten.sh"
@@ -42,7 +39,7 @@ covered_files:
   - "tests/emscripten/bundle.cmake"
   - "tests/emscripten/host.mjs"
   - "tests/release/ym_consumers.cmake"
-covered_digest: "v4:sha256:ed2d5decdae7ef6feede6741d8db38c6fedbe7deea3d648419277545632d3893"
+covered_digest: "v4:sha256:d5198d5c22011ae9caa980e5234d4f89a6c165fb040536ad6ebf2b50f2082d7b"
 behavior_unverified: 0
 overrides_applied: 0
 decision_coverage:
@@ -54,10 +51,12 @@ decision_coverage:
 # Phase 20: Complete YM2151 homebrew sound Verification Report
 
 **Phase Goal:** A host can load one documented XM/YM2151 profile and obtain deterministic FM sound with complete lifecycle/state behavior through every existing deliverable and portable/package consumer.
-**Verified:** 2026-11-12T15:36:15Z
+**Verified:** 2026-11-13T02:06:24Z
 **Status:** passed
 **Re-verification:** No — the prior report had no gaps section. This initial-mode pass rechecked the archived contract and the current observer-restore change.
 **Refresh check:** The only intervening test-source change reformats a wrapped hash assignment in tests/audio/test_ym2151.c. The expression and behavior are unchanged; previously recorded targeted runtime results remain applicable. No tests were rerun.
+
+**Fingerprint refresh:** The previous fingerprint included three generated executables from `build/v6-ym-sanitize-apple/` that are absent from both shipping worktrees. The Phase 20 product sources, tests, and docs have no changes after the reported verification; the current branch adds only release-recovery policy and documentation. Recomputed the fingerprint over the durable phase artifacts, product sources, tests, docs, and scripts. No tests were rerun; saved command/exit evidence and all stated limitations below remain unchanged.
 
 ## Goal Achievement
 
@@ -181,5 +180,5 @@ No must-have truth failed and no human-verification item remains. The targeted c
 
 ---
 
-_Verified: 2026-11-12T15:36:15Z_
+_Verified: 2026-11-13T02:06:24Z_
 _Verifier: the agent (gsd-verifier)_
