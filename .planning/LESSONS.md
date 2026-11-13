@@ -948,3 +948,10 @@ already runs these properties at 100 cases. Keep the 10,000-case run for
 scheduled and manual Nightly events, where it can still provide deeper trend
 data; skip it on PRs to save up to nine minutes of non-gating work without
 changing test or job limits.
+
+The standard policy test registry is shared by the `ci` and `wasm32`
+inventories. Adding `policy.nightly.controls` only to `ci` made the hosted
+wasm32 configure fail with a registered-but-unlisted test in run 43381459806.
+The `wasm32` inventory now lists it too; a WASI-system CMake configure and the
+focused policy test both pass locally. When adding a shared policy test, update
+every inventory whose configuration includes `tests/policy/tests.cmake`.
