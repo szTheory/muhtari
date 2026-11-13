@@ -11,6 +11,11 @@ and current-main CI passed. The current receipt is [here](milestones/v6.0-SHIP.m
 Context can be cleared. Run `$gsd-new-milestone` from this root checkout with this
 handoff; no directory switch is needed. Successor scope remains unselected pending
 the cross-project feedback and owner direction below.
+
+Between-milestone status is already recorded above. Do not use `$gsd-progress` to
+reconstruct it: OpenGSD 1.20.0 currently reports archived phases 19–20 as absent
+from the active phase index. The saved STATE/ROADMAP records remain authoritative;
+see the reproduced limitation in [LESSONS.md](LESSONS.md#opengsd-progress-over-archived-milestones-2026-11-13).
 [State](STATE.md), [milestone audit](milestones/v6.0-MILESTONE-AUDIT.md) and
 [Phase20 evidence](milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-COST-EVIDENCE.md)
 carry the current result and precise unavailable-platform limits.
