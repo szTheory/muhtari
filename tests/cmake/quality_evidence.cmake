@@ -247,7 +247,8 @@ if(BUILD_BASE)
   file(READ "${BUILD}/quality-base.json" independent)
   string(JSON previous GET "${independent}" environment)
   if(NOT previous STREQUAL environment)
-    message(FATAL_ERROR "quality_evidence: incomparable base toolchain or fixtures")
+    message(FATAL_ERROR
+      "quality_evidence: incomparable base toolchain or fixtures; current='${environment}', base='${previous}'")
   endif()
   execute_process(COMMAND git -C "${ROOT}" ls-tree --name-only "${base}" quality.json
     OUTPUT_VARIABLE present COMMAND_ERROR_IS_FATAL ANY)

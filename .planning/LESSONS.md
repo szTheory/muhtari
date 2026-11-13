@@ -901,6 +901,15 @@ models that caller/checkout mismatch and runs the recursive baseline path;
 `ctest --test-dir build/ci --output-on-failure -R '^policy\.quality\.controls$'`
 passed locally. The hosted failure remains historical evidence; it is not retried.
 
+The Windows lanes in [PR run 43375527959](https://github.com/szTheory/muhtari/actions/runs/43375527959)
+then exposed a fixture-fidelity issue: the synthetic producer repository did
+not include this project's `.gitattributes`. Reproducing with
+`core.autocrlf=true` made its baseline worktree rewrite the manifest and sample
+files, so their working-tree hashes differed from the Git-blob identities. The
+fixture now copies `.gitattributes` and keeps the Windows-style setting; the
+same `policy.quality.controls` command fails before that correction and passes
+after it. The producer still compares the exact trusted baseline.
+
 GitHub reports a reusable workflow's required job as `release-ci / CI required`.
 The run auditor now recognizes that suffix; `policy.ci_run.controls` verifies
 both a successful prefixed aggregate and rejection of a failed one. Re-auditing
@@ -914,3 +923,9 @@ ARM64 job took 42m04s. These runs show the critical path is execution time, not
 queueing, but do not justify changing timeouts, caches or parallelism without
 multi-run evidence. The corrective PR title was checked before PR creation with
 `scripts/check-title.sh` (exit 0), avoiding a title correction cycle.
+
+On the same PR, the report-only Nightly run 43375528130 timed out
+`prop.split_run` and `prop.peek_pure` at their 390s limits; the job then hit its
+nine-minute cap and was cancelled. The Nightly report is skipped on PRs, so this
+did not add another required failure. Keep the result as one measurement; it
+does not justify raising the current test or job limits.
