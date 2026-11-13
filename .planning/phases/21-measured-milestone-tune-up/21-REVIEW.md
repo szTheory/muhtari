@@ -1,6 +1,6 @@
 ---
 phase: 21-measured-milestone-tune-up
-reviewed: 2026-11-13T22:42:49Z
+reviewed: 2026-11-13T23:04:43Z
 depth: standard
 files_reviewed: 2
 files_reviewed_list:
@@ -17,18 +17,16 @@ status: clean
 
 # Phase 21: Code Review Report
 
-**Reviewed:** 2026-11-13T22:42:49Z  
+**Reviewed:** 2026-11-13T23:04:43Z  
 **Depth:** standard  
 **Files Reviewed:** 2  
 **Status:** clean
 
 ## Summary
 
-Reviewed the tune-up report and plan summary against the Phase 21 plan and research, `AGENTS.md`, saved v6.0 and Phase 20 receipts, cited lesson entries, and current quality controls. Source/run attribution, evidence limits, historical failure descriptions, report-only scope, and execution-state wording are consistent with those records. All 50 local Markdown links and fragments resolve. No build, test suite, host/device action, hosted query, or network action was run.
+Re-reviewed the updated tune-up report and unchanged summary against the Phase 21 plan and the cited source receipts. The new statement at `21-TUNEUP.md:196-198` matches the plan's spec-less probe record at `21-01-PLAN.md:152-158`: category remains `unclassified`, status remains `unresolved`, and verification, resolution, and reason remain unset. The plan explicitly says its roadmap acceptance truths do not resolve that probe; the summary at `21-01-SUMMARY.md:98-102` also retains it as unresolved and does not claim otherwise.
 
-The dirty `.planning/STATE.md` attribution is supported by the actual diff: it records “Phase 21 execution started,” changes the current focus/status to executing, and sets `state_head` to the plan-start commit. Its timestamp (22:05:21Z) precedes the summary’s plan start (22:11:45Z). The State edit is uncommitted and therefore outside the report’s commit-to-commit comparison, as stated. The summary also leaves phase completion and shared planning-state updates to the orchestrator.
-
-All reviewed files meet the requested evidence and scope standards. No issues found.
+The accepted release and main-CI results remain tied to their recorded source and separate receipts, while Phase 20 measurements and historical failures remain source-qualified. The report continues to preserve the listed quality floors, fault controls, deferred requirements, and Phase 12/14 stops. Its report-only scope matches the plan and the added commit changes only `21-TUNEUP.md`. All 50 local Markdown links and fragments in the reviewed files resolve. No build, test suite, host/device action, hosted query, or network action was run.
 
 ## Narrative Findings (AI reviewer)
 
@@ -36,6 +34,6 @@ No findings.
 
 ---
 
-_Reviewed: 2026-11-13T22:42:49Z_  
+_Reviewed: 2026-11-13T23:04:43Z_  
 _Reviewer: the agent (gsd-code-reviewer)_  
 _Depth: standard_
