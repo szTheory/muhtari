@@ -549,6 +549,7 @@ policy.claims_wording.self_test	policy
 policy.compat_doc_fresh	policy
 policy.compat_doc_fresh.self_test	policy
 policy.compat_ratchet.controls	policy
+policy.nightly.controls	policy
 policy.no_skip	policy
 policy.no_skip.self_test	policy
 policy.notices	policy
