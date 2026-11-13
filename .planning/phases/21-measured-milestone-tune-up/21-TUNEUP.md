@@ -167,6 +167,7 @@ all URLs are N/A-local. Historical hosted results remain separate receipts.
 | `test -s .planning/phases/21-measured-milestone-tune-up/21-TUNEUP.md` | Exit 1 before creation; exit 0 after Task 1. | Expected baseline absence, then report presence. |
 | `node -e 'const f=require("fs"),p=require("path"),d=".planning/phases/21-measured-milestone-tune-up",s=f.readFileSync(p.join(d,"21-TUNEUP.md"),"utf8");for(const m of s.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)){const r=m[1];if(!/^https?:\/\//.test(r)&&!r.startsWith("mailto:")&&!f.existsSync(p.resolve(d,r.split("#")[0]||".")))process.exitCode=1}'` | Exit 0. | One-off check that report-relative local Markdown targets exist; lesson heading fragments were reviewed against their source headings. |
 | `if test -s .planning/phases/21-measured-milestone-tune-up/21-TUNEUP.md; then git diff --no-index --check /dev/null .planning/phases/21-measured-milestone-tune-up/21-TUNEUP.md; task_report_check=$?; test "$task_report_check" -le 1; else false; fi` | Wrapper exit 0; the clean new-file `git diff --no-index --check` result is expected to be 1, with no whitespace diagnostics. | One-off document whitespace check only. |
+| `test -s .planning/phases/21-measured-milestone-tune-up/21-TUNEUP.md`; report-relative Markdown target scan; specified `git diff --no-index --check` wrapper; `git diff --check -- .planning/phases/21-measured-milestone-tune-up/21-TUNEUP.md` | All command exits 0 after the clarification; the wrapper's clean no-index diff returned its expected 1, with no whitespace diagnostics. | One-off recheck of the corrected report only; N/A-local. |
 
 Historical hosted receipts reused here: [v0.14.0 Release run 43441765548](https://github.com/szTheory/muhtari/actions/runs/43441765548)
 and [same-source main CI run 43427086666](https://github.com/szTheory/muhtari/actions/runs/43427086666).
@@ -191,3 +192,7 @@ and source identify redundant work with equivalent fault detection. If materiall
 new evidence contradicts this recommendation or reveals a required defect, record
 that source and return a scope checkpoint before any corrective implementation
 or new workload; do not silently broaden this report plan.
+
+The plan's spec-less TUNE-11 probe remains `unclassified` and `unresolved`, with
+verification, resolution, and reason unset. This report preserves that planning
+assumption without claiming to resolve it.
