@@ -9,15 +9,84 @@
 
 - [x] **v5.0 — Downloadable WebAssembly core** — phases 17–18; shipped as v0.13.1 on 2026-11-11; public-byte verification and current-main CI passed. [Audit](milestones/v5.0-MILESTONE-AUDIT.md) · [Archive](milestones/v5.0-ROADMAP.md) · [Requirements](milestones/v5.0-REQUIREMENTS.md)
 - [x] **v6.0 — YM2151 homebrew sound** — phases 19–20; shipped as v0.14.0 on 2026-11-13. [Audit](milestones/v6.0-MILESTONE-AUDIT.md) · [Archive](milestones/v6.0-ROADMAP.md) · [Ship receipt](milestones/v6.0-SHIP.md)
+- [ ] **v7.0 — Souper homebrew mapper** — phases 21–22; selected 2026-11-13. [Requirements](REQUIREMENTS.md) · [Recommendation and sources](research/next-milestone/v7-SOUPER.md)
 
-## Completed phases
+## v7.0 — Souper homebrew mapper
 
-- [x] **Phase 19** (Measured milestone tune-up) — 1/1 plans; verified complete2026-11-11.
-- [x] **Phase 20** (Complete YM2151 homebrew sound) — 7/7 plans; verified complete2026-11-12.
+Homebrew developers can run cartridges using one published Souper mapper-only
+software profile through Muhtari's existing C library, runner and libretro core,
+including the applicable portable consumer. The owner selected this recommendation
+after source, consumer and adversarial review. All eight milestone requirements
+are mapped below; the [rolling roadmap](PRODUCT-ROADMAP.md) retains later horizons.
+
+The profile is bounded to 512 KiB ROM and 32 KiB EXRAM, distinct CPU/MARIA maps,
+independent mapping controls, reset and snapshot continuation. The claim is
+conformance with the cited software model. BupChip/BupBoop audio, Rikki & Vikki
+compatibility, unqualified extra image payloads, flash variants and physical
+cartridge accuracy remain outside this scope.
+
+Before implementation, Phase 22 must record the concrete register-reset and
+zero-filled EXRAM model policy, accepted image geometry and state-format/version
+consequences under DEC.26 and DEC.36. Routine consequences within the settled
+compatibility policy proceed without another approval; a materially new consumer
+consequence remains an owner decision. No new API/ABI, dependency or host is
+selected. Preserve C17 integer-only instance ownership and finite calls, and use
+existing resource, provenance, test and review mechanisms.
+
+## Phases
+
+- [ ] **Phase 21: Measured milestone tune-up** — Maintainers start Souper work from current release/docs and an evidenced, proportionate quality baseline.
+- [ ] **Phase 22: Complete Souper homebrew mapper** — One documented mapper profile delivers CPU/MARIA mapping, deterministic lifecycle/state and verified existing consumers.
+
+## Phase Details
+
+### Phase 21: Measured milestone tune-up
+
+**Goal:** Maintainers can identify the current shipped baseline and begin Souper work with a measured small correction or bounded no-change disposition that preserves required checks and prior failures.
+**Depends on:** v6.0 shipped; no unfinished predecessor phase.
+**Requirements:** TUNE-11
+**Success Criteria** (what must be TRUE):
+  1. Maintainers can follow current release and documentation records to the accepted publication and source-specific baseline without mistaking an earlier failed source for accepted evidence or reopening closed shipping recovery.
+  2. Maintainers can inspect a source-specific quality/efficiency review and either one evidence-backed low-risk correction or a bounded no-change disposition; required pass/fault coverage, workload limits and historical failures remain intact.
+
+**Plans:** TBD
+
+### Phase 22: Complete Souper homebrew mapper
+
+**Goal:** A homebrew developer can load the documented Souper mapper-only profile and obtain deterministic CPU/MARIA mapping and snapshot continuation through every existing deliverable and the applicable portable consumer.
+**Depends on:** Phase 21
+**Requirements:** SOUPER-01, SOUPER-02, SOUPER-03, SOUPER-04, SOUPER-05, SOUPER-06, SOUPER-07
+**Success Criteria** (what must be TRUE):
+  1. A host can load the exact supported A78 v3/v4 Souper declaration and geometry, identify its documented software-model limits, and receive refusal for malformed, oversized or unsupported variants before allocation or live-machine mutation.
+  2. A generated patterned workload running real CPU accesses observes the documented ROM banks, register decode/aliases and flat/segmented EXRAM behavior at mapping boundaries and mode transitions, matching literal expected bytes authored independently from production mapping logic.
+  3. The same diagnostic exercises real MARIA fetches and distinguishes them from CPU reads, including character remapping and the fetch-trap transition through the existing tick-aware bus/HALT path, against independently authored expected values.
+  4. A host can reset, unload/reload, isolate instances and restore every Souper register and EXRAM byte with identical subsequent observations; invalid snapshots preserve the live machine under the concrete compatibility policy recorded before code.
+  5. The owned diagnostic passes through the actual public C library, headless runner, loaded libretro core and applicable portable consumer, with malformed-profile and non-Souper controls retained; existing docs state the reset/EXRAM policy and unsupported image/audio forms, and no BupChip audio is claimed or emitted.
+
+**Plans:** TBD
+
+Mapper behavior, loader refusals, lifecycle/state, independent diagnostics,
+existing-consumer acceptance, documentation and bounded resource evidence belong
+to Phase 22. Do not split out a validation-only tail or treat cross-route hash
+agreement as an independent mapping oracle. Reuse the saved
+[recommendation](research/next-milestone/v7-SOUPER.md), [lessons](LESSONS.md),
+[preparation index](preparation/README.md), [decisions](preparation/DECISIONS.md)
+and [engineering rules](preparation/ENGINEERING.md) before new research.
+
+## Progress
+
+No v7.0 phase or plan has executed. All eight requirements map to exactly one
+phase; no requirement is orphaned or accepted ahead of verification.
+
+| Phase | Plans Complete | Status | Completed |
+|---|---|---|---|
+| 21. Measured milestone tune-up | 0/TBD | Not started | — |
+| 22. Complete Souper homebrew mapper | 0/TBD | Not started | — |
 
 ## Next boundary
 
-v6.0 is shipped. Clear context and run `$gsd-new-milestone` with the
-[successor handoff](continue.md); the owner selects the next bounded outcome
-after cross-project feedback. Earlier Phase 12/14 stops, nine deferred v3
-requirements and unaccepted hardware/platform evidence remain unchanged.
+After milestone kickoff closeout, clear context and run `$gsd-plan-phase 21`.
+The agent owns current-receipt and local-prerequisite checks. Publication, merge,
+remote dispatch and host/device/identity-bound actions remain separate boundaries.
+Original Phase 12/14 denied/spent scopes, all nine deferred v3.0 requirements and
+unaccepted hardware/platform claims remain unchanged.

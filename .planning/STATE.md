@@ -3,10 +3,10 @@ gsd_state_version: "1.0"
 milestone: v7.0
 milestone_name: Souper homebrew mapper
 status: planning
-last_updated: "2026-11-13T19:32:55.687Z"
+last_updated: "2026-11-13T19:41:23Z"
 last_activity: 2026-11-13
 progress:
-  total_phases: 0
+  total_phases: 2
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -17,41 +17,41 @@ progress:
 
 ## Project Reference
 
-See [PROJECT.md](PROJECT.md), [archived requirements](milestones/v6.0-REQUIREMENTS.md), [ROADMAP.md](ROADMAP.md) and [milestone synthesis](research/next-milestone/SUMMARY.md).
+See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md), [ROADMAP.md](ROADMAP.md) and [v7.0 recommendation](research/next-milestone/v7-SOUPER.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** Define the v7.0 Souper homebrew mapper requirements and phase roadmap from the saved recommendation
+**Current focus:** Plan Phase 21, the measured milestone tune-up, before the complete Souper mapper slice in Phase 22
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-11-13 — v7.0 Souper scope selected; requirements and roadmap in progress
+Phase: 21 of 22 (Measured milestone tune-up)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-11-13 — v7.0 requirements mapped to Phases 21–22
+
+Progress: [░░░░░░░░░░] 0% (0/2 phases)
 
 
 ## Performance Metrics
 
-v6.0 has two verified phases, eight completed plans and nineteen actual plan task blocks. All nine current requirements, required local gates and independent review/integration pass. Package v0.14.0 is published; its release workflow, latest-install check and current-main CI pass. See the [v6.0 ship receipt](milestones/v6.0-SHIP.md).
-**Per-Plan Metrics:**
-
-| Plan | Duration | Tasks | Files |
-|------|----------|-------|-------|
-| Phase 19 P01 | 76min | 1 task | 1 file |
-| Phase 20 P01 | 80min | 2 tasks | 20 files |
-| Phase 20 P02 | 84min | 3 tasks | 9 files |
+v7.0 has two planned phases, eight pending requirements and no executed plans.
+No v7.0 build, test, host or CI acceptance is claimed. Prior milestone metrics
+and accepted v0.14.0 publication evidence remain in the
+[v6.0 roadmap](milestones/v6.0-ROADMAP.md) and [ship receipt](milestones/v6.0-SHIP.md).
 
 ## Accumulated Context
 
 - v3.0 closed with deferred scope: only Phase 13 verified; nine requirements remain unchecked in the [archive](milestones/v3.0-MILESTONE-AUDIT.md). v4.0 promotes no old host acceptance claim.
 - Root remains canonical; stale dirty worktrees stay preserved and require content/ancestry reconciliation before import. See [workspace reconciliation](debug/workspace-reconciliation-2026-11-10.md).
+- The owner selected v7.0 Souper mapper-only support after recommendation-first research. One published 512 KiB ROM/32 KiB EXRAM software model, independent generated CPU/MARIA expectations and complete existing-consumer/state acceptance belong together in Phase 22. BupChip/BupBoop, Rikki & Vikki compatibility, flash variants and physical cartridge accuracy are excluded.
+- Before Phase 22 implementation, record exact reset/EXRAM model policy and concrete snapshot/version consequences under DEC.26/DEC.36. No new API/ABI, dependency or host is selected; apply ordinary consequences of the settled policy without another routine approval.
 - Owner-selected v6.0 keeps one source-qualified XM/YM2151 profile, public mono PCM and C17 integer-only instance ownership. Profile, finite resource bounds and concrete API/behavior/native-format compatibility consequences are qualified before implementation; materially new consequences remain owner decisions.
 - Required chip/bus/audio/state, library/runner/libretro/Wasm/package acceptance, tests, docs and cost stay together in Phase 20. All seven plans, required local gates, goal verification and milestone integration are complete. YM state now uses format 2/behavior 7 while no-YM snapshots retain format 1/behavior 6; independent genuine old/new continuation remains in Plan 20-06. Reuse saved research, current mechanisms and [fan-out guidance](research/fan-out/prompt.txt); do not add a validation-tail phase or repeat upstream research.
 
-Inherited todos and optional seeds retain their dispositions except selected YM/XM and recurring tune-up contributions. Atari 2600 belongs to twentysixhundo; LibFuturo owns its existing host/browser routes. [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md) carries future horizons.
+Inherited todos and optional seeds retain their dispositions except the selected Souper and recurring tune-up contributions. Atari 2600 belongs to twentysixhundo; LibFuturo owns its existing host/browser routes and reports no demonstrated Muhtari-side need. [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md) carries future horizons.
 
 ### Blockers/Concerns
 
-- No current local roadmap blocker. The exact profile, compatibility policy, final native/portable/package evidence and clean bounded review are complete; phase goal verification and local milestone audit/archival are complete. The optional GCC13 no-FP attempt is unqualified because it lacks a required warning flag; no unavailable platform pass is claimed.
+- No current local roadmap blocker. Phase 21 is ready to plan. Phase 22's concrete reset/image/state policy is a pre-code gate; the saved source model supports scope selection but does not establish physical accuracy. Prior v6.0 verification remains archived; no unavailable-platform or v7.0 pass is claimed.
 - Phase 12's exact diagnostic-app request was denied before preflight/content and must not be retried. Original Phase 12 host/remote stops, Phase 14's spent host scope, expired windows and specific no-retry limits remain binding. No v6.0 action renews them or accepts the nine deferred v3.0 requirements.
 - v6.0 publication and PR #61 merge are complete. Future publication, merge, remote dispatch and host/device/identity-bound actions remain separate boundaries. Browser/player, Playstead, physical audibility, calibrated hardware accuracy, public stereo and full XM are excluded. Earlier combined-source/failed release evidence remains source-specific in archived receipts.
 
@@ -102,15 +102,15 @@ At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Sou
 ## Session Continuity
 
 Last session: 2026-11-13 — recommendation-first v7.0 milestone kickoff
-Stopped at: v7.0 Souper mapper scope selected; requirements and phase roadmap are being defined
+Stopped at: v7.0 requirements and two-phase roadmap created; Phase 21 is ready to plan
 Resume file: continue.md
 
-Next action: Finish v7.0 requirements and roadmap on `milestone/v7.0-souper-mapper`, then run `$gsd-plan-phase 21` after clearing context.
+Next action: After milestone kickoff closeout, clear context and run `$gsd-plan-phase 21` from the current checkout. No directory switch is needed.
 
 ## Operator Next Steps
 
 
-- Continue the selected v7.0 Souper scope from [the recommendation](research/next-milestone/v7-SOUPER.md); do not reopen generic scope selection absent new evidence.
+- Plan Phase 21 with `$gsd-plan-phase 21`, reusing the current [roadmap](ROADMAP.md) and saved [recommendation](research/next-milestone/v7-SOUPER.md); do not reopen generic scope selection absent new evidence.
 
 
 ## Decisions
@@ -127,4 +127,4 @@ Next action: Finish v7.0 requirements and roadmap on `milestone/v7.0-souper-mapp
 
 ## Next action
 
-Milestone kickoff is in progress on `milestone/v7.0-souper-mapper`. The owner selected the recommendation-first v7.0 Souper mapper-only scope; do not re-ask what to build. Finish requirements and roadmap, then clear context and run `$gsd-plan-phase 21`. Original Phase 12/14 host and remote stops remain binding.
+Milestone kickoff records are ready for final closeout on `milestone/v7.0-souper-mapper`. The selected v7.0 Souper mapper-only scope has a two-phase roadmap and complete requirement mapping. After closeout, clear context and run `$gsd-plan-phase 21`. Original Phase 12/14 host and remote stops remain binding.

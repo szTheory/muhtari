@@ -8,10 +8,13 @@ the [release run](https://github.com/szTheory/muhtari/actions/runs/43441765548),
 latest-install check, merged [PR #61](https://github.com/szTheory/muhtari/pull/61)
 and current-main CI passed. The current receipt is [here](milestones/v6.0-SHIP.md).
 
-v6.0 shipped as v0.14.0. The owner
-selected v7.0 Souper mapper-only support after the recommendation-first fan-out.
-The new milestone requirements and phase roadmap are being created on
-`milestone/v7.0-souper-mapper`.
+v6.0 shipped as v0.14.0. The owner selected v7.0 Souper mapper-only support
+after recommendation-first fan-out. Its requirements and two-phase roadmap are
+complete on `milestone/v7.0-souper-mapper`; Phase 21 is ready to plan.
+
+**Next:** Clear context and run `$gsd-plan-phase 21` from the current checkout.
+The selected scope, evidence register and later roadmap horizons are recorded;
+do not reopen generic milestone selection absent new evidence.
 
 The active v7.0 position is recorded in STATE and ROADMAP. Do not use
 `$gsd-progress` to reconstruct archived phase counts: OpenGSD 1.20.0 currently

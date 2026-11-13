@@ -212,5 +212,5 @@ cross-project feedback and bounded consumer, hardware, and adversarial review.
 The scope is one generated-fixture-testable mapper profile through Muhtari's
 existing deliverables; BupChip/BupBoop audio and Rikki & Vikki compatibility are
 excluded. The source register, uncertainty and revisit triggers are in
-[v7-SOUPER research](research/next-milestone/v7-SOUPER.md). Requirements and
-phase structure are active in this milestone's `REQUIREMENTS.md` and `ROADMAP.md`.
+[v7-SOUPER research](research/next-milestone/v7-SOUPER.md). All eight
+requirements map to Phases 21–22 in the active `REQUIREMENTS.md` and `ROADMAP.md`.

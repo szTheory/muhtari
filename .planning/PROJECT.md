@@ -40,7 +40,7 @@ API8/ABI1 remain unchanged. Global latest behavior7/format2 is distinct from unc
 
 **Publication:** [v0.14.0](https://github.com/szTheory/muhtari/releases/tag/v0.14.0) is published. The [release run](https://github.com/szTheory/muhtari/actions/runs/43441765548) and its latest-install check passed. PR [#61](https://github.com/szTheory/muhtari/pull/61) merged and current-main CI passed. See the [ship receipt](milestones/v6.0-SHIP.md).
 
-**Next boundary:** v7.0 is selected and its requirements/roadmap are being established on `milestone/v7.0-souper-mapper`; then phase planning begins from the first phase in the active roadmap. No owner checkout switch is needed.
+**Next boundary:** v7.0 requirements and its two-phase roadmap are complete on `milestone/v7.0-souper-mapper`. After kickoff closeout, plan Phase 21. No owner checkout switch is needed.
 
 ## Previous Published Milestone: v5.0 Downloadable WebAssembly core
 

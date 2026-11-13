@@ -44,7 +44,7 @@ author says the mapper was released so other developers could build on it; a
 published GameDrive code example supplies a testable mapping model. See the
 [v7.0 evidence and boundaries](research/next-milestone/v7-SOUPER.md). The active
 [ROADMAP.md](ROADMAP.md) and [REQUIREMENTS.md](REQUIREMENTS.md) are the execution
-contract once created.
+contract for Phases 21–22.
 
 Acceptance must distinguish CPU from MARIA memory reads, exercise ROM banking,
 character remapping, segmented EXRAM and MARIA fetch trapping with generated

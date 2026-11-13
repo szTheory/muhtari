@@ -43,19 +43,19 @@ other homebrew hardware, browser/player work, and ports remain in
 
 ## Traceability
 
-Updated during roadmap creation.
+Each requirement maps to exactly one phase in [ROADMAP.md](ROADMAP.md).
 
 | Requirement | Phase | Status |
 |---|---|---|
-| TUNE-11 | Pending | Pending |
-| SOUPER-01 | Pending | Pending |
-| SOUPER-02 | Pending | Pending |
-| SOUPER-03 | Pending | Pending |
-| SOUPER-04 | Pending | Pending |
-| SOUPER-05 | Pending | Pending |
-| SOUPER-06 | Pending | Pending |
-| SOUPER-07 | Pending | Pending |
+| TUNE-11 | Phase 21 | Pending |
+| SOUPER-01 | Phase 22 | Pending |
+| SOUPER-02 | Phase 22 | Pending |
+| SOUPER-03 | Phase 22 | Pending |
+| SOUPER-04 | Phase 22 | Pending |
+| SOUPER-05 | Phase 22 | Pending |
+| SOUPER-06 | Phase 22 | Pending |
+| SOUPER-07 | Phase 22 | Pending |
 
-**Coverage:** 8 requirements; roadmap mapping pending.
+**Coverage:** 8/8 requirements mapped exactly once; no orphaned requirements.
 
 Scope follows the [v7.0 recommendation and evidence register](research/next-milestone/v7-SOUPER.md).
