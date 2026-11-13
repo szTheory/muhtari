@@ -5,11 +5,11 @@ milestone_name: Souper homebrew mapper
 current_phase: 22
 current_phase_name: Complete Souper homebrew mapper
 status: planning
-stopped_at: Phase 21 complete, ready to plan Phase 22
-last_updated: "2026-11-13T23:16:39.526Z"
+stopped_at: Phase 22 context gathered
+last_updated: "2026-11-13T23:43:33.204Z"
 last_activity: 2026-11-13
 last_activity_desc: Phase 21 complete, transitioned to Phase 22
-state_head: 0ce40964c5732caa3809be9bfb0ea421f8cb593d
+state_head: 55f30e26fc0ef66df14eb2b48f6d5864fbf43e67
 progress:
   total_phases: 2
   completed_phases: 1
@@ -106,9 +106,9 @@ At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Sou
 
 ## Session Continuity
 
-Last session: 2026-11-13 — Phase 21 execution and completion
-Stopped at: Phase 21 complete, ready to plan Phase 22
-Resume file: None
+Last session: 2026-11-13T23:43:33.180Z
+Stopped at: Phase 22 context gathered
+Resume file: .planning/phases/22-complete-souper-homebrew-mapper/22-CONTEXT.md
 
 Next action: Clear context and run `$gsd-discuss-phase 22` from the current checkout. No directory switch is needed.
 
