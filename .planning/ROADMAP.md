@@ -35,7 +35,7 @@ existing resource, provenance, test and review mechanisms.
 
 ## Phases
 
-- [ ] **Phase 21: Measured milestone tune-up** — Maintainers start Souper work from current release/docs and an evidenced, proportionate quality baseline.
+- [x] **Phase 21: Measured milestone tune-up** — Maintainers start Souper work from current release/docs and an evidenced, proportionate quality baseline. (completed 2026-11-13)
 - [ ] **Phase 22: Complete Souper homebrew mapper** — One documented mapper profile delivers CPU/MARIA mapping, deterministic lifecycle/state and verified existing consumers.
 
 ## Phase Details
@@ -49,8 +49,8 @@ existing resource, provenance, test and review mechanisms.
   1. Maintainers can follow current release and documentation records to the accepted publication and source-specific baseline without mistaking an earlier failed source for accepted evidence or reopening closed shipping recovery.
   2. Maintainers can inspect a source-specific quality/efficiency review and either one evidence-backed low-risk correction or a bounded no-change disposition; required pass/fault coverage, workload limits and historical failures remain intact.
 
-**Plans:** 0/1 plans executed
-- [ ] 21-01-PLAN.md — Trace the shipped baseline and record a source-qualified tune-up
+**Plans:** 1/1 plans complete
+- [x] 21-01-PLAN.md — Trace the shipped baseline and record a source-qualified tune-up
 
 ### Phase 22: Complete Souper homebrew mapper
 
@@ -76,17 +76,18 @@ and [engineering rules](preparation/ENGINEERING.md) before new research.
 
 ## Progress
 
-No v7.0 phase or plan has executed. All eight requirements map to exactly one
+One v7.0 phase and its plan have executed. TUNE-11 is complete; seven Souper
+mapper requirements remain pending. All eight requirements map to exactly one
 phase; no requirement is orphaned or accepted ahead of verification.
 
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
-| 21. Measured milestone tune-up | 0/1 | Planned     | — |
+| 21. Measured milestone tune-up | 1/1 | Complete    | 2026-11-13 |
 | 22. Complete Souper homebrew mapper | 0/TBD | Not started | — |
 
 ## Next boundary
 
-After milestone kickoff closeout, clear context and run `$gsd-plan-phase 21`.
+After Phase 21 closeout, clear context and run `$gsd-discuss-phase 22`.
 The agent owns current-receipt and local-prerequisite checks. Publication, merge,
 remote dispatch and host/device/identity-bound actions remain separate boundaries.
 Original Phase 12/14 denied/spent scopes, all nine deferred v3.0 requirements and

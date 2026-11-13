@@ -1,20 +1,17 @@
-# Current continuation — v7.0 Souper mapper support
+# Current continuation — Phase 21 complete, Phase 22 ready
 
-YM2151 homebrew sound is implemented and verified through public C, real runner,
-loaded libretro, actual emitted Wasm and clean package consumers. Both phases,
-all nine current requirements, required local gates, bounded review and milestone
-integration pass. v6.0 shipped as [v0.14.0](https://github.com/szTheory/muhtari/releases/tag/v0.14.0);
-the [release run](https://github.com/szTheory/muhtari/actions/runs/43441765548),
-latest-install check, merged [PR #61](https://github.com/szTheory/muhtari/pull/61)
-and current-main CI passed. The current receipt is [here](milestones/v6.0-SHIP.md).
+Phase 21 completed the source-qualified v7.0 tune-up. Its [report](phases/21-measured-milestone-tune-up/21-TUNEUP.md)
+records a bounded no-change disposition, retains the earlier failures and leaves
+the spec-less probe unresolved. No product build, test, host or CI acceptance is
+claimed for v7.0.
 
-v6.0 shipped as v0.14.0. The owner selected v7.0 Souper mapper-only support
-after recommendation-first fan-out. Its requirements and two-phase roadmap are
-complete on `milestone/v7.0-souper-mapper`; Phase 21 is ready to plan.
+The next command is `$gsd-discuss-phase 22` from the current checkout. Phase 22
+owns the seven Souper mapper requirements; preserve its pre-code reset/EXRAM
+policy gate and existing host/remote stops. No directory switch is needed.
 
-**Next:** Clear context and run `$gsd-plan-phase 21` from the current checkout.
-The selected scope, evidence register and later roadmap horizons are recorded;
-do not reopen generic milestone selection absent new evidence.
+The sections below preserve historical v7.0 kickoff and cross-project scoping
+provenance. Their former Phase 21 planning action has been superseded by this
+current handoff.
 
 The active v7.0 position is recorded in STATE and ROADMAP. Do not use
 `$gsd-progress` to reconstruct archived phase counts: OpenGSD 1.20.0 currently

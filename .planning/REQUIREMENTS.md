@@ -11,7 +11,7 @@ mapping and state continuation, while refusing unsupported image/audio forms.
 
 ### Measured milestone tune-up
 
-- [ ] **TUNE-11**: Maintainers begin the milestone from current release and documentation evidence plus a source-specific quality/efficiency review, and record either one evidence-backed low-risk correction or a bounded no-change disposition without weakening required checks or obscuring prior failures.
+- [x] **TUNE-11**: Maintainers begin the milestone from current release and documentation evidence plus a source-specific quality/efficiency review, and record either one evidence-backed low-risk correction or a bounded no-change disposition without weakening required checks or obscuring prior failures.
 
 ### Souper mapper profile
 
@@ -47,7 +47,7 @@ Each requirement maps to exactly one phase in [ROADMAP.md](ROADMAP.md).
 
 | Requirement | Phase | Status |
 |---|---|---|
-| TUNE-11 | Phase 21 | Pending |
+| TUNE-11 | Phase 21 | Complete |
 | SOUPER-01 | Phase 22 | Pending |
 | SOUPER-02 | Phase 22 | Pending |
 | SOUPER-03 | Phase 22 | Pending |

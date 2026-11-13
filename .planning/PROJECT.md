@@ -19,6 +19,8 @@ v6.0 YM2151 homebrew sound is implemented, verified and shipped as package v0.14
 
 v7.0 Souper mapper support is the selected successor. Its active scope is one generated-fixture-testable mapper profile for homebrew developers; BupChip audio and Rikki & Vikki compatibility are excluded. See [the v7.0 research](research/next-milestone/v7-SOUPER.md) and [rolling product roadmap](PRODUCT-ROADMAP.md).
 
+Phase 21 completed its source-qualified tune-up with a bounded no-change disposition. The seven Souper mapper requirements remain for Phase 22.
+
 Nine v3.0 gaps and every original denied/spent Phase12/14 host/remote scope remain unchanged. Older dirty worktrees stay preserved and root remains canonical. [Milestone audit](milestones/v6.0-MILESTONE-AUDIT.md) and [requirements](milestones/v6.0-REQUIREMENTS.md) retain the exact accepted scope.
 
 ## Current Milestone: v7.0 Souper homebrew mapper
@@ -40,7 +42,7 @@ API8/ABI1 remain unchanged. Global latest behavior7/format2 is distinct from unc
 
 **Publication:** [v0.14.0](https://github.com/szTheory/muhtari/releases/tag/v0.14.0) is published. The [release run](https://github.com/szTheory/muhtari/actions/runs/43441765548) and its latest-install check passed. PR [#61](https://github.com/szTheory/muhtari/pull/61) merged and current-main CI passed. See the [ship receipt](milestones/v6.0-SHIP.md).
 
-**Next boundary:** v7.0 requirements and its two-phase roadmap are complete on `milestone/v7.0-souper-mapper`. After kickoff closeout, plan Phase 21. No owner checkout switch is needed.
+**Next boundary:** Phase 21 and TUNE-11 are complete on `milestone/v7.0-souper-mapper`. Phase 22 is ready for discussion and planning. No owner checkout switch is needed.
 
 ## Previous Published Milestone: v5.0 Downloadable WebAssembly core
 
@@ -195,10 +197,11 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 - ✓ Evidence-backed library accounting and isolated local evaluation — COMP-01–03 — v2.0, Phase 11 merged in PR40.
 - ✓ Portable validated machine state through the library, runner and libretro core — STATE-01–06 and FRONT-01 — v3.0 Phase 13, verification passed 44/44.
 - ✓ Current publication/docs and proportionate measured quality/efficiency baseline — TUNE-10, v6.0 Phase 19.
+- ✓ Source-qualified release/docs and quality/efficiency tune-up with a bounded no-change disposition — TUNE-11, v7.0 Phase 21.
 
 ### Active
 
-The v7.0 requirements are being defined from [the Souper source register](research/next-milestone/v7-SOUPER.md). The nine unmet v3.0 requirements remain deferred with their original evidence and stops; see the [v6.0 archive](milestones/v6.0-REQUIREMENTS.md).
+The seven v7.0 Souper mapper requirements remain active for Phase 22; see [the requirements](REQUIREMENTS.md) and [Souper source register](research/next-milestone/v7-SOUPER.md). The nine unmet v3.0 requirements remain deferred with their original evidence and stops; see the [v6.0 archive](milestones/v6.0-REQUIREMENTS.md).
 
 ### Out of Scope
 
@@ -282,6 +285,7 @@ The v7.0 requirements are being defined from [the Souper source register](resear
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
+| Keep required CI coverage, workload limits and quality floors unchanged after the measured tune-up | One accepted hosted release sample and different-source local measurements do not establish a safe reduction with equivalent fault detection | ✓ Phase 21: source-qualified report records bounded no change, preserves prior failures and leaves the spec-less probe unresolved |
 | One source-qualified XM/YM2151 digital profile and approved exact-pin BSD-3 OPM specialization | Preserve C17 integer instance ownership, existing scheduler and evidence boundaries | ✓ v6.0: native/portable/package diagnostics, exact-seed parity and maintained notices |
 | Preserve non-YM native6/1 bytes while YM alone uses7/2; API8/ABI1 unchanged | Add full YM continuation without breaking existing machine envelopes | ✓ v6.0: genuine independent old/current two-way matrix and transactional semantic refusal |
 | Merge every coinstalled audio source before advancing the mixer | Cross-route equality can share a clock-ordering bug | ✓ v6.0: Release monotonic all12-source stress and qualified sanitizer reproduce before/fix after; existing bounds retained |
@@ -342,4 +346,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-13 after v7.0 successor selection*
+*Last updated: 2026-11-13 after Phase 21*
