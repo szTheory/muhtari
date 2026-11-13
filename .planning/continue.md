@@ -1,4 +1,4 @@
-# Current continuation — v6.0 shipped as v0.14.0
+# Current continuation — v7.0 Souper mapper support
 
 YM2151 homebrew sound is implemented and verified through public C, real runner,
 loaded libretro, actual emitted Wasm and clean package consumers. Both phases,
@@ -8,14 +8,15 @@ the [release run](https://github.com/szTheory/muhtari/actions/runs/43441765548),
 latest-install check, merged [PR #61](https://github.com/szTheory/muhtari/pull/61)
 and current-main CI passed. The current receipt is [here](milestones/v6.0-SHIP.md).
 
-Context can be cleared. Run `$gsd-new-milestone` from this root checkout with this
-handoff; no directory switch is needed. Successor scope remains unselected pending
-the cross-project feedback and owner direction below.
+v6.0 shipped as v0.14.0. The owner
+selected v7.0 Souper mapper-only support after the recommendation-first fan-out.
+The new milestone requirements and phase roadmap are being created on
+`milestone/v7.0-souper-mapper`.
 
-Between-milestone status is already recorded above. Do not use `$gsd-progress` to
-reconstruct it: OpenGSD 1.20.0 currently reports archived phases 19–20 as absent
-from the active phase index. The saved STATE/ROADMAP records remain authoritative;
-see the reproduced limitation in [LESSONS.md](LESSONS.md#opengsd-progress-over-archived-milestones-2026-11-13).
+The active v7.0 position is recorded in STATE and ROADMAP. Do not use
+`$gsd-progress` to reconstruct archived phase counts: OpenGSD 1.20.0 currently
+reports archived phases 19–20 as absent from the active phase index. See the
+reproduced limitation in [LESSONS.md](LESSONS.md#opengsd-progress-over-archived-milestones-2026-11-13).
 [State](STATE.md), [milestone audit](milestones/v6.0-MILESTONE-AUDIT.md) and
 [Phase20 evidence](milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-COST-EVIDENCE.md)
 carry the current result and precise unavailable-platform limits.
@@ -28,11 +29,16 @@ another milestone.
 
 > Updated by later owner-requested fan-out: the active successor recommendation,
 > source-confidence register and next action are now in
-> [the research synthesis](research/next-milestone/SUMMARY.md) and
-> [YM2151 proposal](research/next-milestone/PROPOSAL.md). The packet below preserves
+> [v7 Souper research](research/next-milestone/v7-SOUPER.md) and
+> [the rolling roadmap](PRODUCT-ROADMAP.md). The packet below preserves
 > the earlier cross-project feedback context; it is not the current scope choice.
 
 # Muhtari successor milestone — cross-project feedback handoff
+
+> **Historical packet:** this was prepared before the owner supplied LibFuturo's
+> response and selected v7.0. The active decision is mapper-only Souper support;
+> see [v7 research](research/next-milestone/v7-SOUPER.md) and
+> [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md). Do not follow the superseded hold/select instructions below.
 
 Prepared 2026-11-11. Continue the existing `$gsd-new-milestone` discussion;
 **hold successor selection until cross-project feedback returns**. This packet

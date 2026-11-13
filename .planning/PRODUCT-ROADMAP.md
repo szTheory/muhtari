@@ -35,14 +35,42 @@ handheld or unavailable-platform acceptance is inferred. Muhtari retains exactly
 three deliverables and no device/UI code. No new numerical quota, dependency,
 cache, workflow topology or unrelated deadline was introduced.
 
-## Next — select a bounded successor milestone
+## Immediate — v7.0 Souper mapper support
 
-The next implementation milestone is unselected pending the cross-project
-feedback recorded in [continue.md](continue.md). A lawful discriminating 7800
-correctness counterexample remains a useful trigger. Seed synthesis parity is
-not hardware calibration. Independently, LibFuturo owns its underway PAL
-browser/profile work and the missing qualification/adoption outcomes. No new
-upstream API/package requirement is established by that work.
+The selected successor is **v7.0 — Souper homebrew mapper support**, scoped to
+one public mapper-only profile for developers' own cartridges. Muhtari already
+recognizes Souper declarations and refuses to load them. The original mapper
+author says the mapper was released so other developers could build on it; a
+published GameDrive code example supplies a testable mapping model. See the
+[v7.0 evidence and boundaries](research/next-milestone/v7-SOUPER.md). The active
+[ROADMAP.md](ROADMAP.md) and [REQUIREMENTS.md](REQUIREMENTS.md) are the execution
+contract once created.
+
+Acceptance must distinguish CPU from MARIA memory reads, exercise ROM banking,
+character remapping, segmented EXRAM and MARIA fetch trapping with generated
+fixtures and separate literal expected values, and preserve deterministic
+reset and snapshot continuation. Keep the claim at software-profile
+conformance. Exclude BupChip/BupBoop audio, Rikki & Vikki gameplay/compatibility,
+unqualified extra image payloads, flash variants, physical-hardware accuracy,
+and new host/UI/dependency work. The complete cartridge image layout for
+Rikki & Vikki is unresolved; do not make it a fixture.
+
+Start with the recurring measured tune-up (SEED-007), then keep the mapper,
+state, documentation and existing C/runner/libretro/portable acceptance in one
+complete feature slice. Set register reset policy and state-version consequences
+before implementation. No API/ABI or package-version change is implied by the
+planning milestone. Original Phase 12/14 host stops and the nine deferred v3.0
+requirements remain unchanged.
+
+## Near term — promote only a demonstrated core gap
+
+After v7.0, prefer one concrete title-blocking 7800 correction backed by a
+lawful discriminating input and an independent expected result. Do not start a
+measurement-only phase: DLI/HALT questions need a specific observation and any
+real-console run remains separately authorized. If no such counterexample
+exists, keep the horizon open rather than inventing a defect. LibFuturo owns its
+PAL browser/profile qualification; its current work has not established a new
+Muhtari API or package requirement.
 
 The nine v3.0 gaps remain open: TUNE-06/07, PLAY-01–04 and FRONT-02–04. Keep the
 published-core RetroArch/input/battery proof, paired Playstead flow and actual
@@ -59,6 +87,15 @@ with that implementation before proposing another host or interface. Neither
 adds a deliverable or UI to Muhtari.
 
 ### Sibling responsibility boundaries — inspected 2026-11-11
+
+Owner-supplied LibFuturo update, 2026-11-13: it reports no demonstrated
+Muhtari-side need. Its GabbaBoy MBC1 save/restore work depends on pinned
+GabbaBoy, not Muhtari. Muhtari API 8/PAL is committed and locally verified on
+macOS arm64; Linux and exact-source hosted qualification remain open. The
+Firefox one-attempt failure is inconclusive and no retry is authorized. Current
+dirty work is in GabbaBoy and Firefox evidence; no Muhtari-specific code, tests
+or docs are dirty. This is owner-provided feedback, not a fresh sibling checkout
+inspection or a new qualification claim.
 
 Read-only inspection of LibFuturo's local checkout found an implemented
 `libfuturo::web` Emscripten package, a direct Muhtari C adapter, and a JavaScript
@@ -99,14 +136,15 @@ Inspection sources in the sibling checkout: `docs/browser-host.md`,
 `.planning/workstreams/browser-host/MILESTONE-CONTEXT.md`. No sibling edits,
 builds, host runs or CI were performed.
 
-## Mid-term — measured accuracy and qualified progress
+## Mid-term — measured accuracy and qualified hardware
 
-Hardware/FPGA/diagnostic comparisons, timing/POKEY corrections, complete
-Souper/BupChip and the composite filter retain SEED-003. The qualified YM2151
-profile shipped in v6.0; broader expansion hardware remains deferred.
-Promote a specific measured gap sooner if it blocks a title people actually play.
-Keep Playstead-managed state history and exact Continue behind a supported host
-capture/load boundary and recovery policy.
+Broader hardware such as BupChip, composite filtering, or other boards follows
+only after source/license review, a bounded cost model, and a lawful acceptance
+fixture are available. SEED-003 still holds hardware measurement and other
+deferred work; v7.0 promotes only mapper-only Souper. A specific reproduced
+player gap can move forward sooner. Playstead-managed state history and exact
+Continue remain behind a supported host capture/load boundary and recovery
+policy.
 
 ## Long-term — tools, emulator family and more devices
 
@@ -126,7 +164,8 @@ example; reproduce sibling lessons locally before adopting them.
 | 2026-10-29 | Promoted v3.0 Playstead-ready play and states | Owner prioritized player access and safe states over AI/TAS; actual paired Playstead proof remained separate. |
 | 2026-11-10 | Closed v3.0 with nine requirements deferred and selected WebAssembly core portability for v4.0 | Phase 13 passed; Phase 12's exact app permission request was denied before any diagnostic and Phase 14 host proof remains absent. Continuing offline core work preserves the evidence stops without freezing independent development. |
 | 2026-11-11 | Removed Atari 2600 emulation from Muhtari's future scope and retired SEED-006 | The owner started the separate `twentysixhundo` project for that system; Muhtari remains focused on Atari 7800. |
-| 2026-11-11 | Recommended one YM2151/XM audio profile after bounded specialist fan-out and adversarial review | Loader refusal is concrete; no current accuracy defect or new LibFuturo API/package need is established. Preserve mono output, legal diagnostics, compatibility decisions and independent source-qualified acceptance. Scope remains a proposal. |
+| 2026-11-11 | Recommended one YM2151/XM audio profile after bounded specialist fan-out and adversarial review | Loader refusal is concrete; no current accuracy defect or new LibFuturo API/package need is established. Preserve mono output, legal diagnostics, compatibility decisions and independent source-qualified acceptance. Adopted as shipped v6.0. |
+| 2026-11-13 | Selected v7.0 Souper mapper-only support after consumer, hardware and adversarial review | TailChao explicitly released the mapper for other developers, Muhtari refuses its declaration, and a public mapping example enables generated acceptance. Keep claims to the published mapper model; exclude BupChip and named-game compatibility. LibFuturo's PAL/browser work remains sibling-owned. |
 
 | 2026-11-10 | Completed the offline v4.0 core slice; retain ship and real-browser work as distinct next decisions | All five scoped requirements and integration flows passed locally; measured SDK results are explicitly headless and emulated. |
 

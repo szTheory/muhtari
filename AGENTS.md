@@ -122,6 +122,16 @@ evidence.
    Resolve the GSD runtime using `gsd-core/references/gsd-run-resolver.md` and use that same executable for status,
    planning and execution queries; do not trust a `gsd_run` found on `PATH` unless its runtime identity and version
    match the workflow-selected installation.
+   At every new-milestone boundary, first reconcile shipped work, current project memory and lessons, real consumer
+   needs, sibling ownership and new technical evidence. Refresh the saved recommendation and rolling product
+   roadmap before presenting milestone options. Lead with a concrete recommendation and its strongest alternative;
+   do not begin with a generic "what do you want to build next?" prompt. When the owner says to follow the
+   recommendation, treat that as authorization for ordinary in-scope milestone choices and carry the workflow
+   through requirements and roadmap. Pause only for a real scope, authority, risk, cost, irreversible-action or
+   owner-only validation boundary. Save high-signal evidence with source identity/revision, evidence class,
+   confidence, contradictions, rejected options and revisit triggers; reuse it next time unless new evidence could
+   change the decision. Record owner workflow preferences in AGENTS.md/INTENT.md, not as reproduced technical
+   lessons in LESSONS.md.
 9. **Branch, then pull request.** Never commit on `main` once a remote exists. Before the first GSD step that
    commits, branch off `origin/main`: `phase/NN-slug` for a phase, `milestone/vX.Y-slug` for milestone steps,
    `gsd/roadmap` for the kickoff. After `/gsd-ship`, give the pull request a Conventional Commit title, run

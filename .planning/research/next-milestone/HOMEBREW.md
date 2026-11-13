@@ -2,8 +2,14 @@
 title: "Homebrew hardware scope: YM2151 versus Souper"
 summary: "Bounded evidence for whether Muhtari should add YM2151 sound, pursue Souper/BupChip, or defer new cartridge hardware."
 read_when: "Selecting and scoping the next Muhtari homebrew-hardware outcome."
-updated: 2026-11-11
+updated: 2026-11-13
 ---
+
+> **Historical comparison.** This document compared YM2151 with Souper before
+> v6.0 shipped. The YM2151 recommendation was adopted and shipped as v0.14.0;
+> its Souper defer was revisited after new first-party and mapper-profile
+> evidence. The current v7.0 recommendation, source confidence and limits are
+> recorded in [v7-SOUPER.md](v7-SOUPER.md).
 
 # Homebrew hardware candidate
 

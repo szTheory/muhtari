@@ -84,6 +84,20 @@ through relevant consumer, hardware, provenance and operations lenses plus one
 adversarial synthesis. Its proposed scope is an input to milestone selection,
 not permission to invent a core defect or implement downstream phases early.
 
+Owner direction, 2026-11-13: at each new-milestone boundary, do the saved research
+and recommendation work first. Reconcile shipped work, LESSONS, consumer needs,
+sibling ownership and current technical evidence; update the recommendation and
+rolling roadmap before presenting options. Lead with the recommended scope and
+the strongest alternative rather than asking a generic "what do you want to
+build next?" When the owner says to follow the recommendation, carry the
+ordinary in-scope choices through requirements and roadmap without routine
+confirmation. Stop only at a real scope, authority, risk, cost, irreversible
+action or owner-only validation boundary. Save high-signal sources/revisions,
+evidence class, confidence, contradictions, alternatives and revisit triggers
+in the existing `.planning` second brain. Reuse settled research unless new
+evidence could change the recommendation. This is an owner workflow preference,
+not a reproduced technical lesson for `LESSONS.md`.
+
 ## Shared emulator family: learning flows both ways
 
 Local sibling inspection, 2026-11-11: `libfuturo` now implements the independent
