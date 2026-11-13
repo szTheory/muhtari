@@ -17,7 +17,20 @@ that any host can embed.
 
 v6.0 YM2151 homebrew sound is implemented, verified and shipped as package v0.14.0. Both phases, all nine current requirements, required local gates and independent review/integration pass. The release workflow and latest-install check passed; PR #61 merged and main CI passed. See the [v6.0 ship receipt](milestones/v6.0-SHIP.md).
 
+v7.0 Souper mapper support is the selected successor. Its active scope is one generated-fixture-testable mapper profile for homebrew developers; BupChip audio and Rikki & Vikki compatibility are excluded. See [the v7.0 research](research/next-milestone/v7-SOUPER.md) and [rolling product roadmap](PRODUCT-ROADMAP.md).
+
 Nine v3.0 gaps and every original denied/spent Phase12/14 host/remote scope remain unchanged. Older dirty worktrees stay preserved and root remains canonical. [Milestone audit](milestones/v6.0-MILESTONE-AUDIT.md) and [requirements](milestones/v6.0-REQUIREMENTS.md) retain the exact accepted scope.
+
+## Current Milestone: v7.0 Souper homebrew mapper
+
+**Goal:** Let homebrew developers load and run their own cartridges that use the published Souper mapper profile through Muhtari's existing C library, runner and libretro core.
+
+**Target features:**
+- Measured recurring tune-up with current release/docs and evidence-specific quality findings.
+- Souper v3/v4 recognition, validated 512 KiB ROM and 32 KiB EXRAM profile, bank/register behavior, distinct CPU/MARIA views and MARIA fetch trapping.
+- Deterministic reset, transactional state continuation, generated numeric diagnostics, honest refusal boundaries and documentation across existing deliverables.
+
+**Scope boundary:** Mapper-profile conformance only. No BupChip/BupBoop audio, Rikki & Vikki gameplay claim, unsupported extra payloads or flash variants, physical hardware calibration, host/UI work or new dependency. Resolve any source or compatibility issue before implementation.
 
 ## Latest Shipped Milestone: v6.0 YM2151 homebrew sound
 
@@ -27,7 +40,7 @@ API8/ABI1 remain unchanged. Global latest behavior7/format2 is distinct from unc
 
 **Publication:** [v0.14.0](https://github.com/szTheory/muhtari/releases/tag/v0.14.0) is published. The [release run](https://github.com/szTheory/muhtari/actions/runs/43441765548) and its latest-install check passed. PR [#61](https://github.com/szTheory/muhtari/pull/61) merged and current-main CI passed. See the [ship receipt](milestones/v6.0-SHIP.md).
 
-**Next boundary:** Clear context and run `$gsd-new-milestone` with [continue.md](continue.md). Future implementation scope is unselected; owner direction follows the pending cross-project feedback.
+**Next boundary:** v7.0 is selected and its requirements/roadmap are being established on `milestone/v7.0-souper-mapper`; then phase planning begins from the first phase in the active roadmap. No owner checkout switch is needed.
 
 ## Previous Published Milestone: v5.0 Downloadable WebAssembly core
 
@@ -185,7 +198,7 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 ### Active
 
-No current implementation requirement remains. The next action is successor milestone scoping through the handoff above. The nine unmet v3.0 requirements remain deferred with their original evidence and stops; see the [v6.0 archive](milestones/v6.0-REQUIREMENTS.md).
+The v7.0 requirements are being defined from [the Souper source register](research/next-milestone/v7-SOUPER.md). The nine unmet v3.0 requirements remain deferred with their original evidence and stops; see the [v6.0 archive](milestones/v6.0-REQUIREMENTS.md).
 
 ### Out of Scope
 
@@ -200,7 +213,7 @@ No current implementation requirement remains. The next action is successor mile
 - A test framework dependency — plain CTest executables with an in-repo check header cover the need.
 - Atari 2600 emulation — owned by the sibling project `twentysixhundo` (owner correction, 2026-11-11);
   SEED-006 is retired. Existing image recognition/refusal remains supported.
-- Souper/BupChip, other YM2151 topologies, Covox/ADPCM, ACE, full OpenHSC, AtariVox speech,
+- BupChip/BupBoop audio, other YM2151 topologies, Covox/ADPCM, ACE, full OpenHSC, AtariVox speech,
   measured-accuracy oracles, the browser player, full movie recording/generalized continuation, advanced AI/TAS tools and ports — later milestones;
   see `.planning/seeds/` and `.planning/PRODUCT-ROADMAP.md`.
 
@@ -208,6 +221,7 @@ No current implementation requirement remains. The next action is successor mile
 
 - **v3.0 closeout.** Phase 13's portable machine-state path is verified; Phase 12's host and Windows claims and Phase 14's RetroArch state acceptance remain unresolved. The denied Phase 12 permission request ended before preflight/content and is not retried. See the v3.0 audit for exact scope and evidence.
 - **Next portability slice.** The owner delegated downscoping and milestone selection after the v3.0 acceptance deadlock. v4.0 takes the already-ranked browser/WebAssembly direction but limits Muhtari work to the existing libretro core and offline deterministic checks; the browser host owns presentation and devices.
+- **v7.0 evidence.** The original Souper author released the mapper so other developers could build on it. A public GameDrive code example and the read-only pinned RTL cross-check define one testable software profile; neither is physical-hardware evidence. The older Rikki & Vikki image-size claim is conflicting, and its game image is not a fixture. LibFuturo's GabbaBoy save work is sibling-owned and creates no demonstrated Muhtari requirement.
 
 - **Ecosystem.** The only libretro 7800 core is ProSystem (GPL-2, per-line timing, many homebrew failures); the
   accuracy references are a7800 (MAME-derived, last release 2022), BizHawk's A7800Hawk (C#) and the MiSTer FPGA
@@ -308,6 +322,7 @@ The full list with sources is `.planning/preparation/DECISIONS.md`.
 
 | Close v3.0 with nine requirements deferred; continue only the independently buildable next scope | Preserve all original Phase 12/14 verdicts and stops after the denied owner permission request; Phase 13 remains verified | ✓ 2026-11-10: override closeout recorded in the v3.0 archive; no host/remote renewal |
 | Promote WebAssembly core portability after the recurring tune-up | Reuses the existing three-deliverable contract and the owner's high-priority SEED-008; avoids making a browser UI a Muhtari deliverable | ✓ v4.0 verified locally: emitted artifact, direct Node host and independent native checks; browser/device acceptance remains deferred |
+| Select v7.0 mapper-only Souper support | Gives 7800 homebrew developers a core-owned capability with generated acceptance; current sources do not justify BupChip or named-game claims | — Active scope: see [v7-SOUPER](research/next-milestone/v7-SOUPER.md) |
 
 ## Evolution
 
@@ -327,4 +342,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-13 after v6.0 shipped as v0.14.0*
+*Last updated: 2026-11-13 after v7.0 successor selection*

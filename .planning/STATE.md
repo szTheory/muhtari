@@ -1,20 +1,16 @@
 ---
 gsd_state_version: "1.0"
-milestone: v6.0
-status: completed
-stopped_at: v6.0 shipped as v0.14.0; successor milestone unselected
-last_updated: "2026-11-13T17:28:46.528Z"
+milestone: v7.0
+milestone_name: Souper homebrew mapper
+status: planning
+last_updated: "2026-11-13T19:32:55.687Z"
 last_activity: 2026-11-13
-last_activity_desc: v6.0 archive progress handoff reconciled
-state_head: b746d5c1ff5a95cef211621fef857930d2d6e3ce
 progress:
-  total_phases: 2
-  completed_phases: 2
-  total_plans: 8
-  completed_plans: 8
-  percent: 100
-milestone_name: YM2151 homebrew sound
-current_phase: 20
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -23,14 +19,15 @@ current_phase: 20
 
 See [PROJECT.md](PROJECT.md), [archived requirements](milestones/v6.0-REQUIREMENTS.md), [ROADMAP.md](ROADMAP.md) and [milestone synthesis](research/next-milestone/SUMMARY.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** v6.0 shipped as v0.14.0; successor scope remains unselected
+**Current focus:** Define the v7.0 Souper homebrew mapper requirements and phase roadmap from the saved recommendation
 
 ## Current Position
 
-Phase: v6.0 shipped
+Phase: Not started (defining requirements)
 Plan: —
-Status: All phases complete; successor selection pending
-Last activity: 2026-11-13 — v6.0 archive progress handoff reconciled
+Status: Defining requirements
+Last activity: 2026-11-13 — v7.0 Souper scope selected; requirements and roadmap in progress
+
 
 ## Performance Metrics
 
@@ -104,16 +101,16 @@ At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Sou
 
 ## Session Continuity
 
-Last session: 2026-11-13 — v6.0 release receipts reconciled
-Stopped at: v6.0 shipped — successor selection is the next milestone boundary
+Last session: 2026-11-13 — recommendation-first v7.0 milestone kickoff
+Stopped at: v7.0 Souper mapper scope selected; requirements and phase roadmap are being defined
 Resume file: continue.md
 
-Next action: After clearing context, run `$gsd-new-milestone` with [continue.md](continue.md). The successor scope remains unselected pending cross-project feedback and owner direction.
+Next action: Finish v7.0 requirements and roadmap on `milestone/v7.0-souper-mapper`, then run `$gsd-plan-phase 21` after clearing context.
 
 ## Operator Next Steps
 
 
-- Continue successor scoping with $gsd-new-milestone and the cross-project feedback in [continue.md](continue.md).
+- Continue the selected v7.0 Souper scope from [the recommendation](research/next-milestone/v7-SOUPER.md); do not reopen generic scope selection absent new evidence.
 
 
 ## Decisions
@@ -130,4 +127,4 @@ Next action: After clearing context, run `$gsd-new-milestone` with [continue.md]
 
 ## Next action
 
-Context can be cleared. Run `$gsd-new-milestone` from the current root checkout with [continue.md](continue.md). v6.0 is shipped as v0.14.0; the owner selects successor scope after cross-project feedback. The original Phase 12/14 host and remote stops remain binding.
+Milestone kickoff is in progress on `milestone/v7.0-souper-mapper`. The owner selected the recommendation-first v7.0 Souper mapper-only scope; do not re-ask what to build. Finish requirements and roadmap, then clear context and run `$gsd-plan-phase 21`. Original Phase 12/14 host and remote stops remain binding.
