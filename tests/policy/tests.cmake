@@ -6,6 +6,11 @@ muhtari_add_test(NAME policy.ci_run.controls
     -DWORK=${CMAKE_BINARY_DIR}/policy/ci_run_fixture -P ${CMAKE_CURRENT_LIST_DIR}/ci_run.cmake
   LABELS policy TIMEOUT 10)
 
+muhtari_add_test(NAME policy.nightly.controls
+  COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR}
+    -P ${CMAKE_CURRENT_LIST_DIR}/nightly.cmake
+  LABELS policy TIMEOUT 10)
+
 muhtari_add_test(NAME policy.no_skip
   COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR} -P ${policy_scripts}/no_skip.cmake
   LABELS policy TIMEOUT 10)

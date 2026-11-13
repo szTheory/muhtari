@@ -932,8 +932,19 @@ queueing, but do not justify changing timeouts, caches or parallelism without
 multi-run evidence. The corrective PR title was checked before PR creation with
 `scripts/check-title.sh` (exit 0), avoiding a title correction cycle.
 
-On the same PR, the report-only Nightly run 43375528130 timed out
-`prop.split_run` and `prop.peek_pure` at their 390s limits; the job then hit its
-nine-minute cap and was cancelled. The Nightly report is skipped on PRs, so this
-did not add another required failure. Keep the result as one measurement; it
-does not justify raising the current test or job limits.
+The required `policy.publish.controls` test was the Windows ARM64 lane's
+critical path in two consecutive PR runs: 883.19 seconds in 43375527959 and
+901.27 seconds in 43378704058, compared with 24.42 seconds for the same local
+CTest control. It retains the publisher's real preparation and rejection
+cases. The timing spread isolates a host-specific cost but does not identify a
+safe case to remove or cache; keep its fault coverage and limits intact until
+per-case profiling finds a narrower remedy.
+
+On the same PR, report-only Nightly runs 43375528130 and 43378704172 both
+reached the nine-minute property-job cap; the first timed out
+`prop.split_run` and `prop.peek_pure` at their 390s limits, and the second was
+cancelled at the job cap. The Nightly issue report excludes PRs, and required CI
+already runs these properties at 100 cases. Keep the 10,000-case run for
+scheduled and manual Nightly events, where it can still provide deeper trend
+data; skip it on PRs to save up to nine minutes of non-gating work without
+changing test or job limits.
