@@ -836,3 +836,22 @@ hit its 19-minute cap after its tests and package checks had passed. With the
 `n=24`; twice 13m41s is 27m22s, so round up to 28 minutes for Intel macOS x64
 only. Preserve the other matrix limits and the cancelled run as failure
 history.
+
+## Give release recovery the token scopes its draft requires (2026-11-13)
+
+The first recovery dispatch, [run 43342898744](https://github.com/szTheory/muhtari/actions/runs/43342898744),
+stopped in `release-target` before CI or equality. Its Actions token had only
+`contents: read`; fetching the exact v0.14.0 draft by ID returned HTTP 403
+(job exit 1). An owner-authenticated read immediately afterward confirmed the
+draft ID, stable tag and target SHA were unchanged. GitHub documents that draft
+releases require push access, so the validation job needs `contents: write`.
+
+This draft targets `8d73321953f417dc973a4cb93cfb4b8521772150`, while the
+recovery workflow now runs on `b3649cdd0a939708ac9ce420e341d64fa247707b`;
+their `.github/workflows` trees differ. Publishing a release at a commit with
+workflow-file differences from the default branch requires the App's
+`workflows: write` permission, which `GITHUB_TOKEN` cannot receive. For
+workflow-dispatch recovery, mint a repository-scoped release App token for the
+draft state, upload and publish API calls. Keep attestation operations on the
+job's dedicated Actions token. See GitHub's [draft release visibility and
+release update permission rules](https://docs.github.com/en/rest/releases/releases).
