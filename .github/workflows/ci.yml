@@ -92,11 +92,19 @@ jobs:
       - name: Every test ran
         run: cmake -DJUNIT=build/hygiene/junit.xml -DINVENTORY=tests/inventory/hygiene.txt -P tests/cmake/check_junit.cmake
       - name: Quality observations and independent base
-        run: >-
-          cmake -DROOT=. -DBUILD=build/hygiene -DOUT=build/hygiene/quality-current.json
-          -DSHA="$(git rev-parse HEAD)" -DCONFIG=hygiene -DBUILD_BASE=ON
-          -DSOURCE="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-          -P tests/cmake/quality_evidence.cmake
+        run: |
+          quality_evidence() {
+            if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+              printf '{}\n' > "$RUNNER_TEMP/quality-event.json"
+              GITHUB_EVENT_PATH="$RUNNER_TEMP/quality-event.json" GITHUB_SHA="$(git rev-parse HEAD)" cmake "$@"
+            else
+              cmake "$@"
+            fi
+          }
+          quality_evidence -DROOT=. -DBUILD=build/hygiene -DOUT=build/hygiene/quality-current.json \
+            -DSHA="$(git rev-parse HEAD)" -DCONFIG=hygiene -DBUILD_BASE=ON \
+            -DSOURCE="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            -P tests/cmake/quality_evidence.cmake
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: quality-hygiene
@@ -227,11 +235,19 @@ jobs:
         if: matrix.os == 'macos' && matrix.arch == 'arm64'
         run: cmake -DREADME=README.md "-DBASE_URL=file://$PWD/build/ci/" -P tests/cmake/install_line.cmake
       - name: Quality observations and independent base
-        run: >-
-          cmake -DROOT=. -DBUILD=build/${{ matrix.preset }} -DOUT=build/${{ matrix.preset }}/quality-current.json
-          -DSHA="$(git rev-parse HEAD)" -DCONFIG=${{ matrix.preset }} -DBUILD_BASE=ON
-          -DSOURCE="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-          -P tests/cmake/quality_evidence.cmake
+        run: |
+          quality_evidence() {
+            if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+              printf '{}\n' > "$RUNNER_TEMP/quality-event.json"
+              GITHUB_EVENT_PATH="$RUNNER_TEMP/quality-event.json" GITHUB_SHA="$(git rev-parse HEAD)" cmake "$@"
+            else
+              cmake "$@"
+            fi
+          }
+          quality_evidence -DROOT=. -DBUILD=build/${{ matrix.preset }} -DOUT=build/${{ matrix.preset }}/quality-current.json \
+            -DSHA="$(git rev-parse HEAD)" -DCONFIG=${{ matrix.preset }} -DBUILD_BASE=ON \
+            -DSOURCE="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            -P tests/cmake/quality_evidence.cmake
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: quality-${{ matrix.os }}-${{ matrix.arch }}
@@ -293,11 +309,19 @@ jobs:
           cmake -DJUNIT=build/asan/junit.xml -DINVENTORY=tests/inventory/ci.txt
           "-DEXCLUDE=abi|release" -P tests/cmake/check_junit.cmake
       - name: Quality observations and independent base
-        run: >-
-          cmake -DROOT=. -DBUILD=build/asan -DOUT=build/asan/quality-current.json
-          -DSHA="$(git rev-parse HEAD)" -DCONFIG=asan -DBUILD_BASE=ON
-          -DSOURCE="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-          -P tests/cmake/quality_evidence.cmake
+        run: |
+          quality_evidence() {
+            if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+              printf '{}\n' > "$RUNNER_TEMP/quality-event.json"
+              GITHUB_EVENT_PATH="$RUNNER_TEMP/quality-event.json" GITHUB_SHA="$(git rev-parse HEAD)" cmake "$@"
+            else
+              cmake "$@"
+            fi
+          }
+          quality_evidence -DROOT=. -DBUILD=build/asan -DOUT=build/asan/quality-current.json \
+            -DSHA="$(git rev-parse HEAD)" -DCONFIG=asan -DBUILD_BASE=ON \
+            -DSOURCE="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            -P tests/cmake/quality_evidence.cmake
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: quality-asan
@@ -717,8 +741,11 @@ jobs:
         env:
           PERF_REQUIRED: ${{ !inputs.ref && github.event_name == 'pull_request' }}
         run: |
-          base=$(jq -r '.pull_request.base.sha // .before // empty' "$GITHUB_EVENT_PATH")
-          if [ -z "$base" ] && [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then base=$(git rev-parse HEAD^1); fi
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            base=$(git rev-parse HEAD^1)
+          else
+            base=$(jq -r '.pull_request.base.sha // .before // empty' "$GITHUB_EVENT_PATH")
+          fi
           git cat-file -e "$base^{commit}"
           if [ -z "$(git ls-tree --name-only "$base" quality.json)" ]; then
             printf '{"metrics":{}}\n' > trusted-quality.json

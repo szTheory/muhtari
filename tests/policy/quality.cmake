@@ -11,6 +11,16 @@ endfunction()
 file(REMOVE_RECURSE "${WORK}")
 file(MAKE_DIRECTORY "${WORK}")
 set(ENV{SOURCE_DATE_EPOCH} 1769904000)
+set(quality_workflow "${WORK}/ci.yml")
+file(COPY "${ROOT}/.github/workflows/ci.yml" DESTINATION "${WORK}")
+execute_process(COMMAND "${CMAKE_COMMAND}" "-DWORKFLOW=${quality_workflow}"
+  -P "${ROOT}/tests/cmake/quality_workflow_base.cmake" COMMAND_ERROR_IS_FATAL ANY)
+file(READ "${quality_workflow}" quality_workflow_text)
+string(REPLACE "GITHUB_SHA=\"$(git rev-parse HEAD)\"" "GITHUB_SHA=caller" broken_quality_workflow
+  "${quality_workflow_text}")
+file(WRITE "${quality_workflow}" "${broken_quality_workflow}")
+quality_expect_failure("quality_workflow_base: expected 3 producer checkout SHA overrides, found 0"
+  "${CMAKE_COMMAND}" "-DWORKFLOW=${quality_workflow}" -P "${ROOT}/tests/cmake/quality_workflow_base.cmake")
 # Exercise the actual complete YM identity consumer before the larger policy corpus.
 set(QUALITY_FUNCTIONS_ONLY ON)
 include("${ROOT}/tests/cmake/quality.cmake")
@@ -1040,8 +1050,9 @@ foreach(case unchanged additions push dispatch dispatch_ref later_base changed c
     file(WRITE "${WORK}/event.json" "{}")
     set(candidate_samples "${sample_next}")
     if(case STREQUAL "dispatch_ref")
-      # A reusable workflow can check out an input ref that differs from the caller's SHA.
-      set(workflow_sha "${controller_base}")
+      # The dispatch payload's before is not the input ref's checked-out parent.
+      file(WRITE "${WORK}/event.json" "{\"before\":\"${producer_base}\"}")
+      set(workflow_sha "${producer_base}")
     endif()
   endif()
   file(WRITE "${repo}/tests/built/expected.txt" "${candidate_samples}")
