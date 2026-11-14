@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.0](https://github.com/szTheory/muhtari/compare/v0.14.0...v0.15.0) (2026-11-14)
+
+
+### Features
+
+* add Souper homebrew mapper support ([#63](https://github.com/szTheory/muhtari/issues/63)) ([12d12e6](https://github.com/szTheory/muhtari/commit/12d12e62d556e0f7293ea4356cbe8780c0d0faa6))
+
 ## [0.14.0](https://github.com/szTheory/muhtari/compare/v0.13.1...v0.14.0) (2026-11-12)
 
 
