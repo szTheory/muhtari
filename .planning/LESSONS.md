@@ -628,6 +628,19 @@ The v4.0 PR exposed three distinct gates absent from the ordinary native workflo
 
 Evidence: PR #46, CI https://github.com/szTheory/muhtari/actions/runs/42903652231. The non-silent libretro.observe.controls case fails before the PCM fix and passes after it; policy.quality.controls fails on the valid frontend-state addition before the identity fix and passes after it. Source corrections retain all original pins, bounds and failure detection. Hosted acceptance remains a separate exact-source verdict.
 
+## Preflight hosted fixture identity before platform matrices (2026-11-14)
+
+The v7.0 Souper fixture passed the ordinary product tests, then the hosted
+`quality_evidence` step rejected `tests/diag/souper.a78` because the fixture was
+missing from its exact admission set. The local `ci` workflow did not call that
+hosted evidence consumer, so a green product suite alone could not catch this
+shipping failure. Keep the fixture's full path, source pin, license and digest
+in the quality identity policy, with a fast pass/fault control, and run that
+control before dispatching a long platform matrix. Preserve the platform tests
+and the hosted exact-source gate.
+
+Evidence: [superseded v7.0 Release run](https://github.com/szTheory/muhtari/actions/runs/43618115205) failed in `quality_evidence` after its product suites passed; the focused local CMake control passes exact-row admission and rejects forged source pin, digest and unrelated path (exit 0, N/A-local). The fresh v7.0 candidate must still pass its exact-head hosted CI and Release runs.
+
 ## Portable archive boundaries (2026-11-11)
 
 - **Reproduced:** Adding one asset to the publisher iterator also changes older fixtures outside the main publisher-control file. The eighteen-archive hygiene fixture failed admission until its portable fixture and intended native-omission control were updated. Audit all exact inventory consumers before changing a release set.
