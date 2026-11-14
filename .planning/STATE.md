@@ -3,20 +3,19 @@ gsd_state_version: "1.0"
 milestone: v7.0
 milestone_name: Souper homebrew mapper
 current_phase: 22
-current_phase_name: Complete Souper homebrew mapper
-current_plan: 3 of 3
-status: executing
-stopped_at: Completed 22-03-PLAN.md
-last_updated: "2026-11-14T05:51:41.599Z"
+current_plan: Not started
+status: completed
+stopped_at: Phase 22 complete — all phases complete
+last_updated: "2026-11-14T06:25:12.312Z"
 last_activity: 2026-11-14
-last_activity_desc: Phase 22 plan 22-01 complete; plan 22-02 next
-state_head: 13d498279c9fbedb0fe29cc771a0eb95797a30d7
+last_activity_desc: Phase 22 complete
+state_head: a2efefb357dca981c07ce5bc08c109951f19242a
 progress:
   total_phases: 2
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 4
   completed_plans: 4
-  percent: 50
+  percent: 100
 ---
 
 # Project State
@@ -29,20 +28,22 @@ See [PROJECT.md](PROJECT.md) (updated 2026-11-13), [REQUIREMENTS.md](REQUIREMENT
 
 ## Current Position
 
-Phase: 22 (Complete Souper homebrew mapper) — IN PROGRESS
-Current Plan: 3 of 3
-Status: Plans 22-01 and 22-02 complete; plan 22-03 is next
-Last activity: 2026-11-14 — Plan 22-02 completed
+Phase: 22
+Current Plan: Not started
+Status: All phases complete
+Last activity: 2026-11-14 — Phase 22 complete
 
-Progress: [█████░░░░░] 50% (3/4 plans)
+Progress: [██████████] 100% (4/4 plans)
 
 
 ## Performance Metrics
 
-v7.0 has two planned phases. Phase 21 is complete; Phase 22 plans 22-01 and 22-02 are complete,
-six Souper requirements are complete, and SOUPER-04 remains open for plan 22-03.
-Phase 21 is report-only; no v7.0 product build, test, host or CI acceptance is claimed. Prior milestone metrics
-and accepted v0.14.0 publication evidence remain in the
+v7.0 has two phases and four plans. Phase 21's report-only tune-up and all three Phase 22 plans are complete;
+all seven SOUPER requirements passed goal-based verification. The final source passed the required native,
+release, portable, focused sanitizer, and hygiene checks. Their commands and limits are in the Phase 22 plan
+summaries and [verification report](phases/22-complete-souper-homebrew-mapper/22-VERIFICATION.md). The result
+is conformance with the selected software model, not physical-cartridge or retail-game validation. Prior
+milestone metrics and accepted v0.14.0 publication evidence remain in the
 [v6.0 roadmap](milestones/v6.0-ROADMAP.md) and [ship receipt](milestones/v6.0-SHIP.md).
 **Per-Plan Metrics:**
 
@@ -65,7 +66,7 @@ Inherited todos and optional seeds retain their dispositions except the selected
 
 ### Blockers/Concerns
 
-- No current local roadmap blocker. Phase 22 plan 22-01 is complete; plans 22-02 and 22-03 remain. The reset/image/state policy was recorded before implementation; the saved source model supports scope selection but does not establish physical accuracy. Prior v6.0 verification remains archived; no unavailable-platform or full v7.0 product pass is claimed.
+- No current local roadmap blocker. Phase 22 passed all eight observable truths and all seven requirements on the final local source. The result follows the selected software model; it does not establish retail compatibility or physical-cartridge accuracy. Publication, merge, remote dispatch, and host/device/identity-bound actions remain separate boundaries.
 - Phase 12's exact diagnostic-app request was denied before preflight/content and must not be retried. Original Phase 12 host/remote stops, Phase 14's spent host scope, expired windows and specific no-retry limits remain binding. No v6.0 action renews them or accepts the nine deferred v3.0 requirements.
 - v6.0 publication and PR #61 merge are complete. Future publication, merge, remote dispatch and host/device/identity-bound actions remain separate boundaries. Browser/player, Playstead, physical audibility, calibrated hardware accuracy, public stereo and full XM are excluded. Earlier combined-source/failed release evidence remains source-specific in archived receipts.
 
@@ -115,11 +116,11 @@ At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Sou
 
 ## Session Continuity
 
-Last session: 2026-11-14T05:51:41.540Z
-Stopped at: Completed 22-03-PLAN.md
+Last session: 2026-11-14T06:26:41Z
+Stopped at: Phase 22 complete — all phases complete
 Resume file: None
 
-Next action: Continue Phase 22 with `$gsd-execute-phase 22`; plan 22-03 and phase acceptance checks remain. No directory switch is needed.
+Next action: Run `$gsd-audit-milestone` to audit and close out v7.0. No directory switch is needed.
 
 ## Operator Next Steps
 

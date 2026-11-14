@@ -36,7 +36,7 @@ existing resource, provenance, test and review mechanisms.
 ## Phases
 
 - [x] **Phase 21: Measured milestone tune-up** — Maintainers start Souper work from current release/docs and an evidenced, proportionate quality baseline. (completed 2026-11-13)
-- [ ] **Phase 22: Complete Souper homebrew mapper** — One documented mapper profile delivers CPU/MARIA mapping, deterministic lifecycle/state and verified existing consumers.
+- [x] **Phase 22: Complete Souper homebrew mapper** — One documented mapper profile delivers CPU/MARIA mapping, deterministic lifecycle/state and verified existing consumers. (completed 2026-11-14)
 
 ## Phase Details
 
@@ -64,7 +64,7 @@ existing resource, provenance, test and review mechanisms.
   4. A host can reset, unload/reload, isolate instances and restore every Souper register and EXRAM byte with identical subsequent observations; invalid snapshots preserve the live machine under the concrete compatibility policy recorded before code.
   5. The owned diagnostic passes through the actual public C library, headless runner, loaded libretro core and applicable portable consumer, with malformed-profile and non-Souper controls retained; existing docs state the reset/EXRAM policy and unsupported image/audio forms, and no BupChip audio is claimed or emitted.
 
-**Plans:** 3/3 plans executed
+**Plans:** 3/3 plans complete
 - [x] 22-01-PLAN.md
 - [x] 22-02-PLAN.md
 - [x] 22-03-PLAN.md
@@ -87,12 +87,12 @@ accepted ahead of verification.
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
 | 21. Measured milestone tune-up | 1/1 | Complete    | 2026-11-13 |
-| 22. Complete Souper homebrew mapper | 3/3 | In Progress | — |
+| 22. Complete Souper homebrew mapper | 3/3 | Complete    | 2026-11-14 |
 
 ## Next boundary
 
-Continue Phase 22 with `$gsd-execute-phase 22`; plan 22-03 and phase acceptance
-checks remain. Publication, merge, remote dispatch and
-host/device/identity-bound actions remain separate boundaries.
+Phase 22 passed verification and is complete. Continue with `$gsd-audit-milestone`
+for v7.0 closeout. Publication, merge, remote dispatch and host/device/identity-bound
+actions remain separate boundaries.
 Original Phase 12/14 denied/spent scopes, all nine deferred v3.0 requirements and
 unaccepted hardware/platform claims remain unchanged.
