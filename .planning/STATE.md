@@ -2,11 +2,11 @@
 gsd_state_version: "1.0"
 milestone: v7.0
 status: Awaiting next milestone
-stopped_at: v7.0 milestone archived locally; closeout bookkeeping complete
-last_updated: "2026-11-14T15:51:06.310Z"
+stopped_at: v7.0 milestone archive and local closeout complete; successor scope unselected
+last_updated: "2026-11-14T15:58:48.088Z"
 last_activity: 2026-11-14
 last_activity_desc: Milestone v7.0 completed and archived
-state_head: c7cbced4642cc983261fa127e89b0759073ddd52
+state_head: fc7283b24cefe12740bfd7ee079195b0893b91a8
 progress:
   total_phases: 2
   completed_phases: 2
@@ -115,8 +115,8 @@ At v7.0 close, one debug-session item was newly acknowledged and 49 were carried
 
 ## Session Continuity
 
-Last session: 2026-11-14T15:51:06.283Z
-Stopped at: v7.0 milestone archived locally; closeout bookkeeping complete
+Last session: 2026-11-14T15:58:48.063Z
+Stopped at: v7.0 milestone archive and local closeout complete; successor scope unselected
 Resume file: None
 
 Next action: Start a new milestone with `$gsd-new-milestone`; no successor scope has been selected.
