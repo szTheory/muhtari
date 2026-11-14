@@ -4,18 +4,19 @@ milestone: v7.0
 milestone_name: Souper homebrew mapper
 current_phase: 22
 current_phase_name: Complete Souper homebrew mapper
+current_plan: 2 of 3
 status: executing
-stopped_at: Phase 22 context gathered
-last_updated: "2026-11-14T00:27:26.231Z"
-last_activity: 2026-11-13
-last_activity_desc: Phase 21 complete, transitioned to Phase 22
-state_head: 428e8087c3d20fc3bc5907f888ffcdf4d4694af7
+stopped_at: Completed 22-01-PLAN.md
+last_updated: "2026-11-14T02:28:54.810Z"
+last_activity: 2026-11-14
+last_activity_desc: Phase 22 plan 22-01 complete; plan 22-02 next
+state_head: b3159ffa9171d24e757bb4d754da23fa38e96392
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 4
-  completed_plans: 1
-  percent: 25
+  completed_plans: 2
+  percent: 50
 ---
 
 # Project State
@@ -28,20 +29,26 @@ See [PROJECT.md](PROJECT.md) (updated 2026-11-13), [REQUIREMENTS.md](REQUIREMENT
 
 ## Current Position
 
-Phase: 22 (Complete Souper homebrew mapper) — READY TO EXECUTE
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-11-13 — Phase 21 complete, transitioned to Phase 22
+Phase: 22 (Complete Souper homebrew mapper) — IN PROGRESS
+Current Plan: 2 of 3
+Status: Plan 22-01 complete; plan 22-02 is next
+Last activity: 2026-11-14 — Plan 22-01 completed
 
-Progress: [███░░░░░░░] 25% (1/2 phases)
+Progress: [█████░░░░░] 50% (2/4 plans)
 
 
 ## Performance Metrics
 
-v7.0 has two planned phases, seven pending mapper requirements and one executed plan.
+v7.0 has two planned phases. Phase 21 is complete; Phase 22 plan 22-01 is complete,
+four Souper requirements are complete, and three Souper requirements remain open.
 Phase 21 is report-only; no v7.0 product build, test, host or CI acceptance is claimed. Prior milestone metrics
 and accepted v0.14.0 publication evidence remain in the
 [v6.0 roadmap](milestones/v6.0-ROADMAP.md) and [ship receipt](milestones/v6.0-SHIP.md).
+**Per-Plan Metrics:**
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 22 P01 | 108 | 2 tasks | 24 files |
 
 ## Accumulated Context
 
@@ -56,7 +63,7 @@ Inherited todos and optional seeds retain their dispositions except the selected
 
 ### Blockers/Concerns
 
-- No current local roadmap blocker. Phase 21 is complete and Phase 22 is ready to plan. Phase 22's concrete reset/image/state policy is a pre-code gate; the saved source model supports scope selection but does not establish physical accuracy. Prior v6.0 verification remains archived; no unavailable-platform or v7.0 product pass is claimed.
+- No current local roadmap blocker. Phase 22 plan 22-01 is complete; plans 22-02 and 22-03 remain. The reset/image/state policy was recorded before implementation; the saved source model supports scope selection but does not establish physical accuracy. Prior v6.0 verification remains archived; no unavailable-platform or full v7.0 product pass is claimed.
 - Phase 12's exact diagnostic-app request was denied before preflight/content and must not be retried. Original Phase 12 host/remote stops, Phase 14's spent host scope, expired windows and specific no-retry limits remain binding. No v6.0 action renews them or accepts the nine deferred v3.0 requirements.
 - v6.0 publication and PR #61 merge are complete. Future publication, merge, remote dispatch and host/device/identity-bound actions remain separate boundaries. Browser/player, Playstead, physical audibility, calibrated hardware accuracy, public stereo and full XM are excluded. Earlier combined-source/failed release evidence remains source-specific in archived receipts.
 
@@ -106,9 +113,9 @@ At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Sou
 
 ## Session Continuity
 
-Last session: 2026-11-13T23:43:33.180Z
-Stopped at: Phase 22 context gathered
-Resume file: .planning/phases/22-complete-souper-homebrew-mapper/22-CONTEXT.md
+Last session: 2026-11-14T02:28:31.277Z
+Stopped at: Completed 22-01-PLAN.md
+Resume file: None
 
 Next action: Clear context and run `$gsd-discuss-phase 22` from the current checkout. No directory switch is needed.
 
@@ -132,7 +139,9 @@ Next action: Clear context and run `$gsd-discuss-phase 22` from the current chec
 - [Phase 21]: Performance is the weakest evidence dimension because no comparable release-source timing series is available; this does not establish regression.
 - [Phase 21]: Historical run-head hashes absent from saved lessons remain unavailable; the report does not infer source identity or resolve the spec-less probe.
 - [Phase 20]: Phase 20 Plan 20-03: YM clock history is validated from its existing last-tick, clock-count and remainder tuple; no extra runtime epoch field is needed.
+- [Phase 22]: Require exact Souper profile geometry and refuse an effective invalid v4 mapper 4 declaration without v3 fallback.
+- [Phase 22]: Keep Souper snapshots unavailable until plan 22-03 adds complete state support.
 
 ## Next action
 
-Phase 21 is complete on `milestone/v7.0-souper-mapper`; its source-qualified report records bounded no change and retains the unresolved spec-less probe. Phase 22 is ready for discussion with `$gsd-discuss-phase 22`. Original Phase 12/14 host and remote stops remain binding.
+Phase 22 plan 22-01 is complete. Continue with `$gsd-execute-phase 22`; phase acceptance remains pending until plans 22-02 and 22-03 and their phase checks complete. Original Phase 12/14 host and remote stops remain binding.
