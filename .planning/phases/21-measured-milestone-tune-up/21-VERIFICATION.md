@@ -1,6 +1,6 @@
 ---
 phase: 21-measured-milestone-tune-up
-verified: 2026-11-13T23:13:48Z
+verified: 2026-11-14T06:51:44Z
 status: passed
 score: 5/5 must-haves verified
 covered_files:
@@ -32,21 +32,28 @@ covered_files:
   - docs/maintaining.md
   - pins.txt
   - quality.json
-covered_digest: "v4:sha256:cfef11c99f7f62909e122c00852fe077f89960fed15c0b5e7f5d51817b3c8f94"
+covered_digest: "v4:sha256:cc8694b0d3c72bb6cd62db591a9b5168e6900ec775795d1fd0dfe18db21254dd"
 behavior_unverified: 0
 overrides_applied: 0
 decision_coverage:
   honored: 0
   total: 0
   not_honored: []
+re_verification:
+  previous_status: passed
+  previous_score: 5/5
+  gaps_closed: []
+  gaps_remaining: []
+  regressions: []
+advisory: []
 ---
 
 # Phase 21: Measured Milestone Tune-Up Verification Report
 
 **Phase Goal:** Maintainers can identify the current shipped baseline and begin Souper work with a measured small correction or bounded no-change disposition that preserves required checks and prior failures.
-**Verified:** 2026-11-13T23:13:48Z
+**Verified:** 2026-11-14T06:51:44Z
 **Status:** passed
-**Re-verification:** No — initial verification
+**Re-verification:** Yes — refreshed against final commit `95b8c8` after the project, roadmap, and state closeout records changed.
 
 ## Goal Achievement
 
@@ -54,11 +61,11 @@ decision_coverage:
 
 | # | Truth | Status | Evidence |
 |---|---|---|---|
-| 1 | Maintainers can follow current release and documentation records to the accepted publication and source-specific baseline without mistaking failed evidence for acceptance or reopening closed shipping recovery. | ✓ VERIFIED | [21-TUNEUP.md](21-TUNEUP.md#current-documentation-path) links current project/roadmap records to v0.14.0 and the v6.0 ship receipt, and says it does not refresh hosted state or reopen recovery. The README has version-free latest-release links. |
-| 2 | Accepted v0.14.0 publication and same-source main CI are tied to commit `461dda5545bcc202fb4b90c1232fb2e9a00b6c28` and separate saved receipts. | ✓ VERIFIED | The source ledger keeps release run `43441765548` and main-CI run `43427086666` in separate rows and URLs; [v6.0-SHIP.md](../../milestones/v6.0-SHIP.md) independently records each run's exact source and result. |
-| 3 | The later documentation snapshot and Phase 20 local measurements remain distinct from release acceptance, with no new CI pass attributed to either documentation source. | ✓ VERIFIED | The ledger names research snapshot `815461285bfe450380058bd211927b4e916a2981` as having no new receipt, execution baseline `bcc53f292b699cf1618f6157ee7167c36ce49010` as local documentation state, and Phase 20 local gates at `daab4c82c0bb3393b3e93ee2b23ead09236f16ec` with separately reviewed product source `5158bb649160f081f6f1253da3be3099b93c8a03`. The local diff between Phase 20 and release sources contains implementation, tests, workflows, and publisher changes. |
-| 4 | Maintainers can inspect exactly six evidence-linked quality ratings and the accepted release run's measured efficiency observations with their limits. | ✓ VERIFIED | The six rows are Performance, CI/CD, Ease of use, Architecture, Docs/README, and Upgrade path, each scored 1–5 with evidence, rationale, and a limit. The saved release receipt confirms four-second start delay, Windows ARM64 at 39m49s, equality at 30m42s, and zero failed/cancelled jobs. The report avoids claiming a full DAG critical path, billed minutes, timing trend, or main-CI timing. |
-| 5 | The source-specific review supports a bounded no-change disposition while required checks, fault detection, workload limits, historical failures, and existing host/remote stops remain intact. | ✓ VERIFIED | [Measured disposition](21-TUNEUP.md#measured-disposition) sets a revisit trigger and a scope checkpoint for contradictory evidence. The report preserves the listed failed/cancelled/incomplete runs, quality floors/ceilings and fault controls, all nine deferred v3.0 requirements, and Phase 12/14 authority limits. The committed Phase 21 changes are documentation only; no product, test, workflow, timeout, cache, or quality-bound change appears. |
+| 1 | Maintainers can follow the Phase 21 release and documentation records to the accepted shipped baseline and distinguish it from later local work. | ✓ VERIFIED | `21-TUNEUP.md` links the current project/roadmap records and README to the v6.0 ship receipt. The live planning records still identify v0.14.0/v6.0 as latest shipped, while the final Phase 22 edits identify Souper as locally implemented and explicitly leave publication, push, and merge outstanding. |
+| 2 | Accepted v0.14.0 publication and same-source main CI are tied to `461dda5545bcc202fb4b90c1232fb2e9a00b6c28` and separate saved receipts. | ✓ VERIFIED | The tune-up ledger and [v6.0 ship receipt](../../milestones/v6.0-SHIP.md) identify release run `43441765548` and main-CI run `43427086666` separately on the accepted source. These are historical receipts; no hosted query was made. |
+| 3 | The later Phase 21 research snapshot and execution documentation baseline remain distinct from release acceptance and Phase 20 local measurements; no CI pass is inherited by a later documentation source. | ✓ VERIFIED | The ledger names research snapshot `815461285bfe450380058bd211927b4e916a2981` without a new receipt, execution baseline `bcc53f292b699cf1618f6157ee7167c36ce49010`, and separate Phase 20 gate/product sources. The report explicitly limits each result to its named source. The Phase 22 change to `docs/libretro.md` adds three lines about Souper format 3/behavior 8 state; it does not alter these saved receipts or claim a new hosted pass. |
+| 4 | Maintainers can inspect six evidence-linked quality ratings and the accepted release run's efficiency observations with their limits. | ✓ VERIFIED | `21-TUNEUP.md` contains six scored dimensions with linked evidence, rationale, and limits. The accepted release receipt's four-second start delay, longest observed jobs, and zero failed/cancelled jobs are reported without claiming a complete DAG critical path, billed minutes, timing trend, or main-CI timing. The already-landed PR-run workload reduction is distinguished from new Phase 21 work. |
+| 5 | The source-specific review supports a bounded no-change disposition while preserving required checks, fault detection, workload limits, historical failures, and prior host/remote stops. | ✓ VERIFIED | The report records a revisit trigger and scope checkpoint, preserves quality floors/ceilings, fault controls, deferred v3.0 requirements, Phase 12/14 stops, and the listed failed/cancelled/incomplete runs. The Phase 21 substantive change remains documentation-only. |
 
 **Score:** 5/5 truths verified (0 behavior-unverified)
 
@@ -66,71 +73,87 @@ decision_coverage:
 
 | Artifact | Expected | Status | Details |
 |---|---|---|---|
-| `.planning/phases/21-measured-milestone-tune-up/21-TUNEUP.md` | Source ledger, efficiency review, six ratings, preserved failures and bounded disposition | ✓ VERIFIED | GSD artifact check: exists, substantive, all declared artifact checks pass. The committed file has 193 lines; local link-target scan found all 50 targets. Content and citations were checked against source records. |
+| `.planning/phases/21-measured-milestone-tune-up/21-TUNEUP.md` | Source ledger, efficiency review, six ratings, preserved failures, and bounded no-change disposition | ✓ VERIFIED | GSD artifact query passed 1/1. The report is substantive, its local links resolve, and its evidence and limits match the saved source records. |
 
 ## Key Link Verification
 
 | From | To | Via | Status | Details |
 |---|---|---|---|---|
-| `21-TUNEUP.md` | `.planning/milestones/v6.0-SHIP.md` | Accepted publication and same-source main-CI references | ✓ WIRED | Manually confirmed exact commit and both run IDs in the report and ship receipt. The automated key-link matcher could not evaluate its numeric-only pattern. |
-| `21-TUNEUP.md` | `.planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-COST-EVIDENCE.md` | Separate local source and non-equivalence | ✓ WIRED | GSD matcher verified the `daab4c...` reference; local diff and cost report confirm the separate sources. |
-| `21-TUNEUP.md` | `.planning/LESSONS.md` | Historical failures and evidence limits | ✓ WIRED | Manually confirmed `43367755963` and the linked lesson section. All five lesson heading fragments used by the report exist in the source. The automated matcher could not evaluate its numeric-only pattern. |
+| `21-TUNEUP.md` | `.planning/milestones/v6.0-SHIP.md` | Accepted publication and main-CI source/run references | ✓ WIRED | The automated matcher could not evaluate the numeric-only run pattern. Manual inspection confirmed run `43441765548`, run `43427086666`, and the exact source in both the tune-up report and ship receipt. |
+| `21-TUNEUP.md` | `.planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-COST-EVIDENCE.md` | Separate local source and non-equivalence | ✓ WIRED | GSD matcher verified the `daab4c...` source reference; the report also identifies its separately reviewed product source. |
+| `21-TUNEUP.md` | `.planning/LESSONS.md` | Preserved failed/cancelled source records and evidence limits | ✓ WIRED | The matcher could not evaluate the numeric-only pattern. Manual inspection confirmed run `43367755963` and all linked lesson headings in the current source. |
+
+The key-link query verified 1/3 patterns automatically and exited 1 because two numeric-only patterns were unusable by the matcher, not because their paths or references were absent. The two remaining links were traced manually.
 
 ## Data-Flow Trace (Level 4)
 
 | Artifact | Data Variable | Source | Produces Real Data | Status |
 |---|---|---|---|---|
-| `21-TUNEUP.md` | N/A | Static repository documentation, saved ship receipt, Phase 20 cost record, and lessons | N/A — no runtime-rendered values | ✓ NOT APPLICABLE |
+| `21-TUNEUP.md` | N/A | Static repository documentation, saved ship receipt, Phase 20 cost report, and lessons | N/A — this artifact renders no runtime values | ✓ NOT APPLICABLE |
 
 ## Behavioral Spot-Checks
 
-SKIPPED — the phase produces a maintainer report, not runnable product code. No product build or test suite was run. The artifact presence, local-link, and whitespace checks establish documentation properties only; they do not establish product acceptance.
+SKIPPED — this phase delivers maintainer documentation, not runnable product code. No product build or test suite was run.
 
 ## Probe Execution
 
 | Probe | Command | Result | Status |
 |---|---|---|---|
-| TUNE-11 spec-less probe classification | No runnable probe path is declared in the plan/summary or found under `scripts/*/tests/probe-*.sh`; classification was not rerun. | PLAN records category `unclassified`, status `unresolved`, and null verification/resolution/reason; probe text is “unclassified — review manually”. No wired check descriptor exists. | UNRESOLVED — preserved |
+| TUNE-11 spec-less probe classification | `find scripts -path '*/tests/probe-*.sh' -type f` (exit 0); plan/summary path scan (exit 1, no declared path) | No executable probe path or wired check descriptor exists. The PLAN's separate classification remains category `unclassified`, status `unresolved`, with verification, resolution, and reason unset; the probe text is “unclassified — review manually”. | UNRESOLVED — preserved |
 
-The unresolved classification is preserved consistently in the [tune-up report](21-TUNEUP.md#measured-disposition), the [SUMMARY](21-01-SUMMARY.md#known-limitations), and this report. They retain category `unclassified`, status `unresolved`, and unset verification, resolution, and reason; none claims a resolution. The plan explicitly says its roadmap acceptance truths do not classify or resolve this probe, and no wired check descriptor exists. This remains an unresolved planning classification, separate from the two roadmap success criteria: it neither supplies evidence for those truths nor represents a passed probe.
+This classification is not a probe pass and does not resolve the missing spec. The PLAN states that its roadmap acceptance truths do not classify or resolve it. It remains visible in the [tune-up report](21-TUNEUP.md#proportional-maintenance-disposition) and [SUMMARY](21-01-SUMMARY.md#known-limitations), separate from the two roadmap success criteria.
 
 ## Test Quality Audit
 
-N/A — TUNE-11 is a documentary review requirement, and the plan declares no requirement-linked executable test. No product tests were run. The one-off presence, link-target, and whitespace checks only inspect the report.
+N/A — TUNE-11 is a documentary review requirement; the PLAN declares no requirement-linked executable test. No product tests were run.
 
 ## Decision Coverage
 
-No CONTEXT.md — nothing to check. The phase has no decision block to verify.
+No Phase 21 `CONTEXT.md` or decisions block exists; nothing to check. GSD decision coverage is 0/0.
 
 ## Requirements Coverage
 
 | Requirement | Source Plan | Description | Status | Evidence |
 |---|---|---|---|---|
-| TUNE-11 | `21-01-PLAN.md` | Establish a source-specific release/documentation baseline and quality/efficiency review; record a bounded no-change disposition without weakening required checks or obscuring prior failures. | ✓ SATISFIED | The report contains the source ledger, six ratings, measured release-run observations, historical failures, preserved controls and boundaries, and a bounded no-change decision. |
+| TUNE-11 | `21-01-PLAN.md` | Establish a source-specific release/documentation baseline and quality/efficiency review; record a bounded no-change disposition without weakening required checks or obscuring prior failures. | ✓ SATISFIED | The five verified truths cover the accepted source and receipts, later snapshots, six ratings, efficiency limits, preserved failures and controls, and bounded disposition. |
 
-No additional requirement is mapped to Phase 21 in `REQUIREMENTS.md`; no Phase 21 requirement is orphaned.
+`REQUIREMENTS.md` maps no additional requirement to Phase 21; no Phase 21 requirement is orphaned.
 
 ## Anti-Patterns Found
 
 | File | Line | Pattern | Severity | Impact |
 |---|---:|---|---|---|
-| — | — | None found in the report, summary, or review files | — | No unreferenced debt marker, placeholder implementation, or hardcoded empty result. |
+| — | — | No actionable stub or debt marker in the Phase 21 report, SUMMARY, review, or updated referenced libretro guide | — | One generic `NULL/0` match in `docs/libretro.md` documents the unloaded/no-content API result; it is not a placeholder implementation. |
+
+## Freshness Review
+
+Commit `95b8c8` updated PROJECT, ROADMAP, and STATE after the previous report refresh. The current records agree that Phases 21 and 22 are complete, identify the v7.0 milestone closeout as the next local step, and keep publication and other external boundaries separate. STATE's current action sections now agree; the former Phase 22 execution direction is gone. A historical decision entry still documents a Phase 22 dependency, which is not a current next-step instruction. The accepted v0.14.0 publication and main-CI receipts remain unchanged and source-qualified; the local Souper verification is not presented as publication or hosted acceptance.
+
+### Advisory (New Scope, Unevidenced)
+
+None. The prior planning-state action mismatch is resolved in the final committed records and does not invalidate any Phase 21 truth or requirement.
 
 ## Verification Evidence
 
-- Active GSD runtime: `@opengsd/gsd-core` v1.20.0; runtime identity confirmed.
-- `query verify.artifacts .planning/phases/21-measured-milestone-tune-up/21-01-PLAN.md` — all declared artifacts passed (1/1).
-- `query verify.key-links .planning/phases/21-measured-milestone-tune-up/21-01-PLAN.md` — 1/3 automated patterns verified; the two remaining numeric-only patterns were manually traced and verified above.
-- Report-relative local Markdown target scan — exit 0, 50 local targets.
-- `git diff --no-index --check /dev/null .planning/phases/21-measured-milestone-tune-up/21-TUNEUP.md` — exit 1 for a clean new-file diff, with no whitespace diagnostics; wrapper exit 0.
-- `find scripts -path '*/tests/probe-*.sh' -type f` and explicit plan/summary probe-path scan — no executable probe path found.
-- No product build, product test suite, host/device action, hosted query/dispatch, external fetch, publication, push, merge, or shipping retry was run.
+- Final local source: `git status --short --branch` exited 0 on `phase/22-complete-souper-homebrew-mapper`; `git rev-parse HEAD` exited 0 at `95b8c8002536c321464c796af44c02132180a0dc`. Only this verification report is modified in the working tree.
+- Active GSD runtime identity: `@opengsd/gsd-core` v1.20.0.
+- Before this refresh, `gsd_run query verification.status .planning/phases/21-measured-milestone-tune-up --pick status` exited 0 and returned `passed`; the Project/Roadmap/State source records had nevertheless changed in the requested final closeout commit and were reviewed again here.
+- After writing this refresh, `gsd_run query verification.status .planning/phases/21-measured-milestone-tune-up --pick status` exited 0 and returned `passed`.
+- `gsd_run query roadmap.get-phase 21 --raw` exited 0 and returned the phase goal, both success criteria, and one completed plan/summary.
+- `gsd_run query roadmap.analyze --raw` exited 0; it reports Phase 22 complete and no later phase in this milestone.
+- `gsd_run query verify.artifacts .planning/phases/21-measured-milestone-tune-up/21-01-PLAN.md` exited 0; all declared artifacts passed (1/1).
+- `gsd_run query verify.key-links .planning/phases/21-measured-milestone-tune-up/21-01-PLAN.md` exited 1; 1/3 patterns verified automatically. Numeric-only patterns were manually traced to the saved ship receipt and lesson source.
+- `gsd_run query verification.fingerprint .planning/phases/21-measured-milestone-tune-up ...` exited 0; the `covered_files` and `covered_digest` above are copied from its output.
+- Report-relative Markdown target scan exited 0 with 50 local targets and none missing. `git diff --check` exited 0.
+- `git cat-file -e` resolved the accepted release source, Phase 20 local-gates source, and separately reviewed product source; exit 0 for each. Their saved local source comparison exited 0 and shows product, test, workflow, publisher, and planning changes between Phase 20's local source and the accepted release source.
+- Probe discovery found no runnable path (`find` exit 0 with no output); the explicit PLAN/SUMMARY path scan returned exit 1 because neither declares a probe script path.
+- No product build/test suite, hosted query/dispatch, host/device check, external fetch, publication, push, merge, or shipping retry was run.
 
 ## Gaps Summary
 
-No roadmap success criterion or plan must-have failed. The spec-less probe classification remains `unclassified` and `unresolved` in the PLAN, [tune-up report](21-TUNEUP.md#measured-disposition), [SUMMARY](21-01-SUMMARY.md#known-limitations), and this verification report; no wired check descriptor exists, and no resolution or probe pass is claimed. The plan keeps this classification separate from its roadmap acceptance truths, so it does not count as evidence for a success criterion or as a failed criterion.
+No roadmap success criterion or plan must-have failed. TUNE-11 is satisfied against the final committed local records. The probe classification remains honestly `unclassified` and `unresolved`; it is neither resolved nor counted as a passed probe. The final STATE action sections no longer contain stale Phase 22 execution directions.
 
 ---
 
-_Verified: 2026-11-13T23:13:48Z_
+_Verified: 2026-11-14T06:51:44Z_
 _Verifier: the agent (gsd-verifier)_
