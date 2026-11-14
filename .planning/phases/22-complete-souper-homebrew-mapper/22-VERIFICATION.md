@@ -1,6 +1,6 @@
 ---
 phase: 22-complete-souper-homebrew-mapper
-verified: 2026-11-14T07:53:24Z
+verified: 2026-11-14T08:00:42Z
 status: passed
 score: "8/8 must-haves verified"
 covered_files:
@@ -15,7 +15,7 @@ covered_files:
   - tests/inventory/ci.txt
   - tests/libretro/host.c
   - tests/libretro/tests.cmake
-covered_digest: "v4:sha256:50094c68e0677c2c647065939cddbc73a35d17307ec9f15143c3672da226581f"
+covered_digest: "v4:sha256:734d2541859f6641c61884cbb268fe32be8bfdbeb27b0e61553fa4774e3aef6f"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
@@ -34,7 +34,7 @@ decision_coverage:
 # Phase 22: Complete Souper homebrew mapper Verification Report
 
 **Phase Goal:** A homebrew developer can load the documented Souper mapper-only profile and obtain deterministic CPU/MARIA mapping and snapshot continuation through every existing deliverable and the applicable portable consumer.
-**Verified:** 2026-11-14T07:53:24Z
+**Verified:** 2026-11-14T08:00:42Z
 **Status:** passed
 **Re-verification:** Yes — after gap closure
 
@@ -179,5 +179,5 @@ The Emscripten CTest wrapper cannot run from this host because the configured bu
 
 ---
 
-_Verified: 2026-11-14T07:53:24Z_
+_Verified: 2026-11-14T08:00:42Z_
 _Verifier: the agent (gsd-verifier)_
