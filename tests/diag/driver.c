@@ -516,6 +516,7 @@ static uint32_t retail_id(const char *rom)
            : strcmp(rom, "fractalus") == 0        ? 12u
            : strcmp(rom, "battery") == 0          ? 13u
            : strcmp(rom, "pal") == 0              ? 19u
+           : strcmp(rom, "souper") == 0           ? 22u
            : strncmp(rom, "bankset", 7u) == 0     ? 20u
            : strncmp(rom, "expansion-", 10u) == 0 ? 21u
            : (strlen(rom) == 8u && strncmp(rom, "motion", 6u) == 0 &&
@@ -1270,7 +1271,89 @@ static int controller_library(const char *path, const char *expected, const char
     return failed;
 }
 
-static int souper_case(const char *path)
+static int souper_native_judge(const uint8_t *pixels, unsigned frames)
+{
+    /* The diagnostic's DLL and 160A object match the literal address/pixel
+       interpretation in docs/hardware/maria.md. Graphics bytes $40,$80 are
+       written to EXRAM after the CPU mailbox has checked its zero fill. */
+    for (unsigned frame = 4u; frame < frames; frame++) {
+        const uint8_t *p = pixels + (size_t)frame * 320u * 242u + 17u * 320u;
+        for (unsigned x = 0u; x < 320u; x++) {
+            uint8_t want = x < 8u ? 0x38u : 0u;
+            if (p[x] != want) {
+                fprintf(stderr, "souper: MARIA EXRAM graphics differ at frame %u row 17 x%u: %02x\n",
+                        frame + 1u, x, p[x]);
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+static int souper_png(const char *path)
+{
+    size_t n = 0u;
+    uint8_t *image = read_file(path, &n);
+    uint8_t *raw = malloc(242u * PNG_READ_ROW);
+    int failed = image == NULL || raw == NULL || png_read_height(image, n, raw, 242u) < 0;
+    if (!failed) {
+        for (unsigned y = 0u; y < 242u && !failed; y++) {
+            const uint8_t *row = raw + (size_t)y * PNG_READ_ROW;
+            failed |= row[0] != 0u;
+            if (y == 17u) {
+                for (unsigned x = 0u; x < 320u; x++) {
+                    uint32_t color = muhtari__palette_rgb_region(x < 8u ? 0x38u : 0u,
+                                                                 MUHTARI_REGION_NTSC);
+                    const uint8_t *p = row + 1u + 3u * x;
+                    failed |= p[0] != (uint8_t)(color >> 16) || p[1] != (uint8_t)(color >> 8) ||
+                              p[2] != (uint8_t)color;
+                }
+            }
+        }
+    }
+    if (failed)
+        fprintf(stderr, "souper: runner PNG differs from literal row-17 EXRAM pixel oracle\n");
+    free(raw);
+    free(image);
+    return failed;
+}
+
+static int souper_image(const char *template_path, const char *path)
+{
+    size_t n = 0u;
+    uint8_t *image = read_file(template_path, &n);
+    uint8_t digest[32];
+    char hex[65];
+    if (image == NULL)
+        return 1;
+    muhtari__sha256 hash;
+    muhtari__sha256_init(&hash);
+    muhtari__sha256_update(&hash, image, n);
+    muhtari__sha256_final(&hash, digest);
+    muhtari__sha256_hex(digest, hex);
+    muhtari_cart_info info = {0};
+    info.size = (uint32_t)sizeof info;
+    if (n != 524416u ||
+        strcmp(hex, "234b943b5e2f5e67539718128a8b435491e1fac3973ab8b37b33243a1774bc3c") != 0 ||
+        memcmp(image + 128u + 0x7F6F0u, "SOUPER01", 8u) != 0 ||
+        muhtari_probe(image, n, &info) != MUHTARI_STATUS_OK ||
+        info.board != MUHTARI_BOARD_SOUPER || info.rom_size != 512u * 1024u) {
+        free(image);
+        return 1;
+    }
+    for (unsigned bank = 0u; bank < 31u; bank++)
+        memset(image + 128u + (size_t)bank * 16384u, (int)(0x40u + bank), 16384u);
+    FILE *f = fopen(path, "wb");
+    int failed = f == NULL;
+    if (f != NULL) {
+        failed = fwrite(image, 1u, n, f) != n;
+        failed |= fclose(f) != 0;
+    }
+    free(image);
+    return failed;
+}
+
+static int souper_case(const char *path, const char *expected, const char *report_path)
 {
     size_t bytes = 0u;
     uint8_t *image = read_file(path, &bytes);
@@ -1286,7 +1369,7 @@ static int souper_case(const char *path)
     muhtari_status status = image == NULL ? MUHTARI_STATUS_ERR_ARGUMENT : muhtari_create(&config, &m);
     if (status == MUHTARI_STATUS_OK)
         status = muhtari_load(m, &media);
-    int failed = status != MUHTARI_STATUS_OK;
+    int failed = status != MUHTARI_STATUS_OK || retail_expected(expected, "souper") != 0;
     if (failed)
         fprintf(stderr, "souper: expected initial-map image to load, got status %u\n",
                 (unsigned)status);
@@ -1295,8 +1378,95 @@ static int souper_case(const char *path)
         fprintf(stderr, "souper: loaded profile geometry mismatch\n");
         failed = 1;
     }
+    if (!failed && (muhtari__cart_read(m, 0x4000u, 0) != 0u ||
+                    muhtari__cart_read(m, 0x7FFFu, 0) != 0u ||
+                    muhtari__cart_read(m, 0x8000u, 0) != 0x40u ||
+                    muhtari__cart_read(m, 0xBFFFu, 0) != 0x40u ||
+                    muhtari__cart_read(m, 0xC000u, 0) != 0xE0u ||
+                    muhtari__cart_dma_read(m, 0x8000u, 0u) != 0x40u ||
+                    muhtari__cart_dma_read(m, 0xC000u, 0u) != 0xE0u)) {
+        fprintf(stderr, "souper: initial CPU/MARIA map did not match the literal endpoints\n");
+        failed = 1;
+    }
+    uint8_t state_bytes[64];
+    uint64_t state_ticks = m->bus.ticks;
+    uint16_t state_pc = m->cpu.pc;
+    uint8_t state_bank = m->cart.bank;
+    uint8_t state_open_bus = m->bus.open_bus;
+    memset(state_bytes, 0xA5, sizeof state_bytes);
+    if (!failed && (muhtari_state_size(m) != 0u ||
+                    muhtari_save_state(m, state_bytes, sizeof state_bytes) !=
+                        MUHTARI_STATUS_ERR_STATE_UNAVAILABLE ||
+                    muhtari_load_state(m, state_bytes, sizeof state_bytes) !=
+                        MUHTARI_STATUS_ERR_STATE_UNAVAILABLE ||
+                    muhtari__state_payload_size(m) != 0u ||
+                    muhtari__state_payload_write(m, state_bytes, sizeof state_bytes) != 0 ||
+                    muhtari__state_payload_validate(m, state_bytes, sizeof state_bytes) != 0)) {
+        fprintf(stderr, "souper: incomplete snapshot profile was not unavailable\n");
+        failed = 1;
+    }
+    if (!failed)
+        muhtari__state_payload_apply(m, state_bytes, sizeof state_bytes);
+    for (size_t i = 0u; i < sizeof state_bytes; i++) {
+        if (state_bytes[i] != 0xA5u) {
+            fprintf(stderr, "souper: unavailable state operation changed caller bytes\n");
+            failed = 1;
+            break;
+        }
+    }
+    if (!failed && (m->cart.bank != state_bank || m->bus.ticks != state_ticks ||
+                    m->cpu.pc != state_pc || m->bus.open_bus != state_open_bus ||
+                    muhtari__cart_read(m, 0x4000u, 0) != 0u ||
+                    muhtari__cart_read(m, 0x8000u, 0) != 0x40u)) {
+        fprintf(stderr, "souper: unavailable state operation changed the machine\n");
+        failed = 1;
+    }
+    uint8_t *pixels = (uint8_t *)calloc(12u * 320u * 242u, 1u);
+    int16_t pcm[963];
+    uint32_t audio_counts[12] = {0};
+    if (pixels == NULL)
+        failed = 1;
+    for (unsigned frame = 0u; frame < 12u && !failed; frame++) {
+        muhtari_frame io = {0};
+        io.size = (uint32_t)sizeof io;
+        io.video = pixels + (size_t)frame * 320u * 242u;
+        io.video_pitch = 320u;
+        io.audio = pcm;
+        io.audio_capacity = 963u;
+        failed = muhtari_run_frame(m, &io) != MUHTARI_STATUS_OK;
+        audio_counts[frame] = io.audio_count;
+    }
+    uint8_t mailbox[256];
+    if (!failed) {
+        for (unsigned i = 0u; i < sizeof mailbox; i++)
+            mailbox[i] = muhtari__peek(m, (uint16_t)(MB + i));
+        int pixel_failed = souper_native_judge(pixels, 12u);
+        failed = retail_judge(mailbox, "souper") || pixel_failed ||
+                 m->cart.info.sound != 0u || m->synth.pokeys != 0u || m->synth.ym_installed != 0u;
+    }
+    FILE *report = !failed ? fopen(report_path, "wb") : NULL;
+    if (!failed && report == NULL)
+        failed = 1;
+    if (report != NULL) {
+        for (unsigned frame = 0u; frame < 12u; frame++) {
+            uint8_t digest[32];
+            char hex[65];
+            muhtari__sha256 hash;
+            muhtari__sha256_init(&hash);
+            muhtari__sha256_update(&hash, pixels + (size_t)frame * 320u * 242u, 320u * 242u);
+            muhtari__sha256_final(&hash, digest);
+            muhtari__sha256_hex(digest, hex);
+            (void)fprintf(report, "frame %u sha256 %s\n", frame + 1u, hex);
+        }
+        (void)fprintf(report, "audio_counts");
+        for (unsigned frame = 0u; frame < 12u; frame++)
+            (void)fprintf(report, " %u", audio_counts[frame]);
+        (void)fputc('\n', report);
+        failed |= ferror(report) != 0 || fclose(report) != 0;
+    }
     muhtari_destroy(m);
     free(image);
+    free(pixels);
     return failed;
 }
 
@@ -1562,7 +1732,7 @@ static int expansion_image(const char *source, const char *path, unsigned profil
         strcmp(hex, "b5164fe19df352231d2a6033d0349ff45019f2dcfb889f6d0d542879ae41ee9b") != 0 ||
         memcmp(image + 128u + 0xB6F0u, "EXPAND01", 8u) != 0 || profile < 1u || profile > 2u ||
         page >= (profile == 1u ? 8u : 16u) || window > (profile == 1u ? 0u : 1u) || pal > 1u ||
-        dual > 2u || gate > 2u || fault > 8u) {
+        dual > 2u || gate > 2u || fault > 7u) {
         free(image);
         return 1;
     }
@@ -1593,10 +1763,8 @@ static int expansion_image(const char *source, const char *path, unsigned profil
     if (fault == 5u)
         image[67] |= 32u; /* ADPCM. */
     if (fault == 6u)
-        image[64] = 4u; /* Souper. */
-    if (fault == 7u)
         image[67] = 5u; /* Separate $4000 primary owner. */
-    if (fault == 8u)
+    if (fault == 7u)
         image[67] = 4u; /* Separate $0800 primary owner. */
     FILE *f = fopen(path, "wb");
     int failed = f == NULL;
@@ -2936,8 +3104,12 @@ pal_cleanup:
 
 int main(int argc, char **argv)
 {
-    if (argc == 3 && strcmp(argv[1], "--souper-case") == 0)
-        return souper_case(argv[2]);
+    if (argc == 4 && strcmp(argv[1], "--souper-image") == 0)
+        return souper_image(argv[2], argv[3]);
+    if (argc == 3 && strcmp(argv[1], "--souper-png") == 0)
+        return souper_png(argv[2]);
+    if (argc == 5 && strcmp(argv[1], "--souper-case") == 0)
+        return souper_case(argv[2], argv[3], argv[4]);
     if ((argc == 6 || argc == 7) && strcmp(argv[1], "--expansion-refuse") == 0) {
         expansion_case = 1;
         expansion_profile =

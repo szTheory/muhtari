@@ -347,7 +347,6 @@ static void test_unsupported_board(void)
     } boards[] = {
         {"halt-banked RAM", 0x4002u, 128u * IMAGES_KIB, MUHTARI_BOARD_SUPERGAME,
          MUHTARI_BOARD_HALT_BANKED_RAM},
-        {"Souper, cart type", 0x1000u, 512u * IMAGES_KIB, MUHTARI_BOARD_SOUPER, 0u},
     };
     for (size_t i = 0; i < sizeof boards / sizeof boards[0]; i++) {
         size_t n = images_a78(buf, 3u, boards[i].body, boards[i].cart_type, boards[i].body);
@@ -358,23 +357,6 @@ static void test_unsupported_board(void)
         CHECK_EQ_U64(out.board, boards[i].board);
         CHECK_EQ_U64(out.board_options, boards[i].options);
     }
-    /* Souper as the version 4 mapper with cart-type bit 12. */
-    size_t n = images_a78(buf, 4u, 512u * IMAGES_KIB, 0x1000u, 512u * IMAGES_KIB);
-    buf[64] = 4u;
-    muhtari_cart_info out = expect_written("Souper", buf, n, MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
-    CHECK_EQ_U64(out.board, MUHTARI_BOARD_SOUPER);
-    CHECK_EQ_U64(out.a78_mapper, 4);
-    /* A list entry on a refused board refuses a headerless image. */
-    n = images_headerless(buf, 32u * IMAGES_KIB);
-    struct muhtari__cartdb_entry act;
-    memset(&act, 0, sizeof act);
-    act.board = MUHTARI_BOARD_SOUPER;
-    act.flags = MUHTARI__CARTDB_NTSC;
-    act.parts = 1u;
-    CHECK_EQ_U64(identify_listed(buf, n, buf, n, act, 0, &out),
-                 MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
-    CHECK_EQ_U64(out.board, MUHTARI_BOARD_SOUPER);
-    CHECK_EQ_U64(out.source, MUHTARI_SOURCE_HASH);
 }
 
 /* Not a cartridge image, or a size no board has. */
@@ -934,9 +916,7 @@ static size_t reject_2600_listed(void)
 
 static size_t reject_board(void)
 {
-    size_t n = images_a78(buf, 4u, 512u * IMAGES_KIB, 0x1000u, 512u * IMAGES_KIB);
-    buf[64] = 4u; /* Souper as the version 4 mapper */
-    return n;
+    return images_a78(buf, 3u, 128u * IMAGES_KIB, 0x4002u, 128u * IMAGES_KIB);
 }
 
 static size_t reject_size_zero(void)

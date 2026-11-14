@@ -87,6 +87,10 @@ static uint32_t be32(const uint8_t *p)
    (docs/hardware/cartridge.md, Geometry). A refused board has none here. */
 static int cart_fits(const struct cart_board *b, size_t n)
 {
+    if (b->board == MUHTARI_BOARD_SOUPER) {
+        return n == 512u * CART_KIB && b->ram == 32u * CART_KIB && b->options == 0u &&
+               b->unsupported == 0u;
+    }
     if (b->board == MUHTARI_BOARD_BANKSET) {
         /* Equal CPU-then-MARIA sets; sizes and RAM matrix are checked before
            allocation (cartridge.md, BankSet). All runtime offsets use n/2. */
@@ -217,6 +221,7 @@ static void cart_decode_v3(uint32_t t, struct cart_board *b)
     }
     if ((t & CT_SOUPER) != 0u) {
         b->board = MUHTARI_BOARD_SOUPER;
+        b->ram = 32u * CART_KIB;
     }
 }
 
@@ -298,6 +303,9 @@ static int cart_decode_v4(const uint8_t *h, struct cart_board *b)
         break;
     default:
         break;
+    }
+    if (mapper == 4u) {
+        b->ram = 32u * CART_KIB;
     }
     if ((opt & 0x80u) != 0u) {
         b->board = MUHTARI_BOARD_BANKSET;
@@ -480,6 +488,11 @@ static void cart_set_board(muhtari_cart_info *out, const struct cart_board *b)
 /* Boards a loaded cartridge cannot run yet. */
 static int cart_refused(const struct cart_board *b)
 {
+    if (b->board == MUHTARI_BOARD_SOUPER) {
+        const uint32_t pokey = MUHTARI_SOUND_POKEY_4000 | MUHTARI_SOUND_POKEY_440 |
+                               MUHTARI_SOUND_POKEY_450 | MUHTARI_SOUND_POKEY_800;
+        return b->unsupported != 0u || b->options != 0u || (b->sound & ~pokey) != 0u;
+    }
     if (b->board == MUHTARI_BOARD_BANKSET) {
         return b->unsupported != 0u ||
                (b->options & ~(uint32_t)MUHTARI_BOARD_HALT_BANKED_RAM) != 0u ||
@@ -1072,6 +1085,14 @@ static uint8_t cart_peek_view(const muhtari *m, uint16_t addr, int maria)
         return *ram;
     }
     switch (c->info.board) {
+    case MUHTARI_BOARD_SOUPER: {
+        uint32_t banks = c->info.rom_size / CART_BANK;
+        uint32_t bank = addr >= 0xC000u ? banks - 1u : (uint32_t)c->bank % banks;
+        if (addr >= 0x8000u) {
+            return c->rom[bank * CART_BANK + (addr & (CART_BANK - 1u))];
+        }
+        break;
+    }
     case MUHTARI_BOARD_BANKSET: {
         const uint8_t *rom = cart_bankset_rom_at(c, addr, maria);
         if (rom != NULL)
@@ -1132,7 +1153,8 @@ uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr)
 
 uint8_t muhtari__cart_dma_read(muhtari *m, uint16_t addr, uint64_t tick)
 {
-    if (m->cart.info.board == MUHTARI_BOARD_BANKSET ||
+    if (m->cart.info.board == MUHTARI_BOARD_SOUPER ||
+        m->cart.info.board == MUHTARI_BOARD_BANKSET ||
         m->cart.expansion.kind == MUHTARI_EXPANSION_XM) {
         return cart_peek_view(m, addr, muhtari__bus_maria_selected(m, tick));
     }

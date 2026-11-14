@@ -58,6 +58,11 @@ bank6,sel_0,0,guide
 bank6,sel_1,1,guide
 bank6,sel_2,2,guide
 bank6,sel_3,3,guide
+souper,exram_start,0,fit
+souper,exram_end,0,fit
+souper,bank0_start,64,fit
+souper,bank0_end,64,fit
+souper,final_start,224,fit
 bank6,sel_4,4,guide
 bank6,sel_5,5,guide
 bank6,sel_6,6,guide

@@ -1310,6 +1310,10 @@ static int state_topology_valid(const muhtari *m)
     if (m == NULL || m->loaded == 0u || m->cart.rom == NULL || m->cart.info.rom_size == 0u ||
         m->battery.bytes > sizeof m->battery.data)
         return 0;
+    /* Souper's mapper latches and EXRAM do not enter the public state format
+       until the complete profile-specific visitor is installed. */
+    if (m->cart.info.board == MUHTARI_BOARD_SOUPER)
+        return 0;
     if (m->synth.ym_installed > 1u)
         return 0;
     if (m->synth.ym_installed != 0u &&
@@ -1478,6 +1482,8 @@ muhtari_status muhtari_save_state(const muhtari *m, void *buffer, size_t capacit
         return MUHTARI_STATUS_ERR_ARGUMENT;
     if (m->loaded == 0u)
         return MUHTARI_STATUS_ERR_STATE_UNAVAILABLE;
+    if (m->cart.info.board == MUHTARI_BOARD_SOUPER)
+        return MUHTARI_STATUS_ERR_STATE_UNAVAILABLE;
 
     size_t total = muhtari_state_size(m);
     if (total == 0u)
@@ -1515,6 +1521,8 @@ muhtari_status muhtari_load_state(muhtari *m, const void *buffer, size_t bytes)
     if (m == NULL || buffer == NULL)
         return MUHTARI_STATUS_ERR_ARGUMENT;
     if (m->loaded == 0u)
+        return MUHTARI_STATUS_ERR_STATE_UNAVAILABLE;
+    if (m->cart.info.board == MUHTARI_BOARD_SOUPER)
         return MUHTARI_STATUS_ERR_STATE_UNAVAILABLE;
 
     size_t expected = muhtari_state_size(m);

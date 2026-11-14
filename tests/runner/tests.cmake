@@ -890,12 +890,13 @@ endfunction()
       message(FATAL_ERROR "--probe 2600-4k: kind '${kind}', standard error\n${err}")
     endif()
     expect_hashes("" "${DIR}/2600-4k")
-  elseif(CASE STREQUAL "probe.unsupported_board")
+  elseif(CASE STREQUAL "probe.souper")
     probe(souper-v4)
-    expect_keys(souper-v4 77 ${identity_keys} ${header_keys} ${hash_keys})
+    expect_keys(souper-v4 0 ${identity_keys} ${header_keys} ${hash_keys})
     probe_value(board board)
-    if(NOT board STREQUAL "souper" OR NOT err MATCHES "/souper-v4: unsupported board: souper\n")
-      message(FATAL_ERROR "--probe souper-v4: board '${board}', standard error\n${err}")
+    probe_value(ram_size ram_size)
+    if(NOT board STREQUAL "souper" OR NOT ram_size STREQUAL "32768" OR NOT err STREQUAL "")
+      message(FATAL_ERROR "--probe souper-v4: board '${board}', RAM '${ram_size}', standard error\n${err}")
     endif()
     expect_hashes("" "${DIR}/souper-v4")
   elseif(CASE STREQUAL "probe.malformed")
@@ -1535,8 +1536,6 @@ endfunction()
     endfunction()
     expect_refused("^muhtari-run: [^\n]*/2600-4k: unsupported: 2600 \\(planned\\)\n$"
       "${DIR}/2600-4k")
-    expect_refused("^muhtari-run: [^\n]*/souper-v4: unsupported board: souper\n$"
-      "${DIR}/souper-v4")
     foreach(sound ym2151 covox adpcm)
       expect_refused("^muhtari-run: [^\n]*/${sound}[.]a78: unsupported device\nmuhtari-run: unavailable sound configuration: ${sound}\n$"
         "${WORK}/${sound}.a78")
@@ -1706,7 +1705,7 @@ foreach(case IN ITEMS hash pal)
     LABELS runner portable TIMEOUT 1) # 2 x 0.35 s, macOS x64, slowest of 31 runs, run 39377950148
   set_tests_properties(runner.load.${case} PROPERTIES FIXTURES_REQUIRED probe_images)
 endforeach()
-foreach(case IN ITEMS accepted 2600 unsupported_board malformed truncated oversized usage
+foreach(case IN ITEMS accepted 2600 souper malformed truncated oversized usage
     unreadable headerless_rule)
   muhtari_add_test(NAME runner.probe.${case}
     COMMAND ${runner_check} -DCASE=probe.${case} -DDIR=${runner_probe_dir}

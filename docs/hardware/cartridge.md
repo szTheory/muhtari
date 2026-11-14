@@ -191,6 +191,7 @@ The body sizes each board this library runs accepts:
 | Fractalus | exactly 32 KiB ROM and 2 KiB physical RAM, no board options |
 | Activision | exactly 128 KiB, no board options or cartridge RAM |
 | BankSet | equal CPU-then-MARIA halves of 32, 48, 52, 128, 256 or 512 KiB; at most 1 MiB total |
+| Souper | exactly 512 KiB ROM and 32 KiB volatile EXRAM |
 
 The evidence is MAME's 7800 list, which gives these ROM sizes per slot:
 
@@ -228,8 +229,9 @@ Reload and power cycle restore declared chip count and the boot clock origin.
 
 ## Boards
 
-`MUHTARI_STATUS_OK` includes linear, Absolute, Activision, Fractalus, BankSet and the SuperGame family: SuperGame, with RAM, SG9, bank 6 at $4000 and banked RAM.
-Non-BankSet halt-banked RAM and Souper are reported with
+`MUHTARI_STATUS_OK` includes linear, Absolute, Activision, Fractalus, BankSet,
+Souper and the SuperGame family: SuperGame, with RAM, SG9, bank 6 at $4000 and
+banked RAM. Non-BankSet halt-banked RAM is reported with
 `MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD`. YM2151, Covox and ADPCM remain descriptive
 probe metadata; executable load refuses these unimplemented audio requests before
 allocation. Selecting expansion Off does not erase independent audio declarations.
@@ -350,6 +352,30 @@ shared/HALT stores. Their independently derived numeric records live in
 `tests/diag/expected.csv`; unequal CPU/MARIA graphics, ownership and host audio
 checks supplement those records. These checks establish the selected model,
 not universal gameplay or measured hardware accuracy.
+
+### Souper
+
+The selected software profile accepts a 512 KiB ROM body and owns 32 KiB of
+volatile EXRAM per cartridge instance. A version 3 header selects it with cart
+type bit 12; a valid version 4 block selects mapper 4 with options zero. Other
+mapper options, unsupported audio declarations and mismatched or extra payload
+bytes are refused before the running cartridge changes. Existing POKEY metadata
+is parsed by the common loader; this profile adds no Souper-specific POKEY
+wiring, and `$8007` does not queue BupChip audio.
+
+At load and power cycle, EXRAM and mapper latches are zeroed. CPU and MARIA both
+read EXRAM at `$4000–$7FFF`, ROM bank 0 at `$8000–$BFFF`, and the fixed final ROM
+bank at `$C000–$FFFF`. The selected mapping is based on the A78/game software
+profile collected in cartridge preparation (CART.25/CART.42), not a physical
+cartridge measurement or a retail-game compatibility claim. Plan 22-02 adds
+register-selected banking; Plan 22-03 adds complete snapshot support. Until that
+state work lands, `muhtari_state_size` returns zero and save/load report
+`MUHTARI_STATUS_ERR_STATE_UNAVAILABLE` for Souper.
+
+The owned diagnostic proves this initial map through CPU and MARIA accesses and
+checks the generated image in the library, runner, native libretro adapter and
+production portable loader. It does not establish later banking modes, complete
+gameplay, or physical hardware behavior.
 
 ### Linear
 

@@ -547,6 +547,7 @@ libretro.info_claims.savestate	libretro
 libretro.info_claims.self_test	libretro
 libretro.observe	libretro,portable
 libretro.observe.controls	libretro,portable
+libretro.observe.souper	libretro,portable
 libretro.observe.ym	libretro,portable
 libretro.observe.ym.controls	libretro,portable
 libretro.rcheevos	libretro,portable
@@ -673,9 +674,9 @@ runner.probe.oversized	portable,runner
 runner.probe.sample_a78	built,portable
 runner.probe.sample_hash_match	built,portable
 runner.probe.sample_headerless	built,portable
+runner.probe.souper	portable,runner
 runner.probe.truncated	portable,runner
 runner.probe.unreadable	portable,runner
-runner.probe.unsupported_board	portable,runner
 runner.probe.usage	portable,runner
 runner.region.pal	portable,runner
 runner.save.cadence	portable,runner

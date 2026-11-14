@@ -55,7 +55,8 @@ async function loadEvidence(options) {
   const wasmPath = options.module.replace(/\.mjs$/u, '.wasm');
   check(wasmPath !== options.module, 'production loader must use the .mjs suffix');
   const wasm = await readFile(wasmPath);
-  check(native.schema === 1 || native.schema === 2, 'native observation schema must be 1 or 2');
+  check(native.schema === 1 || native.schema === 2 || native.schema === 3,
+        'native observation schema must be 1, 2, or 3');
   check(native.fixture_sha256 === sha256(fixture), 'fixture SHA-256 differs from native observation');
   const sourcePath = `${dirname(options.module)}${sep}muhtari-source-id.txt`;
   const sourceIdentity = (await readFile(sourcePath, 'utf8')).trim();
@@ -64,6 +65,10 @@ async function loadEvidence(options) {
   if (native.schema === 2) {
     validateYmNative(native, fixture, sourceIdentity);
     return { native, fixture, wasm: new Uint8Array(wasm), wasmPath, sourceIdentity, ym: true };
+  }
+  if (native.schema === 3) {
+    validateSouperNative(native, fixture, sourceIdentity);
+    return { native, fixture, wasm: new Uint8Array(wasm), wasmPath, sourceIdentity, souper: true };
   }
   check(native.numeric_oracles?.width === WIDTH && native.numeric_oracles?.height === HEIGHT,
         'native numeric oracle must establish 320x242 geometry');
@@ -279,6 +284,21 @@ class Core {
       this.module._retro_get_system_av_info(av);
       check(this.module.HEAPU32[av >>> 2] === WIDTH && this.module.HEAPU32[(av + 4) >>> 2] === (this.ymRegion === 'pal' ? 292 : HEIGHT),
             'production libretro geometry is not 320x242');
+    } finally { this.module._free(av); }
+  }
+
+  startSouperGame(fixture) {
+    const game = this.makeGameInfo(fixture);
+    let loaded;
+    try { loaded = this.module._retro_load_game(game.info) !== 0; }
+    finally { this.module._free(game.data); this.module._free(game.info); }
+    check(loaded, 'production libretro core refused patterned Souper fixture');
+    check(this.module._retro_serialize_size() === 0, 'Souper save-state size must be unavailable');
+    const av = this.allocate(40, 'Souper system AV information');
+    try {
+      this.module._retro_get_system_av_info(av);
+      check(this.module.HEAPU32[av >>> 2] === WIDTH && this.module.HEAPU32[(av + 4) >>> 2] === HEIGHT,
+            'production Souper geometry is not 320x242');
     } finally { this.module._free(av); }
   }
 
@@ -660,6 +680,27 @@ function validateYmNative(native, fixture, sourceIdentity) {
   }
 }
 
+function validateSouperNative(native, fixture, sourceIdentity) {
+  check(native.schema === 3 && native.workload === 'souper' &&
+        native.fixture_sha256 === sha256(fixture), 'wrong Souper workload or fixture');
+  check(validHash(native.source_identity) && native.source_identity === sourceIdentity,
+        'wrong Souper source identity');
+  check(native.numeric_oracles?.width === WIDTH && native.numeric_oracles?.height === HEIGHT &&
+        native.numeric_oracles?.sample_rate === 48000 &&
+        JSON.stringify(native.numeric_oracles?.mailbox_values) === '[0,0,64,64,224]' &&
+        native.numeric_oracles?.state_unavailable === true,
+        'Souper numeric oracle or state-unavailable contract is incomplete');
+  check(native.abi?.memory_system_ram !== undefined && native.abi?.device_joypad !== undefined &&
+        native.abi?.pixel_format_xrgb8888 !== undefined, 'Souper libretro ABI receipt is incomplete');
+  check(Array.isArray(native.frames) && native.frames.length === 12, 'incomplete Souper frame set');
+  for (let i = 0; i < 12; i++) {
+    const frame = native.frames[i];
+    check(frame?.index === i && Number.isInteger(frame.audio_count) &&
+          validHash(frame.video_sha256) && validHash(frame.audio_sha256),
+          `incomplete Souper frame ${i}`);
+  }
+}
+
 function runYmFrame(core, nativeFrame, index, route = 'batch') {
   const c = { videoCalls: 0, batchCalls: 0, sampleCalls: 0, pollCalls: 0, audioCount: 0, error: null };
   core.capture = c;
@@ -690,6 +731,70 @@ function runYmFrame(core, nativeFrame, index, route = 'batch') {
       frame.audio_sha256 === nativeFrame.audio_sha256, 'wrong YM PCM hash or count');
   }
   return { frame, capture: c };
+}
+
+function souperCrc(mailbox) {
+  let crc = 0xffff;
+  for (const byte of mailbox.subarray(16, 256)) {
+    crc ^= byte << 8;
+    for (let bit = 0; bit < 8; bit++) crc = ((crc << 1) ^ ((crc & 0x8000) ? 0x1021 : 0)) & 0xffff;
+  }
+  return crc;
+}
+
+function assertSouperMailbox(core) {
+  const pointer = core.module._retro_get_memory_data(core.native.abi.memory_system_ram);
+  const size = core.module._retro_get_memory_size(core.native.abi.memory_system_ram);
+  check(pointer !== 0 && size >= 0xb00 && pointer + size <= core.module.HEAPU8.length,
+        'Souper system RAM mailbox is unavailable');
+  const mailbox = core.module.HEAPU8.subarray(pointer + 0xa00, pointer + 0xb00);
+  check(Buffer.from(mailbox.subarray(0, 4)).toString('ascii') === 'M7DG' &&
+        mailbox[4] === 1 && mailbox[5] === 0 && mailbox[6] === 5 && mailbox[7] === 22 &&
+        (mailbox[8] | (mailbox[9] << 8)) === souperCrc(mailbox),
+        'Souper mailbox header or CRC differs');
+  const expected = [0, 0, 64, 64, 224];
+  for (let i = 0; i < expected.length; i++) {
+    const offset = 16 + i * 4;
+    check(mailbox[offset] === i + 1 && mailbox[offset + 1] === 1 &&
+          mailbox[offset + 2] === expected[i] && mailbox[offset + 3] === 0,
+          `Souper mailbox record ${i + 1} differs from literal oracle`);
+  }
+}
+
+function runSouperFrame(core, nativeFrame) {
+  const c = { videoCalls: 0, batchCalls: 0, sampleCalls: 0, pollCalls: 0, audioCount: 0, error: null };
+  core.capture = c;
+  core.module._retro_run();
+  core.capture = null;
+  check(!c.error, c.error);
+  check(c.videoCalls === 1 && c.video && c.width === WIDTH && c.height === HEIGHT &&
+        c.batchCalls === 1 && c.audio && c.pollCalls === 1 && c.sampleCalls === 0,
+        'missing Souper video/audio/poll callback or changed geometry');
+  check(c.audioCount === nativeFrame.audio_count &&
+        sha256(c.video) === nativeFrame.video_sha256 && sha256(c.audio) === nativeFrame.audio_sha256,
+        `Souper Wasm frame ${nativeFrame.index} differs from native libretro adapter`);
+}
+
+async function runSouper(options, evidence, factory) {
+  const core = new Core(await factory({ wasmBinary: evidence.wasm }), evidence);
+  try {
+    core.startSouperGame(evidence.fixture);
+    const sentinel = core.allocate(32, 'Souper unavailable-state sentinel');
+    try {
+      core.module.HEAPU8.fill(0xa5, sentinel, sentinel + 32);
+      check(core.module._retro_serialize(sentinel, 32) === 0,
+            'Souper serialization was accepted while state support is unavailable');
+      check(core.module.HEAPU8.subarray(sentinel, sentinel + 32).every((byte) => byte === 0xa5),
+            'Souper serialization refusal changed caller storage');
+      check(core.module._retro_unserialize(sentinel, 32) === 0,
+            'Souper unserialization was accepted while state support is unavailable');
+      check(core.module.HEAPU8.subarray(sentinel, sentinel + 32).every((byte) => byte === 0xa5),
+            'Souper unserialization refusal changed caller storage');
+    } finally { core.module._free(sentinel); }
+    for (const frame of evidence.native.frames) runSouperFrame(core, frame);
+    assertSouperMailbox(core);
+    process.stdout.write('Souper production Wasm verification passed (12 native-parity frames, mailbox, unavailable state)\n');
+  } finally { core.dispose(); }
 }
 
 function repairStateCrc(state) {
@@ -857,6 +962,7 @@ async function main() {
   const options = parseArgs(process.argv.slice(2));
   const evidence = await loadEvidence(options);
   const { factory, module } = await importFactory(options, evidence);
+  if (evidence.souper) return runSouper(options, evidence, factory);
   if (evidence.ym) return runYm(options, evidence, factory);
   if (options.mode === 'controls') return runControls(options, evidence, factory);
   if (options.mode === 'report') {

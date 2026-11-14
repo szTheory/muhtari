@@ -10,7 +10,7 @@
         RORG $C000
         .byte $E0
         include "lib.s"
-ROM_ID = 21
+ROM_ID = 22
 reset SUBROUTINE
         sei
         cld
@@ -43,20 +43,41 @@ reset SUBROUTINE
         ldy #5
         jsr mb_record
         jsr mb_finish
-        ; One object reads graphics from the initial flat EXRAM window.
-        lda #31
-        sta $1800
+        ; The mailbox samples the power-on zeros first. Then graphics at $4000
+        ; exercise the same EXRAM through MARIA's real DMA fetches.
         lda #$40
-        sta $1801
+        ; One width-1 graphics byte per legal 160A vertical page makes the
+        ; literal row oracle independent of which row offset MARIA fetches.
+        lda #$FF
+        sta $4000
+        sta $4100
+        sta $4200
+        sta $4300
+        sta $4400
+        sta $4500
+        sta $4600
+        sta $4700
+        sta $4800
+        sta $4900
+        sta $4A00
+        sta $4B00
+        sta $4C00
+        sta $4D00
+        sta $4E00
+        sta $4F00
+        ; One object reads graphics from the initial flat EXRAM window.
         lda #0
+        sta $1800
+        lda #$1F
+        sta $1801
+        lda #$40
         sta $1802
         lda #0
         sta $1803
-        lda #1
+        lda #0
         sta $1804
-        lda #31
         sta $1805
-        lda #$40
+        lda #0
         sta $1806
         lda #0
         sta $1807
