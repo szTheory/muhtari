@@ -90,9 +90,10 @@ to exactly one phase; no requirement is orphaned or accepted ahead of verificati
 
 ## Next boundary
 
-Phase 22 passed verification and is complete. Its update to `docs/libretro.md`
-made Phase 21's shared-source verification stale, so refresh that report against
-the final source before the v7.0 milestone audit. Publication, merge, remote
-dispatch and host/device/identity-bound actions remain separate boundaries.
+Phase 21 and Phase 22 passed verification and are complete. Phase 21's report
+was refreshed against the final shared source after Phase 22 updated
+`docs/libretro.md`. Fast-forward the phase branch into the local milestone
+branch before the v7.0 audit. Publication, merge, remote dispatch and
+host/device/identity-bound actions remain separate boundaries.
 Original Phase 12/14 denied/spent scopes, all nine deferred v3.0 requirements and
 unaccepted hardware/platform claims remain unchanged.

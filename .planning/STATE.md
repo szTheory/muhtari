@@ -6,9 +6,9 @@ current_phase: 22
 current_plan: Not started
 status: completed
 stopped_at: Phase 22 complete — all phases complete
-last_updated: "2026-11-14T06:25:12.312Z"
+last_updated: "2026-11-14T06:46:40Z"
 last_activity: 2026-11-14
-last_activity_desc: Phase 22 complete
+last_activity_desc: Phase 21 verification refreshed; milestone audit pending
 state_head: a2efefb357dca981c07ce5bc08c109951f19242a
 progress:
   total_phases: 2
@@ -24,14 +24,14 @@ progress:
 
 See [PROJECT.md](PROJECT.md) (updated 2026-11-14), [REQUIREMENTS.md](REQUIREMENTS.md), [ROADMAP.md](ROADMAP.md) and [v7.0 recommendation](research/next-milestone/v7-SOUPER.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** Phase 22 — Complete Souper homebrew mapper
+**Current focus:** v7.0 milestone closeout after Phase 21/22 verification
 
 ## Current Position
 
 Phase: 22
 Current Plan: Not started
 Status: All phases complete
-Last activity: 2026-11-14 — Phase 22 complete
+Last activity: 2026-11-14 — Phase 21 verification refreshed; milestone audit pending
 
 Progress: [██████████] 100% (4/4 plans)
 
@@ -66,7 +66,7 @@ Inherited todos and optional seeds retain their dispositions except the selected
 
 ### Blockers/Concerns
 
-- No unmet roadmap requirement. Phase 22 passed all eight observable truths and all seven SOUPER requirements on the final local source. Its update to `docs/libretro.md` made Phase 21's shared-source verification stale; refresh that report before the milestone audit. The result follows the selected software model; it does not establish retail compatibility or physical-cartridge accuracy. Publication, merge, remote dispatch, and host/device/identity-bound actions remain separate boundaries.
+- No unmet roadmap requirement. Phase 21's refreshed report and Phase 22's final report both pass against the final local source. The Phase 21 spec-less probe classification remains unresolved and explicitly nonblocking; no probe pass or resolution is claimed. Phase 22 follows the selected software model; it does not establish retail compatibility or physical-cartridge accuracy. Publication, merge, remote dispatch, and host/device/identity-bound actions remain separate boundaries.
 - Phase 12's exact diagnostic-app request was denied before preflight/content and must not be retried. Original Phase 12 host/remote stops, Phase 14's spent host scope, expired windows and specific no-retry limits remain binding. No v6.0 action renews them or accepts the nine deferred v3.0 requirements.
 - v6.0 publication and PR #61 merge are complete. Future publication, merge, remote dispatch and host/device/identity-bound actions remain separate boundaries. Browser/player, Playstead, physical audibility, calibrated hardware accuracy, public stereo and full XM are excluded. Earlier combined-source/failed release evidence remains source-specific in archived receipts.
 
@@ -120,12 +120,12 @@ Last session: 2026-11-14T06:26:41Z
 Stopped at: Phase 22 complete — all phases complete
 Resume file: None
 
-Next action: Run `$gsd-audit-milestone` to audit and close out v7.0. No directory switch is needed.
+Next action: Fast-forward `phase/22-complete-souper-homebrew-mapper` into `milestone/v7.0-souper-mapper`, then run `$gsd-audit-milestone`. No owner directory switch is needed.
 
 ## Operator Next Steps
 
 
-- Execute Phase 22 plan 22-03 with `$gsd-execute-phase 22`; plan 22-02 is complete, and phase acceptance remains pending. No directory switch is needed.
+- No owner action is needed for local verification, audit, or archive. Publication, push, merge, remote dispatch, and host/device/identity-bound actions remain separate boundaries.
 
 
 ## Decisions
@@ -151,4 +151,4 @@ Next action: Run `$gsd-audit-milestone` to audit and close out v7.0. No director
 
 ## Next action
 
-Phase 22 plans 22-01 and 22-02 are complete. Continue with `$gsd-execute-phase 22`; phase acceptance remains pending until plan 22-03 and its phase checks complete. Original Phase 12/14 host and remote stops remain binding.
+Phase 21 and Phase 22 plans and verifications are complete. Fast-forward the local phase branch into `milestone/v7.0-souper-mapper`, then run `$gsd-audit-milestone`. Original Phase 12/14 host and remote stops remain binding.
