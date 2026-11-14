@@ -2,7 +2,7 @@
 title: "Product roadmap (rolling)"
 summary: "Immediate / Near / Mid / Long direction for muhtari with evidence and promotion triggers."
 read_when: "At every new-milestone and complete-milestone step, and when a finding changes priorities."
-updated: 2026-11-13
+updated: 2026-11-14
 ---
 
 # Product roadmap (rolling)
@@ -35,36 +35,26 @@ handheld or unavailable-platform acceptance is inferred. Muhtari retains exactly
 three deliverables and no device/UI code. No new numerical quota, dependency,
 cache, workflow topology or unrelated deadline was introduced.
 
-## Immediate — v7.0 Souper mapper support
+## Immediate — successor scope not selected
 
-The selected successor is **v7.0 — Souper homebrew mapper support**, scoped to
-one public mapper-only profile for developers' own cartridges. Muhtari already
-recognizes Souper declarations and refuses to load them. The original mapper
-author says the mapper was released so other developers could build on it; a
-published GameDrive code example supplies a testable mapping model. See the
-[v7.0 evidence and boundaries](research/next-milestone/v7-SOUPER.md). The active
-[ROADMAP.md](ROADMAP.md) and [REQUIREMENTS.md](REQUIREMENTS.md) are the execution
-contract for Phases 21–22.
+v7.0 — Souper homebrew mapper support — is complete and archived locally as an
+`override_closeout`. All eight scoped requirements and both phases passed. The
+closeout acknowledged one workspace-reconciliation record as deferred while
+preserving its `unknown` verdict; 49 earlier acknowledgments remain carried
+forward. This is a planning closeout only: no package publication, push, merge
+or tag is claimed. See the [v7.0 audit](milestones/v7.0-MILESTONE-AUDIT.md),
+[requirements](milestones/v7.0-REQUIREMENTS.md),
+[phase records](milestones/v7.0-phases/) and
+[source recommendation](research/next-milestone/v7-SOUPER.md).
 
-Acceptance must distinguish CPU from MARIA memory reads, exercise ROM banking,
-character remapping, segmented EXRAM and MARIA fetch trapping with generated
-fixtures and separate literal expected values, and preserve deterministic
-reset and snapshot continuation. Keep the claim at software-profile
-conformance. Exclude BupChip/BupBoop audio, Rikki & Vikki gameplay/compatibility,
-unqualified extra image payloads, flash variants, physical-hardware accuracy,
-and new host/UI/dependency work. The complete cartridge image layout for
-Rikki & Vikki is unresolved; do not make it a fixture.
-
-Start with the recurring measured tune-up (SEED-007), then keep the mapper,
-state, documentation and existing C/runner/libretro/portable acceptance in one
-complete feature slice. Set register reset policy and state-version consequences
-before implementation. No API/ABI or package-version change is implied by the
-planning milestone. Original Phase 12/14 host stops and the nine deferred v3.0
-requirements remain unchanged.
+No successor has been selected. Use the recommendation-first milestone
+discussion to reconcile new consumer needs, sibling ownership and evidence
+before promoting a scope. Preserve the existing host, remote and identity-bound
+stops; v7.0 does not renew them.
 
 ## Near term — promote only a demonstrated core gap
 
-After v7.0, prefer one concrete title-blocking 7800 correction backed by a
+When selecting the next milestone, prefer one concrete title-blocking 7800 correction backed by a
 lawful discriminating input and an independent expected result. Do not start a
 measurement-only phase: DLI/HALT questions need a specific observation and any
 real-console run remains separately authorized. If no such counterexample
@@ -166,6 +156,7 @@ example; reproduce sibling lessons locally before adopting them.
 | 2026-11-11 | Removed Atari 2600 emulation from Muhtari's future scope and retired SEED-006 | The owner started the separate `twentysixhundo` project for that system; Muhtari remains focused on Atari 7800. |
 | 2026-11-11 | Recommended one YM2151/XM audio profile after bounded specialist fan-out and adversarial review | Loader refusal is concrete; no current accuracy defect or new LibFuturo API/package need is established. Preserve mono output, legal diagnostics, compatibility decisions and independent source-qualified acceptance. Adopted as shipped v6.0. |
 | 2026-11-13 | Selected v7.0 Souper mapper-only support after consumer, hardware and adversarial review | TailChao explicitly released the mapper for other developers, Muhtari refuses its declaration, and a public mapping example enables generated acceptance. Keep claims to the published mapper model; exclude BupChip and named-game compatibility. LibFuturo's PAL/browser work remains sibling-owned. |
+| 2026-11-14 | Closed and archived v7.0 locally; left successor scope unselected | All eight requirements and both phase verifications pass. One `unknown` workspace record was acknowledged and deferred, with 49 prior acknowledgments carried forward. This does not claim publication, push, merge or tag. |
 
 | 2026-11-10 | Completed the offline v4.0 core slice; retain ship and real-browser work as distinct next decisions | All five scoped requirements and integration flows passed locally; measured SDK results are explicitly headless and emulated. |
 

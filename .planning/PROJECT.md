@@ -6,7 +6,8 @@ muhtari is an Atari 7800 ProSystem emulator core written in C. It ships as a lib
 headless command-line runner for automation, and a libretro core so that RetroArch and other hosts can play 7800
 games with it. It is for people who build emulator hosts and want an accurate, fast, permissively licensed 7800
 core; for players, homebrew developers, ROM hackers, speedrunners, TAS authors and AI researchers who use those
-hosts. The qualified XM/YM2151 profile adds deterministic FM sound through the same three deliverables and portable artifact.
+hosts. The qualified XM/YM2151 sound and Souper mapper profiles add deterministic FM audio and supported
+homebrew-cartridge mapping through the same deliverables and portable artifact.
 
 ## Core Value
 
@@ -17,13 +18,13 @@ that any host can embed.
 
 v6.0 YM2151 homebrew sound is implemented, verified and shipped as package v0.14.0. Both phases, all nine current requirements, required local gates and independent review/integration pass. The release workflow and latest-install check passed; PR #61 merged and main CI passed. See the [v6.0 ship receipt](milestones/v6.0-SHIP.md).
 
-v7.0 Souper mapper support is implemented and locally verified on the current phase branch. Its scope is one generated-fixture-testable mapper profile for homebrew developers; BupChip audio and Rikki & Vikki compatibility are excluded. All seven SOUPER requirements passed Phase 22 verification. The mapper follows the cited software profile; physical-cartridge accuracy and retail-game compatibility are not claimed. See [the v7.0 research](research/next-milestone/v7-SOUPER.md), [Phase 22 verification](phases/22-complete-souper-homebrew-mapper/22-VERIFICATION.md) and [rolling product roadmap](PRODUCT-ROADMAP.md).
+v7.0 Souper mapper support is implemented, phase-verified, audited and archived locally. Its scope is one generated-fixture-testable mapper profile for homebrew developers; BupChip audio and Rikki & Vikki compatibility are excluded. All eight v7.0 requirements pass their phase verifications. The mapper follows the cited software profile; physical-cartridge accuracy and retail-game compatibility are not claimed. See the [v7.0 audit](milestones/v7.0-MILESTONE-AUDIT.md), [archived Phase 22 verification](milestones/v7.0-phases/22-complete-souper-homebrew-mapper/22-VERIFICATION.md) and [rolling product roadmap](PRODUCT-ROADMAP.md).
 
-Phase 21 completed its source-qualified tune-up with a bounded no-change disposition. Phase 22 delivered and verified the Souper profile, deterministic CPU/MARIA mapping, snapshot continuation, and existing-consumer paths. v7.0 still needs its milestone audit and local archive; publication, push and merge have not occurred.
+Phase 21 completed its source-qualified tune-up with a bounded no-change disposition. Phase 22 delivered and verified the Souper profile, deterministic CPU/MARIA mapping, snapshot continuation, and existing-consumer paths. The v7.0 local planning closeout is complete; publication, push and merge have not occurred.
 
 Nine v3.0 gaps and every original denied/spent Phase12/14 host/remote scope remain unchanged. Older dirty worktrees stay preserved and root remains canonical. [Milestone audit](milestones/v6.0-MILESTONE-AUDIT.md) and [requirements](milestones/v6.0-REQUIREMENTS.md) retain the exact accepted scope.
 
-## Current Milestone: v7.0 Souper homebrew mapper
+## Latest Locally Completed Milestone: v7.0 Souper homebrew mapper
 
 **Goal:** Let homebrew developers load and run their own cartridges that use the published Souper mapper profile through Muhtari's existing C library, runner and libretro core.
 
@@ -34,6 +35,8 @@ Nine v3.0 gaps and every original denied/spent Phase12/14 host/remote scope rema
 
 **Scope boundary:** Mapper-profile conformance only. No BupChip/BupBoop audio, Rikki & Vikki gameplay claim, unsupported extra payloads or flash variants, physical hardware calibration, host/UI work or new dependency. The result establishes the selected software model, not physical hardware or retail-game compatibility.
 
+**Closeout:** Locally archived on 2026-11-14 with an override for one separately documented workspace-reconciliation item; the source verdict remains `unknown`. No package publication, push, merge or tag is claimed. See the [v7.0 audit](milestones/v7.0-MILESTONE-AUDIT.md), [roadmap archive](milestones/v7.0-ROADMAP.md), [requirements archive](milestones/v7.0-REQUIREMENTS.md), [product roadmap snapshot](milestones/v7.0-PRODUCT-ROADMAP.md) and [phase archive](milestones/v7.0-phases/).
+
 ## Latest Shipped Milestone: v6.0 YM2151 homebrew sound
 
 **Delivered:** One documented selected/header-auto XM/YM2151 profile; permissive C17 integer synthesis; deterministic bounded mono audio; complete transactional state/lifecycle; actual public C, runner, loaded libretro, emitted Wasm and clean installed/extracted consumers. Independent numeric and exact-seed evidence, genuine old/current legacy continuation, notices, source/fixture identity and fault controls pass.
@@ -42,9 +45,9 @@ API8/ABI1 remain unchanged. Global latest behavior7/format2 is distinct from unc
 
 **Publication:** [v0.14.0](https://github.com/szTheory/muhtari/releases/tag/v0.14.0) is published. The [release run](https://github.com/szTheory/muhtari/actions/runs/43441765548) and its latest-install check passed. PR [#61](https://github.com/szTheory/muhtari/pull/61) merged and current-main CI passed. See the [ship receipt](milestones/v6.0-SHIP.md).
 
-**Next boundary:** Phase 21 and Phase 22 plans are complete locally; all eight v7.0 requirements passed their phase verifications. Phase 21's shared-source verification was refreshed against the final local source and passed. Fast-forward the phase branch into the local milestone branch, then run the v7.0 audit and archive. Shipping, publication, remote dispatch, host/device and identity-bound actions remain separate boundaries. No owner checkout switch is needed.
+**Next boundary:** v7.0 is audited and archived locally. No next milestone is selected. Package shipping, publication, merge, remote dispatch, host/device and identity-bound actions remain separate boundaries.
 
-## Previous Published Milestone: v5.0 Downloadable WebAssembly core
+## Earlier Published Milestone: v5.0 Downloadable WebAssembly core
 
 **Goal:** Host integrators can obtain a source-bound Emscripten libretro bundle, verified from its extracted contents and ready for the existing release pipeline.
 
@@ -142,7 +145,7 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 </details>
 
-## Last Completed Milestone: v4.0 Browser/WebAssembly core readiness
+## Earlier Milestone: v4.0 Browser/WebAssembly core readiness
 
 **Goal:** Make the existing libretro core buildable for browser hosts and prove its deterministic behavior with offline, repeatable checks, while keeping the core small and portable.
 
@@ -348,4 +351,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-14 after Phase 22*
+*Last updated: 2026-11-14 after v7.0 milestone closeout*

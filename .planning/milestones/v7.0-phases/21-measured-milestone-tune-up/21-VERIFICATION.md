@@ -1,6 +1,6 @@
 ---
 phase: 21-measured-milestone-tune-up
-verified: 2026-11-14T06:51:44Z
+verified: 2026-11-14T15:53:15Z
 status: passed
 score: 5/5 must-haves verified
 covered_files:
@@ -8,19 +8,19 @@ covered_files:
   - .planning/LESSONS.md
   - .planning/PRODUCT-ROADMAP.md
   - .planning/PROJECT.md
-  - .planning/REQUIREMENTS.md
-  - .planning/ROADMAP.md
+  - .planning/milestones/v7.0-REQUIREMENTS.md
+  - .planning/milestones/v7.0-ROADMAP.md
   - .planning/STATE.md
   - .planning/milestones/v3.0-MILESTONE-AUDIT.md
   - .planning/milestones/v6.0-MILESTONE-AUDIT.md
   - .planning/milestones/v6.0-REQUIREMENTS.md
   - .planning/milestones/v6.0-SHIP.md
   - .planning/milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-COST-EVIDENCE.md
-  - .planning/phases/21-measured-milestone-tune-up/21-01-PLAN.md
-  - .planning/phases/21-measured-milestone-tune-up/21-01-SUMMARY.md
-  - .planning/phases/21-measured-milestone-tune-up/21-RESEARCH.md
-  - .planning/phases/21-measured-milestone-tune-up/21-REVIEW.md
-  - .planning/phases/21-measured-milestone-tune-up/21-TUNEUP.md
+  - .planning/milestones/v7.0-phases/21-measured-milestone-tune-up/21-01-PLAN.md
+  - .planning/milestones/v7.0-phases/21-measured-milestone-tune-up/21-01-SUMMARY.md
+  - .planning/milestones/v7.0-phases/21-measured-milestone-tune-up/21-RESEARCH.md
+  - .planning/milestones/v7.0-phases/21-measured-milestone-tune-up/21-REVIEW.md
+  - .planning/milestones/v7.0-phases/21-measured-milestone-tune-up/21-TUNEUP.md
   - .planning/preparation/DECISIONS.md
   - .planning/preparation/ENGINEERING.md
   - .planning/seeds/SEED-007-milestone-tune-up.md
@@ -32,7 +32,7 @@ covered_files:
   - docs/maintaining.md
   - pins.txt
   - quality.json
-covered_digest: "v4:sha256:cc8694b0d3c72bb6cd62db591a9b5168e6900ec775795d1fd0dfe18db21254dd"
+covered_digest: "v4:sha256:45f9f20e8cd4ba1cd3c1ba094ce583b9f342182a31e9ca946265f6907f96be0b"
 behavior_unverified: 0
 overrides_applied: 0
 decision_coverage:
@@ -51,9 +51,9 @@ advisory: []
 # Phase 21: Measured Milestone Tune-Up Verification Report
 
 **Phase Goal:** Maintainers can identify the current shipped baseline and begin Souper work with a measured small correction or bounded no-change disposition that preserves required checks and prior failures.
-**Verified:** 2026-11-14T06:51:44Z
+**Verified:** 2026-11-14T15:53:15Z
 **Status:** passed
-**Re-verification:** Yes — refreshed against final commit `95b8c8` after the project, roadmap, and state closeout records changed.
+**Re-verification:** Archive relocation refresh. The prior verdict is retained; covered paths and fingerprint now identify the archived v7.0 sources. No product tests were rerun for this documentation-only refresh.
 
 ## Goal Achievement
 
@@ -62,7 +62,7 @@ advisory: []
 | # | Truth | Status | Evidence |
 |---|---|---|---|
 | 1 | Maintainers can follow the Phase 21 release and documentation records to the accepted shipped baseline and distinguish it from later local work. | ✓ VERIFIED | `21-TUNEUP.md` links the current project/roadmap records and README to the v6.0 ship receipt. The live planning records still identify v0.14.0/v6.0 as latest shipped, while the final Phase 22 edits identify Souper as locally implemented and explicitly leave publication, push, and merge outstanding. |
-| 2 | Accepted v0.14.0 publication and same-source main CI are tied to `461dda5545bcc202fb4b90c1232fb2e9a00b6c28` and separate saved receipts. | ✓ VERIFIED | The tune-up ledger and [v6.0 ship receipt](../../milestones/v6.0-SHIP.md) identify release run `43441765548` and main-CI run `43427086666` separately on the accepted source. These are historical receipts; no hosted query was made. |
+| 2 | Accepted v0.14.0 publication and same-source main CI are tied to `461dda5545bcc202fb4b90c1232fb2e9a00b6c28` and separate saved receipts. | ✓ VERIFIED | The tune-up ledger and [v6.0 ship receipt](../../v6.0-SHIP.md) identify release run `43441765548` and main-CI run `43427086666` separately on the accepted source. These are historical receipts; no hosted query was made. |
 | 3 | The later Phase 21 research snapshot and execution documentation baseline remain distinct from release acceptance and Phase 20 local measurements; no CI pass is inherited by a later documentation source. | ✓ VERIFIED | The ledger names research snapshot `815461285bfe450380058bd211927b4e916a2981` without a new receipt, execution baseline `bcc53f292b699cf1618f6157ee7167c36ce49010`, and separate Phase 20 gate/product sources. The report explicitly limits each result to its named source. The Phase 22 change to `docs/libretro.md` adds three lines about Souper format 3/behavior 8 state; it does not alter these saved receipts or claim a new hosted pass. |
 | 4 | Maintainers can inspect six evidence-linked quality ratings and the accepted release run's efficiency observations with their limits. | ✓ VERIFIED | `21-TUNEUP.md` contains six scored dimensions with linked evidence, rationale, and limits. The accepted release receipt's four-second start delay, longest observed jobs, and zero failed/cancelled jobs are reported without claiming a complete DAG critical path, billed minutes, timing trend, or main-CI timing. The already-landed PR-run workload reduction is distinguished from new Phase 21 work. |
 | 5 | The source-specific review supports a bounded no-change disposition while preserving required checks, fault detection, workload limits, historical failures, and prior host/remote stops. | ✓ VERIFIED | The report records a revisit trigger and scope checkpoint, preserves quality floors/ceilings, fault controls, deferred v3.0 requirements, Phase 12/14 stops, and the listed failed/cancelled/incomplete runs. The Phase 21 substantive change remains documentation-only. |

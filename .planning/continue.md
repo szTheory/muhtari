@@ -1,16 +1,17 @@
-# Current continuation — Phase 21 complete, Phase 22 ready
+# Current continuation — v7.0 archived locally; no successor selected
 
-Phase 21 completed the source-qualified v7.0 tune-up. Its [report](phases/21-measured-milestone-tune-up/21-TUNEUP.md)
-records a bounded no-change disposition, retains the earlier failures and leaves
-the spec-less probe unresolved. No product build, test, host or CI acceptance is
-claimed for v7.0.
+v7.0 — Souper homebrew mapper — is complete and archived locally. Its eight
+requirements, two phases, integration review and source-qualified local checks
+passed. The milestone used `override_closeout` because one workspace record was
+acknowledged as deferred with its `unknown` verdict intact; no worktree was
+changed. This is not package publication, push, merge or tag.
 
-The next command is `$gsd-discuss-phase 22` from the current checkout. Phase 22
-owns the seven Souper mapper requirements; preserve its pre-code reset/EXRAM
-policy gate and existing host/remote stops. No directory switch is needed.
+The next command is `$gsd-new-milestone`, which begins a recommendation-first
+scope discussion. No successor scope has been selected. Preserve existing host,
+remote and identity-bound stops; v7.0 does not renew them.
 
 The sections below preserve historical v7.0 kickoff and cross-project scoping
-provenance. Their former Phase 21 planning action has been superseded by this
+provenance. Their former Phase 22 execution action has been superseded by this
 current handoff.
 
 The active v7.0 position is recorded in STATE and ROADMAP. Do not use

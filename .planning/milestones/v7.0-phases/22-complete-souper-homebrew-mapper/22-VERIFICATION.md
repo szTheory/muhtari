@@ -1,21 +1,21 @@
 ---
 phase: 22-complete-souper-homebrew-mapper
-verified: 2026-11-14T08:00:42Z
+verified: 2026-11-14T15:53:15Z
 status: passed
 score: "8/8 must-haves verified"
 covered_files:
-  - .planning/phases/22-complete-souper-homebrew-mapper/22-01-PLAN.md
-  - .planning/phases/22-complete-souper-homebrew-mapper/22-01-SUMMARY.md
-  - .planning/phases/22-complete-souper-homebrew-mapper/22-02-PLAN.md
-  - .planning/phases/22-complete-souper-homebrew-mapper/22-02-SUMMARY.md
-  - .planning/phases/22-complete-souper-homebrew-mapper/22-03-PLAN.md
-  - .planning/phases/22-complete-souper-homebrew-mapper/22-03-SUMMARY.md
-  - .planning/phases/22-complete-souper-homebrew-mapper/22-04-PLAN.md
-  - .planning/phases/22-complete-souper-homebrew-mapper/22-04-SUMMARY.md
+  - .planning/milestones/v7.0-phases/22-complete-souper-homebrew-mapper/22-01-PLAN.md
+  - .planning/milestones/v7.0-phases/22-complete-souper-homebrew-mapper/22-01-SUMMARY.md
+  - .planning/milestones/v7.0-phases/22-complete-souper-homebrew-mapper/22-02-PLAN.md
+  - .planning/milestones/v7.0-phases/22-complete-souper-homebrew-mapper/22-02-SUMMARY.md
+  - .planning/milestones/v7.0-phases/22-complete-souper-homebrew-mapper/22-03-PLAN.md
+  - .planning/milestones/v7.0-phases/22-complete-souper-homebrew-mapper/22-03-SUMMARY.md
+  - .planning/milestones/v7.0-phases/22-complete-souper-homebrew-mapper/22-04-PLAN.md
+  - .planning/milestones/v7.0-phases/22-complete-souper-homebrew-mapper/22-04-SUMMARY.md
   - tests/inventory/ci.txt
   - tests/libretro/host.c
   - tests/libretro/tests.cmake
-covered_digest: "v4:sha256:050e18b12bf53139fa6157b5507c6478ed8a2ab06ad1995c29387a1b91e0a910"
+covered_digest: "v4:sha256:9a1981453aaa991baa1a006145476cb18d54b10f573c047f2338b9c3e0984c0f"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
@@ -34,9 +34,9 @@ decision_coverage:
 # Phase 22: Complete Souper homebrew mapper Verification Report
 
 **Phase Goal:** A homebrew developer can load the documented Souper mapper-only profile and obtain deterministic CPU/MARIA mapping and snapshot continuation through every existing deliverable and the applicable portable consumer.
-**Verified:** 2026-11-14T08:00:42Z
+**Verified:** 2026-11-14T15:53:15Z
 **Status:** passed
-**Re-verification:** Yes — after gap closure
+**Re-verification:** Archive relocation refresh after gap closure. The prior verdict is retained; covered paths and fingerprint now identify the archived v7.0 sources. No product tests were rerun for this documentation-only refresh.
 
 ## Goal Achievement
 

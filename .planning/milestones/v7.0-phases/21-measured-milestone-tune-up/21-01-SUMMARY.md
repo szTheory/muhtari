@@ -18,8 +18,8 @@ tech-stack:
     - Mark missing evidence explicitly without inferring acceptance
 key-files:
   created:
-    - .planning/phases/21-measured-milestone-tune-up/21-TUNEUP.md
-    - .planning/phases/21-measured-milestone-tune-up/21-01-SUMMARY.md
+    - .planning/milestones/v7.0-phases/21-measured-milestone-tune-up/21-TUNEUP.md
+    - .planning/milestones/v7.0-phases/21-measured-milestone-tune-up/21-01-SUMMARY.md
   modified: []
 key-decisions:
   - "Record bounded no change: the accepted hosted sample and different-source local cost report do not justify changing required CI coverage or workload policy."
@@ -76,8 +76,8 @@ status: complete
 
 ## Files Created/Modified
 
-- `.planning/phases/21-measured-milestone-tune-up/21-TUNEUP.md` - Sole substantive deliverable; source ledger, six ratings, efficiency review, historical failures, controls, and bounded no-change conclusion.
-- `.planning/phases/21-measured-milestone-tune-up/21-01-SUMMARY.md` - Execution record and requirement coverage.
+- `.planning/milestones/v7.0-phases/21-measured-milestone-tune-up/21-TUNEUP.md` - Sole substantive deliverable; source ledger, six ratings, efficiency review, historical failures, controls, and bounded no-change conclusion.
+- `.planning/milestones/v7.0-phases/21-measured-milestone-tune-up/21-01-SUMMARY.md` - Execution record and requirement coverage.
 
 ## Decisions Made
 
