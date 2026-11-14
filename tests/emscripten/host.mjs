@@ -55,8 +55,8 @@ async function loadEvidence(options) {
   const wasmPath = options.module.replace(/\.mjs$/u, '.wasm');
   check(wasmPath !== options.module, 'production loader must use the .mjs suffix');
   const wasm = await readFile(wasmPath);
-  check(native.schema === 1 || native.schema === 2 || native.schema === 3,
-        'native observation schema must be 1, 2, or 3');
+  check(native.schema === 1 || native.schema === 2 || native.schema === 3 || native.schema === 4,
+        'native observation schema must be 1, 2, 3, or 4');
   check(native.fixture_sha256 === sha256(fixture), 'fixture SHA-256 differs from native observation');
   const sourcePath = `${dirname(options.module)}${sep}muhtari-source-id.txt`;
   const sourceIdentity = (await readFile(sourcePath, 'utf8')).trim();
@@ -66,7 +66,7 @@ async function loadEvidence(options) {
     validateYmNative(native, fixture, sourceIdentity);
     return { native, fixture, wasm: new Uint8Array(wasm), wasmPath, sourceIdentity, ym: true };
   }
-  if (native.schema === 3) {
+  if (native.schema === 4) {
     validateSouperNative(native, fixture, sourceIdentity);
     return { native, fixture, wasm: new Uint8Array(wasm), wasmPath, sourceIdentity, souper: true };
   }
@@ -293,7 +293,8 @@ class Core {
     try { loaded = this.module._retro_load_game(game.info) !== 0; }
     finally { this.module._free(game.data); this.module._free(game.info); }
     check(loaded, 'production libretro core refused patterned Souper fixture');
-    check(this.module._retro_serialize_size() === 0, 'Souper save-state size must be unavailable');
+    check(this.module._retro_serialize_size() > 32768,
+          'production core did not expose the complete Souper snapshot');
     const av = this.allocate(40, 'Souper system AV information');
     try {
       this.module._retro_get_system_av_info(av);
@@ -687,7 +688,8 @@ function validateSouperNative(native, fixture, sourceIdentity) {
         'wrong Souper source identity');
   check(native.numeric_oracles?.width === WIDTH && native.numeric_oracles?.height === HEIGHT &&
         native.numeric_oracles?.sample_rate === 48000 &&
-        JSON.stringify(native.numeric_oracles?.mailbox_values) === '[0,0,64,64,224]' &&
+        JSON.stringify(native.numeric_oracles?.mailbox_values) ===
+          '[0,0,64,64,224,160,161,162,162,163,163,166,166,167,167,160,161,94,94,224]' &&
         native.state?.format === 3 && native.state?.behaviour === 8 &&
         Number.isInteger(native.state?.bytes) && native.state.bytes > 32768 &&
         validHash(native.state?.library_sha256) && validHash(native.state?.adapter_sha256),
@@ -751,10 +753,10 @@ function assertSouperMailbox(core) {
         'Souper system RAM mailbox is unavailable');
   const mailbox = core.module.HEAPU8.subarray(pointer + 0xa00, pointer + 0xb00);
   check(Buffer.from(mailbox.subarray(0, 4)).toString('ascii') === 'M7DG' &&
-        mailbox[4] === 1 && mailbox[5] === 0 && mailbox[6] === 5 && mailbox[7] === 22 &&
+        mailbox[4] === 1 && mailbox[5] === 0 && mailbox[6] === 20 && mailbox[7] === 22 &&
         (mailbox[8] | (mailbox[9] << 8)) === souperCrc(mailbox),
-        'Souper mailbox header or CRC differs');
-  const expected = [0, 0, 64, 64, 224];
+        `Souper mailbox header or CRC differs: ${[...mailbox.subarray(0, 10)]}, expected CRC ${souperCrc(mailbox)}`);
+  const expected = [0, 0, 64, 64, 224, 160, 161, 162, 162, 163, 163, 166, 166, 167, 167, 160, 161, 94, 94, 224];
   for (let i = 0; i < expected.length; i++) {
     const offset = 16 + i * 4;
     check(mailbox[offset] === i + 1 && mailbox[offset + 1] === 1 &&
@@ -786,10 +788,18 @@ async function runSouper(options, evidence, factory) {
           saved.length === evidence.native.state.bytes &&
           sha256(saved) === evidence.native.state.adapter_sha256,
           'portable Souper snapshot differs from the native module');
+    core.assertRefusals(saved);
     check(core.unserialize(saved) && sha256(core.serialize()) === sha256(saved),
           'portable Souper core refused its own complete snapshot');
     for (const frame of evidence.native.frames) runSouperFrame(core, frame);
     assertSouperMailbox(core);
+    const uninterrupted = core.serialize();
+    check(core.unserialize(saved), 'portable Souper replay restore failed');
+    core.module._retro_set_audio_sample_batch(0);
+    for (const frame of evidence.native.frames) runSouperFrame(core, frame, 'sample');
+    assertSouperMailbox(core);
+    check(sha256(core.serialize()) === sha256(uninterrupted),
+          'Souper audio callback route changed continuation');
     process.stdout.write('Souper production Wasm verification passed (12 native-parity frames, mailbox, format-3 state)\n');
   } finally { core.dispose(); }
 }
