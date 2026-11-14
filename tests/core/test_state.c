@@ -23,6 +23,7 @@ enum state_fixture {
     STATE_CART_RAM,
     STATE_XBOARD,
     STATE_XM,
+    STATE_SOUPER,
     STATE_LARGEST_GENERATED
 };
 
@@ -262,6 +263,9 @@ static muhtari_status state_load(muhtari *m, enum state_fixture fixture, int sav
     } else if (fixture == STATE_XBOARD) {
         image_bytes = images_linear(image, 3u, 49152u);
         media.expansion = MUHTARI_EXPANSION_XBOARD;
+    } else if (fixture == STATE_SOUPER) {
+        image_bytes = images_a78(image, 3u, 512u * IMAGES_KIB, 0x1000u,
+                                 512u * IMAGES_KIB);
     } else {
         image_bytes = images_linear(image, 4u, 4096u);
         if (fixture == STATE_XM)
@@ -272,6 +276,34 @@ static muhtari_status state_load(muhtari *m, enum state_fixture fixture, int sav
     if (savekey != 0 || fixture == STATE_LARGEST_GENERATED)
         media.port[1] = MUHTARI_PORT_SAVEKEY;
     return muhtari_load(m, &media);
+}
+
+static void test_souper(void)
+{
+    alloc_counts counts;
+    muhtari *m = state_create(&counts);
+    CHECK(m != NULL);
+    if (m == NULL)
+        return;
+    CHECK_EQ_U64(state_load(m, STATE_SOUPER, 0), MUHTARI_STATUS_OK);
+
+    muhtari_versions versions;
+    memset(&versions, 0, sizeof versions);
+    versions.size = (uint32_t)sizeof versions;
+    CHECK_EQ_U64(muhtari_get_versions(&versions), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(versions.api, 8u);
+    CHECK_EQ_U64(versions.abi, 1u);
+    CHECK_EQ_U64(versions.behaviour_revision, 8u);
+    CHECK_EQ_U64(versions.state_format, 3u);
+
+    size_t total = muhtari_state_size(m);
+    CHECK(total > STATE_HEADER_BYTES);
+    if (total > STATE_HEADER_BYTES) {
+        CHECK_EQ_U64(muhtari_save_state(m, first, total), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(get_u32(first + 8u), 3u);
+        CHECK_EQ_U64(get_u32(first + 20u), 8u);
+    }
+    muhtari_destroy(m);
 }
 
 static size_t battery_program_bytes;
@@ -2772,7 +2804,8 @@ static const struct {
              {"lifecycle", test_lifecycle},
              {"battery", test_battery},
              {"topologies", test_topologies},
-             {"ym", test_ym}};
+             {"ym", test_ym},
+             {"souper", test_souper}};
 
 static void test_equality_report(void)
 {

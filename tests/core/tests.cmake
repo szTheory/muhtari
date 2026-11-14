@@ -54,7 +54,7 @@ target_link_libraries(muhtari-test-state PRIVATE muhtari::muhtari)
 set_target_properties(muhtari-test-state PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-test-state)
-foreach(case IN ITEMS aliases battery fields lifecycle payload topologies ym equality_report)
+foreach(case IN ITEMS aliases battery fields lifecycle payload souper topologies ym equality_report)
   muhtari_add_test(NAME core.state.${case} COMMAND muhtari-test-state ${case}
     LABELS core portable TIMEOUT 10)
 endforeach()

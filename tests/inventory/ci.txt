@@ -182,6 +182,7 @@ core.state.equality_report	core,portable
 core.state.fields	core,portable
 core.state.lifecycle	core,portable
 core.state.payload	core,portable
+core.state.souper	core,portable
 core.state.topologies	core,portable
 core.state.ym	core,portable
 core.testcard.all_colours	core,portable
