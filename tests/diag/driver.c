@@ -1494,6 +1494,19 @@ static int souper_map_case(const uint8_t *image, size_t bytes, const char *expec
     return failed;
 }
 
+typedef struct souper_audio_observation {
+    uint32_t events;
+} souper_audio_observation;
+
+static void souper_audio_event(void *user, uint64_t tick, uint8_t source, uint16_t raw)
+{
+    (void)tick;
+    (void)source;
+    (void)raw;
+    souper_audio_observation *observation = (souper_audio_observation *)user;
+    observation->events++;
+}
+
 static int souper_case(const char *path, const char *expected, const char *report_path)
 {
     size_t bytes = 0u;
@@ -1501,6 +1514,7 @@ static int souper_case(const char *path, const char *expected, const char *repor
     muhtari_config config = {0};
     muhtari_media media = {0};
     muhtari *m = NULL;
+    souper_audio_observation audio_observation = {0};
     config.size = (uint32_t)sizeof config;
     config.allocator.alloc = diag_alloc;
     config.allocator.free = diag_free;
@@ -1508,6 +1522,8 @@ static int souper_case(const char *path, const char *expected, const char *repor
     media.image = image;
     media.image_size = bytes;
     muhtari_status status = image == NULL ? MUHTARI_STATUS_ERR_ARGUMENT : muhtari_create(&config, &m);
+    if (status == MUHTARI_STATUS_OK)
+        status = muhtari__synth_observe(m, souper_audio_event, &audio_observation);
     if (status == MUHTARI_STATUS_OK)
         status = muhtari_load(m, &media);
     int failed = status != MUHTARI_STATUS_OK || retail_expected(expected, "souper") != 0;
@@ -1526,11 +1542,14 @@ static int souper_case(const char *path, const char *expected, const char *repor
     size_t state_size = muhtari_state_size(m);
     uint8_t *state_bytes = state_size > 0u ? (uint8_t *)malloc(state_size + 8u) : NULL;
     uint8_t *state_saved = state_size > 0u ? (uint8_t *)malloc(state_size) : NULL;
+    uint8_t *state_mid = state_size > 0u ? (uint8_t *)malloc(state_size) : NULL;
+    uint8_t *state_end = state_size > 0u ? (uint8_t *)malloc(state_size) : NULL;
     uint64_t state_ticks = m->bus.ticks;
     uint16_t state_pc = m->cpu.pc;
     uint8_t state_bank = m->cart.bank;
     uint8_t state_open_bus = m->bus.open_bus;
-    if (!failed && (state_size == 0u || state_bytes == NULL || state_saved == NULL)) {
+    if (!failed && (state_size == 0u || state_bytes == NULL || state_saved == NULL ||
+                    state_mid == NULL || state_end == NULL)) {
         fprintf(stderr, "souper: complete snapshot storage is unavailable\n");
         failed = 1;
     }
@@ -1540,6 +1559,14 @@ static int souper_case(const char *path, const char *expected, const char *repor
                  state_bytes[8] != 3u || state_bytes[20] != 8u;
         if (!failed) {
             memcpy(state_saved, state_bytes, state_size);
+            uint32_t audio_events = audio_observation.events;
+            muhtari__cart_write(m, 0x8007u, 0xA5u);
+            failed |= audio_observation.events != audio_events || m->synth.pokeys != 0u ||
+                      m->synth.ym_installed != 0u ||
+                      muhtari_save_state(m, state_bytes, state_size) != MUHTARI_STATUS_OK ||
+                      memcmp(state_saved, state_bytes, state_size) != 0;
+            if (failed)
+                fprintf(stderr, "souper: $8007 queued mapper state or unsupported audio\n");
             for (size_t i = state_size; i < state_size + 8u; i++)
                 failed |= state_bytes[i] != 0xA5u;
             muhtari__cart_write(m, 0xFFF8u, (uint8_t)((state_bank + 1u) & 31u));
@@ -1558,7 +1585,8 @@ static int souper_case(const char *path, const char *expected, const char *repor
     uint8_t *pixels = (uint8_t *)calloc(13u * 320u * 242u, 1u);
     int16_t pcm[963];
     uint32_t audio_counts[12] = {0};
-    if (pixels == NULL)
+    int16_t *audio_records = (int16_t *)calloc(12u * 963u, sizeof *audio_records);
+    if (pixels == NULL || audio_records == NULL)
         failed = 1;
     for (unsigned frame = 0u; frame < 12u && !failed; frame++) {
         muhtari_frame io = {0};
@@ -1574,10 +1602,42 @@ static int souper_case(const char *path, const char *expected, const char *repor
         io.audio_capacity = 963u;
         failed |= muhtari_run_frame(m, &io) != MUHTARI_STATUS_OK;
         audio_counts[frame] = io.audio_count;
-        if (!failed)
+        if (!failed) {
             memcpy(pixels + (size_t)frame * 320u * 242u,
                    pixels + 12u * 320u * 242u, 320u * 242u);
+            memcpy(audio_records + (size_t)frame * 963u, pcm,
+                   (size_t)io.audio_count * sizeof *pcm);
+            if (frame == 5u)
+                failed = muhtari_save_state(m, state_mid, state_size) != MUHTARI_STATUS_OK;
+        }
     }
+    if (!failed) {
+        failed = muhtari_save_state(m, state_end, state_size) != MUHTARI_STATUS_OK ||
+                 muhtari_load_state(m, state_mid, state_size) != MUHTARI_STATUS_OK;
+    }
+    for (unsigned frame = 6u; frame < 12u && !failed; frame++) {
+        muhtari_frame io = {0};
+        muhtari_input_ex input = {0};
+        input.size = (uint32_t)sizeof input;
+        failed = muhtari_set_input_ex(m, &input) != MUHTARI_STATUS_OK;
+        io.size = (uint32_t)sizeof io;
+        io.video = pixels + 12u * 320u * 242u;
+        io.video_pitch = 320u;
+        io.audio = pcm;
+        io.audio_capacity = 963u;
+        failed |= muhtari_run_frame(m, &io) != MUHTARI_STATUS_OK;
+        failed |= io.audio_count != audio_counts[frame];
+        failed |= memcmp(io.video, pixels + (size_t)frame * 320u * 242u,
+                         320u * 242u) != 0;
+        failed |= memcmp(pcm, audio_records + (size_t)frame * 963u,
+                         (size_t)io.audio_count * sizeof *pcm) != 0;
+    }
+    if (!failed) {
+        failed = muhtari_save_state(m, state_bytes, state_size) != MUHTARI_STATUS_OK ||
+                 memcmp(state_bytes, state_end, state_size) != 0;
+    }
+    if (failed)
+        fprintf(stderr, "souper: midpoint snapshot did not reproduce literal continuation\n");
     uint8_t mailbox[256];
     if (!failed) {
         for (unsigned i = 0u; i < sizeof mailbox; i++)
@@ -1628,6 +1688,9 @@ static int souper_case(const char *path, const char *expected, const char *repor
     free(pixels);
     free(state_saved);
     free(state_bytes);
+    free(state_mid);
+    free(state_end);
+    free(audio_records);
     return failed;
 }
 

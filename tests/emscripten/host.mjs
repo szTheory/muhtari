@@ -692,8 +692,16 @@ function validateSouperNative(native, fixture, sourceIdentity) {
           '[0,0,64,64,224,160,161,162,162,163,163,166,166,167,167,160,161,94,94,224]' &&
         native.state?.format === 3 && native.state?.behaviour === 8 &&
         Number.isInteger(native.state?.bytes) && native.state.bytes > 32768 &&
-        validHash(native.state?.library_sha256) && validHash(native.state?.adapter_sha256),
+        validHash(native.state?.library_sha256) && validHash(native.state?.adapter_sha256) &&
+        validHash(native.state?.library_continuation_sha256) &&
+        validHash(native.state?.adapter_continuation_sha256),
         'Souper numeric oracle or complete snapshot evidence is incomplete');
+  check(native.state?.replays === 2,
+        'Souper continuation receipt lacks two repeated restores');
+  check(native.state?.refused_null_short_long_corrupt === true &&
+        native.state?.preserved_after_refusal === true &&
+        native.state?.malformed_reload_unloaded === true,
+        'Souper transactional state or failed-reload controls are incomplete');
   check(native.abi?.memory_system_ram !== undefined && native.abi?.device_joypad !== undefined &&
         native.abi?.pixel_format_xrgb8888 !== undefined, 'Souper libretro ABI receipt is incomplete');
   check(Array.isArray(native.frames) && native.frames.length === 12, 'incomplete Souper frame set');
@@ -765,17 +773,21 @@ function assertSouperMailbox(core) {
   }
 }
 
-function runSouperFrame(core, nativeFrame) {
+function runSouperFrame(core, nativeFrame, route = 'batch') {
   const c = { videoCalls: 0, batchCalls: 0, sampleCalls: 0, pollCalls: 0, audioCount: 0, error: null };
   core.capture = c;
   core.module._retro_run();
   core.capture = null;
   check(!c.error, c.error);
   check(c.videoCalls === 1 && c.video && c.width === WIDTH && c.height === HEIGHT &&
-        c.batchCalls === 1 && c.audio && c.pollCalls === 1 && c.sampleCalls === 0,
-        'missing Souper video/audio/poll callback or changed geometry');
-  check(c.audioCount === nativeFrame.audio_count &&
-        sha256(c.video) === nativeFrame.video_sha256 && sha256(c.audio) === nativeFrame.audio_sha256,
+        c.pollCalls === 1, 'missing Souper video/poll callback or changed geometry');
+  check(route === 'batch'
+          ? c.batchCalls === 1 && c.sampleCalls === 0
+          : route === 'sample' && c.batchCalls === 0 && c.sampleCalls === c.audioCount,
+        `Souper ${route} audio callback route was not used`);
+  check(c.audio && c.audioCount === nativeFrame.audio_count &&
+        sha256(c.video) === nativeFrame.video_sha256 &&
+        sha256(c.audio.subarray(0, c.audioCount * 4)) === nativeFrame.audio_sha256,
         `Souper Wasm frame ${nativeFrame.index} differs from native libretro adapter`);
 }
 
@@ -800,6 +812,14 @@ async function runSouper(options, evidence, factory) {
     assertSouperMailbox(core);
     check(sha256(core.serialize()) === sha256(uninterrupted),
           'Souper audio callback route changed continuation');
+    core.module._retro_set_audio_sample_batch(core.batch);
+    const badReload = core.makeGameInfo(evidence.fixture.subarray(0, 16));
+    let reloadRejected;
+    try { reloadRejected = core.module._retro_load_game(badReload.info) === 0; }
+    finally { core.module._free(badReload.data); core.module._free(badReload.info); }
+    check(reloadRejected && core.module._retro_serialize_size() === 0 &&
+          core.module._retro_get_memory_data(evidence.native.abi.memory_system_ram) === 0,
+          'malformed Souper reload did not release the loaded game');
     process.stdout.write('Souper production Wasm verification passed (12 native-parity frames, mailbox, format-3 state)\n');
   } finally { core.dispose(); }
 }

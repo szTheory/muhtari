@@ -1363,11 +1363,53 @@ static int observe_souper(const char *fixture_path, const char *output_path)
                       MUHTARI_STATUS_OK &&
                   adapter_state_unchanged(adapter_state, adapter_state_bytes),
               "public library or loaded adapter refused its complete Souper snapshot");
+    OBS_CHECK(state_refusals(reference, library_state, library_state_bytes, adapter_state,
+                             adapter_state_bytes, reason, sizeof reason),
+              "Souper invalid snapshot control: %s", reason);
 
     for (unsigned frame = 0u; frame < 12u; frame++)
         OBS_CHECK(run_pair_frame(reference, 0u, 0u, frame, -1, frame > 0u, &frames[frame], reason,
                                  sizeof reason),
                   "Souper public/native libretro frame %u: %s", frame + 1u, reason);
+
+    uint8_t *library_end = NULL, *adapter_end = NULL;
+    uint8_t *library_replay = NULL, *adapter_replay = NULL;
+    size_t library_end_bytes = 0u, adapter_end_bytes = 0u;
+    size_t library_replay_bytes = 0u, adapter_replay_bytes = 0u;
+    char library_continuation_sha256[65], adapter_continuation_sha256[65];
+    OBS_CHECK(save_library_state(reference, &library_end, &library_end_bytes) &&
+                  save_adapter_state(&adapter_end, &adapter_end_bytes) &&
+                  library_end_bytes == library_state_bytes &&
+                  adapter_end_bytes == adapter_state_bytes,
+              "could not save uninterrupted Souper continuation");
+    hash_hex(library_end, library_end_bytes, library_continuation_sha256);
+    hash_hex(adapter_end, adapter_end_bytes, adapter_continuation_sha256);
+    for (unsigned replay = 0u; replay < 2u; replay++) {
+        OBS_CHECK(muhtari_load_state(reference, library_state, library_state_bytes) ==
+                          MUHTARI_STATUS_OK &&
+                      retro_unserialize(adapter_state, adapter_state_bytes),
+                  "cannot restore Souper baseline for replay %u", replay);
+        for (unsigned frame = 0u; frame < 12u; frame++) {
+            frame_observation observed = {0};
+            OBS_CHECK(run_pair_frame(reference, 0u, 0u, frame, -1, frame > 0u, &observed,
+                                     reason, sizeof reason),
+                      "Souper replay %u frame %u: %s", replay, frame + 1u, reason);
+            OBS_CHECK(same_frame(&observed, &frames[frame]),
+                      "Souper replay %u frame %u differs from uninterrupted mapper observations",
+                      replay, frame + 1u);
+        }
+        OBS_CHECK(save_library_state(reference, &library_replay, &library_replay_bytes) &&
+                      save_adapter_state(&adapter_replay, &adapter_replay_bytes) &&
+                      library_replay_bytes == library_end_bytes &&
+                      adapter_replay_bytes == adapter_end_bytes &&
+                      memcmp(library_replay, library_end, library_end_bytes) == 0 &&
+                      memcmp(adapter_replay, adapter_end, adapter_end_bytes) == 0,
+                  "Souper replay %u final state differs from uninterrupted continuation", replay);
+        free(library_replay);
+        library_replay = NULL;
+        free(adapter_replay);
+        adapter_replay = NULL;
+    }
 
     muhtari_span library_ram = {0};
     library_ram.size = (uint32_t)sizeof library_ram;
@@ -1390,7 +1432,12 @@ static int observe_souper(const char *fixture_path, const char *output_path)
             "\"height\":242,\"sample_rate\":48000,\"mailbox_values\":["
             "0,0,64,64,224,160,161,162,162,163,163,166,166,167,167,160,161,94,94,224]},"
             "\"state\":{\"format\":3,\"behaviour\":8,\"bytes\":%lu,"
-            "\"library_sha256\":\"%s\",\"adapter_sha256\":\"%s\"},"
+            "\"library_sha256\":\"%s\",\"adapter_sha256\":\"%s\","
+            "\"library_continuation_sha256\":\"%s\","
+            "\"adapter_continuation_sha256\":\"%s\","
+            "\"replays\":2,"
+            "\"refused_null_short_long_corrupt\":true,"
+            "\"preserved_after_refusal\":true,\"malformed_reload_unloaded\":true},"
             "\"abi\":{\"environment\":{"
             "\"get_core_options_version\":%u,\"set_core_options\":%u,\"get_variable\":%u,"
             "\"get_variable_update\":%u,\"set_pixel_format\":%u,\"set_support_no_game\":%u,"
@@ -1399,7 +1446,8 @@ static int observe_souper(const char *fixture_path, const char *output_path)
             "\"get_savestate_context\":%u},\"pixel_format_xrgb8888\":%u,"
             "\"device_joypad\":%u,\"joypad_up\":%u,\"memory_system_ram\":%u},\"frames\":[",
             fixture_hash, MUHTARI_CORE_SOURCE_ID, (unsigned long)library_state_bytes,
-            library_state_sha256, adapter_state_sha256,
+            library_state_sha256, adapter_state_sha256, library_continuation_sha256,
+            adapter_continuation_sha256,
             (unsigned)RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION,
             (unsigned)RETRO_ENVIRONMENT_SET_CORE_OPTIONS, (unsigned)RETRO_ENVIRONMENT_GET_VARIABLE,
             (unsigned)RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE,
@@ -1419,12 +1467,20 @@ static int observe_souper(const char *fixture_path, const char *output_path)
                 frames[i].audio_sha256);
     fputs("]}\n", out);
     OBS_CHECK(fclose(out) == 0, "cannot finish Souper native receipt");
+    game.size = 16u;
+    OBS_CHECK(!retro_load_game(&game), "loaded native module accepted a malformed Souper reload");
+    OBS_CHECK(retro_serialize_size() == 0u &&
+                  retro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM) == NULL &&
+                  retro_get_memory_size(RETRO_MEMORY_SYSTEM_RAM) == 0u,
+              "malformed native Souper reload did not release the loaded game");
     retro_unload_game();
     retro_deinit();
     muhtari_destroy(reference);
     free(image);
     free(adapter_state);
     free(library_state);
+    free(library_end);
+    free(adapter_end);
     return 1;
 }
 

@@ -396,10 +396,13 @@ description gathered in cartridge preparation (CART.25/CART.42), not a
 calibrated physical measurement or a Rikki & Vikki compatibility claim.
 
 The zero-filled EXRAM power-on behavior is an explicit emulator policy because
-physical EXRAM startup is not established. The owned diagnostic uses generated
-images and literal mapper observations through the library, runner and loaded
-module. Those results establish conformance to this selected software model,
-not physical hardware accuracy, BupChip audio, or retail-game compatibility.
+physical EXRAM startup is not established. The console Reset input is a
+software-readable switch and does not clear Souper latches or EXRAM; a power
+cycle resets the latches and zero-fills EXRAM. The owned diagnostic uses
+generated images and literal mapper observations through the library, runner
+and loaded module. Those results establish conformance to this selected
+software model, not physical hardware accuracy, BupChip audio, or retail-game
+compatibility.
 Souper snapshots use format 3 / behavior revision 8 and include all five mapper
 latches plus every EXRAM byte, including hidden pages. Restore validates the
 complete payload before changing the instance and reuses its existing EXRAM

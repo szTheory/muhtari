@@ -49,8 +49,8 @@ PKG_CONFIG_PATH=<unzipped directory>/lib/pkgconfig cc app.c $(pkg-config --cflag
 
 ## Expansion selection
 
-API 7 introduced `muhtari_media.expansion`, retaining ABI 1. The current library
-reports the latest behavior revision separately below. The appended expansion
+API 7 added `muhtari_media.expansion`, retaining ABI 1. Latest versions are
+reported below. The appended expansion
 selects one of `MUHTARI_EXPANSION_*`: `MUHTARI_EXPANSION_AUTO`, `MUHTARI_EXPANSION_OFF`, `MUHTARI_EXPANSION_XBOARD`
 or `MUHTARI_EXPANSION_XM`. Zero, omitted and incomplete fields mean Auto. Explicit
 selection wins; Auto uses the resolved cartridge XM request, otherwise Off.
@@ -541,25 +541,20 @@ and every payload field before applying anything. It rejects input/output ranges
 that overlap the instance or its cartridge/expansion allocation. All RAM and
 battery span addresses remain stable across a restore.
 
-State envelopes are versioned and byte-wise little-endian. Unchanged machines
-without YM use format 1 / behaviour revision 6; the selected XM/YM profile uses
-format 2 / behaviour revision 7 and includes a domain-separated YM profile
-identity. The selected Souper profile uses format 3 / behaviour revision 8 and
-adds a domain-separated mapper identity, all five mapper latches and its full
-32 KiB EXRAM. These topology-specific envelopes preserve the exact bytes and
-identities of the existing legacy and YM profiles. The CRC-32 detects accidental
+State envelopes are byte-wise little-endian: non-YM machines use format 1 /
+behaviour 6; XM/YM uses 2/7 with a domain-separated identity; Souper uses 3/8
+with its own identity, five latches and full 32 KiB EXRAM. These topology-specific
+envelopes preserve legacy/YM bytes and identities. CRC-32 detects accidental
 corruption; it is not authentication.
 The effective machine identity uses SHA-256 over installed media and
 machine-affecting configuration, not a filename or header CRC. Clock values are
 checked against current hardware producers and their cross-field timing
 relationships; the format does not impose an arbitrary absolute tick ceiling.
 
-Ten NTSC/PAL cases against pre-YM code prove identical legacy states and both
-continuation directions for linear, SuperGame RAM, XBoard, XM/HSC and pending
-SaveKey. A clean pre-Souper producer separately checks unchanged legacy and YM
-states in both directions. Pre-YM code safely refuses YM; length checks may
-precede version refusal.
-See the [compatibility check](../tests/core/state_compat.cmake).
+Pre-YM source confirms legacy bytes and both continuation directions across ten
+NTSC/PAL cases. Separate pre-Souper source confirms legacy and YM bytes and
+continuation in both directions; pre-YM safely refuses YM. Length may precede
+version refusal. See the [compatibility check](../tests/core/state_compat.cmake).
 
 Both functions return `MUHTARI_STATUS_ERR_ARGUMENT` for a NULL instance or
 buffer. A non-NULL instance without content returns
@@ -619,15 +614,11 @@ Statuses are only ever added. Those after the probe's:
 `MUHTARI_API_VERSION` in the header is the API the program was compiled against. At run time,
 `muhtari_get_versions` fills a `muhtari_versions`:
 
-The current interface is API 8, ABI 1, latest supported behaviour revision 8
-and latest supported state format 3. These global values report the library's
-latest support; a saved state's envelope is selected by its installed machine.
-API 8 appends portable state operations and the state-format version field. The
-earlier API 7 additions, original media/info prefixes, prior status values and
-size minima remain compatible. Revision 6 includes the corrected slow-edge DMA
-handoff; revision 7 adds the selected YM profile; revision 8 adds the Souper
-snapshot profile. Non-Souper legacy and YM frame, audio and state bytes remain
-on their revision-6/format-1 and revision-7/format-2 paths, respectively.
+The current interface is API 8, ABI 1, with latest behaviour 8 and state format
+3; an installed machine selects its envelope. API 8 adds state operations and
+the format field. Earlier prefixes, statuses and size minima remain compatible.
+Revision 6 corrected slow-edge DMA, 7 adds YM, and 8 adds Souper snapshots.
+Legacy and YM keep their revision/format 6/1 and 7/2 paths.
 
 | Field | Meaning |
 |---|---|

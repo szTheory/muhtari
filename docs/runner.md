@@ -92,6 +92,17 @@ Restored public frame counters do not change these invocation-local points. Stat
 state 1 sha256 6b7f4d4d01478178a65a422cb034a2184618f7200da4b0dc965f3957ebfbb3a2
 ```
 
+To resume in a separate process, save after six successful frames and load
+that file before running the next six:
+
+```sh
+muhtari-run --frames 6 --state-at-frame 6:souper.state game.a78
+muhtari-run --frames 6 --load-state souper.state --hash-frame 6 game.a78
+```
+
+The second invocation's frame number is local to that invocation; compare its
+`frame 6` output with `frame 12` from an uninterrupted 12-frame run.
+
 The digest covers only canonical state bytes. It does not include output file names or the runner's host-side
 battery persistence generation. Emulated battery contents remain part of machine state, so different saved RAM
 can produce a different digest. State saves and hashes may use the same point. Duplicate state points, duplicate

@@ -359,7 +359,14 @@ if(DIAG_SOUPER_RUN)
   foreach(frame RANGE 1 12)
     list(APPEND hashes --hash-frame ${frame})
   endforeach()
+  set(state_zero "${OUT}/state-zero.bin")
+  set(state_mid "${OUT}/state-mid.bin")
+  set(state_full "${OUT}/state-full.bin")
+  set(state_resumed "${OUT}/state-resumed.bin")
   execute_process(COMMAND ${EMULATOR} "${RUNNER}" --frames 12 ${hashes} --hash-audio
+    --hash-state 0 --hash-state 6 --hash-state 12
+    --state-at-frame "0:${state_zero}" --state-at-frame "6:${state_mid}"
+    --state-at-frame "12:${state_full}"
     --diagnostic --dump-frame "12:${OUT}/pixels.png" "${image}"
     RESULT_VARIABLE rc OUTPUT_VARIABLE actual ERROR_VARIABLE err TIMEOUT 30)
   if(NOT rc STREQUAL "0")
@@ -376,6 +383,53 @@ if(DIAG_SOUPER_RUN)
     RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 10)
   if(NOT rc STREQUAL "0")
     message(FATAL_ERROR "souper runner MARIA pixel oracle: ${rc}: ${out}${err}")
+  endif()
+  file(READ "${state_mid}" state_mid_hex HEX)
+  string(LENGTH "${state_mid_hex}" state_mid_hex_length)
+  math(EXPR state_latch_at "${state_mid_hex_length} - 10")
+  string(SUBSTRING "${state_mid_hex}" ${state_latch_at} 10 state_mid_latches)
+  if(state_mid_latches STREQUAL "0000000000")
+    message(FATAL_ERROR "souper runner midpoint did not contain nonzero mapper latches")
+  endif()
+  execute_process(COMMAND ${EMULATOR} "${RUNNER}" --frames 6 --load-state "${state_mid}"
+    --hash-frame 6 --hash-state 6 --state-at-frame "6:${state_resumed}" --diagnostic
+    --dump-frame "6:${OUT}/pixels-resumed.png" "${image}"
+    RESULT_VARIABLE rc OUTPUT_VARIABLE resumed ERROR_VARIABLE err TIMEOUT 30)
+  if(NOT rc STREQUAL "0")
+    message(FATAL_ERROR "souper runner fresh-process restore: ${rc}: ${resumed}${err}")
+  endif()
+  string(REGEX MATCH "diagnostic [0-9a-f]+\n" resumed_mailbox "${resumed}")
+  file(CONFIGURE OUTPUT "${OUT}/report-resumed.txt" CONTENT "${resumed_mailbox}"
+    @ONLY NEWLINE_STYLE UNIX)
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --mailbox "${OUT}/report-resumed.txt"
+    souper "${EXPECTED}" RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 10)
+  if(NOT rc STREQUAL "0")
+    message(FATAL_ERROR "souper resumed runner mailbox oracle: ${rc}: ${out}${err}")
+  endif()
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --souper-png "${OUT}/pixels-resumed.png"
+    RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 10)
+  if(NOT rc STREQUAL "0")
+    message(FATAL_ERROR "souper resumed runner MARIA pixel oracle: ${rc}: ${out}${err}")
+  endif()
+  string(REGEX MATCH "frame 12 sha256 [0-9a-f]+" full_frame "${actual}")
+  string(REGEX MATCH "frame 6 sha256 [0-9a-f]+" resumed_frame "${resumed}")
+  string(REPLACE "frame 12" "frame 6" full_frame "${full_frame}")
+  string(REGEX MATCH "state 12 sha256 [0-9a-f]+" full_state "${actual}")
+  string(REGEX MATCH "state 6 sha256 [0-9a-f]+" resumed_state "${resumed}")
+  string(REPLACE "state 12" "state 6" full_state "${full_state}")
+  string(REGEX MATCH "diagnostic [0-9a-f]+" full_mailbox "${actual}")
+  string(REGEX MATCH "diagnostic [0-9a-f]+" restored_mailbox "${resumed}")
+  if(full_frame STREQUAL "" OR NOT full_frame STREQUAL resumed_frame OR
+      full_state STREQUAL "" OR NOT full_state STREQUAL resumed_state OR
+      full_mailbox STREQUAL "" OR NOT full_mailbox STREQUAL restored_mailbox)
+    message(FATAL_ERROR "souper runner fresh-process continuation differs:\n"
+      "full: ${full_frame} ${full_state} ${full_mailbox}\n"
+      "resumed: ${resumed_frame} ${resumed_state} ${restored_mailbox}")
+  endif()
+  execute_process(COMMAND ${CMAKE_COMMAND} -E compare_files "${state_full}" "${state_resumed}"
+    RESULT_VARIABLE states_differ)
+  if(NOT states_differ EQUAL 0)
+    message(FATAL_ERROR "souper runner final canonical state bytes differ after fresh-process restore")
   endif()
   file(STRINGS "${reference}" observations REGEX "^frame ")
   foreach(line IN LISTS observations)

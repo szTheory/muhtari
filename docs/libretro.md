@@ -213,6 +213,9 @@ failed-load and no-content test-card sessions report size zero and refuse save/l
 The versioned bytes are little-endian and bound to a SHA-256 effective machine identity. Their CRC-32 detects
 corruption but does not authenticate a state file; unsupported format or behavior revisions are refused without
 migration.
+The selected Souper mapper uses format 3 / behavior revision 8 and stores its
+five mapper latches and complete 32 KiB EXRAM in the same canonical bytes as
+the public library API. Other topologies keep their existing state formats.
 
 Normal disk states, run-ahead contexts 1 and 2, and an unavailable context query all use the library's fully
 validated little-endian format. If the frontend explicitly requests rollback-netplay context 3, the callbacks
