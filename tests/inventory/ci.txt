@@ -145,6 +145,7 @@ cart.probe.unsupported_board	cart,portable
 cart.probe.warnings	cart,portable
 cart.retail.boards	cart,portable
 cart.sha1.fips	cart,portable
+cart.souper.profile	cart,portable
 core.api.size_tags	core,portable
 core.audio.silence	core,portable
 core.battery.deadline	core,portable
@@ -172,6 +173,7 @@ core.pal.lifecycle	core,portable
 core.pal.tracer	core,portable
 core.set_input.latched_at_vblank	core,portable
 core.set_input.validates	core,portable
+core.souper.lifecycle	core,portable
 core.state.aliases	core,portable
 core.state.battery	core,portable
 core.state.equality_report	core,portable

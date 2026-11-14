@@ -3548,6 +3548,108 @@ static void test_load_supergame_one_allocation(void)
     retail_lifecycle();
 }
 
+#define CORE_SOUPER_BODY (512u * IMAGES_KIB)
+static uint8_t core_souper_image[IMAGES_HEADER + CORE_SOUPER_BODY];
+
+static void make_core_souper(void)
+{
+    images_header(core_souper_image, 3u, "Souper lifecycle", CORE_SOUPER_BODY, 0x1000u);
+    uint8_t *body = core_souper_image + IMAGES_HEADER;
+    memset(body, 0xEA, CORE_SOUPER_BODY);
+    uint8_t *fixed = body + CORE_SOUPER_BODY - 16384u;
+    fixed[0] = 0x4Cu; /* JMP $C000, fixed in the final 16 KiB ROM bank. */
+    fixed[1] = 0x00u;
+    fixed[2] = 0xC0u;
+    body[CORE_SOUPER_BODY - 4u] = 0x00u;
+    body[CORE_SOUPER_BODY - 3u] = 0xC0u;
+}
+
+/* Souper EXRAM belongs to each loaded cartridge and clears only at cartridge
+   power cycle/reload; the console Reset input remains a separate signal. */
+static void souper_lifecycle(void)
+{
+    alloc_counts counts, peer_counts;
+    muhtari_config cfg = alloc_config(&counts), peer_cfg = alloc_config(&peer_counts);
+    muhtari *m = NULL, *peer = NULL;
+    CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_create(&peer_cfg, &peer), MUHTARI_STATUS_OK);
+    if (m == NULL || peer == NULL) {
+        muhtari_destroy(m);
+        muhtari_destroy(peer);
+        return;
+    }
+
+    make_core_souper();
+    muhtari_media media = media_for(core_souper_image, sizeof core_souper_image);
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_load(peer, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(m->cart.info.board, MUHTARI_BOARD_SOUPER);
+    CHECK_EQ_U64(m->cart.info.ram_size, 32768u);
+    CHECK_EQ_U64(counts.alloc_size, CORE_SOUPER_BODY + 32768u);
+    CHECK_EQ_U64(peer_counts.alloc_size, CORE_SOUPER_BODY + 32768u);
+
+    muhtari_span ram = span_of(m, MUHTARI_MEMORY_CART_RAM, MUHTARI_STATUS_OK);
+    muhtari_span peer_ram = span_of(peer, MUHTARI_MEMORY_CART_RAM, MUHTARI_STATUS_OK);
+    CHECK(ram.data == m->cart.rom + CORE_SOUPER_BODY);
+    CHECK(peer_ram.data == peer->cart.rom + CORE_SOUPER_BODY);
+    CHECK_EQ_U64(ram.bytes, 32768u);
+    CHECK_EQ_U64(peer_ram.bytes, 32768u);
+    CHECK(ram.data != peer_ram.data);
+    for (uint32_t i = 0u; i < ram.bytes; i++) {
+        CHECK_EQ_U64(ram.data[i], 0u);
+        CHECK_EQ_U64(peer_ram.data[i], 0u);
+    }
+
+    muhtari__bus_write(m, 0x4000u, 0xA5u);
+    muhtari__bus_write(m, 0x7FFFu, 0x5Au);
+    ram.data[32767u] = 0x3Cu; /* the initial CPU window covers only 16 KiB */
+    muhtari__bus_write(peer, 0x4000u, 0xC3u);
+    CHECK_EQ_HEX(muhtari__bus_peek(m, 0x4000u), 0xA5u);
+    CHECK_EQ_HEX(muhtari__bus_peek(m, 0x7FFFu), 0x5Au);
+    CHECK_EQ_HEX(muhtari__bus_peek(peer, 0x4000u), 0xC3u);
+    CHECK_EQ_HEX(peer_ram.data[0], 0xC3u);
+
+    muhtari_input in = input_of(0u, MUHTARI_SWITCH_RESET);
+    CHECK_EQ_U64(muhtari_set_input(m, &in), MUHTARI_STATUS_OK);
+    run(m, NULL); /* fast-boot hand-off to VBLANK */
+    run(m, NULL); /* the queued console Reset is latched */
+    CHECK_EQ_U64(m->ports.switches, MUHTARI_SWITCH_RESET);
+    CHECK_EQ_HEX(ram.data[0], 0xA5u);
+    CHECK_EQ_HEX(ram.data[16383u], 0x5Au);
+    CHECK_EQ_HEX(ram.data[32767u], 0x3Cu);
+    CHECK_EQ_HEX(peer_ram.data[0], 0xC3u);
+
+    uint32_t allocations = counts.allocs;
+    uint32_t frees = counts.frees;
+    CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+    CHECK(m->cart.ram == ram.data);
+    CHECK_EQ_U64(m->cart.bank, 0u);
+    for (uint32_t i = 0u; i < ram.bytes; i++) {
+        CHECK_EQ_U64(ram.data[i], 0u);
+    }
+    CHECK_EQ_HEX(peer_ram.data[0], 0xC3u);
+    CHECK_EQ_U64(counts.allocs, allocations);
+    CHECK_EQ_U64(counts.frees, frees);
+
+    /* Replacing and reloading is a fresh cartridge power-on. */
+    size_t linear_bytes = images_linear(cart, 3u, CART_BODY);
+    media = media_for(cart, linear_bytes);
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    media = media_for(core_souper_image, sizeof core_souper_image);
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    ram = span_of(m, MUHTARI_MEMORY_CART_RAM, MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(ram.bytes, 32768u);
+    for (uint32_t i = 0u; i < ram.bytes; i++) {
+        CHECK_EQ_U64(ram.data[i], 0u);
+    }
+    CHECK_EQ_HEX(peer_ram.data[0], 0xC3u);
+
+    muhtari_destroy(m);
+    muhtari_destroy(peer);
+    CHECK_EQ_U64(counts.allocs, counts.frees);
+    CHECK_EQ_U64(peer_counts.allocs, peer_counts.frees);
+}
+
 /* CART_RAM is the board's 16 KiB at $4000: a live, stable span equal to
    what the CPU reads there. */
 static void bankset_memory_lifetime(void)
@@ -3686,6 +3788,7 @@ static const struct {
     {"load.invalid_bios", test_load_invalid_bios},
     {"load.keeps_previous", test_load_keeps_previous},
     {"load.supergame_one_allocation", test_load_supergame_one_allocation},
+    {"souper.lifecycle", souper_lifecycle},
     {"no_alloc_after_load", test_no_alloc_after_load},
     {"set_input.latched_at_vblank", test_set_input_latched_at_vblank},
     {"set_input.validates", test_set_input_validates},

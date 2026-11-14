@@ -1484,6 +1484,162 @@ static const struct {
 
 static struct muhtari before;
 
+#define CART_SOUPER_BODY (512u * IMAGES_KIB)
+
+static size_t souper_test_image(uint8_t version, uint16_t cart_type, uint32_t field,
+                                uint32_t body, uint8_t mapper, uint8_t options, uint16_t audio)
+{
+    images_header(buf, version, "Souper profile", field, cart_type);
+    images_fill(buf + IMAGES_HEADER, body, field ^ body ^ cart_type);
+    if (version >= 4u) {
+        buf[64] = mapper;
+        buf[65] = options;
+        buf[66] = (uint8_t)(audio >> 8);
+        buf[67] = (uint8_t)audio;
+    }
+    return IMAGES_HEADER + body;
+}
+
+static void expect_souper_refusal(muhtari *m, alloc_counts *c, const char *name, size_t n,
+                                  muhtari_status want)
+{
+    muhtari_cart_info out;
+    prefill(&out, 0u);
+    CHECK_EQ_U64(muhtari_probe(buf, n, &out), want);
+    CHECK_EQ_U64(out.size, sizeof out);
+    uint8_t *old_rom = m->cart.rom;
+    memcpy(&before, m, sizeof before);
+    uint32_t allocations = c->allocs;
+    uint32_t frees = c->frees;
+    muhtari_status got = muhtari__cart_load(m, buf, n);
+    if (got != want) {
+        fprintf(stderr, "%s: expected status %u, got %u\n", name, (unsigned)want, (unsigned)got);
+        check_failures++;
+    }
+    CHECK(memcmp(m, &before, sizeof before) == 0);
+    CHECK(m->cart.rom == old_rom);
+    CHECK_EQ_U64(c->allocs, allocations);
+    CHECK_EQ_U64(c->frees, frees);
+    CHECK(m->cart.ram != NULL);
+    if (m->cart.ram != NULL) {
+        CHECK_EQ_U64(m->cart.ram[0], 0x5Au);
+        CHECK_EQ_U64(m->cart.ram[32767u], 0x5Au);
+    }
+    /* Keep each red assertion independent if the current parser wrongly
+       accepts a candidate and replaces the live allocation. */
+    if (got == MUHTARI_STATUS_OK) {
+        size_t restore = souper_test_image(3u, 0x1000u, CART_SOUPER_BODY,
+                                           CART_SOUPER_BODY, 0u, 0u, 0u);
+        CHECK_EQ_U64(muhtari__cart_load(m, buf, restore), MUHTARI_STATUS_OK);
+        memset(m->cart.ram, 0x5Au, 32768u);
+    }
+}
+
+static void test_souper_profile(void)
+{
+    alloc_counts counts;
+    muhtari_config cfg = alloc_config(&counts);
+    counts.check_sizes = 1u;
+    muhtari *m = NULL;
+    CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
+    if (m == NULL) {
+        return;
+    }
+
+    size_t n = souper_test_image(3u, 0x1000u, CART_SOUPER_BODY, CART_SOUPER_BODY, 0u, 0u, 0u);
+    muhtari_cart_info info = expect_written("v3 Souper", buf, n, MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(info.board, MUHTARI_BOARD_SOUPER);
+    CHECK_EQ_U64(info.rom_size, CART_SOUPER_BODY);
+    CHECK_EQ_U64(info.ram_size, 32768u);
+    CHECK_EQ_U64(muhtari__cart_load(m, buf, n), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(m->cart.allocation_bytes, CART_SOUPER_BODY + 32768u);
+    CHECK(m->cart.ram == m->cart.rom + CART_SOUPER_BODY);
+    memset(m->cart.ram, 0x5Au, 32768u);
+
+    /* A valid v4 Souper declaration takes precedence over v3 SuperGame. */
+    n = souper_test_image(4u, 0x0002u, CART_SOUPER_BODY, CART_SOUPER_BODY, 4u, 0u, 0u);
+    info = expect_written("v4 Souper override", buf, n, MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(info.board, MUHTARI_BOARD_SOUPER);
+    CHECK_EQ_U64(info.ram_size, 32768u);
+    CHECK_EQ_U64(muhtari__cart_load(m, buf, n), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(m->cart.allocation_bytes, CART_SOUPER_BODY + 32768u);
+    memset(m->cart.ram, 0x5Au, 32768u);
+
+    /* A valid non-Souper v4 declaration still overrides the v3 board. */
+    n = souper_test_image(4u, 0x1000u, 32768u, 32768u, 0u, 0u, 0u);
+    info = expect_written("v4 linear override", buf, n, MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(info.board, MUHTARI_BOARD_LINEAR);
+    CHECK_EQ_U64(info.rom_size, 32768u);
+
+    /* POKEY declarations retain the common v4 parser path. */
+    n = souper_test_image(4u, 0u, CART_SOUPER_BODY, CART_SOUPER_BODY, 4u, 0u, 5u);
+    info = expect_written("v4 Souper with POKEY", buf, n, MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(info.board, MUHTARI_BOARD_SOUPER);
+    CHECK_EQ_U64(info.sound, MUHTARI_SOUND_POKEY_4000);
+
+    n = souper_test_image(3u, 0x1000u, CART_SOUPER_BODY - 1u, CART_SOUPER_BODY - 1u,
+                          0u, 0u, 0u);
+    expect_souper_refusal(m, &counts, "short v3 Souper", n, MUHTARI_STATUS_ERR_INVALID_IMAGE);
+    n = souper_test_image(3u, 0x1000u, CART_SOUPER_BODY + 1u, CART_SOUPER_BODY + 1u,
+                          0u, 0u, 0u);
+    expect_souper_refusal(m, &counts, "oversized v3 Souper", n,
+                          MUHTARI_STATUS_ERR_INVALID_IMAGE);
+    n = souper_test_image(3u, 0x1000u, CART_SOUPER_BODY - 1u, CART_SOUPER_BODY,
+                          0u, 0u, 0u);
+    expect_souper_refusal(m, &counts, "extra v3 payload", n, MUHTARI_STATUS_ERR_INVALID_IMAGE);
+    n = souper_test_image(3u, 0x1000u, CART_SOUPER_BODY + 1u, CART_SOUPER_BODY,
+                          0u, 0u, 0u);
+    expect_souper_refusal(m, &counts, "truncated v3 Souper", n,
+                          MUHTARI_STATUS_ERR_TRUNCATED_IMAGE);
+    n = souper_test_image(3u, 0x1000u, CART_SOUPER_BODY, CART_SOUPER_BODY + 1u,
+                          0u, 0u, 0u);
+    expect_souper_refusal(m, &counts, "appended v3 payload", n,
+                          MUHTARI_STATUS_ERR_INVALID_IMAGE);
+
+    /* Invalid effective v4 Souper declarations must not fall back to a
+       geometry-compatible v3 SuperGame. */
+    n = souper_test_image(4u, 0x0002u, CART_SOUPER_BODY, CART_SOUPER_BODY, 4u, 1u, 0u);
+    expect_souper_refusal(m, &counts, "v4 Souper option", n,
+                          MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
+    n = souper_test_image(4u, 0x0002u, CART_SOUPER_BODY, CART_SOUPER_BODY, 4u, 0u, 6u);
+    expect_souper_refusal(m, &counts, "v4 Souper invalid audio code", n,
+                          MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
+    static const uint16_t unsupported_audio[] = {0x0008u, 0x0010u, 0x0020u};
+    for (size_t i = 0u; i < sizeof unsupported_audio / sizeof unsupported_audio[0]; i++) {
+        n = souper_test_image(4u, 0x0002u, CART_SOUPER_BODY, CART_SOUPER_BODY, 4u, 0u,
+                              unsupported_audio[i]);
+        expect_souper_refusal(m, &counts, "v4 Souper unsupported audio", n,
+                              MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
+    }
+    n = souper_test_image(4u, 0x0002u, CART_SOUPER_BODY + 1u, CART_SOUPER_BODY,
+                          4u, 0u, 0u);
+    expect_souper_refusal(m, &counts, "truncated v4 Souper", n,
+                          MUHTARI_STATUS_ERR_TRUNCATED_IMAGE);
+    n = souper_test_image(4u, 0x0002u, CART_SOUPER_BODY, CART_SOUPER_BODY + 1u,
+                          4u, 0u, 0u);
+    expect_souper_refusal(m, &counts, "appended v4 payload", n,
+                          MUHTARI_STATUS_ERR_INVALID_IMAGE);
+
+    /* An allocator failure while replacing the live image also preserves it. */
+    n = souper_test_image(3u, 0x1000u, CART_SOUPER_BODY, CART_SOUPER_BODY, 0u, 0u, 0u);
+    memcpy(&before, m, sizeof before);
+    uint32_t allocations = counts.allocs;
+    uint32_t frees = counts.frees;
+    counts.fail_from = counts.allocs + 1u;
+    CHECK_EQ_U64(muhtari__cart_load(m, buf, n), MUHTARI_STATUS_ERR_NO_MEMORY);
+    CHECK(memcmp(m, &before, sizeof before) == 0);
+    CHECK_EQ_U64(counts.allocs, allocations + 1u);
+    CHECK_EQ_U64(counts.frees, frees);
+    CHECK_EQ_U64(m->cart.ram[0], 0x5Au);
+    CHECK_EQ_U64(m->cart.ram[32767u], 0x5Au);
+    counts.fail_from = 0u;
+
+    muhtari_destroy(m);
+    CHECK_EQ_U64(counts.live_bytes, 0u);
+    CHECK_EQ_U64(counts.size_errors, 0u);
+    CHECK_EQ_U64(counts.allocs, counts.frees + 1u); /* one deliberate failed allocation */
+}
+
 /* Loads n bytes of buf into a fresh instance, with every allocation after
    create failing when fail is set. Checks the status, that the instance is
    byte-identical unless the load is OK, and the allocator's counts. */
@@ -1595,6 +1751,7 @@ static const struct {
     {"probe.truncated", test_truncated},
     {"probe.unsupported_board", test_unsupported_board},
     {"probe.warnings", test_warnings},
+    {"souper.profile", test_souper_profile},
 };
 
 int main(int argc, char **argv)
