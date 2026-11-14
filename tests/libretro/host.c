@@ -2219,6 +2219,100 @@ static void case_memory_map(void)
     stop();
 }
 
+static uint16_t souper_trace_crc(const uint8_t mailbox[256])
+{
+    uint32_t crc = 0xFFFFu;
+    for (unsigned i = 16u; i < 256u; i++) {
+        crc ^= (uint32_t)mailbox[i] << 8;
+        for (unsigned bit = 0u; bit < 8u; bit++)
+            crc = ((crc << 1) ^ ((crc & 0x8000u) != 0u ? 0x1021u : 0u)) & 0xFFFFu;
+    }
+    return (uint16_t)crc;
+}
+
+/* The generated ROM writes these independent observations to its system-RAM
+   mailbox after reading each CPU mapping boundary. */
+static int souper_trace_mailbox(const uint8_t *memory, size_t bytes)
+{
+    static const uint8_t values[20] = {
+        0u, 0u, 64u, 64u, 224u, 160u, 161u, 162u, 162u, 163u,
+        163u, 166u, 166u, 167u, 167u, 160u, 161u, 94u, 94u, 224u
+    };
+    if (memory == NULL || bytes < 0xB00u)
+        return 0;
+    const uint8_t *mailbox = memory + 0xA00u;
+    uint16_t crc = (uint16_t)((uint16_t)mailbox[8] | ((uint16_t)mailbox[9] << 8));
+    if (memcmp(mailbox, "M7DG", 4u) != 0 || mailbox[4] != 1u || mailbox[5] != 0u ||
+        mailbox[6] != sizeof values || mailbox[7] != 22u || crc != souper_trace_crc(mailbox))
+        return 0;
+    for (unsigned i = 0u; i < sizeof values / sizeof values[0]; i++) {
+        const uint8_t *record = mailbox + 16u + 4u * i;
+        if (record[0] != i + 1u || record[1] != 1u || record[2] != values[i] || record[3] != 0u)
+            return 0;
+    }
+    return 1;
+}
+
+/* The module returns XRGB8888 pixels; the owned diagnostic's independent
+   MARIA oracle expects color $38 for eight pixels and background $00. */
+static int souper_trace_pixels(const unsigned char *pixels, unsigned width, unsigned height)
+{
+    if (pixels == NULL || width != W || height != 242u)
+        return 0;
+    const unsigned char *row = pixels + (size_t)17u * W * 4u;
+    for (unsigned x = 0u; x < W; x++) {
+        uint32_t got = 0u;
+        uint8_t index = x < 8u ? 0x38u : 0u;
+        uint32_t want = muhtari__palette_rgb_region(index, MUHTARI_REGION_NTSC);
+        memcpy(&got, row + (size_t)x * 4u, sizeof got);
+        if (got != want)
+            return 0;
+    }
+    return 1;
+}
+
+/* Runs the generated CPU/MARIA diagnostic through the runtime-loaded module,
+   not the observer that compiles libretro.c into its own executable. */
+static void case_souper_trace(void)
+{
+    set_var("muhtari_region", "ntsc");
+    set_var("muhtari_expansion", "off");
+    set_var("muhtari_hsc", "off");
+    pad[0] = 0u;
+    pad[1] = 0u;
+    rgb565 = 0;
+    memset(frame, 0, sizeof frame);
+    video_calls = video_null = 0;
+    video_width = video_height = 0u;
+    video_pitch = 0u;
+    start(0);
+    p_set_controller_port_device(0u, RETRO_DEVICE_JOYPAD);
+    p_set_controller_port_device(1u, RETRO_DEVICE_JOYPAD);
+
+    for (unsigned i = 0u; i < 12u; i++) {
+        video_calls = video_null = 0;
+        video_width = video_height = 0u;
+        video_pitch = 0u;
+        p_run();
+        CHECK_EQ_U64(video_calls, 1u);
+        CHECK_EQ_U64(video_null, 0u);
+        CHECK_EQ_U64(video_width, W);
+        CHECK_EQ_U64(video_height, 242u);
+        CHECK(video_pitch >= (size_t)W * 4u);
+        if (i >= 4u)
+            CHECK(souper_trace_pixels(frame, video_width, video_height));
+    }
+
+    const uint8_t *memory = (const uint8_t *)p_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+    size_t bytes = p_get_memory_size(RETRO_MEMORY_SYSTEM_RAM);
+    CHECK_EQ_U64(bytes, 4096u);
+    CHECK(souper_trace_mailbox(memory, bytes));
+    stop();
+    set_var("muhtari_region", "auto");
+    set_var("muhtari_expansion", "auto");
+    set_var("muhtari_hsc", "auto");
+}
+
 /* Restore through the module's public memory interface before any run. */
 static void battery_pin(uint8_t *code, size_t *n, unsigned port, bool scl, bool sda)
 {
@@ -3341,6 +3435,7 @@ int main(int argc, char **argv)
         {"input", case_input, 1},     {"layout", case_layout, 1},
         {"devices", case_devices, 1}, {"reset", case_reset, 1},
         {"options", case_options, 1}, {"memory_map", case_memory_map, 3},
+        {"souper_trace", case_souper_trace, 1},
         {"battery", case_battery, 0}, {"battery_order", case_battery_order, 0},
         {"state", case_state, 2},
     };

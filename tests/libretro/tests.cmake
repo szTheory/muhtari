@@ -244,6 +244,14 @@ if(TARGET muhtari_libretro)
     LABELS libretro portable TIMEOUT 1)  # 2 x 0.08 s, Linux x64, slowest of 10 runs, run 39373524239
   set_tests_properties(libretro.host.souper PROPERTIES
     FIXTURES_REQUIRED "input_carts;built_doublebuffer")
+  # Fault prevented: the runtime-loaded module maps the owned Souper diagnostic
+  # to wrong CPU bytes or MARIA pixels, or omits a real video callback.
+  set(libretro_souper_fixture ${PROJECT_BINARY_DIR}/tests/diag/souper/souper.a78)
+  muhtari_add_test(NAME libretro.host.souper_trace
+    COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> souper_trace
+      ${libretro_souper_fixture}
+    LABELS libretro portable TIMEOUT 10)
+  set_tests_properties(libretro.host.souper_trace PROPERTIES FIXTURES_REQUIRED souper_pattern)
 
   muhtari_add_test(NAME libretro.host.audio
     COMMAND ${CMAKE_COMMAND} "-DHOST=$<TARGET_FILE:muhtari-test-libretro-host>"
