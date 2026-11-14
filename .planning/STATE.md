@@ -6,16 +6,16 @@ current_phase: 22
 current_phase_name: Complete Souper homebrew mapper
 current_plan: 3 of 3
 status: executing
-stopped_at: Completed 22-02-PLAN.md
-last_updated: "2026-11-14T04:00:36.789Z"
+stopped_at: Completed 22-03-PLAN.md
+last_updated: "2026-11-14T05:51:41.599Z"
 last_activity: 2026-11-14
 last_activity_desc: Phase 22 plan 22-01 complete; plan 22-02 next
-state_head: db6feb0feb173fe5536e8129f33a48be546023a8
+state_head: 13d498279c9fbedb0fe29cc771a0eb95797a30d7
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 4
-  completed_plans: 3
+  completed_plans: 4
   percent: 50
 ---
 
@@ -34,7 +34,7 @@ Current Plan: 3 of 3
 Status: Plans 22-01 and 22-02 complete; plan 22-03 is next
 Last activity: 2026-11-14 — Plan 22-02 completed
 
-Progress: [███████░░░] 75% (3/4 plans)
+Progress: [█████░░░░░] 50% (3/4 plans)
 
 
 ## Performance Metrics
@@ -50,6 +50,7 @@ and accepted v0.14.0 publication evidence remain in the
 |------|----------|-------|-------|
 | Phase 22 P01 | 108 | 2 tasks | 24 files |
 | Phase 22 P02 | 77min | 2 tasks | 24 files |
+| Phase 22 P03 | 94min | 2 tasks | 32 files |
 
 ## Accumulated Context
 
@@ -114,8 +115,8 @@ At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Sou
 
 ## Session Continuity
 
-Last session: 2026-11-14T04:00:36.658Z
-Stopped at: Completed 22-02-PLAN.md
+Last session: 2026-11-14T05:51:41.540Z
+Stopped at: Completed 22-03-PLAN.md
 Resume file: None
 
 Next action: Continue Phase 22 with `$gsd-execute-phase 22`; plan 22-03 and phase acceptance checks remain. No directory switch is needed.
@@ -143,6 +144,9 @@ Next action: Continue Phase 22 with `$gsd-execute-phase 22`; plan 22-03 and phas
 - [Phase 22]: Require exact Souper profile geometry and refuse an effective invalid v4 mapper 4 declaration without v3 fallback.
 - [Phase 22]: Keep Souper snapshots unavailable until plan 22-03 adds complete state support.
 - [Phase 22]: Plan 22-02: keep CPU and MARIA mapper controls independent and publish only fixed Souper CPU windows.
+- [Phase 22]: Souper snapshots use additive format 3 / behavior 8; legacy 1/6 and YM 2/7 bytes and identities remain unchanged, with API 8 / ABI 1 fixed.
+- [Phase 22]: Consumer continuation is judged independently; cross-consumer byte equality is not assumed, while source-qualified compatibility still checks exact bytes within a profile.
+- [Phase 22]: Resource measurements remain descriptive and source-qualified; no unrelated quota, timeout, cache, or CI structure was changed.
 
 ## Next action
 

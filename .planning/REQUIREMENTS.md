@@ -18,7 +18,7 @@ mapping and state continuation, while refusing unsupported image/audio forms.
 - [x] **SOUPER-01**: A host can load a Souper-declared image only when its header, mapper declaration, and ROM/EXRAM geometry match the explicitly documented supported profile; malformed, oversized, and unsupported Souper variants are refused before allocation or live-machine mutation.
 - [x] **SOUPER-02**: CPU reads and writes observe the documented banked ROM and EXRAM windows, register decode, aliases, and independent mapping controls, including flat and segmented EXRAM behavior, with boundary and transition cases covered by independent expected bytes.
 - [x] **SOUPER-03**: MARIA fetches observe the documented mapper-specific ROM/EXRAM and character-remap views independently from CPU reads, including the fetch-trap transition through the existing tick-aware bus/HALT path.
-- [ ] **SOUPER-04**: Reset, unload/reload, and separate instances deterministically initialize and own all Souper registers and EXRAM; save/restore preserves mapper state and subsequent CPU/MARIA observations, while invalid snapshots are rejected transactionally under a state-format/version policy decided before implementation.
+- [x] **SOUPER-04**: Reset, unload/reload, and separate instances deterministically initialize and own all Souper registers and EXRAM; save/restore preserves mapper state and subsequent CPU/MARIA observations, while invalid snapshots are rejected transactionally under a state-format/version policy decided before implementation.
 - [x] **SOUPER-05**: A generated patterned diagnostic checks CPU and MARIA mapping against literal expected values authored separately from production mapping logic, and includes malformed-profile and non-Souper regression controls without relying on copyrighted game images.
 - [x] **SOUPER-06**: The same supported mapper diagnostic runs through the existing public C library, headless runner, loaded libretro core, and applicable portable consumer; existing non-Souper observations remain unchanged, and no BupChip audio is claimed or emitted.
 - [x] **SOUPER-07**: Integrators can identify the exact supported Souper software profile, reset/EXRAM model policy, unsupported image and audio forms, and evidence limits in existing documentation.
@@ -51,7 +51,7 @@ Each requirement maps to exactly one phase in [ROADMAP.md](ROADMAP.md).
 | SOUPER-01 | Phase 22 | Complete |
 | SOUPER-02 | Phase 22 | Complete |
 | SOUPER-03 | Phase 22 | Complete |
-| SOUPER-04 | Phase 22 | Pending |
+| SOUPER-04 | Phase 22 | Complete |
 | SOUPER-05 | Phase 22 | Complete |
 | SOUPER-06 | Phase 22 | Complete |
 | SOUPER-07 | Phase 22 | Complete |
