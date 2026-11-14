@@ -1,6 +1,6 @@
 ---
 phase: 21-measured-milestone-tune-up
-verified: 2026-11-14T15:53:15Z
+verified: 2026-11-14T15:57:30Z
 status: passed
 score: 5/5 must-haves verified
 covered_files:
@@ -32,7 +32,7 @@ covered_files:
   - docs/maintaining.md
   - pins.txt
   - quality.json
-covered_digest: "v4:sha256:45f9f20e8cd4ba1cd3c1ba094ce583b9f342182a31e9ca946265f6907f96be0b"
+covered_digest: "v4:sha256:a22aa562e1929d26d9f2d7c6f538dd8bbc9b14a27765ea0a945c2ad969e55fe5"
 behavior_unverified: 0
 overrides_applied: 0
 decision_coverage:
@@ -51,7 +51,7 @@ advisory: []
 # Phase 21: Measured Milestone Tune-Up Verification Report
 
 **Phase Goal:** Maintainers can identify the current shipped baseline and begin Souper work with a measured small correction or bounded no-change disposition that preserves required checks and prior failures.
-**Verified:** 2026-11-14T15:53:15Z
+**Verified:** 2026-11-14T15:57:30Z
 **Status:** passed
 **Re-verification:** Archive relocation refresh. The prior verdict is retained; covered paths and fingerprint now identify the archived v7.0 sources. No product tests were rerun for this documentation-only refresh.
 
