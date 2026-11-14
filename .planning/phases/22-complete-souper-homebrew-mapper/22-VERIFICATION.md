@@ -62,6 +62,19 @@ covered_files:
 covered_digest: "v4:sha256:d9608a69c7f2be089206be53fc76b914d54d2c9b15450be5e7f90b1a64697d44"
 behavior_unverified: 1
 overrides_applied: 0
+gaps:
+  - truth: "The generated Souper diagnostic and restored continuation run through the dynamically loaded native libretro module."
+    status: partial
+    reason: "The generated diagnostic runs through the public library, runner, and statically linked observer; the loaded-module case uses a separate synthetic program and does not test Souper state continuation."
+    artifacts:
+      - path: "tests/libretro/host.c"
+        issue: "The loaded Souper module case checks memory descriptors with a separate inline program."
+      - path: "tests/libretro/tests.cmake"
+        issue: "The loaded-module Souper test does not receive the generated diagnostic fixture or its literal oracle."
+    missing:
+      - "Run the generated fixture through the actual built module and assert independent literal CPU and MARIA observations."
+      - "Serialize at a fixed diagnostic boundary, restore through the loaded module, and compare the continued observations."
+      - "Retain malformed-state refusal and state-preservation coverage for the Souper loaded-module route."
 decision_coverage:
   honored: 9
   total: 9
