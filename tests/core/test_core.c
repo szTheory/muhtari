@@ -3596,11 +3596,11 @@ static void souper_cpu(void)
     CHECK_EQ_U64(muhtari__cart_read(m, 0xC010u, 0), 0x5Fu);
     CHECK_EQ_U64(muhtari__cart_read(m, 0x8000u, 0), 0x5Fu); /* Reads do not write. */
 
-    /* Register 2's segment bit and the two 4 KiB page selectors are separate
-       latches; the fixed lower 8 KiB remains pages zero and one. */
-    muhtari__cart_write(m, 0xFFFAu, 0x04u);
-    muhtari__cart_write(m, 0xFFFBu, 6u);
-    muhtari__cart_write(m, 0xFFFCu, 7u);
+    /* Register 3's segment bit and registers 4/5's 4 KiB page selectors are
+       separate latches; the fixed lower 8 KiB remains pages zero and one. */
+    muhtari__cart_write(m, 0xFFFBu, 0x04u);
+    muhtari__cart_write(m, 0xFFFCu, 6u);
+    muhtari__cart_write(m, 0xFFFDu, 7u);
     CHECK_EQ_U64(muhtari__cart_read(m, 0x4000u, 0), 0xA0u);
     CHECK_EQ_U64(muhtari__cart_read(m, 0x5FFFu, 0), 0xA1u);
     CHECK_EQ_U64(muhtari__cart_read(m, 0x6000u, 0), 0xA6u);
