@@ -47,20 +47,42 @@ or tag is claimed. See the [v7.0 audit](milestones/v7.0-MILESTONE-AUDIT.md),
 [phase records](milestones/v7.0-phases/) and
 [source recommendation](research/next-milestone/v7-SOUPER.md).
 
-No successor has been selected. Use the recommendation-first milestone
-discussion to reconcile new consumer needs, sibling ownership and evidence
-before promoting a scope. Preserve the existing host, remote and identity-bound
-stops; v7.0 does not renew them.
+No successor has been selected. **Current recommendation: do not promote a new
+core behavior yet.** The strongest next feature candidate is GameDrive streamed
+ADPCM for homebrew music: RetroHQ publishes a `$420` command interface and
+sidecar track convention. Supporting it would add sidecar data to Muhtari's
+versioned public media contract and snapshots, while the available sources do
+not establish the complete playback clock and stream contract. Those are
+material API/state compatibility decisions, so this is not ready to become a
+committed implementation scope.
 
-## Near term — promote only a demonstrated core gap
+The strongest alternative is to keep the horizon open until a source-qualified
+feature profile or a lawful, reproducible title-blocking correction appears.
+The saved accuracy review found no current defect. BupChip is less ready: its
+licensed BupBoop renderer is a possible seed, but no public command/media
+schedule or generated fixture exercises the actual `$8007` path. See the
+[2026-11-14 successor review](research/next-milestone/2026-11-14-successor-review.md)
+for exact evidence, sources and revisit gates. Preserve the existing host,
+phase-specific remote-attempt and identity-bound stops. Normal milestone Git
+publication, PR merge and required CI/release automation are authorized at
+natural delivery points; this does not renew any other stopped allowance.
 
-When selecting the next milestone, prefer one concrete title-blocking 7800 correction backed by a
-lawful discriminating input and an independent expected result. Do not start a
-measurement-only phase: DLI/HALT questions need a specific observation and any
-real-console run remains separately authorized. If no such counterexample
-exists, keep the horizon open rather than inventing a defect. LibFuturo owns its
-PAL browser/profile qualification; its current work has not established a new
-Muhtari API or package requirement.
+## Near term — source-qualify homebrew audio before promotion
+
+For an accuracy milestone, require one concrete title-blocking 7800 correction
+backed by a lawful discriminating input and an independent expected result. Do
+not start a measurement-only phase: DLI/HALT questions need a specific
+observation and any real-console run remains separately authorized. If no such
+counterexample exists, keep that path open rather than inventing a defect.
+LibFuturo owns its PAL browser/profile qualification; its current work has not
+established a new Muhtari API or package requirement.
+
+GameDrive streamed ADPCM is the most concrete homebrew-audio candidate if the
+owner accepts a new caller-supplied sidecar contract. Before implementation,
+qualify stream framing, playback timing, generated independent audio results,
+and bounded save/load continuation. The sample and encoder repositories are
+unlicensed and cannot seed Muhtari. BupChip remains deferred until its bus
+command and music-payload format have a source-qualified profile.
 
 The nine v3.0 gaps remain open: TUNE-06/07, PLAY-01–04 and FRONT-02–04. Keep the
 published-core RetroArch/input/battery proof, paired Playstead flow and actual
@@ -157,6 +179,7 @@ example; reproduce sibling lessons locally before adopting them.
 | 2026-11-11 | Recommended one YM2151/XM audio profile after bounded specialist fan-out and adversarial review | Loader refusal is concrete; no current accuracy defect or new LibFuturo API/package need is established. Preserve mono output, legal diagnostics, compatibility decisions and independent source-qualified acceptance. Adopted as shipped v6.0. |
 | 2026-11-13 | Selected v7.0 Souper mapper-only support after consumer, hardware and adversarial review | TailChao explicitly released the mapper for other developers, Muhtari refuses its declaration, and a public mapping example enables generated acceptance. Keep claims to the published mapper model; exclude BupChip and named-game compatibility. LibFuturo's PAL/browser work remains sibling-owned. |
 | 2026-11-14 | Closed and archived v7.0 locally; left successor scope unselected | All eight requirements and both phase verifications pass. One `unknown` workspace record was acknowledged and deferred, with 49 prior acknowledgments carried forward. This does not claim publication, push, merge or tag. |
+| 2026-11-14 | Refreshed successor candidates after v7.0 | GameDrive documents useful streamed-audio commands, but its unlicensed encoder and missing timing contract leave a new sidecar/API/state surface unqualified. BupChip's licensed renderer still lacks a public bus/media profile. Recommend holding scope selection until the API consequence is accepted and one profile has independent generated acceptance, or a real gameplay counterexample appears. |
 
 | 2026-11-10 | Completed the offline v4.0 core slice; retain ship and real-browser work as distinct next decisions | All five scoped requirements and integration flows passed locally; measured SDK results are explicitly headless and emulated. |
 

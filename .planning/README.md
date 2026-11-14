@@ -9,12 +9,12 @@ relevant source links instead of scanning every historical plan.
 | Shared goals, gamer priorities, writing voice, research posture and provenance | [INTENT.md](INTENT.md) |
 | What ships today and binding constraints | [PROJECT.md](PROJECT.md), [../AGENTS.md](../AGENTS.md) |
 | Current position and next allowed step | [STATE.md](STATE.md) |
-| Current execution contract / last completed requirements | [ROADMAP.md](ROADMAP.md), [active requirements](REQUIREMENTS.md); v6.0 shipped as v0.14.0 |
+| Current execution contract / last completed requirements | [ROADMAP.md](ROADMAP.md); no active requirements while successor scope is unselected; [v7.0 requirements](milestones/v7.0-REQUIREMENTS.md) |
 | Immediate, next, mid-term and long-term horizons | [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md) |
 | Where hardware/API/engineering facts live | [preparation/README.md](preparation/README.md) |
 | Settled choices and reasons | [preparation/DECISIONS.md](preparation/DECISIONS.md) |
 | Reproduced lessons versus imported hypotheses | [LESSONS.md](LESSONS.md) |
-| Current successor recommendation, provenance, evidence confidence and revisit triggers | [v7.0 Souper mapper research](research/next-milestone/v7-SOUPER.md), [rolling roadmap](PRODUCT-ROADMAP.md); [v6.0 scoping synthesis](research/next-milestone/SUMMARY.md) is historical |
+| Current successor recommendation, provenance, evidence confidence and revisit triggers | [2026-11-14 successor review](research/next-milestone/2026-11-14-successor-review.md), [rolling roadmap](PRODUCT-ROADMAP.md); [v7.0 Souper research](research/next-milestone/v7-SOUPER.md) records the completed milestone |
 | Playstead quick route, native-host north star and pasteable handoff | [research/PLAYSTEAD-HANDOFF.md](research/PLAYSTEAD-HANDOFF.md) |
 | Reusable bounded specialist brief | [research/fan-out/prompt.txt](research/fan-out/prompt.txt) |
 | Historical browser-player idea and alternatives; reconcile with implemented LibFuturo routes in the current synthesis | [Browser-player seed](seeds/SEED-261030-tt4-browser-libretro-player.md), [bounded research](research/browser-player/RECOMMENDATION.md) |
@@ -35,14 +35,13 @@ Refresh this index, intent links and rolling horizons when a milestone begins or
 closes. Keep useful findings in ordinary project artifacts; no external memory
 service or bulk lesson export is needed. Detailed plans stay in their phase.
 
-Latest completion: [v6.0 audit](milestones/v6.0-MILESTONE-AUDIT.md) and
-[v6.0 ship receipt](milestones/v6.0-SHIP.md). Package v0.14.0 publication,
-latest installation and current-main CI are closed. v7.0 Souper mapper support
-is the selected successor scope; [STATE](STATE.md), [continue.md](continue.md),
-[requirements](REQUIREMENTS.md) and [roadmap](ROADMAP.md) own its active status.
-Atari 2600 emulation belongs to twentysixhundo; LibFuturo owns the shared interface
-and native/browser consumer qualification. Keep those responsibilities distinct
-from Muhtari's machine behavior and release artifacts.
+Latest completion: [v7.0 audit](milestones/v7.0-MILESTONE-AUDIT.md), archived
+locally but not yet published or merged. The [v6.0 ship receipt](milestones/v6.0-SHIP.md)
+records the last published package release. No successor scope is selected;
+[STATE](STATE.md), [continue.md](continue.md), and [roadmap](ROADMAP.md) own the
+current position. Atari 2600 emulation belongs to twentysixhundo; LibFuturo owns
+the shared interface and native/browser consumer qualification. Keep those
+responsibilities distinct from Muhtari's machine behavior and release artifacts.
 
 ## Latest milestone — v6.0 shipped
 

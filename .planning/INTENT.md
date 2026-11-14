@@ -170,3 +170,23 @@ routine acceptance prompts. Preserve material compatibility decisions, original
 Phase 12/14 stops and separate remote/host/identity/publication/merge authority.
 This is milestone v6.0, not a package-version request. The agent owns the work;
 no owner checkout switch or blanket UAT is required.
+
+## Recommendation-first autonomous milestone starts — 2026-11-14
+
+At every new-milestone boundary, present a concrete successor idea and its
+strongest alternative, then refresh this rolling roadmap before a scope choice.
+The owner wants selected milestones to run in gsd-autonomous style through
+dependent local planning, implementation, verification, review and closeout
+without routine prompts. Preserve material public API and compatibility
+decisions, host/device action, identity-bound consent and irreversible changes.
+The owner has preauthorized ordinary Git publication, PR merge and the CI/release
+automation they trigger at natural milestone delivery points. Preserve all
+other exact stops until new evidence or authority resolves them.
+
+## Early publication and cheap preflight — 2026-11-14
+
+Publish at natural delivery points, release early and often, and finish each
+milestone with `main` CI green. Before a long suite or process, run applicable
+cheap consistency checks first. Review reproduced lessons and recent bottlenecks
+for low-effort sanity checks or fixes; investigate a failed check before retrying
+it. Keep CI/runtime evidence and any measured efficiency finding with the run.

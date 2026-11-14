@@ -25,6 +25,7 @@ All five plans have summaries. Native integration found and closed the loaded-mo
 ## Next boundary
 
 v7.0 is locally complete and archived. No successor scope is selected; use
-`$gsd-new-milestone` for recommendation-first discussion. Package publication,
-push, merge and tag actions remain separate. Original Phase 12/14 stops, the nine
-deferred v3.0 requirements and unaccepted hardware/platform claims remain unchanged.
+`$gsd-new-milestone` for recommendation-first discussion. The owner has
+preauthorized normal publication, PR merge and the CI/release automation they
+trigger at natural delivery points. Original Phase 12/14 stops, the nine deferred
+v3.0 requirements and unaccepted hardware/platform claims remain unchanged.

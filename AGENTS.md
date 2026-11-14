@@ -3,6 +3,8 @@
 ## Communication and workflow preferences
 
 - Owner direction (2026-11-11): run the selected v6.0 YM2151 homebrew-sound milestone in gsd-autonomous style through dependent local work and closeout, following ordinary in-scope recommendations without routine acceptance prompts. Preserve material compatibility decisions and separate remote/host/publication/merge boundaries.
+- Owner direction (2026-11-14): at every new-milestone boundary, present a concrete successor idea and its strongest alternative, and refresh `.planning/PRODUCT-ROADMAP.md` before asking for a scope choice. Run selected milestones in gsd-autonomous style through dependent local work without routine prompts; keep material API/compatibility, host/device, identity-bound and irreversible boundaries intact. The owner has preauthorized normal Git publication, PR merge, and the CI/release automation they trigger at natural milestone delivery points.
+- Owner direction (2026-11-14): publish at natural delivery points, release early and often, and finish each milestone with `main` CI green. Before long suites or processes, run applicable cheap consistency checks first; inspect lessons and recent bottlenecks for low-effort sanity checks or other fixes that keep work moving. Preserve evidence and investigate failures before retrying.
 
 - Owner scope correction (2026-11-11): Atari 2600 emulation belongs to the sibling project `twentysixhundo`. Keep Muhtari focused on Atari 7800; SEED-006 is retired. Existing 2600 image recognition/refusal remains supported.
 - Keep isolated Git checkouts inside the repository under `.worktrees/`, using an ignored directory, so they stay together without cluttering the parent projects folder.
@@ -132,7 +134,9 @@ evidence.
    confidence, contradictions, rejected options and revisit triggers; reuse it next time unless new evidence could
    change the decision. Record owner workflow preferences in AGENTS.md/INTENT.md, not as reproduced technical
    lessons in LESSONS.md.
-9. **Branch, then pull request.** Never commit on `main` once a remote exists. Before the first GSD step that
+9. **Branch, then pull request.** Never commit on `main` once a remote exists. Ship the final phase PR before
+   `$gsd-complete-milestone` archives the active phase rows, so GSD's ship gate can verify its roadmap record.
+   Before the first GSD step that
    commits, branch off `origin/main`: `phase/NN-slug` for a phase, `milestone/vX.Y-slug` for milestone steps,
    `gsd/roadmap` for the kickoff. After `/gsd-ship`, give the pull request a Conventional Commit title, run
    `gh pr merge --auto --squash` in a shell (never inside GSD command text), and confirm a CI run exists on the
