@@ -1,9 +1,15 @@
 ---
-title: "Successor scoping synthesis: one YM2151 homebrew-audio profile"
-summary: "Research-backed recommendation, evidence confidence, rejected alternatives and roadmap triggers after v5.0 shipping and sibling reconciliation."
-read_when: "Selecting the next milestone, starting its phase discussion, or reconsidering Muhtari versus sibling ownership."
-updated: 2026-11-11
+title: "Historical v6.0 successor synthesis: YM2151 homebrew audio"
+summary: "Preserved rationale for selecting v6.0; the current successor recommendation and rolling horizons are in v7-SOUPER.md and PRODUCT-ROADMAP.md."
+read_when: "Understanding why v6.0 was selected, or reviewing historical evidence before v7.0."
+updated: 2026-11-13
 ---
+
+> **Historical v6.0 record.** The recommendation below was adopted for the
+> shipped YM2151 milestone and is no longer the current successor proposal.
+> The owner-supplied LibFuturo feedback and the 2026-11-13 Souper fan-out
+> supersede its “next” recommendations. Read [v7-SOUPER](v7-SOUPER.md) and
+> the active [rolling roadmap](../../PRODUCT-ROADMAP.md) for current scope.
 
 # Recommendation and status
 

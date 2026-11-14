@@ -42,6 +42,10 @@ static void put32(uint8_t *p, uint32_t value)
     for (unsigned i = 0; i < 4; i++)
         p[i] = (uint8_t)(value >> (i * 8u));
 }
+static uint32_t get32(const uint8_t *p)
+{
+    return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
+}
 static void write_file(const char *prefix, const char *suffix, const void *bytes, size_t size)
 {
     char path[4096];
@@ -374,6 +378,9 @@ int main(int argc, char **argv)
         if (strcmp(mode, "produce") == 0) {
             size_t size;
             uint8_t *state = save(m, &size);
+            REQUIRE(size >= 64u);
+            REQUIRE(get32(state + 8u) == (strcmp(scenario, "ym") == 0 ? 2u : 1u));
+            REQUIRE(get32(state + 20u) == (strcmp(scenario, "ym") == 0 ? 7u : 6u));
             write_file(argv[4], ".state", state, size);
             free(state);
             continuation(m, argv[4]);

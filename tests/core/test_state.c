@@ -17,12 +17,14 @@
 #define STATE_EXPANSION_BYTES 131072u
 #define STATE_MAX_BYTES 307932u
 #define STATE_YM_BYTES 2470u
+#define STATE_SOUPER_LATCH_BYTES 5u
 
 enum state_fixture {
     STATE_LINEAR,
     STATE_CART_RAM,
     STATE_XBOARD,
     STATE_XM,
+    STATE_SOUPER,
     STATE_LARGEST_GENERATED
 };
 
@@ -262,6 +264,21 @@ static muhtari_status state_load(muhtari *m, enum state_fixture fixture, int sav
     } else if (fixture == STATE_XBOARD) {
         image_bytes = images_linear(image, 3u, 49152u);
         media.expansion = MUHTARI_EXPANSION_XBOARD;
+    } else if (fixture == STATE_SOUPER) {
+        const uint32_t body_bytes = 512u * IMAGES_KIB;
+        images_header(image, 3u, "State Souper", body_bytes, 0x1000u);
+        uint8_t *body = image + IMAGES_HEADER;
+        for (uint32_t bank = 0u; bank < 32u; bank++)
+            memset(body + bank * 16384u, (int)(0x40u + bank), 16384u);
+        body[0x52080u] = 0xD1u;
+        body[0x2D000u] = 0xD2u;
+        uint8_t *fixed = body + body_bytes - 16384u;
+        fixed[0] = 0x4Cu;
+        fixed[1] = 0x00u;
+        fixed[2] = 0xC0u;
+        body[body_bytes - 4u] = 0x00u;
+        body[body_bytes - 3u] = 0xC0u;
+        image_bytes = IMAGES_HEADER + body_bytes;
     } else {
         image_bytes = images_linear(image, 4u, 4096u);
         if (fixture == STATE_XM)
@@ -378,6 +395,260 @@ static void state_ym_observe(void *user, uint64_t tick, uint8_t source, uint16_t
     (void)source;
     (void)raw;
     (*(uint32_t *)user)++;
+}
+
+static void state_souper_observe(void *user, uint64_t tick, uint8_t source, uint16_t raw)
+{
+    (void)tick;
+    (void)source;
+    (void)raw;
+    (*(uint32_t *)user)++;
+}
+
+static void state_souper_check_map(muhtari *m)
+{
+    CHECK_EQ_HEX(muhtari__cart_read(m, 0x8000u, 0), 0x53u);
+    CHECK_EQ_HEX(muhtari__cart_read(m, 0xC010u, 0), 0x5Fu);
+    CHECK_EQ_HEX(muhtari__cart_read(m, 0x6000u, 0), 0xD6u);
+    CHECK_EQ_HEX(muhtari__cart_read(m, 0x7000u, 0), 0xD7u);
+    m->bus.maria_from = 1u;
+    m->bus.maria_until = 2u;
+    CHECK_EQ_HEX(muhtari__cart_dma_read(m, 0xA000u, 1u), 0xD1u);
+    CHECK_EQ_HEX(muhtari__cart_dma_read(m, 0xA080u, 1u), 0xD2u);
+    CHECK_EQ_HEX(muhtari__cart_dma_read(m, 0xC000u, 1u), 0xE0u);
+    CHECK_EQ_HEX(muhtari__cart_dma_read(m, 0xE000u, 1u), 0xD6u);
+    CHECK_EQ_HEX(muhtari__cart_dma_read(m, 0xF000u, 1u), 0xD7u);
+    m->bus.maria_from = 0u;
+    m->bus.maria_until = 0u;
+}
+
+static void state_souper_expect_refusal(muhtari *m, const uint8_t *candidate, size_t bytes,
+                                        muhtari_status expected, const uint8_t *exram_before,
+                                        uint32_t observer_before)
+{
+    size_t total = muhtari_state_size(m);
+    alloc_counts *counts = (alloc_counts *)m->allocator.user;
+    uint32_t allocations = counts->allocs;
+    uint32_t frees = counts->frees;
+    uint8_t *ram = m->cart.ram;
+    muhtari_battery_info battery_before;
+    memset(&battery_before, 0, sizeof battery_before);
+    battery_before.size = (uint32_t)sizeof battery_before;
+    CHECK_EQ_U64(muhtari_get_battery(m, &battery_before), MUHTARI_STATUS_OK);
+    memcpy(public_first, candidate, bytes);
+    memcpy(&snapshot, m, sizeof snapshot);
+    CHECK_EQ_U64(muhtari_save_state(m, public_snapshot, total), MUHTARI_STATUS_OK);
+    memcpy(public_control, candidate, bytes);
+    CHECK_EQ_U64(muhtari_load_state(m, public_control, bytes), expected);
+    CHECK(memcmp(public_control, candidate, bytes) == 0);
+    CHECK(memcmp(&snapshot, m, sizeof snapshot) == 0);
+    CHECK(m->cart.ram == ram);
+    CHECK(memcmp(m->cart.ram, exram_before, 32768u) == 0);
+    if (m->observer_user != NULL)
+        CHECK_EQ_U64(observer_before, *(uint32_t *)m->observer_user);
+    CHECK_EQ_U64(counts->allocs, allocations);
+    CHECK_EQ_U64(counts->frees, frees);
+    muhtari_battery_info battery_after;
+    memset(&battery_after, 0, sizeof battery_after);
+    battery_after.size = (uint32_t)sizeof battery_after;
+    CHECK_EQ_U64(muhtari_get_battery(m, &battery_after), MUHTARI_STATUS_OK);
+    CHECK(battery_after.data == battery_before.data);
+    CHECK_EQ_U64(battery_after.bytes, battery_before.bytes);
+    CHECK_EQ_U64(battery_after.generation, battery_before.generation);
+    CHECK_EQ_U64(muhtari_save_state(m, public_second, total), MUHTARI_STATUS_OK);
+    CHECK(memcmp(public_second, public_snapshot, total) == 0);
+}
+
+static void test_souper(void)
+{
+    alloc_counts source_counts, restored_counts;
+    muhtari *source = state_create(&source_counts);
+    muhtari *restored = state_create(&restored_counts);
+    CHECK(source != NULL && restored != NULL);
+    if (source == NULL || restored == NULL) {
+        muhtari_destroy(source);
+        muhtari_destroy(restored);
+        return;
+    }
+    uint32_t observed = 0u;
+    CHECK_EQ_U64(muhtari__synth_observe(source, state_souper_observe, &observed),
+                 MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(state_load(source, STATE_SOUPER, 0), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(state_load(restored, STATE_SOUPER, 0), MUHTARI_STATUS_OK);
+
+    muhtari_versions versions;
+    memset(&versions, 0, sizeof versions);
+    versions.size = (uint32_t)sizeof versions;
+    CHECK_EQ_U64(muhtari_get_versions(&versions), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(versions.api, 8u);
+    CHECK_EQ_U64(versions.abi, 1u);
+    CHECK_EQ_U64(versions.behaviour_revision, 8u);
+    CHECK_EQ_U64(versions.state_format, 3u);
+
+    muhtari__cart_write(source, 0xFFF8u, 19u);
+    muhtari__cart_write(source, 0xFFF9u, 0xA5u);
+    muhtari__cart_write(source, 0xFFFAu, 0x5Au);
+    muhtari__cart_write(source, 0xFFFBu, 7u);
+    muhtari__cart_write(source, 0xFFFCu, 6u);
+    muhtari__cart_write(source, 0xFFFDu, 7u);
+    for (uint32_t i = 0u; i < source->cart.info.ram_size; i++)
+        source->cart.ram[i] = (uint8_t)(i * 37u + (i >> 8) * 11u);
+    source->cart.ram[0] = 0xE0u;
+    source->cart.ram[6u * 4096u] = 0xD6u;
+    source->cart.ram[7u * 4096u] = 0xD7u;
+
+    size_t total = muhtari_state_size(source);
+    CHECK(total > STATE_HEADER_BYTES);
+    CHECK_EQ_U64(muhtari_state_size(restored), total);
+    if (total <= STATE_HEADER_BYTES || total > STATE_MAX_BYTES) {
+        muhtari_destroy(restored);
+        muhtari_destroy(source);
+        return;
+    }
+    CHECK_EQ_U64(muhtari_save_state(source, first, total), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(get_u32(first + 8u), 3u);
+    CHECK_EQ_U64(get_u32(first + 20u), 8u);
+    CHECK_EQ_U64(get_u32(first + 12u), STATE_HEADER_BYTES);
+    CHECK_EQ_U64(get_u32(first + 16u), total);
+    CHECK(memcmp(first + 28u, source->state_identity, sizeof source->state_identity) == 0);
+
+    uint8_t *restored_ram = restored->cart.ram;
+    uint32_t source_allocations = source_counts.allocs;
+    uint32_t source_frees = source_counts.frees;
+    uint32_t restored_allocations = restored_counts.allocs;
+    uint32_t restored_frees = restored_counts.frees;
+    CHECK_EQ_U64(muhtari_load_state(restored, first, total), MUHTARI_STATUS_OK);
+    CHECK(restored->cart.ram == restored_ram);
+    CHECK_EQ_U64(source_counts.allocs, source_allocations);
+    CHECK_EQ_U64(source_counts.frees, source_frees);
+    CHECK_EQ_U64(restored_counts.allocs, restored_allocations);
+    CHECK_EQ_U64(restored_counts.frees, restored_frees);
+    CHECK_EQ_U64(restored->cart.bank, 19u);
+    CHECK_EQ_U64(restored->cart.souper_mode, 7u);
+    CHECK_EQ_U64(restored->cart.souper_character_a, 0xA5u);
+    CHECK_EQ_U64(restored->cart.souper_character_b, 0x5Au);
+    CHECK_EQ_U64(restored->cart.souper_exram_video_page, 6u);
+    CHECK_EQ_U64(restored->cart.souper_exram_data_page, 7u);
+    CHECK(memcmp(source->cart.ram, restored->cart.ram, 32768u) == 0);
+    state_souper_check_map(source);
+    state_souper_check_map(restored);
+
+    /* The snapshot restores one instance without aliasing another instance's
+       mapper latches or EXRAM. Reload the saved bytes before continuation. */
+    restored->cart.ram[0] ^= 0xFFu;
+    muhtari__cart_write(restored, 0xFFF8u, 3u);
+    CHECK_EQ_HEX(source->cart.ram[0], 0xE0u);
+    CHECK_EQ_U64(source->cart.bank, 19u);
+    CHECK_EQ_U64(muhtari_load_state(restored, first, total), MUHTARI_STATUS_OK);
+    CHECK(memcmp(source->cart.ram, restored->cart.ram, 32768u) == 0);
+    CHECK_EQ_U64(restored->cart.bank, 19u);
+
+    for (unsigned frame = 0u; frame < 2u; frame++) {
+        memset(public_video_a, 0, sizeof public_video_a);
+        memset(public_video_b, 0, sizeof public_video_b);
+        memset(public_audio_a, 0, sizeof public_audio_a);
+        memset(public_audio_b, 0, sizeof public_audio_b);
+        uint32_t source_samples = state_run_frame(source, public_video_a, public_audio_a);
+        uint32_t restored_samples = state_run_frame(restored, public_video_b, public_audio_b);
+        CHECK_EQ_U64(source_samples, restored_samples);
+        size_t frame_bytes = 320u * (size_t)muhtari__timing(source).height;
+        CHECK(memcmp(public_video_a, public_video_b, frame_bytes) == 0);
+        CHECK(memcmp(public_audio_a, public_audio_b,
+                     (size_t)source_samples * sizeof public_audio_a[0]) == 0);
+    }
+    CHECK_EQ_U64(muhtari_save_state(source, first, total), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_save_state(restored, public_second, total), MUHTARI_STATUS_OK);
+    CHECK(memcmp(first, public_second, total) == 0);
+
+    uint8_t exram_before[32768u];
+    memcpy(exram_before, source->cart.ram, sizeof exram_before);
+    uint32_t observer_before = observed;
+    memcpy(public_control, first, total);
+    public_control[total - 1u] = 8u;
+    state_rechecksum(public_control, total);
+    state_souper_expect_refusal(source, public_control, total, MUHTARI_STATUS_ERR_INVALID_STATE,
+                                exram_before, observer_before);
+    memcpy(public_control, first, total);
+    public_control[total - STATE_SOUPER_LATCH_BYTES] = 8u;
+    state_rechecksum(public_control, total);
+    state_souper_expect_refusal(source, public_control, total, MUHTARI_STATUS_ERR_INVALID_STATE,
+                                exram_before, observer_before);
+    memcpy(public_control, first, total);
+    put_u32(public_control + 8u, 2u);
+    state_rechecksum(public_control, total);
+    state_souper_expect_refusal(source, public_control, total, MUHTARI_STATUS_ERR_UNSUPPORTED_STATE,
+                                exram_before, observer_before);
+    memcpy(public_control, first, total);
+    put_u32(public_control + 20u, 7u);
+    state_rechecksum(public_control, total);
+    state_souper_expect_refusal(source, public_control, total, MUHTARI_STATUS_ERR_UNSUPPORTED_STATE,
+                                exram_before, observer_before);
+    memcpy(public_control, first, total);
+    public_control[28u] ^= 1u;
+    state_rechecksum(public_control, total);
+    state_souper_expect_refusal(source, public_control, total, MUHTARI_STATUS_ERR_STATE_MISMATCH,
+                                exram_before, observer_before);
+    memcpy(public_control, first, total);
+    public_control[total - 1u] ^= 1u;
+    state_souper_expect_refusal(source, public_control, total, MUHTARI_STATUS_ERR_INVALID_STATE,
+                                exram_before, observer_before);
+    state_souper_expect_refusal(source, first, total - 1u, MUHTARI_STATUS_ERR_INVALID_STATE,
+                                exram_before, observer_before);
+
+    memset(public_control, 0xA5, total + 8u);
+    CHECK_EQ_U64(muhtari_save_state(source, public_control, total + 8u), MUHTARI_STATUS_OK);
+    for (size_t i = total; i < total + 8u; i++)
+        CHECK_EQ_HEX(public_control[i], 0xA5u);
+    memset(public_control, 0xA5, total);
+    memcpy(public_second, public_control, total);
+    CHECK_EQ_U64(muhtari_save_state(source, public_control, total - 1u),
+                 MUHTARI_STATUS_ERR_BUFFER_TOO_SMALL);
+    CHECK(memcmp(public_control, public_second, total) == 0);
+    CHECK_EQ_U64(muhtari_load_state(source, source->cart.ram, total), MUHTARI_STATUS_ERR_ARGUMENT);
+    CHECK_EQ_U64(muhtari_save_state(source, source->cart.ram, total), MUHTARI_STATUS_ERR_ARGUMENT);
+
+    alloc_counts mismatch_counts;
+    muhtari *mismatch = state_create(&mismatch_counts);
+    CHECK(mismatch != NULL);
+    if (mismatch != NULL) {
+        CHECK_EQ_U64(state_load(mismatch, STATE_LINEAR, 0), MUHTARI_STATUS_OK);
+        size_t mismatch_total = muhtari_state_size(mismatch);
+        CHECK_EQ_U64(muhtari_save_state(mismatch, public_snapshot, mismatch_total),
+                     MUHTARI_STATUS_OK);
+        uint32_t mismatch_allocations = mismatch_counts.allocs;
+        uint32_t mismatch_frees = mismatch_counts.frees;
+        memcpy(public_control, first, total);
+        CHECK_EQ_U64(muhtari_load_state(mismatch, public_control, total),
+                     MUHTARI_STATUS_ERR_INVALID_STATE);
+        CHECK(memcmp(public_control, first, total) == 0);
+        CHECK_EQ_U64(muhtari_state_size(mismatch), mismatch_total);
+        CHECK_EQ_U64(muhtari_save_state(mismatch, public_second, mismatch_total),
+                     MUHTARI_STATUS_OK);
+        CHECK(memcmp(public_second, public_snapshot, mismatch_total) == 0);
+        CHECK_EQ_U64(mismatch_counts.allocs, mismatch_allocations);
+        CHECK_EQ_U64(mismatch_counts.frees, mismatch_frees);
+        muhtari_destroy(mismatch);
+    }
+
+    /* A power cycle clears volatile mapper state; reloading the same image
+       starts from the same zero-filled profile. */
+    CHECK_EQ_U64(muhtari_power_cycle(source), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(source->cart.bank, 0u);
+    CHECK_EQ_U64(source->cart.souper_mode, 0u);
+    CHECK_EQ_U64(source->cart.souper_character_a, 0u);
+    CHECK_EQ_U64(source->cart.souper_character_b, 0u);
+    CHECK_EQ_U64(source->cart.souper_exram_video_page, 0u);
+    CHECK_EQ_U64(source->cart.souper_exram_data_page, 0u);
+    uint8_t zero_exram[32768u] = {0};
+    CHECK(memcmp(source->cart.ram, zero_exram, sizeof zero_exram) == 0);
+    CHECK_EQ_U64(state_load(source, STATE_SOUPER, 0), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(source->cart.bank, 0u);
+    CHECK_EQ_U64(source->cart.souper_mode, 0u);
+    CHECK(memcmp(source->cart.ram, zero_exram, sizeof zero_exram) == 0);
+
+    CHECK_EQ_U64(muhtari__synth_observe(source, NULL, NULL), MUHTARI_STATUS_OK);
+    muhtari_destroy(restored);
+    muhtari_destroy(source);
 }
 
 static void state_ym_write(muhtari *m, uint8_t reg, uint8_t value)
@@ -2766,13 +3037,10 @@ static void test_topologies(void)
 static const struct {
     const char *name;
     void (*run)(void);
-} cases[] = {{"payload", test_payload},
-             {"fields", test_fields},
-             {"aliases", test_aliases},
-             {"lifecycle", test_lifecycle},
-             {"battery", test_battery},
-             {"topologies", test_topologies},
-             {"ym", test_ym}};
+} cases[] = {{"payload", test_payload}, {"fields", test_fields},
+             {"aliases", test_aliases}, {"lifecycle", test_lifecycle},
+             {"battery", test_battery}, {"topologies", test_topologies},
+             {"ym", test_ym},           {"souper", test_souper}};
 
 static void test_equality_report(void)
 {

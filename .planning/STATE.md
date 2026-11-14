@@ -1,69 +1,80 @@
 ---
 gsd_state_version: "1.0"
-milestone: v6.0
-status: completed
-stopped_at: v6.0 shipped as v0.14.0; successor milestone unselected
-last_updated: "2026-11-13T17:28:46.528Z"
-last_activity: 2026-11-13
-last_activity_desc: v6.0 archive progress handoff reconciled
-state_head: b746d5c1ff5a95cef211621fef857930d2d6e3ce
+milestone: v7.0
+status: Awaiting next milestone
+stopped_at: v7.0 milestone archive and local closeout complete; successor scope unselected
+last_updated: "2026-11-14T15:58:48.088Z"
+last_activity: 2026-11-14
+last_activity_desc: Milestone v7.0 completed and archived
+state_head: fc7283b24cefe12740bfd7ee079195b0893b91a8
 progress:
   total_phases: 2
   completed_phases: 2
-  total_plans: 8
-  completed_plans: 8
+  total_plans: 5
+  completed_plans: 5
   percent: 100
-milestone_name: YM2151 homebrew sound
-current_phase: 20
+milestone_name: Souper homebrew mapper
+current_phase: 22
 ---
 
 # Project State
 
 ## Project Reference
 
-See [PROJECT.md](PROJECT.md), [archived requirements](milestones/v6.0-REQUIREMENTS.md), [ROADMAP.md](ROADMAP.md) and [milestone synthesis](research/next-milestone/SUMMARY.md).
+See [PROJECT.md](PROJECT.md) (updated 2026-11-14), [ROADMAP.md](ROADMAP.md), [v7.0 archive](milestones/v7.0-ROADMAP.md) and [recommendation](research/next-milestone/v7-SOUPER.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** v6.0 shipped as v0.14.0; successor scope remains unselected
+**Current focus:** Planning the next milestone; v7.0 is archived locally
 
 ## Current Position
 
-Phase: v6.0 shipped
+Phase: Milestone v7.0 complete
 Plan: —
-Status: All phases complete; successor selection pending
-Last activity: 2026-11-13 — v6.0 archive progress handoff reconciled
+Status: Awaiting next milestone
+Last activity: 2026-11-14 — Milestone v7.0 completed and archived
+
 
 ## Performance Metrics
 
-v6.0 has two verified phases, eight completed plans and nineteen actual plan task blocks. All nine current requirements, required local gates and independent review/integration pass. Package v0.14.0 is published; its release workflow, latest-install check and current-main CI pass. See the [v6.0 ship receipt](milestones/v6.0-SHIP.md).
+v7.0 has two phases and five plans. Phase 21's report-only tune-up and all four Phase 22 plans are complete;
+TUNE-11 and all seven SOUPER requirements passed goal-based verification. The final source passed the required native,
+release, portable, focused sanitizer, and hygiene checks. Their commands and limits are in the Phase 22 plan
+summaries and [archived verification report](milestones/v7.0-phases/22-complete-souper-homebrew-mapper/22-VERIFICATION.md). The result
+is conformance with the selected software model, not physical-cartridge or retail-game validation. Prior
+milestone metrics and accepted v0.14.0 publication evidence remain in the
+[v6.0 roadmap](milestones/v6.0-ROADMAP.md) and [ship receipt](milestones/v6.0-SHIP.md).
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
-| Phase 19 P01 | 76min | 1 task | 1 file |
-| Phase 20 P01 | 80min | 2 tasks | 20 files |
-| Phase 20 P02 | 84min | 3 tasks | 9 files |
+| Phase 22 P01 | 108 | 2 tasks | 24 files |
+| Phase 22 P02 | 77min | 2 tasks | 24 files |
+| Phase 22 P03 | 94min | 2 tasks | 32 files |
+| Phase 22 P04 | not recorded | 2 tasks | 3 files |
 
 ## Accumulated Context
 
 - v3.0 closed with deferred scope: only Phase 13 verified; nine requirements remain unchecked in the [archive](milestones/v3.0-MILESTONE-AUDIT.md). v4.0 promotes no old host acceptance claim.
 - Root remains canonical; stale dirty worktrees stay preserved and require content/ancestry reconciliation before import. See [workspace reconciliation](debug/workspace-reconciliation-2026-11-10.md).
+- The owner selected v7.0 Souper mapper-only support after recommendation-first research. One published 512 KiB ROM/32 KiB EXRAM software model, independent generated CPU/MARIA expectations and complete existing-consumer/state acceptance belong together in Phase 22. BupChip/BupBoop, Rikki & Vikki compatibility, flash variants and physical cartridge accuracy are excluded.
+- Phase 22 recorded the exact reset/EXRAM model policy and snapshot format/version consequences under DEC.26/DEC.36 before implementation. No new API/ABI, dependency or host was selected; follow the settled compatibility policy for future changes.
 - Owner-selected v6.0 keeps one source-qualified XM/YM2151 profile, public mono PCM and C17 integer-only instance ownership. Profile, finite resource bounds and concrete API/behavior/native-format compatibility consequences are qualified before implementation; materially new consequences remain owner decisions.
 - Required chip/bus/audio/state, library/runner/libretro/Wasm/package acceptance, tests, docs and cost stay together in Phase 20. All seven plans, required local gates, goal verification and milestone integration are complete. YM state now uses format 2/behavior 7 while no-YM snapshots retain format 1/behavior 6; independent genuine old/new continuation remains in Plan 20-06. Reuse saved research, current mechanisms and [fan-out guidance](research/fan-out/prompt.txt); do not add a validation-tail phase or repeat upstream research.
 
-Inherited todos and optional seeds retain their dispositions except selected YM/XM and recurring tune-up contributions. Atari 2600 belongs to twentysixhundo; LibFuturo owns its existing host/browser routes. [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md) carries future horizons.
+Inherited todos and optional seeds retain their dispositions except the selected Souper and recurring tune-up contributions. Atari 2600 belongs to twentysixhundo; LibFuturo owns its existing host/browser routes and reports no demonstrated Muhtari-side need. [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md) carries future horizons.
 
 ### Blockers/Concerns
 
-- No current local roadmap blocker. The exact profile, compatibility policy, final native/portable/package evidence and clean bounded review are complete; phase goal verification and local milestone audit/archival are complete. The optional GCC13 no-FP attempt is unqualified because it lacks a required warning flag; no unavailable platform pass is claimed.
+- No unmet roadmap requirement. Phase 21's refreshed report and Phase 22's final report both pass against the final local source. The Phase 21 spec-less probe classification remains unresolved and explicitly nonblocking; no probe pass or resolution is claimed. Phase 22 follows the selected software model; it does not establish retail compatibility or physical-cartridge accuracy. Publication, merge, remote dispatch, and host/device/identity-bound actions remain separate boundaries.
 - Phase 12's exact diagnostic-app request was denied before preflight/content and must not be retried. Original Phase 12 host/remote stops, Phase 14's spent host scope, expired windows and specific no-retry limits remain binding. No v6.0 action renews them or accepts the nine deferred v3.0 requirements.
 - v6.0 publication and PR #61 merge are complete. Future publication, merge, remote dispatch and host/device/identity-bound actions remain separate boundaries. Browser/player, Playstead, physical audibility, calibrated hardware accuracy, public stereo and full XM are excluded. Earlier combined-source/failed release evidence remains source-specific in archived receipts.
 
 ## Deferred Items
 
-At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Source verdicts remain unchanged and suppression expires when the underlying artifact changes. The earlier v1.0 disclosure remains in [MILESTONES.md](MILESTONES.md); the previously disclosed rows are preserved below.
+At v7.0 close, one debug-session item was newly acknowledged and 49 were carried forward. Its `unknown` verdict is preserved; suppression expires if the artifact changes. Earlier disclosures from v3.0 and prior closes remain below.
 
 | Category | Item | Status | Deferred At | Milestone |
 |----------|------|--------|-------------|-----------|
+| debug_sessions | workspace-reconciliation-2026-11-13 | unknown | 2026-11-14 | v7.0 |
 | debug_sessions | phase12-capture-live-proposal | executed-terminal-failure | 2026-11-10 | v3.0 |
 | debug_sessions | phase12-diagnostics-live-proposal | executed-terminal-failure | 2026-11-10 | v3.0 |
 | debug_sessions | phase12-held-capture-diagnosis | local-repair-and-approved-cap-amendment-verified-host-proof-pending | 2026-11-10 | v3.0 |
@@ -104,16 +115,17 @@ At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Sou
 
 ## Session Continuity
 
-Last session: 2026-11-13 — v6.0 release receipts reconciled
-Stopped at: v6.0 shipped — successor selection is the next milestone boundary
-Resume file: continue.md
+Last session: 2026-11-14T15:58:48.063Z
+Stopped at: v7.0 milestone archive and local closeout complete; successor scope unselected
+Resume file: None
 
-Next action: After clearing context, run `$gsd-new-milestone` with [continue.md](continue.md). The successor scope remains unselected pending cross-project feedback and owner direction.
+Next action: Start a new milestone with `$gsd-new-milestone`; no successor scope has been selected.
 
 ## Operator Next Steps
 
 
-- Continue successor scoping with $gsd-new-milestone and the cross-project feedback in [continue.md](continue.md).
+
+- Start the next milestone with $gsd-new-milestone
 
 
 ## Decisions
@@ -126,8 +138,17 @@ Next action: After clearing context, run `$gsd-new-milestone` with [continue.md]
 - [Phase 20]: Phase 20 Plan 20-02: The public API remains at 48 kHz; integrated YM PCM checks cover NTSC and PAL at that supported rate.
 - [Phase 20]: Phase 20 Plan 20-02: Power-cycle clears clocked YM state and derived caches to a deterministic fresh-instance baseline.
 - [Phase 20]: Phase 20 Plan 20-03: YM snapshots use format 2/behavior 7; no-YM snapshots retain format 1/behavior 6, and global latest reporting is API 8/ABI 1/behavior 7/format 2.
+- [Phase 21]: The accepted release sample and different-source local measurements support a bounded no-change disposition; required coverage and workload limits remain intact.
+- [Phase 21]: Performance is the weakest evidence dimension because no comparable release-source timing series is available; this does not establish regression.
+- [Phase 21]: Historical run-head hashes absent from saved lessons remain unavailable; the report does not infer source identity or resolve the spec-less probe.
 - [Phase 20]: Phase 20 Plan 20-03: YM clock history is validated from its existing last-tick, clock-count and remainder tuple; no extra runtime epoch field is needed.
+- [Phase 22]: Require exact Souper profile geometry and refuse an effective invalid v4 mapper 4 declaration without v3 fallback.
+- [Phase 22]: Keep Souper snapshots unavailable until plan 22-03 adds complete state support.
+- [Phase 22]: Plan 22-02: keep CPU and MARIA mapper controls independent and publish only fixed Souper CPU windows.
+- [Phase 22]: Souper snapshots use additive format 3 / behavior 8; legacy 1/6 and YM 2/7 bytes and identities remain unchanged, with API 8 / ABI 1 fixed.
+- [Phase 22]: Consumer continuation is judged independently; cross-consumer byte equality is not assumed, while source-qualified compatibility still checks exact bytes within a profile.
+- [Phase 22]: Resource measurements remain descriptive and source-qualified; no unrelated quota, timeout, cache, or CI structure was changed.
 
 ## Next action
 
-Context can be cleared. Run `$gsd-new-milestone` from the current root checkout with [continue.md](continue.md). v6.0 is shipped as v0.14.0; the owner selects successor scope after cross-project feedback. The original Phase 12/14 host and remote stops remain binding.
+v7.0 is locally audited and archived with one workspace-reconciliation item acknowledged as deferred. No next milestone is selected. Run `$gsd-new-milestone` to begin a new scope discussion. Original Phase 12/14 host and remote stops remain binding.

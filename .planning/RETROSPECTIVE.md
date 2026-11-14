@@ -211,6 +211,38 @@ The runner hash inventory retained a stale literal count after additive YM rows.
 
 Required local gates and both phase verifications/integration pass. GCC13 does not qualify for the current no-FP warning set; BE/WASI tools are absent. Qualified Apple sanitizer results and actual Emscripten execution remain separate. No source quota, timeout, cache, extra dependency, remote dispatch or host scope was widened. Original failures and nine deferred v3 requirements remain preserved; no unavailable platform, hardware or publication acceptance is inferred.
 
+## Milestone: v7.0 — Souper homebrew mapper
+
+**Closed locally:** 2026-11-14 with `override_closeout`; not published or merged. Two phases, five plans, ten tasks, all eight requirements passed. One workspace record was newly acknowledged with its `unknown` verdict preserved; 49 earlier acknowledgments carried forward.
+
+### What Was Built
+
+- Added the selected mapper-only Souper software profile with independent generated CPU/MARIA observations, lifecycle and state continuation.
+- Exercised the generated diagnostic through the public library, runner, runtime-loaded native libretro module and production portable consumer.
+- Added loaded-module snapshot and refusal checks while retaining the existing static observer and descriptor tests.
+
+### What Worked
+
+Generated fixtures and separately authored literal values made the mapping checks independent of the implementation. The integration review found the missing dynamically loaded module path; a bounded test-only gap plan closed it, and ordinary local verification needed no owner UAT.
+
+### What Was Inefficient
+
+The runtime-loaded module route was discovered after static observer coverage was already green. Include every actual consumer boundary in the phase acceptance matrix before implementation. Archiving moved phase files and made earlier fingerprints path-stale; refreshing the coverage paths and digest is sufficient when the only change is relocation metadata.
+
+### Patterns Established
+
+Prove each deliverable through the artifact its consumer loads, and use independent observations plus restore/refusal controls at that boundary. Keep local verification separate from publication, host and physical-hardware evidence. Use cheap checks early where they screen a likely failure; change CI structure only when repeated measurements justify it.
+
+### Key Lessons
+
+1. Static libretro observer coverage does not prove the production module's exported lifecycle; retain the loaded-module check in ordinary CI (MU-TEST-016).
+2. A single CI timing sample showed a 45.67-second ordinary phase and a 44.75-second publication control, but did not support changing test coverage, topology or timeouts.
+3. After archiving, rebase evidence paths and refresh fingerprints without claiming product tests were rerun.
+
+### Cost Observations
+
+The saved local `ci` run passed 722 ordinary and 8 release tests. Its ordinary phase took 45.67 seconds and the longest observed test, `policy.publish.controls`, took 44.75 seconds. One sample is insufficient for structural CI changes. Session count and model mix are not recorded; no estimate is asserted.
+
 ## Cross-Milestone Trends
 
 | Milestone | Phases | Plans | Requirements | Test evidence | Closeout |
@@ -227,3 +259,5 @@ output paths and measured calibration; aggregate record counts never prove accep
 | v4.0 | 2 | 2 plans, 5 tasks | 5/5 scoped | Native and pinned SDK workflows passed; reviews and integration passed | Verified locally; isolated source subsequently shipped through PR47/package v0.12.0; zero new acknowledgments, 50 carried |
 
 | v5.0 | 2 | 3 plans, 7 tasks | 6/6 scoped | Native/release, SDK, extracted package, publisher and one-slot hygiene pass | Verified locally; publication pending; zero new acknowledgments, 50 carried |
+| v6.0 | 2 | 8 | 9/9 scoped | Native, sanitizer, portable, package and integration evidence passed | Shipped v0.14.0; zero new acknowledgments, 49 carried |
+| v7.0 | 2 | 5 | 8/8 scoped | Native 722/722 ordinary + 8/8 release; focused Release/ASan and hygiene passed | Closed locally with override; 1 newly acknowledged, 49 carried; no publication/merge/tag |

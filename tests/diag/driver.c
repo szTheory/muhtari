@@ -516,6 +516,7 @@ static uint32_t retail_id(const char *rom)
            : strcmp(rom, "fractalus") == 0        ? 12u
            : strcmp(rom, "battery") == 0          ? 13u
            : strcmp(rom, "pal") == 0              ? 19u
+           : strcmp(rom, "souper") == 0           ? 22u
            : strncmp(rom, "bankset", 7u) == 0     ? 20u
            : strncmp(rom, "expansion-", 10u) == 0 ? 21u
            : (strlen(rom) == 8u && strncmp(rom, "motion", 6u) == 0 &&
@@ -1270,6 +1271,428 @@ static int controller_library(const char *path, const char *expected, const char
     return failed;
 }
 
+static int souper_native_judge(const uint8_t *pixels, unsigned frames)
+{
+    /* The diagnostic's DLL and 160A object match the literal address/pixel
+       interpretation in docs/hardware/maria.md. Graphics bytes $40,$80 are
+       written to EXRAM after the CPU mailbox has checked its zero fill. */
+    for (unsigned frame = 4u; frame < frames; frame++) {
+        const uint8_t *p = pixels + (size_t)frame * 320u * 242u + 17u * 320u;
+        for (unsigned x = 0u; x < 320u; x++) {
+            uint8_t want = x < 8u ? 0x38u : 0u;
+            if (p[x] != want) {
+                fprintf(stderr,
+                        "souper: MARIA EXRAM graphics differ at frame %u row 17 x%u: %02x\n",
+                        frame + 1u, x, p[x]);
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+static int souper_png(const char *path)
+{
+    size_t n = 0u;
+    uint8_t *image = read_file(path, &n);
+    uint8_t *raw = malloc(242u * PNG_READ_ROW);
+    int failed = image == NULL || raw == NULL || png_read_height(image, n, raw, 242u) < 0;
+    if (!failed) {
+        for (unsigned y = 0u; y < 242u && !failed; y++) {
+            const uint8_t *row = raw + (size_t)y * PNG_READ_ROW;
+            failed |= row[0] != 0u;
+            if (y == 17u) {
+                for (unsigned x = 0u; x < 320u; x++) {
+                    uint32_t color =
+                        muhtari__palette_rgb_region(x < 8u ? 0x38u : 0u, MUHTARI_REGION_NTSC);
+                    const uint8_t *p = row + 1u + 3u * x;
+                    failed |= p[0] != (uint8_t)(color >> 16) || p[1] != (uint8_t)(color >> 8) ||
+                              p[2] != (uint8_t)color;
+                }
+            }
+        }
+    }
+    if (failed)
+        fprintf(stderr, "souper: runner PNG differs from literal row-17 EXRAM pixel oracle\n");
+    free(raw);
+    free(image);
+    return failed;
+}
+
+static int souper_image(const char *template_path, const char *path)
+{
+    size_t n = 0u;
+    uint8_t *image = read_file(template_path, &n);
+    uint8_t digest[32];
+    char hex[65];
+    if (image == NULL)
+        return 1;
+    muhtari__sha256 hash;
+    muhtari__sha256_init(&hash);
+    muhtari__sha256_update(&hash, image, n);
+    muhtari__sha256_final(&hash, digest);
+    muhtari__sha256_hex(digest, hex);
+    muhtari_cart_info info = {0};
+    info.size = (uint32_t)sizeof info;
+    if (n != 524416u ||
+        strcmp(hex, "bb4a6315d7708dd0a8f57d0a533a8f84f3ca900e15fa9156bfbcd4116c6dfb72") != 0 ||
+        memcmp(image + 128u + 0x7F6F0u, "SOUPER01", 8u) != 0 ||
+        muhtari_probe(image, n, &info) != MUHTARI_STATUS_OK || info.board != MUHTARI_BOARD_SOUPER ||
+        info.rom_size != 512u * 1024u) {
+        free(image);
+        return 1;
+    }
+    for (unsigned bank = 0u; bank < 31u; bank++)
+        memset(image + 128u + (size_t)bank * 16384u, (int)(0x40u + bank), 16384u);
+    /* Sparse literal character/fixed-window tags make the generated source
+       distinguish selector bits without sharing the mapper's address code. */
+    image[128u + 0x10080u] = 0xC1u;
+    image[128u + 0x10180u] = 0xC2u;
+    image[128u + 0x21000u] = 0xC3u;
+    image[128u + 0x7DFFFu] = 0xC4u;
+    image[128u + 0x7E000u] = 0xC5u;
+    FILE *f = fopen(path, "wb");
+    int failed = f == NULL;
+    if (f != NULL) {
+        failed = fwrite(image, 1u, n, f) != n;
+        failed |= fclose(f) != 0;
+    }
+    free(image);
+    return failed;
+}
+
+static const struct row *souper_map_row(const char *name)
+{
+    for (uint32_t i = 0u; i < nrows; i++) {
+        if (strcmp(rows[i].test, name) == 0)
+            return &rows[i];
+    }
+    return NULL;
+}
+
+static int souper_map_value(const char *name, uint8_t actual)
+{
+    const struct row *r = souper_map_row(name);
+    if (r == NULL || !in_range(&r->value, actual)) {
+        fprintf(stderr, "souper mapper: %s expected %s got %u\n", name,
+                r == NULL ? "a literal row" : "its literal byte", (unsigned)actual);
+        return 1;
+    }
+    return 0;
+}
+
+static int souper_map_matches(const char *name, uint8_t actual)
+{
+    const struct row *r = souper_map_row(name);
+    return r != NULL && in_range(&r->value, actual);
+}
+
+/* A second, independently listed literal matrix covers direct CPU/MARIA
+   boundaries and the selectors that a short mailbox cannot fit. */
+static int souper_map_judge(muhtari *m, const char *expected)
+{
+    static const struct {
+        const char *name;
+        uint16_t addr;
+        uint8_t value;
+    } flat[] = {{"cpu_flat_4000", 0x4000u, 0xA0u},
+                {"cpu_flat_5fff", 0x5FFFu, 0xA1u},
+                {"cpu_flat_6000", 0x6000u, 0xA2u},
+                {"cpu_flat_7fff", 0x7FFFu, 0xA3u}};
+    int failed = 0;
+    if (muhtari__cart_read(m, 0x4000u, 0) != 0u || muhtari__cart_read(m, 0x7FFFu, 0) != 0u ||
+        muhtari__cart_read(m, 0x8000u, 0) != 0x40u || muhtari__cart_read(m, 0xBFFFu, 0) != 0x40u ||
+        muhtari__cart_read(m, 0xC000u, 0) != 0xE0u ||
+        muhtari__cart_dma_read(m, 0x8000u, 0u) != 0x40u ||
+        muhtari__cart_dma_read(m, 0xC000u, 0u) != 0xE0u) {
+        fprintf(stderr, "souper mapper: initial CPU/MARIA map did not match literal endpoints\n");
+        failed = 1;
+    }
+    memset(m->cart.ram, 0, m->cart.info.ram_size);
+    for (unsigned page = 0u; page < 8u; page++)
+        memset(m->cart.ram + page * 4096u, (int)(0xA0u + page), 4096u);
+    nrows = 0u;
+    if (read_expected(expected, "souper_map") != 0 || nrows != 26u) {
+        fprintf(stderr, "souper mapper: expected all 26 literal boundary rows\n");
+        return 1;
+    }
+    muhtari__cart_write(m, 0x8003u, 0u);
+    for (size_t i = 0u; i < sizeof flat / sizeof flat[0]; i++)
+        failed |= souper_map_value(flat[i].name, muhtari__cart_read(m, flat[i].addr, 0));
+
+    muhtari__cart_write(m, 0xFFF8u, 0u);
+    failed |= souper_map_value("cpu_bank_0", muhtari__cart_read(m, 0x8000u, 0));
+    muhtari__cart_write(m, 0xFFF8u, 30u);
+    failed |= souper_map_value("cpu_bank_30", muhtari__cart_read(m, 0xBFFFu, 0));
+    muhtari__cart_write(m, 0xFFF8u, 31u);
+    failed |= souper_map_value("cpu_bank_31", muhtari__cart_read(m, 0x8000u, 0));
+    failed |= souper_map_value("cpu_fixed_c000", muhtari__cart_read(m, 0xC000u, 0));
+
+    muhtari__cart_write(m, 0xC003u, 4u);
+    muhtari__cart_write(m, 0xC004u, 6u);
+    muhtari__cart_write(m, 0xC005u, 7u);
+    failed |= souper_map_value("seg_video_page6", muhtari__cart_read(m, 0x6000u, 0));
+    failed |= souper_map_value("seg_data_page7", muhtari__cart_read(m, 0x7FFFu, 0));
+    failed |= souper_map_value("seg_fixed_4000", muhtari__cart_read(m, 0x4000u, 0));
+
+    muhtari__cart_write(m, 0xC001u, 0x21u);
+    muhtari__cart_write(m, 0xC002u, 0x42u);
+    m->bus.maria_from = 1u;
+    m->bus.maria_until = 2u;
+    muhtari__cart_write(m, 0xC003u, 2u);
+    failed |= souper_map_value("char_a", muhtari__cart_dma_read(m, 0xA000u, 1u));
+    failed |= souper_map_value("char_a_row", muhtari__cart_dma_read(m, 0xA100u, 1u));
+    failed |= souper_map_value("char_b", muhtari__cart_dma_read(m, 0xA080u, 1u));
+    failed |= souper_map_value("char_a12_alias", muhtari__cart_dma_read(m, 0xB000u, 1u));
+    failed |= souper_map_value("char_fixed_last", muhtari__cart_dma_read(m, 0x9FFFu, 1u));
+    failed |= souper_map_value("char_cpu_stays_banked", muhtari__cart_read(m, 0xA000u, 0));
+
+    muhtari__cart_write(m, 0xC003u, 1u);
+    failed |= souper_map_value("trap_only_cpu_fixed", muhtari__cart_read(m, 0xC000u, 0));
+    failed |= souper_map_value("trap_only_maria_exram", muhtari__cart_dma_read(m, 0xC000u, 1u));
+    failed |= souper_map_value("trap_only_maria_rom", muhtari__cart_dma_read(m, 0xA000u, 1u));
+
+    muhtari__cart_write(m, 0xC003u, 7u);
+    failed |= souper_map_value("combined_maria_exram", muhtari__cart_dma_read(m, 0xC000u, 1u));
+    failed |= souper_map_value("combined_maria_video_page", muhtari__cart_dma_read(m, 0xE000u, 1u));
+    failed |= souper_map_value("combined_maria_data_page", muhtari__cart_dma_read(m, 0xF000u, 1u));
+    failed |= souper_map_value("combined_maria_character", muhtari__cart_dma_read(m, 0xA000u, 1u));
+
+    /* Controls ensure the numeric oracle rejects wrong selector/page results. */
+    muhtari__cart_write(m, 0xC002u, 0u);
+    failed |= souper_map_value(
+        "fault_wrong_character_rejected",
+        (uint8_t)!souper_map_matches("char_b", muhtari__cart_dma_read(m, 0xA080u, 1u)));
+    muhtari__cart_write(m, 0xC002u, 0x42u);
+    muhtari__cart_write(m, 0xC004u, 5u);
+    failed |=
+        souper_map_value("fault_wrong_page_rejected",
+                         (uint8_t)!souper_map_matches("combined_maria_video_page",
+                                                      muhtari__cart_dma_read(m, 0xE000u, 1u)));
+    return failed;
+}
+
+static int souper_map_case(const uint8_t *image, size_t bytes, const char *expected)
+{
+    muhtari_config config = {0};
+    muhtari_media media = {0};
+    muhtari *m = NULL;
+    config.size = (uint32_t)sizeof config;
+    config.allocator.alloc = diag_alloc;
+    config.allocator.free = diag_free;
+    media.size = (uint32_t)sizeof media;
+    media.image = image;
+    media.image_size = bytes;
+    muhtari_status status = muhtari_create(&config, &m);
+    if (status == MUHTARI_STATUS_OK)
+        status = muhtari_load(m, &media);
+    int failed = status != MUHTARI_STATUS_OK;
+    if (!failed)
+        failed = souper_map_judge(m, expected);
+    muhtari_destroy(m);
+    return failed;
+}
+
+typedef struct souper_audio_observation {
+    uint32_t events;
+} souper_audio_observation;
+
+static void souper_audio_event(void *user, uint64_t tick, uint8_t source, uint16_t raw)
+{
+    (void)tick;
+    (void)source;
+    (void)raw;
+    souper_audio_observation *observation = (souper_audio_observation *)user;
+    observation->events++;
+}
+
+static int souper_case(const char *path, const char *expected, const char *report_path)
+{
+    size_t bytes = 0u;
+    uint8_t *image = read_file(path, &bytes);
+    muhtari_config config = {0};
+    muhtari_media media = {0};
+    muhtari *m = NULL;
+    souper_audio_observation audio_observation = {0};
+    config.size = (uint32_t)sizeof config;
+    config.allocator.alloc = diag_alloc;
+    config.allocator.free = diag_free;
+    media.size = (uint32_t)sizeof media;
+    media.image = image;
+    media.image_size = bytes;
+    muhtari_status status =
+        image == NULL ? MUHTARI_STATUS_ERR_ARGUMENT : muhtari_create(&config, &m);
+    if (status == MUHTARI_STATUS_OK)
+        status = muhtari__synth_observe(m, souper_audio_event, &audio_observation);
+    if (status == MUHTARI_STATUS_OK)
+        status = muhtari_load(m, &media);
+    int failed = status != MUHTARI_STATUS_OK || retail_expected(expected, "souper") != 0;
+    if (failed)
+        fprintf(stderr, "souper: expected initial-map image to load, got status %u\n",
+                (unsigned)status);
+    if (!failed &&
+        (m->cart.info.board != MUHTARI_BOARD_SOUPER || m->cart.info.rom_size != 512u * 1024u ||
+         m->cart.info.ram_size != 32u * 1024u)) {
+        fprintf(stderr, "souper: loaded profile geometry mismatch\n");
+        failed = 1;
+    }
+    if (m == NULL) {
+        free(image);
+        return 1;
+    }
+    size_t state_size = muhtari_state_size(m);
+    uint8_t *state_bytes = state_size > 0u ? (uint8_t *)malloc(state_size + 8u) : NULL;
+    uint8_t *state_saved = state_size > 0u ? (uint8_t *)malloc(state_size) : NULL;
+    uint8_t *state_mid = state_size > 0u ? (uint8_t *)malloc(state_size) : NULL;
+    uint8_t *state_end = state_size > 0u ? (uint8_t *)malloc(state_size) : NULL;
+    uint64_t state_ticks = m->bus.ticks;
+    uint16_t state_pc = m->cpu.pc;
+    uint8_t state_bank = m->cart.bank;
+    uint8_t state_open_bus = m->bus.open_bus;
+    if (!failed && (state_size == 0u || state_bytes == NULL || state_saved == NULL ||
+                    state_mid == NULL || state_end == NULL)) {
+        fprintf(stderr, "souper: complete snapshot storage is unavailable\n");
+        failed = 1;
+    }
+    if (!failed) {
+        memset(state_bytes, 0xA5, state_size + 8u);
+        failed = muhtari_save_state(m, state_bytes, state_size + 8u) != MUHTARI_STATUS_OK ||
+                 state_bytes[8] != 3u || state_bytes[20] != 8u;
+        if (!failed) {
+            memcpy(state_saved, state_bytes, state_size);
+            uint32_t audio_events = audio_observation.events;
+            muhtari__cart_write(m, 0x8007u, 0xA5u);
+            failed |= audio_observation.events != audio_events || m->synth.pokeys != 0u ||
+                      m->synth.ym_installed != 0u ||
+                      muhtari_save_state(m, state_bytes, state_size) != MUHTARI_STATUS_OK ||
+                      memcmp(state_saved, state_bytes, state_size) != 0;
+            if (failed)
+                fprintf(stderr, "souper: $8007 queued mapper state or unsupported audio\n");
+            for (size_t i = state_size; i < state_size + 8u; i++)
+                failed |= state_bytes[i] != 0xA5u;
+            muhtari__cart_write(m, 0xFFF8u, (uint8_t)((state_bank + 1u) & 31u));
+            failed |= m->cart.bank == state_bank;
+            failed |= muhtari_load_state(m, state_saved, state_size) != MUHTARI_STATUS_OK;
+            failed |=
+                m->cart.bank != state_bank || memcmp(state_saved, state_bytes, state_size) != 0;
+        }
+        if (failed)
+            fprintf(stderr, "souper: complete snapshot save/restore failed\n");
+    }
+    if (!failed && (m->cart.bank != state_bank || m->bus.ticks != state_ticks ||
+                    m->cpu.pc != state_pc || m->bus.open_bus != state_open_bus)) {
+        fprintf(stderr, "souper: snapshot restore changed unrelated machine state\n");
+        failed = 1;
+    }
+    uint8_t *pixels = (uint8_t *)calloc(13u * 320u * 242u, 1u);
+    int16_t pcm[963];
+    uint32_t audio_counts[12] = {0};
+    int16_t *audio_records = (int16_t *)calloc(12u * 963u, sizeof *audio_records);
+    if (pixels == NULL || audio_records == NULL)
+        failed = 1;
+    for (unsigned frame = 0u; frame < 12u && !failed; frame++) {
+        muhtari_frame io = {0};
+        muhtari_input_ex input = {0};
+        input.size = (uint32_t)sizeof input;
+        failed = muhtari_set_input_ex(m, &input) != MUHTARI_STATUS_OK;
+        io.size = (uint32_t)sizeof io;
+        /* The runner reuses one host-owned frame buffer. Keep this oracle on
+           the same output-surface lifecycle, then snapshot each result. */
+        io.video = pixels + 12u * 320u * 242u;
+        io.video_pitch = 320u;
+        io.audio = pcm;
+        io.audio_capacity = 963u;
+        failed |= muhtari_run_frame(m, &io) != MUHTARI_STATUS_OK;
+        audio_counts[frame] = io.audio_count;
+        if (!failed) {
+            memcpy(pixels + (size_t)frame * 320u * 242u, pixels + 12u * 320u * 242u, 320u * 242u);
+            memcpy(audio_records + (size_t)frame * 963u, pcm, (size_t)io.audio_count * sizeof *pcm);
+            if (frame == 5u)
+                failed = muhtari_save_state(m, state_mid, state_size) != MUHTARI_STATUS_OK;
+        }
+    }
+    if (!failed) {
+        failed = muhtari_save_state(m, state_end, state_size) != MUHTARI_STATUS_OK ||
+                 muhtari_load_state(m, state_mid, state_size) != MUHTARI_STATUS_OK;
+    }
+    for (unsigned frame = 6u; frame < 12u && !failed; frame++) {
+        muhtari_frame io = {0};
+        muhtari_input_ex input = {0};
+        input.size = (uint32_t)sizeof input;
+        failed = muhtari_set_input_ex(m, &input) != MUHTARI_STATUS_OK;
+        io.size = (uint32_t)sizeof io;
+        io.video = pixels + 12u * 320u * 242u;
+        io.video_pitch = 320u;
+        io.audio = pcm;
+        io.audio_capacity = 963u;
+        failed |= muhtari_run_frame(m, &io) != MUHTARI_STATUS_OK;
+        failed |= io.audio_count != audio_counts[frame];
+        failed |= memcmp(io.video, pixels + (size_t)frame * 320u * 242u, 320u * 242u) != 0;
+        failed |= memcmp(pcm, audio_records + (size_t)frame * 963u,
+                         (size_t)io.audio_count * sizeof *pcm) != 0;
+    }
+    if (!failed) {
+        failed = muhtari_save_state(m, state_bytes, state_size) != MUHTARI_STATUS_OK ||
+                 memcmp(state_bytes, state_end, state_size) != 0;
+    }
+    if (failed)
+        fprintf(stderr, "souper: midpoint snapshot did not reproduce literal continuation\n");
+    uint8_t mailbox[256];
+    if (!failed) {
+        for (unsigned i = 0u; i < sizeof mailbox; i++)
+            mailbox[i] = muhtari__peek(m, (uint16_t)(MB + i));
+        int pixel_failed = souper_native_judge(pixels, 12u);
+        failed = retail_judge(mailbox, "souper") || pixel_failed || m->cart.info.sound != 0u ||
+                 m->synth.pokeys != 0u || m->synth.ym_installed != 0u;
+        if (!failed) {
+            for (unsigned frame = 4u; frame < 12u; frame++) {
+                uint8_t *row = pixels + (size_t)frame * 320u * 242u + 17u * 320u;
+                memset(row, 0, 8u); /* CPU-view ROM would not supply MARIA's EXRAM pixels. */
+            }
+            int rejected_cpu_view = souper_native_judge(pixels, 12u) != 0;
+            for (unsigned frame = 4u; frame < 12u; frame++) {
+                uint8_t *row = pixels + (size_t)frame * 320u * 242u + 17u * 320u;
+                memset(row, 0x38, 8u);
+            }
+            if (!rejected_cpu_view) {
+                fprintf(stderr, "souper: native pixel judge accepted a CPU-view fault\n");
+                failed = 1;
+            }
+        }
+    }
+    if (!failed)
+        failed = souper_map_case(image, bytes, expected);
+    FILE *report = !failed ? fopen(report_path, "wb") : NULL;
+    if (!failed && report == NULL)
+        failed = 1;
+    if (report != NULL) {
+        for (unsigned frame = 0u; frame < 12u; frame++) {
+            uint8_t digest[32];
+            char hex[65];
+            muhtari__sha256 hash;
+            muhtari__sha256_init(&hash);
+            muhtari__sha256_update(&hash, pixels + (size_t)frame * 320u * 242u, 320u * 242u);
+            muhtari__sha256_final(&hash, digest);
+            muhtari__sha256_hex(digest, hex);
+            (void)fprintf(report, "frame %u sha256 %s\n", frame + 1u, hex);
+        }
+        (void)fprintf(report, "audio_counts");
+        for (unsigned frame = 0u; frame < 12u; frame++)
+            (void)fprintf(report, " %u", audio_counts[frame]);
+        (void)fputc('\n', report);
+        failed |= ferror(report) != 0 || fclose(report) != 0;
+    }
+    muhtari_destroy(m);
+    free(image);
+    free(pixels);
+    free(state_saved);
+    free(state_bytes);
+    free(state_mid);
+    free(state_end);
+    free(audio_records);
+    return failed;
+}
+
 static int retail_library(const uint8_t *image, size_t n, const char *rom)
 {
     muhtari_config cfg = {0};
@@ -1327,7 +1750,7 @@ static int retail_transaction(uint8_t *image)
     muhtari_versions versions = {0};
     versions.size = (uint32_t)sizeof versions;
     if (muhtari_get_versions(&versions) != MUHTARI_STATUS_OK || versions.abi != 1u ||
-        versions.behaviour_revision != 7u) {
+        versions.behaviour_revision != 8u) {
         return 1;
     }
     muhtari_config cfg = {0};
@@ -1532,7 +1955,7 @@ static int expansion_image(const char *source, const char *path, unsigned profil
         strcmp(hex, "b5164fe19df352231d2a6033d0349ff45019f2dcfb889f6d0d542879ae41ee9b") != 0 ||
         memcmp(image + 128u + 0xB6F0u, "EXPAND01", 8u) != 0 || profile < 1u || profile > 2u ||
         page >= (profile == 1u ? 8u : 16u) || window > (profile == 1u ? 0u : 1u) || pal > 1u ||
-        dual > 2u || gate > 2u || fault > 8u) {
+        dual > 2u || gate > 2u || fault > 7u) {
         free(image);
         return 1;
     }
@@ -1563,10 +1986,8 @@ static int expansion_image(const char *source, const char *path, unsigned profil
     if (fault == 5u)
         image[67] |= 32u; /* ADPCM. */
     if (fault == 6u)
-        image[64] = 4u; /* Souper. */
-    if (fault == 7u)
         image[67] = 5u; /* Separate $4000 primary owner. */
-    if (fault == 8u)
+    if (fault == 7u)
         image[67] = 4u; /* Separate $0800 primary owner. */
     FILE *f = fopen(path, "wb");
     int failed = f == NULL;
@@ -2555,7 +2976,7 @@ static int pal_report(const char *path, const char *expected)
                                          "audio_frames 601\n",
                                          "audio_samples 577879\n",
                                          "audio_rate 48000/1\n",
-                                         "audio_behaviour_revision 7\n",
+                                         "audio_behaviour_revision 8\n",
                                          "audio_synthesis exact-q23-16x64-dc20\n"};
     for (unsigned i = 0u; i < 7u && !failed; i++) {
         size_t n = strlen(fields[i]);
@@ -2875,7 +3296,7 @@ static int pal_case(const char *path, const char *expected, const char *out,
         controller_digest(reference, "audio_transitions_sha256", &trace.hash);
         controller_digest(reference, "audio_pcm_sha256", &pcm);
         fputs("audio_frames 601\naudio_samples 577879\naudio_rate 48000/1\n"
-              "audio_behaviour_revision 7\naudio_synthesis exact-q23-16x64-dc20\n",
+              "audio_behaviour_revision 8\naudio_synthesis exact-q23-16x64-dc20\n",
               reference);
         pal_mailbox_line(reference, mb);
         printf("pal: startup960/rem336960 +600 full142102-tick frames; 281x961+319x962; "
@@ -2906,6 +3327,12 @@ pal_cleanup:
 
 int main(int argc, char **argv)
 {
+    if (argc == 4 && strcmp(argv[1], "--souper-image") == 0)
+        return souper_image(argv[2], argv[3]);
+    if (argc == 3 && strcmp(argv[1], "--souper-png") == 0)
+        return souper_png(argv[2]);
+    if (argc == 5 && strcmp(argv[1], "--souper-case") == 0)
+        return souper_case(argv[2], argv[3], argv[4]);
     if ((argc == 6 || argc == 7) && strcmp(argv[1], "--expansion-refuse") == 0) {
         expansion_case = 1;
         expansion_profile =

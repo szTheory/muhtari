@@ -111,6 +111,16 @@ if(TARGET muhtari_libretro)
         ${PROJECT_BINARY_DIR}/tests/input-carts/input.a78 --output ${observer_output_dir}/native.json
       LABELS libretro portable TIMEOUT 30)
     set_tests_properties(libretro.observe PROPERTIES FIXTURES_REQUIRED input_carts)
+    muhtari_add_test(NAME libretro.observe.souper
+      COMMAND ${CMAKE_COMMAND}
+        "-DOBSERVER=$<TARGET_FILE:muhtari-test-libretro-observe>"
+        "-DEMULATOR=${CMAKE_CROSSCOMPILING_EMULATOR}"
+        "-DFIXTURE=${PROJECT_BINARY_DIR}/tests/diag/souper/souper.a78"
+        "-DOUT=${observer_output_dir}"
+        "-DSOURCE_ID_FILE=${PROJECT_BINARY_DIR}/libretro/muhtari-source-id.txt"
+        -P ${PROJECT_SOURCE_DIR}/tests/libretro/souper_observe.cmake
+      LABELS libretro portable TIMEOUT 30)
+    set_tests_properties(libretro.observe.souper PROPERTIES FIXTURES_REQUIRED souper_pattern)
     # execute_process runs outside CTest, so carry the slow-lane timeout scale
     # through to the observer child as well.
     math(EXPR ym_observer_timeout "25 * ${MUHTARI_TIMEOUT_SCALE}")
@@ -227,13 +237,21 @@ if(TARGET muhtari_libretro)
     FIXTURES_REQUIRED "built_simple;built_openbios")
   # Fault prevented: an achievement map that points rcheevos at the wrong
   # bytes, a register, or a banked window.
-  muhtari_add_test(NAME libretro.host.memory_map
+  muhtari_add_test(NAME libretro.host.souper
     COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> memory_map
       ${libretro_input_cart} ${MUHTARI_BUILT_DIR}/doublebuffer/doublebuffer.bas.a78
       ${PROJECT_SOURCE_DIR}/tests/diag/sg144.a78
     LABELS libretro portable TIMEOUT 1)  # 2 x 0.08 s, Linux x64, slowest of 10 runs, run 39373524239
-  set_tests_properties(libretro.host.memory_map PROPERTIES
+  set_tests_properties(libretro.host.souper PROPERTIES
     FIXTURES_REQUIRED "input_carts;built_doublebuffer")
+  # Fault prevented: the runtime-loaded module maps the owned Souper diagnostic
+  # to wrong CPU bytes or MARIA pixels, or omits a real video callback.
+  set(libretro_souper_fixture ${PROJECT_BINARY_DIR}/tests/diag/souper/souper.a78)
+  muhtari_add_test(NAME libretro.host.souper_trace
+    COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> souper_trace
+      ${libretro_souper_fixture}
+    LABELS libretro portable TIMEOUT 10)
+  set_tests_properties(libretro.host.souper_trace PROPERTIES FIXTURES_REQUIRED souper_pattern)
 
   muhtari_add_test(NAME libretro.host.audio
     COMMAND ${CMAKE_COMMAND} "-DHOST=$<TARGET_FILE:muhtari-test-libretro-host>"

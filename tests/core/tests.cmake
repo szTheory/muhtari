@@ -41,6 +41,10 @@ foreach(case IN ITEMS deadline no_poll reset)
 endforeach()
 muhtari_add_test(NAME core.no_alloc_after_load COMMAND muhtari-test-core no_alloc_after_load
   LABELS perf portable TIMEOUT 63) # ceil(2 x 31.26s), complete Windows x64 run40414104123/job121892328427; scales retained.
+muhtari_add_test(NAME core.souper.lifecycle COMMAND muhtari-test-core souper.lifecycle
+  LABELS core portable TIMEOUT 10)
+muhtari_add_test(NAME core.souper.cpu COMMAND muhtari-test-core souper.cpu
+  LABELS core portable TIMEOUT 10)
 
 add_executable(muhtari-test-state ${CMAKE_CURRENT_LIST_DIR}/test_state.c
   ${CMAKE_SOURCE_DIR}/tests/cart/images.c ${CMAKE_SOURCE_DIR}/runner/sha256.c)
@@ -50,7 +54,7 @@ target_link_libraries(muhtari-test-state PRIVATE muhtari::muhtari)
 set_target_properties(muhtari-test-state PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-test-state)
-foreach(case IN ITEMS aliases battery fields lifecycle payload topologies ym equality_report)
+foreach(case IN ITEMS aliases battery fields lifecycle payload souper topologies ym equality_report)
   muhtari_add_test(NAME core.state.${case} COMMAND muhtari-test-state ${case}
     LABELS core portable TIMEOUT 10)
 endforeach()

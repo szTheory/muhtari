@@ -19,6 +19,8 @@ foreach(bus_case IN ITEMS cycle.fast_4_ticks cycle.slow_6_ticks cycle.men_off_al
   muhtari_add_test(NAME bus.${bus_case} COMMAND muhtari-test-bus ${bus_case}
     LABELS sally portable TIMEOUT 10)
 endforeach()
+muhtari_add_test(NAME bus.souper.halt_views COMMAND muhtari-test-bus souper.halt_views
+  LABELS bus portable TIMEOUT 10)
 
 # INPTCTRL and the open-bus byte, which the RIOT's label covers with the
 # other cases of the board's glue.

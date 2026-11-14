@@ -87,6 +87,10 @@ static uint32_t be32(const uint8_t *p)
    (docs/hardware/cartridge.md, Geometry). A refused board has none here. */
 static int cart_fits(const struct cart_board *b, size_t n)
 {
+    if (b->board == MUHTARI_BOARD_SOUPER) {
+        return n == 512u * CART_KIB && b->ram == 32u * CART_KIB && b->options == 0u &&
+               b->unsupported == 0u;
+    }
     if (b->board == MUHTARI_BOARD_BANKSET) {
         /* Equal CPU-then-MARIA sets; sizes and RAM matrix are checked before
            allocation (cartridge.md, BankSet). All runtime offsets use n/2. */
@@ -217,6 +221,7 @@ static void cart_decode_v3(uint32_t t, struct cart_board *b)
     }
     if ((t & CT_SOUPER) != 0u) {
         b->board = MUHTARI_BOARD_SOUPER;
+        b->ram = 32u * CART_KIB;
     }
 }
 
@@ -298,6 +303,9 @@ static int cart_decode_v4(const uint8_t *h, struct cart_board *b)
         break;
     default:
         break;
+    }
+    if (mapper == 4u) {
+        b->ram = 32u * CART_KIB;
     }
     if ((opt & 0x80u) != 0u) {
         b->board = MUHTARI_BOARD_BANKSET;
@@ -480,6 +488,11 @@ static void cart_set_board(muhtari_cart_info *out, const struct cart_board *b)
 /* Boards a loaded cartridge cannot run yet. */
 static int cart_refused(const struct cart_board *b)
 {
+    if (b->board == MUHTARI_BOARD_SOUPER) {
+        const uint32_t pokey = MUHTARI_SOUND_POKEY_4000 | MUHTARI_SOUND_POKEY_440 |
+                               MUHTARI_SOUND_POKEY_450 | MUHTARI_SOUND_POKEY_800;
+        return b->unsupported != 0u || b->options != 0u || (b->sound & ~pokey) != 0u;
+    }
     if (b->board == MUHTARI_BOARD_BANKSET) {
         return b->unsupported != 0u ||
                (b->options & ~(uint32_t)MUHTARI_BOARD_HALT_BANKED_RAM) != 0u ||
@@ -564,8 +577,21 @@ static muhtari_status cart_header(const uint8_t *img, size_t n, const struct car
         out->warnings |= MUHTARI_CART_WARN_CART_TYPE_CONFLICT;
     }
     if (version >= 4u) {
-        if (cart_decode_v4(img, &v4) &&
-            (v4.board == MUHTARI_BOARD_BANKSET || cart_refused(&v4) || cart_fits(&v4, mapped))) {
+        if (out->a78_mapper == 4u) {
+            /* Mapper 4 is an explicit Souper selection. Keep it effective
+               even when its options/audio or geometry are unsupported, so
+               a valid v3 fallback board cannot make this declaration run. */
+            if (cart_decode_v4(img, &v4)) {
+                b = v4;
+            } else {
+                memset(&v4, 0, sizeof v4);
+                v4.board = MUHTARI_BOARD_SOUPER;
+                v4.ram = 32u * CART_KIB;
+                v4.unsupported = 1u;
+                b = v4;
+            }
+        } else if (cart_decode_v4(img, &v4) && (v4.board == MUHTARI_BOARD_BANKSET ||
+                                                cart_refused(&v4) || cart_fits(&v4, mapped))) {
             b = v4;
         } else {
             out->warnings |= MUHTARI_CART_WARN_HEADER_V4_IGNORED;
@@ -623,6 +649,9 @@ static muhtari_status cart_header(const uint8_t *img, size_t n, const struct car
     cart_set_board(out, &b);
     if (cart_refused(&b)) {
         return MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD;
+    }
+    if (b.board == MUHTARI_BOARD_SOUPER && field != body) {
+        return field > body ? MUHTARI_STATUS_ERR_TRUNCATED_IMAGE : MUHTARI_STATUS_ERR_INVALID_IMAGE;
     }
     if (b.board == MUHTARI_BOARD_BANKSET && field != body) {
         return field > body ? MUHTARI_STATUS_ERR_TRUNCATED_IMAGE : MUHTARI_STATUS_ERR_INVALID_IMAGE;
@@ -896,6 +925,11 @@ void muhtari__cart_reset(muhtari *m)
 {
     m->cart.bank = 0u;
     m->cart.ram_bank = 0u;
+    m->cart.souper_mode = 0u;
+    m->cart.souper_character_a = 0u;
+    m->cart.souper_character_b = 0u;
+    m->cart.souper_exram_video_page = 0u;
+    m->cart.souper_exram_data_page = 0u;
     m->cart.expansion.control = 0u;
     m->cart.expansion.cpu_pages = 0u;
     m->cart.expansion.maria_pages = 0u;
@@ -975,6 +1009,19 @@ static uint8_t *cart_ram_at(const struct muhtari__cart *c, uint16_t addr, int ma
         return NULL;
     }
     uint32_t i = (uint32_t)addr - 0x4000u;
+    if (c->info.board == MUHTARI_BOARD_SOUPER) {
+        /* Flat mode exposes EXRAM[0..16 KiB). Segmented mode keeps the first
+           8 KiB fixed and maps the two 4 KiB windows independently
+           (docs/hardware/cartridge.md, Souper). */
+        if ((c->souper_mode & 4u) != 0u && addr >= 0x6000u) {
+            uint32_t page =
+                addr >= 0x7000u ? c->souper_exram_data_page : c->souper_exram_video_page;
+            uint32_t base = page * 4096u;
+            return &c->ram[base + ((uint32_t)addr & 0x0FFFu)];
+        }
+        return &c->ram[i];
+    }
+
     if (c->info.board == MUHTARI_BOARD_FRACTALUS) {
         /* Physical 2 KiB: A8 and upper mirror bits are disconnected;
            A9-A11 compress into RAM A8-A10 (cartridge.md, Fractalus). */
@@ -987,6 +1034,25 @@ static uint8_t *cart_ram_at(const struct muhtari__cart *c, uint16_t addr, int ma
         i += CART_BANK;
     }
     return &c->ram[i & (c->info.ram_size - 1u)];
+}
+
+/* Souper's trapped MARIA window is indexed like the CPU EXRAM window, but it
+   lives at $C000-$FFFF in MARIA's address view. */
+static uint8_t *cart_souper_exram_at(const struct muhtari__cart *c, uint16_t addr)
+{
+    uint16_t cpu_view_addr = (uint16_t)(0x4000u + (addr & 0x3FFFu));
+    return cart_ram_at(c, cpu_view_addr, 1);
+}
+
+/* Character ROM selectors concatenate into the ROM address as described in
+   docs/hardware/cartridge.md, Souper. The casts keep the maximum index within
+   the supported 512 KiB profile. */
+static const uint8_t *cart_souper_character_at(const struct muhtari__cart *c, uint16_t addr)
+{
+    uint8_t selector = (addr & 0x0080u) != 0u ? c->souper_character_b : c->souper_character_a;
+    uint32_t offset = ((uint32_t)(selector & 0xFEu) << 11) | ((uint32_t)addr & 0x0F00u) |
+                      ((uint32_t)(selector & 1u) << 7) | ((uint32_t)addr & 0x007Fu);
+    return &c->rom[offset];
 }
 
 /* The SuperGame bank at addr, $4000-$FFFF (A7800-CARTRIDGES-AND-PERIPHERALS
@@ -1072,6 +1138,31 @@ static uint8_t cart_peek_view(const muhtari *m, uint16_t addr, int maria)
         return *ram;
     }
     switch (c->info.board) {
+    case MUHTARI_BOARD_SOUPER: {
+        if (maria != 0) {
+            if ((c->souper_mode & 1u) != 0u && addr >= 0xC000u) {
+                const uint8_t *trap_ram = cart_souper_exram_at(c, addr);
+                if (trap_ram != NULL)
+                    return *trap_ram;
+            }
+            if ((c->souper_mode & 2u) != 0u) {
+                if (addr >= 0x8000u && addr < 0xA000u) {
+                    uint32_t final_bank = c->info.rom_size - CART_BANK;
+                    return c->rom[final_bank + (uint32_t)(addr - 0x8000u)];
+                }
+                /* A12 is not part of this decode; it aliases the same
+                   character map in $A000-$BFFF. */
+                if (addr >= 0xA000u && addr < 0xC000u)
+                    return *cart_souper_character_at(c, addr);
+            }
+        }
+        uint32_t banks = c->info.rom_size / CART_BANK;
+        uint32_t bank = addr >= 0xC000u ? banks - 1u : (uint32_t)c->bank % banks;
+        if (addr >= 0x8000u) {
+            return c->rom[bank * CART_BANK + (addr & (CART_BANK - 1u))];
+        }
+        break;
+    }
     case MUHTARI_BOARD_BANKSET: {
         const uint8_t *rom = cart_bankset_rom_at(c, addr, maria);
         if (rom != NULL)
@@ -1132,7 +1223,7 @@ uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr)
 
 uint8_t muhtari__cart_dma_read(muhtari *m, uint16_t addr, uint64_t tick)
 {
-    if (m->cart.info.board == MUHTARI_BOARD_BANKSET ||
+    if (m->cart.info.board == MUHTARI_BOARD_SOUPER || m->cart.info.board == MUHTARI_BOARD_BANKSET ||
         m->cart.expansion.kind == MUHTARI_EXPANSION_XM) {
         return cart_peek_view(m, addr, muhtari__bus_maria_selected(m, tick));
     }
@@ -1248,6 +1339,36 @@ void muhtari__cart_write_at(muhtari *m, uint16_t addr, uint8_t v, uint64_t tick)
         return;
     }
     switch (c->info.board) {
+    case MUHTARI_BOARD_SOUPER:
+        if (addr >= 0x8000u) {
+            switch (addr & 7u) {
+            case 0u: /* Paged 16 KiB ROM bank ($8000-$BFFF). */
+                c->bank = (uint8_t)(v & 0x1Fu);
+                break;
+            case 1u:
+                c->souper_character_a = v;
+                break;
+            case 2u:
+                c->souper_character_b = v;
+                break;
+            case 3u:
+                c->souper_mode = (uint8_t)(v & 7u);
+                break;
+            case 4u:
+                c->souper_exram_video_page = (uint8_t)(v & 7u);
+                break;
+            case 5u:
+                c->souper_exram_data_page = (uint8_t)(v & 7u);
+                break;
+            case 6u:
+            case 7u:
+            default:
+                /* $8006 is undefined and $8007 belongs to BupChip audio,
+                   which is outside this mapper-only profile. */
+                break;
+            }
+        }
+        break;
     case MUHTARI_BOARD_BANKSET:
         if (c->info.rom_size / 2u >= 128u * CART_KIB && addr >= 0x8000u && addr < 0xC000u) {
             c->bank = (uint8_t)(v % (c->info.rom_size / 2u / CART_BANK));

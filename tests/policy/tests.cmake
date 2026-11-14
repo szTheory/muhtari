@@ -188,6 +188,11 @@ if(MUHTARI_INVENTORY STREQUAL "ci")
     # run40414104123/job121892328427; retain every producer/join predicate.
     set(quality_timeout 158)
   endif()
+  muhtari_add_test(NAME policy.quality.fixture_identity.controls
+    COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR}
+      -DWORK=${CMAKE_BINARY_DIR}/policy/quality_fixture_identity
+      -P ${CMAKE_CURRENT_LIST_DIR}/quality_fixture_identity.cmake
+    LABELS policy TIMEOUT 10)
   muhtari_add_test(NAME policy.quality.controls
     COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR}
       -DRUN=$<TARGET_FILE:muhtari-run> -DDRIVER=$<TARGET_FILE:muhtari-test-diag>

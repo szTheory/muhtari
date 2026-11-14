@@ -1494,14 +1494,22 @@ static void lr_memory_maps(void)
             uint32_t start = 0x4000u + page * 0x100u;
             lr_span(start, start + 0x100u, cart_ram, (size_t)(page / 2u) * 0x100u, 0u);
         }
+    } else if (!overlay && cart_ram != NULL && cart.board == MUHTARI_BOARD_SOUPER) {
+        /* Only the fixed first 8 KiB survives every legal segment/page
+           write; the two upper EXRAM windows vary with registers 4 and 5. */
+        lr_span(0x4000u, 0x6000u, cart_ram, 0u, 0u);
     } else if (!overlay && cart_ram != NULL &&
                (cart.board_options & (MUHTARI_BOARD_BANKED_RAM | MUHTARI_BOARD_HALT_BANKED_RAM)) ==
                    0u) {
         lr_span(0x4000u, 0x4000u + (uint32_t)(cart_bytes < 0x4000u ? cart_bytes : 0x4000u),
                 cart_ram, 0u, 0u);
     }
-    if (cart.board == MUHTARI_BOARD_LINEAR ||
-        (cart.board == MUHTARI_BOARD_BANKSET && rom_bytes <= 53248u)) {
+    if (cart.board == MUHTARI_BOARD_SOUPER) {
+        /* The CPU's fixed last ROM bank stays at $C000 while the paged
+           $8000-$BFFF window changes. */
+        lr_span(0xC000u, 0x10000u, rom, rom_bytes - 0x4000u, RETRO_MEMDESC_CONST);
+    } else if (cart.board == MUHTARI_BOARD_LINEAR ||
+               (cart.board == MUHTARI_BOARD_BANKSET && rom_bytes <= 53248u)) {
         uint32_t base = 0x10000u - rom_bytes;
         uint32_t from = base > rom_from ? base : rom_from;
         lr_span(from, 0x10000u, rom, from - base, RETRO_MEMDESC_CONST);

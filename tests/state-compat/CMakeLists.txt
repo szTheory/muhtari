@@ -3,7 +3,7 @@ project(muhtari_state_compat C)
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
-foreach(side old new)
+foreach(side old pre new)
   add_executable(compat-${side} "${ROOT}/tests/core/state_compat.c"
     "${ROOT}/tests/cart/images.c" "${ROOT}/runner/sha256.c")
   target_include_directories(compat-${side} PRIVATE

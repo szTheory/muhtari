@@ -1,3 +1,10 @@
+---
+audit_acknowledged:
+  milestone: v7.0
+  at: 2026-11-14
+  status: unknown
+---
+
 # Workspace reconciliation — 2026-11-13
 
 ## Canonical planning state

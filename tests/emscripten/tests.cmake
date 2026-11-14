@@ -12,10 +12,20 @@ set(MUHTARI_EMSCRIPTEN_MODULE
   "${PROJECT_BINARY_DIR}/libretro/muhtari_libretro.mjs")
 set(MUHTARI_EMSCRIPTEN_WASM
   "${PROJECT_BINARY_DIR}/libretro/muhtari_libretro.wasm")
+set(MUHTARI_EMSCRIPTEN_SOUPER_NATIVE_JSON
+  "${PROJECT_SOURCE_DIR}/build/ci/tests/emscripten/souper-native.json")
+set(MUHTARI_EMSCRIPTEN_SOUPER_FIXTURE
+  "${PROJECT_SOURCE_DIR}/build/ci/tests/diag/souper/souper.a78")
 foreach(required IN ITEMS
     "${MUHTARI_EMSCRIPTEN_NATIVE_JSON}" "${MUHTARI_EMSCRIPTEN_FIXTURE}")
   if(NOT EXISTS "${required}")
     message(FATAL_ERROR "required native Emscripten evidence is missing: ${required}")
+  endif()
+endforeach()
+foreach(required IN ITEMS "${MUHTARI_EMSCRIPTEN_SOUPER_NATIVE_JSON}"
+    "${MUHTARI_EMSCRIPTEN_SOUPER_FIXTURE}")
+  if(NOT EXISTS "${required}")
+    message(FATAL_ERROR "required native Souper evidence is missing: ${required}")
   endif()
 endforeach()
 
@@ -101,3 +111,13 @@ foreach(mode IN ITEMS verify controls)
       -P "${PROJECT_SOURCE_DIR}/tests/emscripten/ym.cmake"
     LABELS emscripten portable TIMEOUT 30)
 endforeach()
+
+muhtari_add_test(NAME emscripten.souper
+  COMMAND "${CMAKE_COMMAND}"
+    "-DNODE=${MUHTARI_EMSCRIPTEN_NODE}"
+    "-DHOST=${host}"
+    "-DMODULE=${MUHTARI_EMSCRIPTEN_MODULE}"
+    "-DNATIVE=${MUHTARI_EMSCRIPTEN_SOUPER_NATIVE_JSON}"
+    "-DFIXTURE=${MUHTARI_EMSCRIPTEN_SOUPER_FIXTURE}"
+    -P "${PROJECT_SOURCE_DIR}/tests/emscripten/souper.cmake"
+  LABELS emscripten portable TIMEOUT 30)

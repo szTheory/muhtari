@@ -13,3 +13,8 @@ device or input device.
 loader and Wasm bytes. Local verification runs the Node lifecycle against a clean extraction and an independent
 native oracle; it does not establish real-browser, mobile or device behavior. See the
 [full libretro integrator guide](https://github.com/szTheory/muhtari/blob/main/docs/libretro.md#webassembly-build-and-offline-host).
+
+The Souper receipt binds the generated image and source identity, checks all 20 mailbox values and format 3 /
+behavior 8 snapshots, verifies invalid-state preservation and unload after a malformed reload, then judges 12
+restored frames through both batch and per-sample audio callbacks. This is production-loader core-path evidence,
+not browser or frontend qualification.

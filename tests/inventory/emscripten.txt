@@ -2,5 +2,6 @@ emscripten.artifact	emscripten,portable
 emscripten.bundle	emscripten,portable
 emscripten.bundle.controls	emscripten,portable
 emscripten.controls	emscripten,portable
+emscripten.souper	emscripten,portable
 emscripten.ym	emscripten,portable
 emscripten.ym.controls	emscripten,portable
