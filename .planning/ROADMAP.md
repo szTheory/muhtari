@@ -79,10 +79,9 @@ and [engineering rules](preparation/ENGINEERING.md) before new research.
 
 ## Progress
 
-Phase 21 is complete, and Phase 22 plans 22-01 and 22-02 are complete. TUNE-11
-and six Souper requirements are complete; SOUPER-04 remains pending for plan 22-03.
-All eight requirements map to exactly one phase; no requirement is orphaned or
-accepted ahead of verification.
+Phase 21 (1/1 plan) and Phase 22 (3/3 plans) are complete. TUNE-11 and all seven
+Souper requirements passed their phase verifications. All eight requirements map
+to exactly one phase; no requirement is orphaned or accepted ahead of verification.
 
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
@@ -91,8 +90,9 @@ accepted ahead of verification.
 
 ## Next boundary
 
-Phase 22 passed verification and is complete. Continue with `$gsd-audit-milestone`
-for v7.0 closeout. Publication, merge, remote dispatch and host/device/identity-bound
-actions remain separate boundaries.
+Phase 22 passed verification and is complete. Its update to `docs/libretro.md`
+made Phase 21's shared-source verification stale, so refresh that report against
+the final source before the v7.0 milestone audit. Publication, merge, remote
+dispatch and host/device/identity-bound actions remain separate boundaries.
 Original Phase 12/14 denied/spent scopes, all nine deferred v3.0 requirements and
 unaccepted hardware/platform claims remain unchanged.

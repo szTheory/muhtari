@@ -22,7 +22,7 @@ progress:
 
 ## Project Reference
 
-See [PROJECT.md](PROJECT.md) (updated 2026-11-13), [REQUIREMENTS.md](REQUIREMENTS.md), [ROADMAP.md](ROADMAP.md) and [v7.0 recommendation](research/next-milestone/v7-SOUPER.md).
+See [PROJECT.md](PROJECT.md) (updated 2026-11-14), [REQUIREMENTS.md](REQUIREMENTS.md), [ROADMAP.md](ROADMAP.md) and [v7.0 recommendation](research/next-milestone/v7-SOUPER.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
 **Current focus:** Phase 22 — Complete Souper homebrew mapper
 
@@ -66,7 +66,7 @@ Inherited todos and optional seeds retain their dispositions except the selected
 
 ### Blockers/Concerns
 
-- No current local roadmap blocker. Phase 22 passed all eight observable truths and all seven requirements on the final local source. The result follows the selected software model; it does not establish retail compatibility or physical-cartridge accuracy. Publication, merge, remote dispatch, and host/device/identity-bound actions remain separate boundaries.
+- No unmet roadmap requirement. Phase 22 passed all eight observable truths and all seven SOUPER requirements on the final local source. Its update to `docs/libretro.md` made Phase 21's shared-source verification stale; refresh that report before the milestone audit. The result follows the selected software model; it does not establish retail compatibility or physical-cartridge accuracy. Publication, merge, remote dispatch, and host/device/identity-bound actions remain separate boundaries.
 - Phase 12's exact diagnostic-app request was denied before preflight/content and must not be retried. Original Phase 12 host/remote stops, Phase 14's spent host scope, expired windows and specific no-retry limits remain binding. No v6.0 action renews them or accepts the nine deferred v3.0 requirements.
 - v6.0 publication and PR #61 merge are complete. Future publication, merge, remote dispatch and host/device/identity-bound actions remain separate boundaries. Browser/player, Playstead, physical audibility, calibrated hardware accuracy, public stereo and full XM are excluded. Earlier combined-source/failed release evidence remains source-specific in archived receipts.
 
