@@ -590,9 +590,8 @@ static muhtari_status cart_header(const uint8_t *img, size_t n, const struct car
                 v4.unsupported = 1u;
                 b = v4;
             }
-        } else if (cart_decode_v4(img, &v4) &&
-                   (v4.board == MUHTARI_BOARD_BANKSET || cart_refused(&v4) ||
-                    cart_fits(&v4, mapped))) {
+        } else if (cart_decode_v4(img, &v4) && (v4.board == MUHTARI_BOARD_BANKSET ||
+                                                cart_refused(&v4) || cart_fits(&v4, mapped))) {
             b = v4;
         } else {
             out->warnings |= MUHTARI_CART_WARN_HEADER_V4_IGNORED;
@@ -1015,8 +1014,8 @@ static uint8_t *cart_ram_at(const struct muhtari__cart *c, uint16_t addr, int ma
            8 KiB fixed and maps the two 4 KiB windows independently
            (docs/hardware/cartridge.md, Souper). */
         if ((c->souper_mode & 4u) != 0u && addr >= 0x6000u) {
-            uint32_t page = addr >= 0x7000u ? c->souper_exram_data_page
-                                            : c->souper_exram_video_page;
+            uint32_t page =
+                addr >= 0x7000u ? c->souper_exram_data_page : c->souper_exram_video_page;
             uint32_t base = page * 4096u;
             return &c->ram[base + ((uint32_t)addr & 0x0FFFu)];
         }
@@ -1050,12 +1049,9 @@ static uint8_t *cart_souper_exram_at(const struct muhtari__cart *c, uint16_t add
    the supported 512 KiB profile. */
 static const uint8_t *cart_souper_character_at(const struct muhtari__cart *c, uint16_t addr)
 {
-    uint8_t selector = (addr & 0x0080u) != 0u ? c->souper_character_b
-                                               : c->souper_character_a;
-    uint32_t offset = ((uint32_t)(selector & 0xFEu) << 11) |
-                      ((uint32_t)addr & 0x0F00u) |
-                      ((uint32_t)(selector & 1u) << 7) |
-                      ((uint32_t)addr & 0x007Fu);
+    uint8_t selector = (addr & 0x0080u) != 0u ? c->souper_character_b : c->souper_character_a;
+    uint32_t offset = ((uint32_t)(selector & 0xFEu) << 11) | ((uint32_t)addr & 0x0F00u) |
+                      ((uint32_t)(selector & 1u) << 7) | ((uint32_t)addr & 0x007Fu);
     return &c->rom[offset];
 }
 
@@ -1227,8 +1223,7 @@ uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr)
 
 uint8_t muhtari__cart_dma_read(muhtari *m, uint16_t addr, uint64_t tick)
 {
-    if (m->cart.info.board == MUHTARI_BOARD_SOUPER ||
-        m->cart.info.board == MUHTARI_BOARD_BANKSET ||
+    if (m->cart.info.board == MUHTARI_BOARD_SOUPER || m->cart.info.board == MUHTARI_BOARD_BANKSET ||
         m->cart.expansion.kind == MUHTARI_EXPANSION_XM) {
         return cart_peek_view(m, addr, muhtari__bus_maria_selected(m, tick));
     }

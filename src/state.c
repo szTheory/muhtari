@@ -1457,7 +1457,8 @@ void muhtari__state_payload_apply(muhtari *m, const uint8_t *bytes, size_t size)
     if (state_topology_valid(m) == 0 || muhtari__state_payload_validate(m, bytes, size) == 0)
         return;
     size_t ym_bytes = m->synth.ym_installed != 0u ? STATE_YM_BYTES : 0u;
-    size_t souper_bytes = m->cart.info.board == MUHTARI_BOARD_SOUPER ? STATE_SOUPER_LATCH_BYTES : 0u;
+    size_t souper_bytes =
+        m->cart.info.board == MUHTARI_BOARD_SOUPER ? STATE_SOUPER_LATCH_BYTES : 0u;
     size_t battery_at = size - m->battery.bytes - ym_bytes - souper_bytes;
     int battery_changed = memcmp(m->battery.data, bytes + battery_at, m->battery.bytes) != 0;
     (void)state_walk(m, m, STATE_APPLY, bytes, NULL, size);
@@ -1517,12 +1518,12 @@ muhtari_status muhtari_save_state(const muhtari *m, void *buffer, size_t capacit
     (void)state_walk(m, NULL, STATE_WRITE, NULL, output + STATE_HEADER_BYTES, payload);
     memcpy(output, magic, sizeof magic);
     uint32_t format = m->cart.info.board == MUHTARI_BOARD_SOUPER ? STATE_SOUPER_FORMAT
-                      : m->synth.ym_installed != 0u                ? STATE_YM_FORMAT
-                                                                    : STATE_LEGACY_FORMAT;
+                      : m->synth.ym_installed != 0u              ? STATE_YM_FORMAT
+                                                                 : STATE_LEGACY_FORMAT;
     uint32_t behaviour = m->cart.info.board == MUHTARI_BOARD_SOUPER
                              ? STATE_SOUPER_BEHAVIOUR_REVISION
                          : m->synth.ym_installed != 0u ? STATE_YM_BEHAVIOUR_REVISION
-                                                      : STATE_LEGACY_BEHAVIOUR_REVISION;
+                                                       : STATE_LEGACY_BEHAVIOUR_REVISION;
     state_put_u32(output + 8u, format);
     state_put_u32(output + 12u, STATE_HEADER_BYTES);
     state_put_u32(output + 16u, (uint32_t)total);
@@ -1552,12 +1553,12 @@ muhtari_status muhtari_load_state(muhtari *m, const void *buffer, size_t bytes)
         state_get_u32(input + 12u) != STATE_HEADER_BYTES || state_get_u32(input + 16u) != expected)
         return MUHTARI_STATUS_ERR_INVALID_STATE;
     uint32_t expected_format = m->cart.info.board == MUHTARI_BOARD_SOUPER ? STATE_SOUPER_FORMAT
-                               : m->synth.ym_installed != 0u                ? STATE_YM_FORMAT
-                                                                            : STATE_LEGACY_FORMAT;
+                               : m->synth.ym_installed != 0u              ? STATE_YM_FORMAT
+                                                                          : STATE_LEGACY_FORMAT;
     uint32_t expected_revision = m->cart.info.board == MUHTARI_BOARD_SOUPER
                                      ? STATE_SOUPER_BEHAVIOUR_REVISION
                                  : m->synth.ym_installed != 0u ? STATE_YM_BEHAVIOUR_REVISION
-                                                              : STATE_LEGACY_BEHAVIOUR_REVISION;
+                                                               : STATE_LEGACY_BEHAVIOUR_REVISION;
     if (state_get_u32(input + 8u) != expected_format ||
         state_get_u32(input + 20u) != expected_revision)
         return MUHTARI_STATUS_ERR_UNSUPPORTED_STATE;

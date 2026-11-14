@@ -3037,14 +3037,10 @@ static void test_topologies(void)
 static const struct {
     const char *name;
     void (*run)(void);
-} cases[] = {{"payload", test_payload},
-             {"fields", test_fields},
-             {"aliases", test_aliases},
-             {"lifecycle", test_lifecycle},
-             {"battery", test_battery},
-             {"topologies", test_topologies},
-             {"ym", test_ym},
-             {"souper", test_souper}};
+} cases[] = {{"payload", test_payload}, {"fields", test_fields},
+             {"aliases", test_aliases}, {"lifecycle", test_lifecycle},
+             {"battery", test_battery}, {"topologies", test_topologies},
+             {"ym", test_ym},           {"souper", test_souper}};
 
 static void test_equality_report(void)
 {

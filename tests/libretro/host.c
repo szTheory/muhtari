@@ -2177,14 +2177,11 @@ static void case_memory_map(void)
         0xA9u, 0x07u, 0x8Du, 0x05u, 0x80u, /* data page */
         0xA9u, 0x1Fu, 0x8Du, 0xF8u, 0xFFu, /* paged ROM bank */
         0xA9u, 0x5Au, 0x8Du, 0x00u, 0x18u, /* prove the program ran */
-        0x4Cu, 0x19u, 0xC0u
-    };
+        0x4Cu, 0x19u, 0xC0u};
     static const want_span souper[] = {
         SHARED_SPANS,
         {0x4000u, 0x6000u, CART_RAM, 0u, 0u},
-        {0xC000u, 0x10000u, ROM, 128u + 512u * 1024u - 0x4000u,
-         RETRO_MEMDESC_CONST}
-    };
+        {0xC000u, 0x10000u, ROM, 128u + 512u * 1024u - 0x4000u, RETRO_MEMDESC_CONST}};
     struct retro_game_info souper_game = {0};
     souper_game.data = souper_image;
     souper_game.size = images_a78(souper_image, 3u, 512u * 1024u, 0x1000u, 512u * 1024u);
@@ -2234,10 +2231,8 @@ static uint16_t souper_trace_crc(const uint8_t mailbox[256])
    mailbox after reading each CPU mapping boundary. */
 static int souper_trace_mailbox(const uint8_t *memory, size_t bytes)
 {
-    static const uint8_t values[20] = {
-        0u, 0u, 64u, 64u, 224u, 160u, 161u, 162u, 162u, 163u,
-        163u, 166u, 166u, 167u, 167u, 160u, 161u, 94u, 94u, 224u
-    };
+    static const uint8_t values[20] = {0u,   0u,   64u,  64u,  224u, 160u, 161u, 162u, 162u, 163u,
+                                       163u, 166u, 166u, 167u, 167u, 160u, 161u, 94u,  94u,  224u};
     if (memory == NULL || bytes < 0xB00u)
         return 0;
     const uint8_t *mailbox = memory + 0xA00u;
@@ -3574,12 +3569,17 @@ int main(int argc, char **argv)
         void (*run)(void);
         int files;
     } cases[] = {
-        {"ym", case_ym, 1},           {"audio", case_audio, 1},
-        {"input", case_input, 1},     {"layout", case_layout, 1},
-        {"devices", case_devices, 1}, {"reset", case_reset, 1},
-        {"options", case_options, 1}, {"memory_map", case_memory_map, 3},
+        {"ym", case_ym, 1},
+        {"audio", case_audio, 1},
+        {"input", case_input, 1},
+        {"layout", case_layout, 1},
+        {"devices", case_devices, 1},
+        {"reset", case_reset, 1},
+        {"options", case_options, 1},
+        {"memory_map", case_memory_map, 3},
         {"souper_trace", case_souper_trace, 1},
-        {"battery", case_battery, 0}, {"battery_order", case_battery_order, 0},
+        {"battery", case_battery, 0},
+        {"battery_order", case_battery_order, 0},
         {"state", case_state, 2},
     };
     size_t i;

@@ -1486,8 +1486,8 @@ static struct muhtari before;
 
 #define CART_SOUPER_BODY (512u * IMAGES_KIB)
 
-static size_t souper_test_image(uint8_t version, uint16_t cart_type, uint32_t field,
-                                uint32_t body, uint8_t mapper, uint8_t options, uint16_t audio)
+static size_t souper_test_image(uint8_t version, uint16_t cart_type, uint32_t field, uint32_t body,
+                                uint8_t mapper, uint8_t options, uint16_t audio)
 {
     images_header(buf, version, "Souper profile", field, cart_type);
     images_fill(buf + IMAGES_HEADER, body, field ^ body ^ cart_type);
@@ -1528,8 +1528,8 @@ static void expect_souper_refusal(muhtari *m, alloc_counts *c, const char *name,
     /* Keep each red assertion independent if the current parser wrongly
        accepts a candidate and replaces the live allocation. */
     if (got == MUHTARI_STATUS_OK) {
-        size_t restore = souper_test_image(3u, 0x1000u, CART_SOUPER_BODY,
-                                           CART_SOUPER_BODY, 0u, 0u, 0u);
+        size_t restore =
+            souper_test_image(3u, 0x1000u, CART_SOUPER_BODY, CART_SOUPER_BODY, 0u, 0u, 0u);
         CHECK_EQ_U64(muhtari__cart_load(m, buf, restore), MUHTARI_STATUS_OK);
         memset(m->cart.ram, 0x5Au, 32768u);
     }
@@ -1577,30 +1577,21 @@ static void test_souper_profile(void)
     CHECK_EQ_U64(info.board, MUHTARI_BOARD_SOUPER);
     CHECK_EQ_U64(info.sound, MUHTARI_SOUND_POKEY_4000);
 
-    n = souper_test_image(3u, 0x1000u, CART_SOUPER_BODY - 1u, CART_SOUPER_BODY - 1u,
-                          0u, 0u, 0u);
+    n = souper_test_image(3u, 0x1000u, CART_SOUPER_BODY - 1u, CART_SOUPER_BODY - 1u, 0u, 0u, 0u);
     expect_souper_refusal(m, &counts, "short v3 Souper", n, MUHTARI_STATUS_ERR_INVALID_IMAGE);
-    n = souper_test_image(3u, 0x1000u, CART_SOUPER_BODY + 1u, CART_SOUPER_BODY + 1u,
-                          0u, 0u, 0u);
-    expect_souper_refusal(m, &counts, "oversized v3 Souper", n,
-                          MUHTARI_STATUS_ERR_INVALID_IMAGE);
-    n = souper_test_image(3u, 0x1000u, CART_SOUPER_BODY - 1u, CART_SOUPER_BODY,
-                          0u, 0u, 0u);
+    n = souper_test_image(3u, 0x1000u, CART_SOUPER_BODY + 1u, CART_SOUPER_BODY + 1u, 0u, 0u, 0u);
+    expect_souper_refusal(m, &counts, "oversized v3 Souper", n, MUHTARI_STATUS_ERR_INVALID_IMAGE);
+    n = souper_test_image(3u, 0x1000u, CART_SOUPER_BODY - 1u, CART_SOUPER_BODY, 0u, 0u, 0u);
     expect_souper_refusal(m, &counts, "extra v3 payload", n, MUHTARI_STATUS_ERR_INVALID_IMAGE);
-    n = souper_test_image(3u, 0x1000u, CART_SOUPER_BODY + 1u, CART_SOUPER_BODY,
-                          0u, 0u, 0u);
-    expect_souper_refusal(m, &counts, "truncated v3 Souper", n,
-                          MUHTARI_STATUS_ERR_TRUNCATED_IMAGE);
-    n = souper_test_image(3u, 0x1000u, CART_SOUPER_BODY, CART_SOUPER_BODY + 1u,
-                          0u, 0u, 0u);
-    expect_souper_refusal(m, &counts, "appended v3 payload", n,
-                          MUHTARI_STATUS_ERR_INVALID_IMAGE);
+    n = souper_test_image(3u, 0x1000u, CART_SOUPER_BODY + 1u, CART_SOUPER_BODY, 0u, 0u, 0u);
+    expect_souper_refusal(m, &counts, "truncated v3 Souper", n, MUHTARI_STATUS_ERR_TRUNCATED_IMAGE);
+    n = souper_test_image(3u, 0x1000u, CART_SOUPER_BODY, CART_SOUPER_BODY + 1u, 0u, 0u, 0u);
+    expect_souper_refusal(m, &counts, "appended v3 payload", n, MUHTARI_STATUS_ERR_INVALID_IMAGE);
 
     /* Invalid effective v4 Souper declarations must not fall back to a
        geometry-compatible v3 SuperGame. */
     n = souper_test_image(4u, 0x0002u, CART_SOUPER_BODY, CART_SOUPER_BODY, 4u, 1u, 0u);
-    expect_souper_refusal(m, &counts, "v4 Souper option", n,
-                          MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
+    expect_souper_refusal(m, &counts, "v4 Souper option", n, MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
     n = souper_test_image(4u, 0x0002u, CART_SOUPER_BODY, CART_SOUPER_BODY, 4u, 0u, 6u);
     expect_souper_refusal(m, &counts, "v4 Souper invalid audio code", n,
                           MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
@@ -1611,14 +1602,10 @@ static void test_souper_profile(void)
         expect_souper_refusal(m, &counts, "v4 Souper unsupported audio", n,
                               MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
     }
-    n = souper_test_image(4u, 0x0002u, CART_SOUPER_BODY + 1u, CART_SOUPER_BODY,
-                          4u, 0u, 0u);
-    expect_souper_refusal(m, &counts, "truncated v4 Souper", n,
-                          MUHTARI_STATUS_ERR_TRUNCATED_IMAGE);
-    n = souper_test_image(4u, 0x0002u, CART_SOUPER_BODY, CART_SOUPER_BODY + 1u,
-                          4u, 0u, 0u);
-    expect_souper_refusal(m, &counts, "appended v4 payload", n,
-                          MUHTARI_STATUS_ERR_INVALID_IMAGE);
+    n = souper_test_image(4u, 0x0002u, CART_SOUPER_BODY + 1u, CART_SOUPER_BODY, 4u, 0u, 0u);
+    expect_souper_refusal(m, &counts, "truncated v4 Souper", n, MUHTARI_STATUS_ERR_TRUNCATED_IMAGE);
+    n = souper_test_image(4u, 0x0002u, CART_SOUPER_BODY, CART_SOUPER_BODY + 1u, 4u, 0u, 0u);
+    expect_souper_refusal(m, &counts, "appended v4 payload", n, MUHTARI_STATUS_ERR_INVALID_IMAGE);
 
     /* An allocator failure while replacing the live image also preserves it. */
     n = souper_test_image(3u, 0x1000u, CART_SOUPER_BODY, CART_SOUPER_BODY, 0u, 0u, 0u);

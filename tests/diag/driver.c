@@ -1281,7 +1281,8 @@ static int souper_native_judge(const uint8_t *pixels, unsigned frames)
         for (unsigned x = 0u; x < 320u; x++) {
             uint8_t want = x < 8u ? 0x38u : 0u;
             if (p[x] != want) {
-                fprintf(stderr, "souper: MARIA EXRAM graphics differ at frame %u row 17 x%u: %02x\n",
+                fprintf(stderr,
+                        "souper: MARIA EXRAM graphics differ at frame %u row 17 x%u: %02x\n",
                         frame + 1u, x, p[x]);
                 return 1;
             }
@@ -1302,8 +1303,8 @@ static int souper_png(const char *path)
             failed |= row[0] != 0u;
             if (y == 17u) {
                 for (unsigned x = 0u; x < 320u; x++) {
-                    uint32_t color = muhtari__palette_rgb_region(x < 8u ? 0x38u : 0u,
-                                                                 MUHTARI_REGION_NTSC);
+                    uint32_t color =
+                        muhtari__palette_rgb_region(x < 8u ? 0x38u : 0u, MUHTARI_REGION_NTSC);
                     const uint8_t *p = row + 1u + 3u * x;
                     failed |= p[0] != (uint8_t)(color >> 16) || p[1] != (uint8_t)(color >> 8) ||
                               p[2] != (uint8_t)color;
@@ -1336,8 +1337,8 @@ static int souper_image(const char *template_path, const char *path)
     if (n != 524416u ||
         strcmp(hex, "bb4a6315d7708dd0a8f57d0a533a8f84f3ca900e15fa9156bfbcd4116c6dfb72") != 0 ||
         memcmp(image + 128u + 0x7F6F0u, "SOUPER01", 8u) != 0 ||
-        muhtari_probe(image, n, &info) != MUHTARI_STATUS_OK ||
-        info.board != MUHTARI_BOARD_SOUPER || info.rom_size != 512u * 1024u) {
+        muhtari_probe(image, n, &info) != MUHTARI_STATUS_OK || info.board != MUHTARI_BOARD_SOUPER ||
+        info.rom_size != 512u * 1024u) {
         free(image);
         return 1;
     }
@@ -1394,15 +1395,13 @@ static int souper_map_judge(muhtari *m, const char *expected)
         const char *name;
         uint16_t addr;
         uint8_t value;
-    } flat[] = {
-        {"cpu_flat_4000", 0x4000u, 0xA0u}, {"cpu_flat_5fff", 0x5FFFu, 0xA1u},
-        {"cpu_flat_6000", 0x6000u, 0xA2u}, {"cpu_flat_7fff", 0x7FFFu, 0xA3u}
-    };
+    } flat[] = {{"cpu_flat_4000", 0x4000u, 0xA0u},
+                {"cpu_flat_5fff", 0x5FFFu, 0xA1u},
+                {"cpu_flat_6000", 0x6000u, 0xA2u},
+                {"cpu_flat_7fff", 0x7FFFu, 0xA3u}};
     int failed = 0;
-    if (muhtari__cart_read(m, 0x4000u, 0) != 0u ||
-        muhtari__cart_read(m, 0x7FFFu, 0) != 0u ||
-        muhtari__cart_read(m, 0x8000u, 0) != 0x40u ||
-        muhtari__cart_read(m, 0xBFFFu, 0) != 0x40u ||
+    if (muhtari__cart_read(m, 0x4000u, 0) != 0u || muhtari__cart_read(m, 0x7FFFu, 0) != 0u ||
+        muhtari__cart_read(m, 0x8000u, 0) != 0x40u || muhtari__cart_read(m, 0xBFFFu, 0) != 0x40u ||
         muhtari__cart_read(m, 0xC000u, 0) != 0xE0u ||
         muhtari__cart_dma_read(m, 0x8000u, 0u) != 0x40u ||
         muhtari__cart_dma_read(m, 0xC000u, 0u) != 0xE0u) {
@@ -1461,15 +1460,15 @@ static int souper_map_judge(muhtari *m, const char *expected)
 
     /* Controls ensure the numeric oracle rejects wrong selector/page results. */
     muhtari__cart_write(m, 0xC002u, 0u);
-    failed |= souper_map_value("fault_wrong_character_rejected",
-                               (uint8_t)!souper_map_matches(
-                                   "char_b", muhtari__cart_dma_read(m, 0xA080u, 1u)));
+    failed |= souper_map_value(
+        "fault_wrong_character_rejected",
+        (uint8_t)!souper_map_matches("char_b", muhtari__cart_dma_read(m, 0xA080u, 1u)));
     muhtari__cart_write(m, 0xC002u, 0x42u);
     muhtari__cart_write(m, 0xC004u, 5u);
-    failed |= souper_map_value("fault_wrong_page_rejected",
-                               (uint8_t)!souper_map_matches(
-                                   "combined_maria_video_page",
-                                   muhtari__cart_dma_read(m, 0xE000u, 1u)));
+    failed |=
+        souper_map_value("fault_wrong_page_rejected",
+                         (uint8_t)!souper_map_matches("combined_maria_video_page",
+                                                      muhtari__cart_dma_read(m, 0xE000u, 1u)));
     return failed;
 }
 
@@ -1521,7 +1520,8 @@ static int souper_case(const char *path, const char *expected, const char *repor
     media.size = (uint32_t)sizeof media;
     media.image = image;
     media.image_size = bytes;
-    muhtari_status status = image == NULL ? MUHTARI_STATUS_ERR_ARGUMENT : muhtari_create(&config, &m);
+    muhtari_status status =
+        image == NULL ? MUHTARI_STATUS_ERR_ARGUMENT : muhtari_create(&config, &m);
     if (status == MUHTARI_STATUS_OK)
         status = muhtari__synth_observe(m, souper_audio_event, &audio_observation);
     if (status == MUHTARI_STATUS_OK)
@@ -1530,8 +1530,9 @@ static int souper_case(const char *path, const char *expected, const char *repor
     if (failed)
         fprintf(stderr, "souper: expected initial-map image to load, got status %u\n",
                 (unsigned)status);
-    if (!failed && (m->cart.info.board != MUHTARI_BOARD_SOUPER ||
-                    m->cart.info.rom_size != 512u * 1024u || m->cart.info.ram_size != 32u * 1024u)) {
+    if (!failed &&
+        (m->cart.info.board != MUHTARI_BOARD_SOUPER || m->cart.info.rom_size != 512u * 1024u ||
+         m->cart.info.ram_size != 32u * 1024u)) {
         fprintf(stderr, "souper: loaded profile geometry mismatch\n");
         failed = 1;
     }
@@ -1572,7 +1573,8 @@ static int souper_case(const char *path, const char *expected, const char *repor
             muhtari__cart_write(m, 0xFFF8u, (uint8_t)((state_bank + 1u) & 31u));
             failed |= m->cart.bank == state_bank;
             failed |= muhtari_load_state(m, state_saved, state_size) != MUHTARI_STATUS_OK;
-            failed |= m->cart.bank != state_bank || memcmp(state_saved, state_bytes, state_size) != 0;
+            failed |=
+                m->cart.bank != state_bank || memcmp(state_saved, state_bytes, state_size) != 0;
         }
         if (failed)
             fprintf(stderr, "souper: complete snapshot save/restore failed\n");
@@ -1603,10 +1605,8 @@ static int souper_case(const char *path, const char *expected, const char *repor
         failed |= muhtari_run_frame(m, &io) != MUHTARI_STATUS_OK;
         audio_counts[frame] = io.audio_count;
         if (!failed) {
-            memcpy(pixels + (size_t)frame * 320u * 242u,
-                   pixels + 12u * 320u * 242u, 320u * 242u);
-            memcpy(audio_records + (size_t)frame * 963u, pcm,
-                   (size_t)io.audio_count * sizeof *pcm);
+            memcpy(pixels + (size_t)frame * 320u * 242u, pixels + 12u * 320u * 242u, 320u * 242u);
+            memcpy(audio_records + (size_t)frame * 963u, pcm, (size_t)io.audio_count * sizeof *pcm);
             if (frame == 5u)
                 failed = muhtari_save_state(m, state_mid, state_size) != MUHTARI_STATUS_OK;
         }
@@ -1627,8 +1627,7 @@ static int souper_case(const char *path, const char *expected, const char *repor
         io.audio_capacity = 963u;
         failed |= muhtari_run_frame(m, &io) != MUHTARI_STATUS_OK;
         failed |= io.audio_count != audio_counts[frame];
-        failed |= memcmp(io.video, pixels + (size_t)frame * 320u * 242u,
-                         320u * 242u) != 0;
+        failed |= memcmp(io.video, pixels + (size_t)frame * 320u * 242u, 320u * 242u) != 0;
         failed |= memcmp(pcm, audio_records + (size_t)frame * 963u,
                          (size_t)io.audio_count * sizeof *pcm) != 0;
     }
@@ -1643,8 +1642,8 @@ static int souper_case(const char *path, const char *expected, const char *repor
         for (unsigned i = 0u; i < sizeof mailbox; i++)
             mailbox[i] = muhtari__peek(m, (uint16_t)(MB + i));
         int pixel_failed = souper_native_judge(pixels, 12u);
-        failed = retail_judge(mailbox, "souper") || pixel_failed ||
-                 m->cart.info.sound != 0u || m->synth.pokeys != 0u || m->synth.ym_installed != 0u;
+        failed = retail_judge(mailbox, "souper") || pixel_failed || m->cart.info.sound != 0u ||
+                 m->synth.pokeys != 0u || m->synth.ym_installed != 0u;
         if (!failed) {
             for (unsigned frame = 4u; frame < 12u; frame++) {
                 uint8_t *row = pixels + (size_t)frame * 320u * 242u + 17u * 320u;

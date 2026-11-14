@@ -1284,22 +1284,21 @@ static uint16_t souper_crc(const uint8_t mailbox[256])
 
 static int souper_mailbox(const uint8_t *memory, size_t bytes, char *reason, size_t capacity)
 {
-    static const uint8_t values[20] = {
-        0u, 0u, 64u, 64u, 224u, 160u, 161u, 162u, 162u, 163u,
-        163u, 166u, 166u, 167u, 167u, 160u, 161u, 94u, 94u, 224u
-    };
+    static const uint8_t values[20] = {0u,   0u,   64u,  64u,  224u, 160u, 161u, 162u, 162u, 163u,
+                                       163u, 166u, 166u, 167u, 167u, 160u, 161u, 94u,  94u,  224u};
     if (memory == NULL || bytes < 0xB00u)
         return fail_reason(reason, capacity, "Souper system RAM mailbox is unavailable");
     const uint8_t *mailbox = memory + 0xA00u;
     uint16_t crc = (uint16_t)((uint16_t)mailbox[8] | ((uint16_t)mailbox[9] << 8));
     if (memcmp(mailbox, "M7DG", 4u) != 0 || mailbox[4] != 1u || mailbox[5] != 0u ||
         mailbox[6] != sizeof values || mailbox[7] != 22u || crc != souper_crc(mailbox))
-        return fail_reason(reason, capacity, "Souper mailbox header or CRC differs from literal oracle");
+        return fail_reason(reason, capacity,
+                           "Souper mailbox header or CRC differs from literal oracle");
     for (unsigned i = 0u; i < sizeof values / sizeof values[0]; i++) {
         const uint8_t *record = mailbox + 16u + 4u * i;
         if (record[0] != i + 1u || record[1] != 1u || record[2] != values[i] || record[3] != 0u)
-            return fail_reason(reason, capacity, "Souper mailbox record %u differs from literal oracle",
-                               i + 1u);
+            return fail_reason(reason, capacity,
+                               "Souper mailbox record %u differs from literal oracle", i + 1u);
     }
     return 1;
 }
@@ -1318,7 +1317,8 @@ static int observe_souper(const char *fixture_path, const char *output_path)
     size_t library_state_bytes = 0u, adapter_state_bytes = 0u;
     char library_state_sha256[65], adapter_state_sha256[65];
 
-    OBS_CHECK(read_file(fixture_path, &image, &image_bytes), "cannot read patterned Souper fixture");
+    OBS_CHECK(read_file(fixture_path, &image, &image_bytes),
+              "cannot read patterned Souper fixture");
     hash_hex(image, image_bytes, fixture_hash);
     config.size = (uint32_t)sizeof config;
     config.allocator.alloc = observer_alloc;
@@ -1391,8 +1391,8 @@ static int observe_souper(const char *fixture_path, const char *output_path)
                   "cannot restore Souper baseline for replay %u", replay);
         for (unsigned frame = 0u; frame < 12u; frame++) {
             frame_observation observed = {0};
-            OBS_CHECK(run_pair_frame(reference, 0u, 0u, frame, -1, frame > 0u, &observed,
-                                     reason, sizeof reason),
+            OBS_CHECK(run_pair_frame(reference, 0u, 0u, frame, -1, frame > 0u, &observed, reason,
+                                     sizeof reason),
                       "Souper replay %u frame %u: %s", replay, frame + 1u, reason);
             OBS_CHECK(same_frame(&observed, &frames[frame]),
                       "Souper replay %u frame %u differs from uninterrupted mapper observations",
@@ -1447,8 +1447,7 @@ static int observe_souper(const char *fixture_path, const char *output_path)
             "\"device_joypad\":%u,\"joypad_up\":%u,\"memory_system_ram\":%u},\"frames\":[",
             fixture_hash, MUHTARI_CORE_SOURCE_ID, (unsigned long)library_state_bytes,
             library_state_sha256, adapter_state_sha256, library_continuation_sha256,
-            adapter_continuation_sha256,
-            (unsigned)RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION,
+            adapter_continuation_sha256, (unsigned)RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION,
             (unsigned)RETRO_ENVIRONMENT_SET_CORE_OPTIONS, (unsigned)RETRO_ENVIRONMENT_GET_VARIABLE,
             (unsigned)RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE,
             (unsigned)RETRO_ENVIRONMENT_SET_PIXEL_FORMAT,
@@ -1457,12 +1456,14 @@ static int observe_souper(const char *fixture_path, const char *output_path)
             (unsigned)RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS,
             (unsigned)RETRO_ENVIRONMENT_SET_MEMORY_MAPS,
             (unsigned)RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS,
-            (unsigned)RETRO_ENVIRONMENT_SET_MESSAGE, (unsigned)RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT,
+            (unsigned)RETRO_ENVIRONMENT_SET_MESSAGE,
+            (unsigned)RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT,
             (unsigned)RETRO_PIXEL_FORMAT_XRGB8888, (unsigned)RETRO_DEVICE_JOYPAD,
             (unsigned)RETRO_DEVICE_ID_JOYPAD_UP, (unsigned)RETRO_MEMORY_SYSTEM_RAM);
     for (unsigned i = 0u; i < 12u; i++)
-        fprintf(out, "%s{\"index\":%u,\"audio_count\":%u,\"video_sha256\":\"%s\","
-                    "\"audio_sha256\":\"%s\"}",
+        fprintf(out,
+                "%s{\"index\":%u,\"audio_count\":%u,\"video_sha256\":\"%s\","
+                "\"audio_sha256\":\"%s\"}",
                 i == 0u ? "" : ",", i, frames[i].audio_count, frames[i].video_sha256,
                 frames[i].audio_sha256);
     fputs("]}\n", out);

@@ -699,8 +699,7 @@ static int souper_halt_views(void)
     muhtari__cart_write(m, 0x8004u, 2u);
     muhtari__cart_write(m, 0x8005u, 7u);
 
-    int ok = muhtari__cart_peek(m, 0xC000u) == 0x51u &&
-             muhtari__cart_peek(m, 0xE000u) != 0xA2u &&
+    int ok = muhtari__cart_peek(m, 0xC000u) == 0x51u && muhtari__cart_peek(m, 0xE000u) != 0xA2u &&
              muhtari__cart_dma_read(m, 0xC000u, 0u) == 0x51u;
     memcpy(&snapshot, m, sizeof snapshot);
     ok &= muhtari__peek(m, 0xC000u) == 0x51u;
@@ -833,8 +832,7 @@ static int halt_latency_two_cycles(void)
     ok &= expect_ticks("c2", read_ticks(m), 24u, "no freeze", 4u);
     ok &= expect_count("phi2 after c2", "cycles", m->bus.phi2, 9u, "frozen cycles uncounted", 4u);
     return bankset_frame() && bankset_ram_frame() && xm_halt_edges() && halt_views() &&
-           souper_halt_views() &&
-           halt_store_order() && halt_stretched_costs() && ok;
+           souper_halt_views() && halt_store_order() && halt_stretched_costs() && ok;
 }
 
 /* A request at tick 2, inside a 6-tick cycle, takes effect at that cycle's

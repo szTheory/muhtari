@@ -44,8 +44,7 @@ static void put32(uint8_t *p, uint32_t value)
 }
 static uint32_t get32(const uint8_t *p)
 {
-    return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) |
-           ((uint32_t)p[3] << 24);
+    return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
 }
 static void write_file(const char *prefix, const char *suffix, const void *bytes, size_t size)
 {
