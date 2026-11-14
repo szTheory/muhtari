@@ -4,18 +4,18 @@ milestone: v7.0
 milestone_name: Souper homebrew mapper
 current_phase: 22
 current_phase_name: Complete Souper homebrew mapper
-current_plan: 2 of 3
+current_plan: 3 of 3
 status: executing
-stopped_at: Completed 22-01-PLAN.md
-last_updated: "2026-11-14T02:28:54.810Z"
+stopped_at: Completed 22-02-PLAN.md
+last_updated: "2026-11-14T04:00:36.789Z"
 last_activity: 2026-11-14
 last_activity_desc: Phase 22 plan 22-01 complete; plan 22-02 next
-state_head: b3159ffa9171d24e757bb4d754da23fa38e96392
+state_head: db6feb0feb173fe5536e8129f33a48be546023a8
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 4
-  completed_plans: 2
+  completed_plans: 3
   percent: 50
 ---
 
@@ -30,7 +30,7 @@ See [PROJECT.md](PROJECT.md) (updated 2026-11-13), [REQUIREMENTS.md](REQUIREMENT
 ## Current Position
 
 Phase: 22 (Complete Souper homebrew mapper) — IN PROGRESS
-Current Plan: 2 of 3
+Current Plan: 3 of 3
 Status: Plan 22-01 complete; plan 22-02 is next
 Last activity: 2026-11-14 — Plan 22-01 completed
 
@@ -49,6 +49,7 @@ and accepted v0.14.0 publication evidence remain in the
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 22 P01 | 108 | 2 tasks | 24 files |
+| Phase 22 P02 | 77min | 2 tasks | 24 files |
 
 ## Accumulated Context
 
@@ -113,8 +114,8 @@ At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Sou
 
 ## Session Continuity
 
-Last session: 2026-11-14T02:28:31.277Z
-Stopped at: Completed 22-01-PLAN.md
+Last session: 2026-11-14T04:00:36.658Z
+Stopped at: Completed 22-02-PLAN.md
 Resume file: None
 
 Next action: Clear context and run `$gsd-discuss-phase 22` from the current checkout. No directory switch is needed.
@@ -141,6 +142,7 @@ Next action: Clear context and run `$gsd-discuss-phase 22` from the current chec
 - [Phase 20]: Phase 20 Plan 20-03: YM clock history is validated from its existing last-tick, clock-count and remainder tuple; no extra runtime epoch field is needed.
 - [Phase 22]: Require exact Souper profile geometry and refuse an effective invalid v4 mapper 4 declaration without v3 fallback.
 - [Phase 22]: Keep Souper snapshots unavailable until plan 22-03 adds complete state support.
+- [Phase 22]: Plan 22-02: keep CPU and MARIA mapper controls independent and publish only fixed Souper CPU windows.
 
 ## Next action
 

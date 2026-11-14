@@ -64,9 +64,9 @@ existing resource, provenance, test and review mechanisms.
   4. A host can reset, unload/reload, isolate instances and restore every Souper register and EXRAM byte with identical subsequent observations; invalid snapshots preserve the live machine under the concrete compatibility policy recorded before code.
   5. The owned diagnostic passes through the actual public C library, headless runner, loaded libretro core and applicable portable consumer, with malformed-profile and non-Souper controls retained; existing docs state the reset/EXRAM policy and unsupported image/audio forms, and no BupChip audio is claimed or emitted.
 
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 - [x] 22-01-PLAN.md
-- [ ] 22-02-PLAN.md
+- [x] 22-02-PLAN.md
 - [ ] 22-03-PLAN.md
 
 Mapper behavior, loader refusals, lifecycle/state, independent diagnostics,
@@ -87,7 +87,7 @@ accepted ahead of verification.
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
 | 21. Measured milestone tune-up | 1/1 | Complete    | 2026-11-13 |
-| 22. Complete Souper homebrew mapper | 1/3 | In Progress | — |
+| 22. Complete Souper homebrew mapper | 2/3 | In Progress | — |
 
 ## Next boundary
 
