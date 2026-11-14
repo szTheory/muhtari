@@ -110,7 +110,7 @@ with the module disabled. Both keep the portable BankSet/XBoard/XM diagnostics a
 | `frame` | Whole frames through the run loop: SALLY, the bus and MARIA together ([emulation tests, frame](emulation-tests.md#frame)). |
 | `input` | Controllers and console switches as a game reads them, driven by movie rows ([emulation tests, input](emulation-tests.md#input)). |
 | `bios` | The boot through OpenBIOS and through a BIOS built in memory ([emulation tests, bios](emulation-tests.md#bios)). |
-| `portable` | Tests common to every platform, including frame/audio hashes and state-byte/continuation report rows. |
+| `portable` | Cross-platform frame/audio hashes and state-byte/continuation rows; Emscripten also checks Souper restore. |
 | `abi` | The public header compiled alone as C17 and C++17, the API test, and the core library's symbols. |
 | `host` | The palette helper shared by the runner and the core. |
 | `cart` | Cartridge identification: the core's SHA-1 against the FIPS 180-4 example messages, and `muhtari_probe` on images that `tests/cart/images.c` builds in memory, one test per status class and one for the warning bits, and the internal loader, which allocates nothing for a refused image. `cart.identify.test_list` finds the built 7800basic sample through the test hash list. No image bytes are tracked. |
@@ -119,11 +119,11 @@ with the module disabled. Both keep the portable BankSet/XBoard/XM diagnostics a
 | `runner` | `muhtari-run` options/output/statuses, PNG/MD5, `runner.movie_parse` exact bad-line locations, `runner.state.*`, and `--probe` generated-image order/digests/refusals. |
 | `built` | Samples built from pinned tools (`tests/built/`). `built.<name>` builds one 7800basic 0.41 sample per row of `expected.txt` under wasmtime with our own recipe (`build.cmake`, each stage run with the package mapped to `/b`) in a fresh `build/<preset>/built/<name>/`, and checks the `.a78` and `.bin` SHA-256s in that row. `runner.probe.sample_*` then probe `simple`: the headered `.a78`, the stripped `.bin` found by its footer (reset vector $F4AD), and the `.bin` found by the test hash list through `muhtari-run-testdb`, the runner linked with `tests/cart/test_cartdb.c` in place of `src/cartdb.c`. The built files never leave the build tree. |
 | `basic` | Each built sample's 600 fast-boot frames against the chain pinned in `tests/built/expected.txt` ([emulation tests, basic](emulation-tests.md#basic)). |
-| `diag` | Our own diagnostic ROMs judged through their mailbox against values derived beforehand, and the core's statistics ([emulation tests, diag](emulation-tests.md#diag)). `diag.rebuild` carries `built`. |
+| `diag` | Generated diagnostic mailbox and core-statistics checks ([emulation tests, diag](emulation-tests.md#diag)); Souper also checks cross-process continuation. `diag.rebuild` carries `built`. |
 | `title` | The ledger's title predicates on `simple`, on the fast boot and through OpenBIOS, the pin writer's refusal of a blank screen, and the local driver on public bytes (`title.local.fixture`) ([emulation tests, title](emulation-tests.md#title)). |
 | `library` | Each `pr` ledger row, the ratchet (`policy.compat_ratchet.controls`) and the generated page, run by CI's `library` job ([emulation tests, ledger](emulation-tests.md#ledger); [CI](#ci)). |
 | `bench` | The runner's benchmark report. |
-| `libretro` | In-process host (content, controls, devices, Restart, BIOS/options/memory/state); `libretro.bios_failures`, `libretro.rcheevos`, `.info` claim/description checks and vendored header. |
+| `libretro` | Host controls, devices, BIOS/options/memory/state; Souper checks module/library state faults and repeated continuation. Also BIOS failures, achievements, `.info` and header checks. |
 | `install` | The library installed and found by an outside project, and embedded with `add_subdirectory`. |
 | `perf` | Allocation-free frames. |
 | `policy` | Rules about the repository and the tests themselves; `policy.claims_wording` requires the disclaimer and rejects overclaims in user-facing files (`tests/cmake/claims_wording.cmake`). |
@@ -379,8 +379,8 @@ Node/native comparison and package controls with:
 sh scripts/emscripten.sh build/ci
 ```
 
-JUnit uses `tests/inventory/emscripten.txt`. Offline evidence covers package/core behavior, not browser, mobile,
-performance or physical-input qualification.
+JUnit uses `tests/inventory/emscripten.txt`. Core evidence omits browser, mobile, performance and physical-input
+qualification; see the [bundle guide](emscripten-hosting.md).
 
 On macOS arm64, the README link and install line are checked against the local build:
 

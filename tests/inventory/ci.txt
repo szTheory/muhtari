@@ -125,6 +125,7 @@ bus.open_bus.unmapped	portable,riot
 bus.open_bus.write_only	portable,riot
 bus.rdy.holds_reads_only	portable,sally
 bus.rdy.rmw_completes_both_writes	portable,sally
+bus.souper.halt_views	bus,portable
 cart.identify.2600_prefix	cart,portable
 cart.identify.activision_swap	cart,portable
 cart.identify.bundled_has_no_test_entries	cart,portable
@@ -145,6 +146,7 @@ cart.probe.unsupported_board	cart,portable
 cart.probe.warnings	cart,portable
 cart.retail.boards	cart,portable
 cart.sha1.fips	cart,portable
+cart.souper.profile	cart,portable
 core.api.size_tags	core,portable
 core.audio.silence	core,portable
 core.battery.deadline	core,portable
@@ -172,12 +174,15 @@ core.pal.lifecycle	core,portable
 core.pal.tracer	core,portable
 core.set_input.latched_at_vblank	core,portable
 core.set_input.validates	core,portable
+core.souper.cpu	core,portable
+core.souper.lifecycle	core,portable
 core.state.aliases	core,portable
 core.state.battery	core,portable
 core.state.equality_report	core,portable
 core.state.fields	core,portable
 core.state.lifecycle	core,portable
 core.state.payload	core,portable
+core.state.souper	core,portable
 core.state.topologies	core,portable
 core.state.ym	core,portable
 core.testcard.all_colours	core,portable
@@ -476,6 +481,7 @@ diag.rebuild	built,portable
 diag.rebuild.self_test	built,portable
 diag.retail	diag,portable
 diag.sg144	diag,portable
+diag.souper_tracer	diag,portable
 docs.api_names	policy
 docs.api_names.self_test	policy
 docs.budgets	policy
@@ -532,10 +538,11 @@ libretro.host.devices	libretro,portable
 libretro.host.hsc_firmware	libretro,portable
 libretro.host.input	libretro,portable
 libretro.host.layout	libretro,portable
-libretro.host.memory_map	libretro,portable
 libretro.host.options	libretro,portable
 libretro.host.reset	libretro,portable
 libretro.host.rgb565	libretro,portable
+libretro.host.souper	libretro,portable
+libretro.host.souper_trace	libretro,portable
 libretro.host.state	libretro,portable
 libretro.host.xrgb8888	libretro,portable
 libretro.host.ym	audio,libretro,portable
@@ -546,6 +553,7 @@ libretro.info_claims.savestate	libretro
 libretro.info_claims.self_test	libretro
 libretro.observe	libretro,portable
 libretro.observe.controls	libretro,portable
+libretro.observe.souper	libretro,portable
 libretro.observe.ym	libretro,portable
 libretro.observe.ym.controls	libretro,portable
 libretro.rcheevos	libretro,portable
@@ -586,6 +594,7 @@ policy.no_skip.self_test	policy
 policy.notices	policy
 policy.publish.controls	policy
 policy.quality.controls	policy
+policy.quality.fixture_identity.controls	policy
 policy.ubuntu_apt.controls	policy
 prop.battery_lifecycle	portable,prop
 prop.battery_observers	portable,prop
@@ -672,9 +681,9 @@ runner.probe.oversized	portable,runner
 runner.probe.sample_a78	built,portable
 runner.probe.sample_hash_match	built,portable
 runner.probe.sample_headerless	built,portable
+runner.probe.souper	portable,runner
 runner.probe.truncated	portable,runner
 runner.probe.unreadable	portable,runner
-runner.probe.unsupported_board	portable,runner
 runner.probe.usage	portable,runner
 runner.region.pal	portable,runner
 runner.save.cadence	portable,runner

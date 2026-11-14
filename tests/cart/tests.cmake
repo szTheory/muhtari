@@ -28,7 +28,8 @@ muhtari_warnings(muhtari-test-cart)
 foreach(cart_case IN ITEMS probe.accepted probe.arguments probe.oversized probe.2600
     probe.unsupported_board probe.malformed probe.truncated probe.warnings
     identify.hash_override identify.slices identify.activision_swap identify.2600_prefix
-    identify.not_a_cartridge identify.headerless_ports load.no_alloc_on_reject retail.boards)
+    identify.not_a_cartridge identify.headerless_ports load.no_alloc_on_reject retail.boards
+    souper.profile)
   muhtari_add_test(NAME cart.${cart_case} COMMAND muhtari-test-cart ${cart_case}
     LABELS cart portable TIMEOUT 10)
 endforeach()

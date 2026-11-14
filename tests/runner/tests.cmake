@@ -197,11 +197,11 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
       -P "${HASHES}" COMMAND_ERROR_IS_FATAL ANY)
     file(STRINGS "${OUT}/hashes.txt" rows)
     list(LENGTH rows count)
-    if(NOT count EQUAL 3180)
-      message(FATAL_ERROR "hashes: expected3088 retained,78 state and14 YM equality rows, got ${count}")
+    if(NOT count EQUAL 3205)
+      message(FATAL_ERROR "hashes: expected 3180 retained/state/YM and 25 fixed Souper rows, got ${count}")
     endif()
     # Retain the independent accepted digests, normalizing only the exact
-    # causal slow-HALT audio changes and revision 7 metadata back to old rows.
+    # causal slow-HALT audio changes and revision 8 metadata back to old rows.
     # The differential build restores these four rows; the other952 rows agree
     # (hardware/bus.md, HALT); arbitrary values still fail the old aggregates.
     set(historical "${rows}")
@@ -224,7 +224,7 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
       list(REMOVE_AT historical ${position})
       list(INSERT historical ${position} "${field} ${previous}")
     endforeach()
-    list(TRANSFORM historical REPLACE "([.]audio_behaviour_revision) 7$" "\\1 5")
+    list(TRANSFORM historical REPLACE "([.]audio_behaviour_revision) 8$" "\\1 5")
     # Independent accepted source 54485d6, CI run 40104749040; the seven
     # earlier revision4-to-5 annotations remain part of this historical pin.
     list(SUBLIST historical 0 69 retained)
@@ -329,7 +329,7 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
       elseif(fault STREQUAL "short_digest")
         string(REGEX REPLACE "audio_pcm_sha256 [^\n]+" "audio_pcm_sha256 a" bad "${bad}")
       elseif(fault STREQUAL "version")
-        string(REPLACE "audio_behaviour_revision 7" "audio_behaviour_revision 6" bad "${bad}")
+        string(REPLACE "audio_behaviour_revision 8" "audio_behaviour_revision 6" bad "${bad}")
       elseif(fault MATCHES "^(crc|numeric)$")
         set(which 4)
         if(fault STREQUAL "numeric")
@@ -370,7 +370,7 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
       elseif(fault STREQUAL "leading_blank")
         set(bad "\n${bad}")
       elseif(fault STREQUAL "revision")
-        string(REPLACE "audio_behaviour_revision 7" "audio_behaviour_revision 6" bad "${bad}")
+        string(REPLACE "audio_behaviour_revision 8" "audio_behaviour_revision 6" bad "${bad}")
       elseif(fault STREQUAL "mailbox")
         string(REPLACE "diagnostic 4d374447" "diagnostic 00000000" bad "${bad}")
       endif()
@@ -890,12 +890,13 @@ endfunction()
       message(FATAL_ERROR "--probe 2600-4k: kind '${kind}', standard error\n${err}")
     endif()
     expect_hashes("" "${DIR}/2600-4k")
-  elseif(CASE STREQUAL "probe.unsupported_board")
+  elseif(CASE STREQUAL "probe.souper")
     probe(souper-v4)
-    expect_keys(souper-v4 77 ${identity_keys} ${header_keys} ${hash_keys})
+    expect_keys(souper-v4 0 ${identity_keys} ${header_keys} ${hash_keys})
     probe_value(board board)
-    if(NOT board STREQUAL "souper" OR NOT err MATCHES "/souper-v4: unsupported board: souper\n")
-      message(FATAL_ERROR "--probe souper-v4: board '${board}', standard error\n${err}")
+    probe_value(ram_size ram_size)
+    if(NOT board STREQUAL "souper" OR NOT ram_size STREQUAL "32768" OR NOT err STREQUAL "")
+      message(FATAL_ERROR "--probe souper-v4: board '${board}', RAM '${ram_size}', standard error\n${err}")
     endif()
     expect_hashes("" "${DIR}/souper-v4")
   elseif(CASE STREQUAL "probe.malformed")
@@ -1535,8 +1536,6 @@ endfunction()
     endfunction()
     expect_refused("^muhtari-run: [^\n]*/2600-4k: unsupported: 2600 \\(planned\\)\n$"
       "${DIR}/2600-4k")
-    expect_refused("^muhtari-run: [^\n]*/souper-v4: unsupported board: souper\n$"
-      "${DIR}/souper-v4")
     foreach(sound ym2151 covox adpcm)
       expect_refused("^muhtari-run: [^\n]*/${sound}[.]a78: unsupported device\nmuhtari-run: unavailable sound configuration: ${sound}\n$"
         "${WORK}/${sound}.a78")
@@ -1706,7 +1705,7 @@ foreach(case IN ITEMS hash pal)
     LABELS runner portable TIMEOUT 1) # 2 x 0.35 s, macOS x64, slowest of 31 runs, run 39377950148
   set_tests_properties(runner.load.${case} PROPERTIES FIXTURES_REQUIRED probe_images)
 endforeach()
-foreach(case IN ITEMS accepted 2600 unsupported_board malformed truncated oversized usage
+foreach(case IN ITEMS accepted 2600 souper malformed truncated oversized usage
     unreadable headerless_rule)
   muhtari_add_test(NAME runner.probe.${case}
     COMMAND ${runner_check} -DCASE=probe.${case} -DDIR=${runner_probe_dir}

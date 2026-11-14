@@ -1,5 +1,23 @@
 # Project Milestones: muhtari
 
+## v7.0 Souper homebrew mapper (Closed locally: 2026-11-14)
+
+**Phases completed:** 2 phases, 5 plans, 10 tasks
+
+**Closeout type:** `override_closeout`; all eight requirements and both phases pass. Known verification overrides: 1 newly acknowledged, 49 carried forward from prior closes (see STATE.md Deferred Items). The acknowledged workspace record retains its `unknown` verdict; no worktree was changed. This planning closeout does not claim package publication, push, merge or a tag.
+
+**Key accomplishments:**
+- A source-qualified v0.14.0 release and quality report records a bounded no-change disposition and preserves earlier failures.
+- Exact Souper profile admission and a generated initial-map diagnostic now run through every existing local consumer.
+- Souper CPU banking, EXRAM segmentation, MARIA character remapping and HALT-sensitive fetch trapping now have independent literal checks and stable libretro descriptors.
+- The generated Souper diagnostic now exercises the production native libretro module, with literal observations, deterministic snapshot continuation, and refusal controls.
+
+**Audit:** [v7.0 milestone audit](milestones/v7.0-MILESTONE-AUDIT.md). The Phase 21 spec-less probe remains explicitly unresolved and nonblocking; no probe pass is claimed.
+**Archive:** [roadmap](milestones/v7.0-ROADMAP.md), [requirements](milestones/v7.0-REQUIREMENTS.md), [product roadmap snapshot](milestones/v7.0-PRODUCT-ROADMAP.md), [audit](milestones/v7.0-MILESTONE-AUDIT.md), [phase records](milestones/v7.0-phases/).
+**Next:** `$gsd-new-milestone` begins the next scope discussion; no successor is selected.
+
+---
+
 ## v6.0 YM2151 homebrew sound (Shipped: 2026-11-13)
 
 **Scope:** Two phases, eight plans, nineteen actual plan task blocks. The runtime summary fallback counted eight tasks; the plan blocks are authoritative.
@@ -10,10 +28,10 @@
 - Actual public library, runner, loaded libretro, emitted Wasm and clean installed/extracted package consumers with current notices and fault controls.
 - Complete ordinary/adverse native/Node cost windows, concrete space/headroom/bounds, accurate evidence limits and clean required review.
 
-**Closeout:** `verified_closeout`; nine current requirements, both phases and all five integration flows pass. Zero newly acknowledged items;49 previously acknowledged items retain their verdicts. The nine deferred v3 requirements and original Phase12/14 stops remain unchanged.
+**Closeout:** `verified_closeout`; nine current requirements, both phases and all five integration flows pass. Zero newly acknowledged items; 49 previously acknowledged items retain their verdicts. The nine deferred v3 requirements and original Phase12/14 stops remain unchanged.
 **Publication:** [v0.14.0](https://github.com/szTheory/muhtari/releases/tag/v0.14.0) is published with 19 ZIP archives and `SHA256SUMS` (20 assets, matching the release contract). Release run [43441765548](https://github.com/szTheory/muhtari/actions/runs/43441765548) passed, including latest installation. PR [#61](https://github.com/szTheory/muhtari/pull/61) merged; CI on its merge commit passed. See the [ship receipt](milestones/v6.0-SHIP.md).
 **Archive:** [roadmap](milestones/v6.0-ROADMAP.md), [requirements](milestones/v6.0-REQUIREMENTS.md), [audit](milestones/v6.0-MILESTONE-AUDIT.md), [phase records](milestones/v6.0-phases/).
-**Next:** Clear context and run `$gsd-new-milestone` with [continue.md](continue.md). The owner selects successor scope after cross-project feedback.
+**Next:** v7.0 Souper mapper-only support is complete locally; see its [audit](milestones/v7.0-MILESTONE-AUDIT.md) and the [rolling roadmap](PRODUCT-ROADMAP.md). No package publication or merge is claimed.
 
 ---
 
@@ -202,6 +220,27 @@ exit 0: zero open, 15 acknowledged. Hosted release evidence is linked above.
 The owner selected v6.0 YM2151 homebrew sound and authorized autonomous local
 follow-through. Both phases and all nine requirements are complete; v6.0 shipped
 as v0.14.0. The [ship receipt](milestones/v6.0-SHIP.md) records publication and
-main closure. Successor scope remains unselected pending cross-project feedback.
-Earlier v5.0 successor-pending notes are historical; prior host stops remain
-separate.
+main closure. Earlier v5.0 successor-pending notes are historical; prior host
+stops remain separate.
+
+## v7.0 scope selection — 2026-11-13
+
+The owner selected the recommendation **Souper homebrew mapper support** after
+cross-project feedback and bounded consumer, hardware, and adversarial review.
+The scope is one generated-fixture-testable mapper profile through Muhtari's
+existing deliverables; BupChip/BupBoop audio and Rikki & Vikki compatibility are
+excluded. The source register, uncertainty and revisit triggers are in
+[v7-SOUPER research](research/next-milestone/v7-SOUPER.md). All eight
+requirements mapped to Phases 21–22 in the archived
+[requirements](milestones/v7.0-REQUIREMENTS.md) and
+[roadmap](milestones/v7.0-ROADMAP.md).
+
+## v7.0 local closeout — 2026-11-14
+
+The milestone audit passed all eight requirements, both phase verifications,
+twelve integration seams and five flows. The `override_closeout` preserved one
+newly acknowledged workspace item with status `unknown` and carried 49 prior
+acknowledgments forward. Its worktrees were left unchanged. The roadmap,
+requirements, product roadmap snapshot, audit and both phase directories are
+archived locally. This closeout does not claim package publication, push, merge
+or a tag; successor scope remains unselected.

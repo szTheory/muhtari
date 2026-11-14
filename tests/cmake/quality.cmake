@@ -112,59 +112,7 @@ macro(quality_observation json sha fields expected_source)
   quality_get(status "${observation}" STRING status)
 endmacro()
 
-# Fault prevented: candidate fixture edits replacing the trusted comparison identity.
-# Remove only named new owned rows, then compare all remaining bytes with the base.
-function(quality_fixture_identity out candidate trusted)
-  foreach(input candidate trusted)
-    file(READ "${${input}}" ${input}_text)
-    file(STRINGS "${${input}}" ${input}_rows)
-  endforeach()
-  set(stripped "${candidate_text}")
-  set(seen "")
-  foreach(row IN LISTS candidate_rows)
-    if(row STREQUAL "" OR row MATCHES "^#")
-      continue()
-    endif()
-    string(REGEX MATCH "^[^\t]+" path "${row}")
-    if(path IN_LIST seen)
-      message(FATAL_ERROR "quality: duplicate fixture ${path}")
-    endif()
-    list(APPEND seen "${path}")
-    if(row IN_LIST trusted_rows)
-      continue()
-    endif()
-    foreach(prior IN LISTS trusted_rows)
-      string(FIND "${prior}" "${path}\t" at)
-      if(at EQUAL 0)
-        message(FATAL_ERROR "quality: deleted or changed trusted manifest ${path}")
-      endif()
-    endforeach()
-    if(NOT path MATCHES "^tests/diag/(activision|absolute|fractalus|battery|controller-light|controller-analog|controller-motion|pal|bankset|expansion)[.]a78$" OR
-        NOT row MATCHES "^[^\t]+\tthis-repo\t[^ \t\r\n;]+\tMIT\t([0-9a-f]+)\t-$")
-      message(FATAL_ERROR "quality: unrelated fixture ${path}")
-    endif()
-    string(LENGTH "${CMAKE_MATCH_1}" length)
-    if(NOT length EQUAL 64)
-      message(FATAL_ERROR "quality: fixture digest ${path}")
-    endif()
-    # This owned template is immutable: derived cases are build output only.
-    # A syntactically plausible invented source pin/digest must not admit it.
-    if(path STREQUAL "tests/diag/bankset.a78" AND NOT row STREQUAL
-        "tests/diag/bankset.a78\tthis-repo\t6321fa62cf7cf29c7033b09931edb884079c1545\tMIT\t32f5870fbfcc4745967b8b94c69f87dac4879587c4b0561256cc5160d61a3390\t-")
-      message(FATAL_ERROR "quality: owned BankSet identity")
-    endif()
-    if(path STREQUAL "tests/diag/expansion.a78" AND NOT row STREQUAL
-        "tests/diag/expansion.a78\tthis-repo\t26357b8ef692de1d86a848992d6b679d9999f79b\tMIT\tb5164fe19df352231d2a6033d0349ff45019f2dcfb889f6d0d542879ae41ee9b\t-")
-      message(FATAL_ERROR "quality: owned expansion identity")
-    endif()
-    string(REPLACE "${row}\n" "" stripped "${stripped}")
-  endforeach()
-  if(NOT stripped STREQUAL trusted_text)
-    message(FATAL_ERROR "quality: deleted or changed trusted manifest")
-  endif()
-  file(SHA256 "${trusted}" identity)
-  set(${out} "${identity}" PARENT_SCOPE)
-endfunction()
+include("${CMAKE_CURRENT_LIST_DIR}/quality_fixture_identity.cmake")
 
 # Fault prevented: sample edits hiding behind a behavior-annotation migration.
 # Unique adjacent revision transitions preserve every byte, except the four
@@ -181,7 +129,7 @@ function(quality_sample_identity out candidate trusted)
       if(NOT count EQUAL 1)
         message(FATAL_ERROR "quality: sample annotation must be unique")
       endif()
-      if(NOT "${${input}_text}" MATCHES "(^|\n)# behaviour_revision ([234567])\n")
+      if(NOT "${${input}_text}" MATCHES "(^|\n)# behaviour_revision ([2345678])\n")
         message(FATAL_ERROR "quality: invalid sample revision transition")
       endif()
       set(${input}_revision "${CMAKE_MATCH_2}")
@@ -190,7 +138,8 @@ function(quality_sample_identity out candidate trusted)
         NOT (trusted_revision EQUAL 3 AND candidate_revision EQUAL 4) AND
         NOT (trusted_revision EQUAL 4 AND candidate_revision EQUAL 5) AND
         NOT (trusted_revision EQUAL 5 AND candidate_revision EQUAL 6) AND
-        NOT (trusted_revision EQUAL 6 AND candidate_revision EQUAL 7))
+        NOT (trusted_revision EQUAL 6 AND candidate_revision EQUAL 7) AND
+        NOT (trusted_revision EQUAL 7 AND candidate_revision EQUAL 8))
       message(FATAL_ERROR "quality: invalid sample revision transition")
     endif()
     string(REGEX REPLACE "(^|\n)# behaviour_revision ${candidate_revision}\n" "\\1# behaviour_revision ${trusted_revision}\n"

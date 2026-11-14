@@ -73,7 +73,11 @@ scope, authority, risk, cost or irreversible-action boundary. Start useful autom
 verification early, including integration, end-to-end, smoke and seam checks. A
 throwaway local check is valid; retain a check in CI only for recurring regression
 value. Inspect each CI/release run for measured iteration-time improvements while
-preserving its required coverage. This is standing guidance, not another UAT gate.
+preserving its required coverage. Put cheap, deterministic consistency and sanity
+checks ahead of long builds or suites when they can catch a likely failure early;
+keep them narrowly tied to that failure mode rather than adding setup with no useful
+screening value. Treat one run as a lead, not enough evidence for structural,
+timeout, or cache changes. This is standing guidance, not another UAT gate.
 
 Owner reaffirmation, 2026-11-11: use upstream scoping to keep milestone and later
 phase work directionally correct and economical. Retain the high-signal result,
@@ -83,6 +87,20 @@ project second brain; no new memory service or dependency is requested. The
 through relevant consumer, hardware, provenance and operations lenses plus one
 adversarial synthesis. Its proposed scope is an input to milestone selection,
 not permission to invent a core defect or implement downstream phases early.
+
+Owner direction, 2026-11-13: at each new-milestone boundary, do the saved research
+and recommendation work first. Reconcile shipped work, LESSONS, consumer needs,
+sibling ownership and current technical evidence; update the recommendation and
+rolling roadmap before presenting options. Lead with the recommended scope and
+the strongest alternative rather than asking a generic "what do you want to
+build next?" When the owner says to follow the recommendation, carry the
+ordinary in-scope choices through requirements and roadmap without routine
+confirmation. Stop only at a real scope, authority, risk, cost, irreversible
+action or owner-only validation boundary. Save high-signal sources/revisions,
+evidence class, confidence, contradictions, alternatives and revisit triggers
+in the existing `.planning` second brain. Reuse settled research unless new
+evidence could change the recommendation. This is an owner workflow preference,
+not a reproduced technical lesson for `LESSONS.md`.
 
 ## Shared emulator family: learning flows both ways
 
@@ -152,3 +170,23 @@ routine acceptance prompts. Preserve material compatibility decisions, original
 Phase 12/14 stops and separate remote/host/identity/publication/merge authority.
 This is milestone v6.0, not a package-version request. The agent owns the work;
 no owner checkout switch or blanket UAT is required.
+
+## Recommendation-first autonomous milestone starts — 2026-11-14
+
+At every new-milestone boundary, present a concrete successor idea and its
+strongest alternative, then refresh this rolling roadmap before a scope choice.
+The owner wants selected milestones to run in gsd-autonomous style through
+dependent local planning, implementation, verification, review and closeout
+without routine prompts. Preserve material public API and compatibility
+decisions, host/device action, identity-bound consent and irreversible changes.
+The owner has preauthorized ordinary Git publication, PR merge and the CI/release
+automation they trigger at natural milestone delivery points. Preserve all
+other exact stops until new evidence or authority resolves them.
+
+## Early publication and cheap preflight — 2026-11-14
+
+Publish at natural delivery points, release early and often, and finish each
+milestone with `main` CI green. Before a long suite or process, run applicable
+cheap consistency checks first. Review reproduced lessons and recent bottlenecks
+for low-effort sanity checks or fixes; investigate a failed check before retrying
+it. Keep CI/runtime evidence and any measured efficiency finding with the run.

@@ -175,8 +175,8 @@ if(DIAG_EXPANSION_RUN)
     else()
       set(selection xm)
     endif()
-    foreach(fault RANGE 3 8)
-      set(names ym2151 covox adpcm souper pokey_4000 pokey_800)
+    foreach(fault RANGE 3 7)
+      set(names ym2151 covox adpcm pokey_4000 pokey_800)
       math(EXPR index "${fault}-3")
       list(GET names ${index} name)
       expansion_exec(--expansion-image "${ROOT}/tests/diag/expansion.a78" "${OUT}/refused.a78" ${profile} 0 0 0 0 0 ${fault})
@@ -335,6 +335,146 @@ if(DIAG_BANKSET_RUN)
     if(NOT rc STREQUAL "1")
       message(FATAL_ERROR "bankset accepted unrelated or altered template identity")
     endif()
+  endif()
+  return()
+endif()
+
+if(DIAG_SOUPER_RUN)
+  file(MAKE_DIRECTORY "${OUT}")
+  set(image "${OUT}/souper.a78")
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --souper-image
+    "${ROOT}/tests/diag/souper.a78" "${image}"
+    RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 30)
+  if(NOT rc STREQUAL "0")
+    message(FATAL_ERROR "souper patterned image identity: ${rc}: ${out}${err}")
+  endif()
+  set(reference "${OUT}/reference.txt")
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --souper-case
+    "${image}" "${EXPECTED}" "${reference}"
+    RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 30)
+  if(NOT rc STREQUAL "0")
+    message(FATAL_ERROR "souper public-library literal map/frame judgment: ${rc}: ${out}${err}")
+  endif()
+  set(hashes "")
+  foreach(frame RANGE 1 12)
+    list(APPEND hashes --hash-frame ${frame})
+  endforeach()
+  set(state_zero "${OUT}/state-zero.bin")
+  set(state_mid "${OUT}/state-mid.bin")
+  set(state_full "${OUT}/state-full.bin")
+  set(state_resumed "${OUT}/state-resumed.bin")
+  execute_process(COMMAND ${EMULATOR} "${RUNNER}" --frames 12 ${hashes} --hash-audio
+    --hash-state 0 --hash-state 6 --hash-state 12
+    --state-at-frame "0:${state_zero}" --state-at-frame "6:${state_mid}"
+    --state-at-frame "12:${state_full}"
+    --diagnostic --dump-frame "12:${OUT}/pixels.png" "${image}"
+    RESULT_VARIABLE rc OUTPUT_VARIABLE actual ERROR_VARIABLE err TIMEOUT 30)
+  if(NOT rc STREQUAL "0")
+    message(FATAL_ERROR "souper actual runner: ${rc}: ${actual}${err}")
+  endif()
+  string(REGEX MATCH "diagnostic [0-9a-f]+\n" mailbox "${actual}")
+  file(CONFIGURE OUTPUT "${OUT}/report.txt" CONTENT "${mailbox}" @ONLY NEWLINE_STYLE UNIX)
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --mailbox "${OUT}/report.txt"
+    souper "${EXPECTED}" RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 10)
+  if(NOT rc STREQUAL "0")
+    message(FATAL_ERROR "souper runner mailbox numeric judgment: ${rc}: ${out}${err}")
+  endif()
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --souper-png "${OUT}/pixels.png"
+    RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 10)
+  if(NOT rc STREQUAL "0")
+    message(FATAL_ERROR "souper runner MARIA pixel oracle: ${rc}: ${out}${err}")
+  endif()
+  file(READ "${state_mid}" state_mid_hex HEX)
+  string(LENGTH "${state_mid_hex}" state_mid_hex_length)
+  math(EXPR state_latch_at "${state_mid_hex_length} - 10")
+  string(SUBSTRING "${state_mid_hex}" ${state_latch_at} 10 state_mid_latches)
+  if(state_mid_latches STREQUAL "0000000000")
+    message(FATAL_ERROR "souper runner midpoint did not contain nonzero mapper latches")
+  endif()
+  execute_process(COMMAND ${EMULATOR} "${RUNNER}" --frames 6 --load-state "${state_mid}"
+    --hash-frame 6 --hash-state 6 --state-at-frame "6:${state_resumed}" --diagnostic
+    --dump-frame "6:${OUT}/pixels-resumed.png" "${image}"
+    RESULT_VARIABLE rc OUTPUT_VARIABLE resumed ERROR_VARIABLE err TIMEOUT 30)
+  if(NOT rc STREQUAL "0")
+    message(FATAL_ERROR "souper runner fresh-process restore: ${rc}: ${resumed}${err}")
+  endif()
+  string(REGEX MATCH "diagnostic [0-9a-f]+\n" resumed_mailbox "${resumed}")
+  file(CONFIGURE OUTPUT "${OUT}/report-resumed.txt" CONTENT "${resumed_mailbox}"
+    @ONLY NEWLINE_STYLE UNIX)
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --mailbox "${OUT}/report-resumed.txt"
+    souper "${EXPECTED}" RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 10)
+  if(NOT rc STREQUAL "0")
+    message(FATAL_ERROR "souper resumed runner mailbox oracle: ${rc}: ${out}${err}")
+  endif()
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --souper-png "${OUT}/pixels-resumed.png"
+    RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 10)
+  if(NOT rc STREQUAL "0")
+    message(FATAL_ERROR "souper resumed runner MARIA pixel oracle: ${rc}: ${out}${err}")
+  endif()
+  string(REGEX MATCH "frame 12 sha256 [0-9a-f]+" full_frame "${actual}")
+  string(REGEX MATCH "frame 6 sha256 [0-9a-f]+" resumed_frame "${resumed}")
+  string(REPLACE "frame 12" "frame 6" full_frame "${full_frame}")
+  string(REGEX MATCH "state 12 sha256 [0-9a-f]+" full_state "${actual}")
+  string(REGEX MATCH "state 6 sha256 [0-9a-f]+" resumed_state "${resumed}")
+  string(REPLACE "state 12" "state 6" full_state "${full_state}")
+  string(REGEX MATCH "diagnostic [0-9a-f]+" full_mailbox "${actual}")
+  string(REGEX MATCH "diagnostic [0-9a-f]+" restored_mailbox "${resumed}")
+  if(full_frame STREQUAL "" OR NOT full_frame STREQUAL resumed_frame OR
+      full_state STREQUAL "" OR NOT full_state STREQUAL resumed_state OR
+      full_mailbox STREQUAL "" OR NOT full_mailbox STREQUAL restored_mailbox)
+    message(FATAL_ERROR "souper runner fresh-process continuation differs:\n"
+      "full: ${full_frame} ${full_state} ${full_mailbox}\n"
+      "resumed: ${resumed_frame} ${resumed_state} ${restored_mailbox}")
+  endif()
+  execute_process(COMMAND ${CMAKE_COMMAND} -E compare_files "${state_full}" "${state_resumed}"
+    RESULT_VARIABLE states_differ)
+  if(NOT states_differ EQUAL 0)
+    message(FATAL_ERROR "souper runner final canonical state bytes differ after fresh-process restore")
+  endif()
+  file(STRINGS "${reference}" observations REGEX "^frame ")
+  foreach(line IN LISTS observations)
+    string(FIND "${actual}" "${line}\n" found)
+    if(found EQUAL -1)
+      message(FATAL_ERROR "souper native/runner frame mismatch: ${line}")
+    endif()
+  endforeach()
+  foreach(fault missing truncated trailing)
+    set(bad "${OUT}/${fault}.txt")
+    if(fault STREQUAL truncated)
+      string(SUBSTRING "${mailbox}" 0 50 shortened)
+      file(CONFIGURE OUTPUT "${bad}" CONTENT "${shortened}" @ONLY NEWLINE_STYLE UNIX)
+    elseif(fault STREQUAL trailing)
+      file(CONFIGURE OUTPUT "${bad}" CONTENT "${mailbox}extra" @ONLY NEWLINE_STYLE UNIX)
+    else()
+      file(REMOVE "${bad}")
+    endif()
+    execute_process(COMMAND ${EMULATOR} "${DRIVER}" --mailbox "${bad}"
+      souper "${EXPECTED}" RESULT_VARIABLE rc OUTPUT_QUIET ERROR_QUIET TIMEOUT 10)
+    if(NOT rc STREQUAL "1")
+      message(FATAL_ERROR "souper report parser accepted ${fault} evidence")
+    endif()
+  endforeach()
+  file(COPY_FILE "${image}" "${OUT}/forged-template.a78")
+  # The generator validates the immutable assembled template digest before changing banks.
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --souper-image
+    "${OUT}/forged-template.a78" "${OUT}/forged-image.a78"
+    RESULT_VARIABLE rc OUTPUT_QUIET ERROR_QUIET TIMEOUT 10)
+  if(NOT rc STREQUAL "1")
+    message(FATAL_ERROR "souper patterned-image generator accepted a changed template")
+  endif()
+  file(READ "${EXPECTED}" source_expected)
+  string(REPLACE "souper_map,char_a,193,fit" "souper_map,char_a,194,fit"
+    wrong_character_expected "${source_expected}")
+  if(wrong_character_expected STREQUAL source_expected)
+    message(FATAL_ERROR "souper literal mapper fault row was not found")
+  endif()
+  file(CONFIGURE OUTPUT "${OUT}/wrong-map-expected.csv" CONTENT "${wrong_character_expected}"
+    @ONLY NEWLINE_STYLE UNIX)
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --souper-case
+    "${image}" "${OUT}/wrong-map-expected.csv" "${OUT}/wrong-map-reference.txt"
+    RESULT_VARIABLE rc OUTPUT_QUIET ERROR_QUIET TIMEOUT 30)
+  if(NOT rc STREQUAL "1")
+    message(FATAL_ERROR "souper mapper judge accepted a wrong character-selection literal")
   endif()
   return()
 endif()
@@ -853,6 +993,7 @@ muhtari_add_test(NAME diag.controllers COMMAND ${CMAKE_COMMAND} -P ${diag_contro
   LABELS diag portable TIMEOUT 30)
 
 set(diag_bankset ${PROJECT_BINARY_DIR}/tests/diag/bankset.cmake)
+set(diag_souper ${PROJECT_BINARY_DIR}/tests/diag/souper.cmake)
 set(diag_expansion ${PROJECT_BINARY_DIR}/tests/diag/expansion.cmake)
 file(GENERATE OUTPUT ${diag_expansion} CONTENT
 "set(DIAG_EXPANSION_RUN TRUE)
@@ -882,6 +1023,19 @@ include([==[${CMAKE_CURRENT_LIST_FILE}]==])
 ")
 muhtari_add_test(NAME diag.bankset_tracer COMMAND ${CMAKE_COMMAND} -P ${diag_bankset}
   LABELS diag portable TIMEOUT 30)
+file(GENERATE OUTPUT ${diag_souper} CONTENT
+"set(DIAG_SOUPER_RUN TRUE)
+set(ROOT [==[${PROJECT_SOURCE_DIR}]==])
+set(OUT [==[${PROJECT_BINARY_DIR}/tests/diag/souper]==])
+set(DRIVER [==[$<TARGET_FILE:muhtari-test-diag>]==])
+set(RUNNER [==[$<TARGET_FILE:muhtari-run>]==])
+set(EXPECTED [==[${diag_dir}/expected.csv]==])
+set(EMULATOR [==[${CMAKE_CROSSCOMPILING_EMULATOR}]==])
+include([==[${CMAKE_CURRENT_LIST_FILE}]==])
+")
+muhtari_add_test(NAME diag.souper_tracer COMMAND ${CMAKE_COMMAND} -P ${diag_souper}
+  LABELS diag portable TIMEOUT 30)
+set_tests_properties(diag.souper_tracer PROPERTIES FIXTURES_SETUP souper_pattern)
 # Each test writes its own tree, so neither reads the other's half-written files under parallel ctest.
 set(diag_bankset_matrix ${PROJECT_BINARY_DIR}/tests/diag/bankset-matrix.cmake)
 file(GENERATE OUTPUT ${diag_bankset_matrix} CONTENT

@@ -105,7 +105,8 @@ of the environment. Built-sample expectations normally require raw byte equality
 The only annotation transitions permit exactly one complete
 `# behaviour_revision 2` line to become `# behaviour_revision 3`, or exactly one
 revision 3 line to become revision 4, or revision 4 to become revision 5,
-with its newline and every other byte unchanged. Revision5-to-6 additionally
+or revision 6 to become revision 7, or revision 7 to become revision 8, with
+its newline and every other byte unchanged. Revision5-to-6 additionally
 permits only the four exact colorfade/fontcheck/mousedemo/screensafe frame-chain
 transitions attributed to the causal stretched-HALT fit. Reversing only that
 clamp restores the old chains; all source, tool and ROM pins remain exact.

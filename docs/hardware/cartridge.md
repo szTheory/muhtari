@@ -191,6 +191,7 @@ The body sizes each board this library runs accepts:
 | Fractalus | exactly 32 KiB ROM and 2 KiB physical RAM, no board options |
 | Activision | exactly 128 KiB, no board options or cartridge RAM |
 | BankSet | equal CPU-then-MARIA halves of 32, 48, 52, 128, 256 or 512 KiB; at most 1 MiB total |
+| Souper | exactly 512 KiB ROM and 32 KiB volatile EXRAM |
 
 The evidence is MAME's 7800 list, which gives these ROM sizes per slot:
 
@@ -228,8 +229,9 @@ Reload and power cycle restore declared chip count and the boot clock origin.
 
 ## Boards
 
-`MUHTARI_STATUS_OK` includes linear, Absolute, Activision, Fractalus, BankSet and the SuperGame family: SuperGame, with RAM, SG9, bank 6 at $4000 and banked RAM.
-Non-BankSet halt-banked RAM and Souper are reported with
+`MUHTARI_STATUS_OK` includes linear, Absolute, Activision, Fractalus, BankSet,
+Souper and the SuperGame family: SuperGame, with RAM, SG9, bank 6 at $4000 and
+banked RAM. Non-BankSet halt-banked RAM is reported with
 `MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD`. YM2151, Covox and ADPCM remain descriptive
 probe metadata; executable load refuses these unimplemented audio requests before
 allocation. Selecting expansion Off does not erase independent audio declarations.
@@ -351,6 +353,62 @@ shared/HALT stores. Their independently derived numeric records live in
 checks supplement those records. These checks establish the selected model,
 not universal gameplay or measured hardware accuracy.
 
+### Souper
+
+The selected software profile accepts a 512 KiB ROM body and owns 32 KiB of
+volatile EXRAM per cartridge instance. A version 3 header selects it with cart
+type bit 12; a valid version 4 block selects mapper 4 with options zero. Other
+mapper options, unsupported audio declarations and mismatched or extra payload
+bytes are refused before the running cartridge changes. Existing POKEY metadata
+is parsed by the common loader; this profile adds no Souper-specific POKEY
+wiring, and `$8007` does not queue BupChip audio.
+
+For either declaration, the A78 ROM-size field must equal the complete body
+length, and both must be exactly 512 KiB. A declared body longer than the
+available bytes is truncated; a shorter declaration with trailing bytes, or
+any other body size, is invalid. When v4 explicitly names mapper 4, invalid
+options, audio or geometry refuse that declaration instead of selecting a
+geometry-compatible v3 fallback; other valid v4 board declarations retain
+their usual precedence.
+
+At load and power cycle, EXRAM and mapper latches are zeroed. Writes anywhere in
+`$8000–$FFFF` select a register by the low three address bits; reads never write
+a register. Register 0 selects the low five bits of the 16 KiB `$8000–$BFFF` ROM
+bank, while `$C000–$FFFF` remains the final ROM bank. Registers 1 and 2 retain
+the complete character A/B selectors. Register 3 independently selects MARIA
+fetch trapping (bit 0), character mapping (bit 1), and segmented EXRAM (bit 2).
+Registers 4 and 5 select the video and data 4 KiB EXRAM pages from their low
+three bits. Register 6 is undefined; register 7's BupChip command is outside
+this mapper-only profile and has no audio effect.
+
+CPU reads expose the first 16 KiB of EXRAM at `$4000–$7FFF` in flat mode. With
+segmentation enabled, `$4000–$5FFF` remains on the first 8 KiB, and the
+independent register 4/5 pages appear at `$6000–$6FFF` and `$7000–$7FFF`.
+MARIA uses the same CPU window for `$4000–$7FFF`. When character mapping is
+enabled, MARIA sees the final ROM bank at `$8000–$9FFF` and selected character
+ROM at `$A000–$BFFF`; address A12 aliases, and address A7 chooses selector A or
+B. Selector bits 7..1 supply ROM address bits 18..12, address bits 11..8 are
+preserved, selector bit 0 supplies bit 7, and address bits 6..0 are preserved.
+When fetch trapping is enabled, MARIA's `$C000–$FFFF` window uses the selected
+CPU EXRAM view; the CPU still reads fixed ROM there. The controls combine
+independently. These view rules follow the public software map and development
+description gathered in cartridge preparation (CART.25/CART.42), not a
+calibrated physical measurement or a Rikki & Vikki compatibility claim.
+
+The zero-filled EXRAM power-on behavior is an explicit emulator policy because
+physical EXRAM startup is not established. The console Reset input is a
+software-readable switch and does not clear Souper latches or EXRAM; a power
+cycle resets the latches and zero-fills EXRAM. The owned diagnostic uses
+generated images and literal mapper observations through the library, runner
+and loaded module. Those results establish conformance to this selected
+software model, not physical hardware accuracy, BupChip audio, or retail-game
+compatibility.
+Souper snapshots use format 3 / behavior revision 8 and include all five mapper
+latches plus every EXRAM byte, including hidden pages. Restore validates the
+complete payload before changing the instance and reuses its existing EXRAM
+allocation. Other installed topologies keep their legacy format 1 / revision 6
+or YM format 2 / revision 7 bytes and identities.
+
 ### Linear
 
 The ROM ends at $FFFF: a 16 KiB ROM starts at $C000, a 48 KiB one at $4000. Below its start nothing drives the bus, and
@@ -438,7 +496,7 @@ policies are not new cartridge measurements. Console RESET input remains a
 switch read by software; it does not power-cycle the board.
 
 Behaviour revision 3 first made this board executable. The current public API
-is 7, ABI 1 and behaviour revision 6. The disposable Absolute
+is 8, ABI 1 and latest behaviour revision 8. The disposable Absolute
 tracer copies a version-1 numeric mailbox from fixed ROM and replaces its
 record with a real $4000 read: the independently selected bank-zero tag $5A
 must report value 90. The library, runner and actual libretro module validate

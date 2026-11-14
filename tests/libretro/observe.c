@@ -1271,12 +1271,228 @@ static int observe_ym(const char *fixture_path, const char *output_path)
     return 1;
 }
 
+static uint16_t souper_crc(const uint8_t mailbox[256])
+{
+    uint32_t crc = 0xFFFFu;
+    for (unsigned i = 16u; i < 256u; i++) {
+        crc ^= (uint32_t)mailbox[i] << 8;
+        for (unsigned bit = 0u; bit < 8u; bit++)
+            crc = ((crc << 1) ^ ((crc & 0x8000u) != 0u ? 0x1021u : 0u)) & 0xFFFFu;
+    }
+    return (uint16_t)crc;
+}
+
+static int souper_mailbox(const uint8_t *memory, size_t bytes, char *reason, size_t capacity)
+{
+    static const uint8_t values[20] = {0u,   0u,   64u,  64u,  224u, 160u, 161u, 162u, 162u, 163u,
+                                       163u, 166u, 166u, 167u, 167u, 160u, 161u, 94u,  94u,  224u};
+    if (memory == NULL || bytes < 0xB00u)
+        return fail_reason(reason, capacity, "Souper system RAM mailbox is unavailable");
+    const uint8_t *mailbox = memory + 0xA00u;
+    uint16_t crc = (uint16_t)((uint16_t)mailbox[8] | ((uint16_t)mailbox[9] << 8));
+    if (memcmp(mailbox, "M7DG", 4u) != 0 || mailbox[4] != 1u || mailbox[5] != 0u ||
+        mailbox[6] != sizeof values || mailbox[7] != 22u || crc != souper_crc(mailbox))
+        return fail_reason(reason, capacity,
+                           "Souper mailbox header or CRC differs from literal oracle");
+    for (unsigned i = 0u; i < sizeof values / sizeof values[0]; i++) {
+        const uint8_t *record = mailbox + 16u + 4u * i;
+        if (record[0] != i + 1u || record[1] != 1u || record[2] != values[i] || record[3] != 0u)
+            return fail_reason(reason, capacity,
+                               "Souper mailbox record %u differs from literal oracle", i + 1u);
+    }
+    return 1;
+}
+
+static int observe_souper(const char *fixture_path, const char *output_path)
+{
+    uint8_t *image = NULL;
+    size_t image_bytes = 0u;
+    char fixture_hash[65], reason[256];
+    muhtari_config config = {0};
+    muhtari_media media = {0};
+    muhtari *reference = NULL;
+    struct retro_game_info game = {0};
+    frame_observation frames[12] = {{0}};
+    uint8_t *library_state = NULL, *adapter_state = NULL;
+    size_t library_state_bytes = 0u, adapter_state_bytes = 0u;
+    char library_state_sha256[65], adapter_state_sha256[65];
+
+    OBS_CHECK(read_file(fixture_path, &image, &image_bytes),
+              "cannot read patterned Souper fixture");
+    hash_hex(image, image_bytes, fixture_hash);
+    config.size = (uint32_t)sizeof config;
+    config.allocator.alloc = observer_alloc;
+    config.allocator.free = observer_free;
+    OBS_CHECK(muhtari_create(&config, &reference) == MUHTARI_STATUS_OK,
+              "cannot create independent Souper library instance");
+    media.size = (uint32_t)sizeof media;
+    media.image = image;
+    media.image_size = image_bytes;
+    OBS_CHECK(muhtari_load(reference, &media) == MUHTARI_STATUS_OK,
+              "public library refused patterned Souper fixture");
+
+    retro_set_environment(environment);
+    retro_set_video_refresh(video_refresh);
+    retro_set_audio_sample(audio_sample);
+    retro_set_audio_sample_batch(audio_batch);
+    retro_set_input_poll(input_poll);
+    retro_set_input_state(input_state);
+    retro_init();
+    retro_set_controller_port_device(0u, RETRO_DEVICE_JOYPAD);
+    retro_set_controller_port_device(1u, RETRO_DEVICE_JOYPAD);
+    game.data = image;
+    game.size = image_bytes;
+    OBS_CHECK(retro_load_game(&game), "production native libretro adapter refused Souper fixture");
+
+    OBS_CHECK(save_library_state(reference, &library_state, &library_state_bytes) &&
+                  save_adapter_state(&adapter_state, &adapter_state_bytes),
+              "could not save public library or loaded adapter Souper state");
+    OBS_CHECK(library_state_bytes == adapter_state_bytes,
+              "public library/adapter state sizes differ: %lu/%lu",
+              (unsigned long)library_state_bytes, (unsigned long)adapter_state_bytes);
+    OBS_CHECK(library_state[8] == 3u && library_state[20] == 8u,
+              "public library emitted wrong format/revision: %u/%u", library_state[8],
+              library_state[20]);
+    OBS_CHECK(adapter_state[8] == 3u && adapter_state[20] == 8u,
+              "loaded adapter emitted wrong format/revision: %u/%u", adapter_state[8],
+              adapter_state[20]);
+    hash_hex(library_state, library_state_bytes, library_state_sha256);
+    hash_hex(adapter_state, adapter_state_bytes, adapter_state_sha256);
+    OBS_CHECK(retro_unserialize(adapter_state, adapter_state_bytes) &&
+                  muhtari_load_state(reference, library_state, library_state_bytes) ==
+                      MUHTARI_STATUS_OK &&
+                  adapter_state_unchanged(adapter_state, adapter_state_bytes),
+              "public library or loaded adapter refused its complete Souper snapshot");
+    OBS_CHECK(state_refusals(reference, library_state, library_state_bytes, adapter_state,
+                             adapter_state_bytes, reason, sizeof reason),
+              "Souper invalid snapshot control: %s", reason);
+
+    for (unsigned frame = 0u; frame < 12u; frame++)
+        OBS_CHECK(run_pair_frame(reference, 0u, 0u, frame, -1, frame > 0u, &frames[frame], reason,
+                                 sizeof reason),
+                  "Souper public/native libretro frame %u: %s", frame + 1u, reason);
+
+    uint8_t *library_end = NULL, *adapter_end = NULL;
+    uint8_t *library_replay = NULL, *adapter_replay = NULL;
+    size_t library_end_bytes = 0u, adapter_end_bytes = 0u;
+    size_t library_replay_bytes = 0u, adapter_replay_bytes = 0u;
+    char library_continuation_sha256[65], adapter_continuation_sha256[65];
+    OBS_CHECK(save_library_state(reference, &library_end, &library_end_bytes) &&
+                  save_adapter_state(&adapter_end, &adapter_end_bytes) &&
+                  library_end_bytes == library_state_bytes &&
+                  adapter_end_bytes == adapter_state_bytes,
+              "could not save uninterrupted Souper continuation");
+    hash_hex(library_end, library_end_bytes, library_continuation_sha256);
+    hash_hex(adapter_end, adapter_end_bytes, adapter_continuation_sha256);
+    for (unsigned replay = 0u; replay < 2u; replay++) {
+        OBS_CHECK(muhtari_load_state(reference, library_state, library_state_bytes) ==
+                          MUHTARI_STATUS_OK &&
+                      retro_unserialize(adapter_state, adapter_state_bytes),
+                  "cannot restore Souper baseline for replay %u", replay);
+        for (unsigned frame = 0u; frame < 12u; frame++) {
+            frame_observation observed = {0};
+            OBS_CHECK(run_pair_frame(reference, 0u, 0u, frame, -1, frame > 0u, &observed, reason,
+                                     sizeof reason),
+                      "Souper replay %u frame %u: %s", replay, frame + 1u, reason);
+            OBS_CHECK(same_frame(&observed, &frames[frame]),
+                      "Souper replay %u frame %u differs from uninterrupted mapper observations",
+                      replay, frame + 1u);
+        }
+        OBS_CHECK(save_library_state(reference, &library_replay, &library_replay_bytes) &&
+                      save_adapter_state(&adapter_replay, &adapter_replay_bytes) &&
+                      library_replay_bytes == library_end_bytes &&
+                      adapter_replay_bytes == adapter_end_bytes &&
+                      memcmp(library_replay, library_end, library_end_bytes) == 0 &&
+                      memcmp(adapter_replay, adapter_end, adapter_end_bytes) == 0,
+                  "Souper replay %u final state differs from uninterrupted continuation", replay);
+        free(library_replay);
+        library_replay = NULL;
+        free(adapter_replay);
+        adapter_replay = NULL;
+    }
+
+    muhtari_span library_ram = {0};
+    library_ram.size = (uint32_t)sizeof library_ram;
+    OBS_CHECK(muhtari_get_memory(reference, MUHTARI_MEMORY_SYSTEM_RAM, &library_ram) ==
+                      MUHTARI_STATUS_OK &&
+                  souper_mailbox(library_ram.data, library_ram.bytes, reason, sizeof reason),
+              "public library Souper mailbox: %s", reason);
+    const uint8_t *adapter_ram = (const uint8_t *)retro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+    size_t adapter_bytes = retro_get_memory_size(RETRO_MEMORY_SYSTEM_RAM);
+    OBS_CHECK(souper_mailbox(adapter_ram, adapter_bytes, reason, sizeof reason),
+              "native adapter Souper mailbox: %s", reason);
+    OBS_CHECK(memcmp(library_ram.data + 0xA00u, adapter_ram + 0xA00u, 256u) == 0,
+              "native adapter mailbox differs from public library");
+
+    FILE *out = fopen(output_path, "wb");
+    OBS_CHECK(out != NULL, "cannot create Souper native receipt");
+    fprintf(out,
+            "{\"schema\":4,\"workload\":\"souper\",\"fixture_sha256\":\"%s\","
+            "\"source_identity\":\"%s\",\"numeric_oracles\":{\"width\":320,"
+            "\"height\":242,\"sample_rate\":48000,\"mailbox_values\":["
+            "0,0,64,64,224,160,161,162,162,163,163,166,166,167,167,160,161,94,94,224]},"
+            "\"state\":{\"format\":3,\"behaviour\":8,\"bytes\":%lu,"
+            "\"library_sha256\":\"%s\",\"adapter_sha256\":\"%s\","
+            "\"library_continuation_sha256\":\"%s\","
+            "\"adapter_continuation_sha256\":\"%s\","
+            "\"replays\":2,"
+            "\"refused_null_short_long_corrupt\":true,"
+            "\"preserved_after_refusal\":true,\"malformed_reload_unloaded\":true},"
+            "\"abi\":{\"environment\":{"
+            "\"get_core_options_version\":%u,\"set_core_options\":%u,\"get_variable\":%u,"
+            "\"get_variable_update\":%u,\"set_pixel_format\":%u,\"set_support_no_game\":%u,"
+            "\"set_controller_info\":%u,\"set_input_descriptors\":%u,\"set_memory_maps\":%u,"
+            "\"set_support_achievements\":%u,\"set_message\":%u,"
+            "\"get_savestate_context\":%u},\"pixel_format_xrgb8888\":%u,"
+            "\"device_joypad\":%u,\"joypad_up\":%u,\"memory_system_ram\":%u},\"frames\":[",
+            fixture_hash, MUHTARI_CORE_SOURCE_ID, (unsigned long)library_state_bytes,
+            library_state_sha256, adapter_state_sha256, library_continuation_sha256,
+            adapter_continuation_sha256, (unsigned)RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION,
+            (unsigned)RETRO_ENVIRONMENT_SET_CORE_OPTIONS, (unsigned)RETRO_ENVIRONMENT_GET_VARIABLE,
+            (unsigned)RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE,
+            (unsigned)RETRO_ENVIRONMENT_SET_PIXEL_FORMAT,
+            (unsigned)RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME,
+            (unsigned)RETRO_ENVIRONMENT_SET_CONTROLLER_INFO,
+            (unsigned)RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS,
+            (unsigned)RETRO_ENVIRONMENT_SET_MEMORY_MAPS,
+            (unsigned)RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS,
+            (unsigned)RETRO_ENVIRONMENT_SET_MESSAGE,
+            (unsigned)RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT,
+            (unsigned)RETRO_PIXEL_FORMAT_XRGB8888, (unsigned)RETRO_DEVICE_JOYPAD,
+            (unsigned)RETRO_DEVICE_ID_JOYPAD_UP, (unsigned)RETRO_MEMORY_SYSTEM_RAM);
+    for (unsigned i = 0u; i < 12u; i++)
+        fprintf(out,
+                "%s{\"index\":%u,\"audio_count\":%u,\"video_sha256\":\"%s\","
+                "\"audio_sha256\":\"%s\"}",
+                i == 0u ? "" : ",", i, frames[i].audio_count, frames[i].video_sha256,
+                frames[i].audio_sha256);
+    fputs("]}\n", out);
+    OBS_CHECK(fclose(out) == 0, "cannot finish Souper native receipt");
+    game.size = 16u;
+    OBS_CHECK(!retro_load_game(&game), "loaded native module accepted a malformed Souper reload");
+    OBS_CHECK(retro_serialize_size() == 0u &&
+                  retro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM) == NULL &&
+                  retro_get_memory_size(RETRO_MEMORY_SYSTEM_RAM) == 0u,
+              "malformed native Souper reload did not release the loaded game");
+    retro_unload_game();
+    retro_deinit();
+    muhtari_destroy(reference);
+    free(image);
+    free(adapter_state);
+    free(library_state);
+    free(library_end);
+    free(adapter_end);
+    return 1;
+}
+
 int main(int argc, char **argv)
 {
     if (argc == 2 && strcmp(argv[1], "--ym-self-test") == 0)
         return ym_controls() ? 0 : 1;
     if (argc == 5 && strcmp(argv[1], "--ym-fixture") == 0 && strcmp(argv[3], "--ym-output") == 0)
         return observe_ym(argv[2], argv[4]) ? 0 : 1;
+    if (argc == 5 && strcmp(argv[1], "--souper-fixture") == 0 && strcmp(argv[3], "--output") == 0)
+        return observe_souper(argv[2], argv[4]) ? 0 : 1;
     const char *fixture = NULL, *output = NULL;
     if (argc == 2 && strcmp(argv[1], "--self-test") == 0)
         return self_test();
