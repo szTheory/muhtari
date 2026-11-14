@@ -68,6 +68,7 @@ existing resource, provenance, test and review mechanisms.
 - [x] 22-01-PLAN.md
 - [x] 22-02-PLAN.md
 - [x] 22-03-PLAN.md
+- [x] 22-04-PLAN.md — Verify the generated Souper diagnostic through the loaded native libretro module
 
 Mapper behavior, loader refusals, lifecycle/state, independent diagnostics,
 existing-consumer acceptance, documentation and bounded resource evidence belong

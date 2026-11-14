@@ -15,7 +15,7 @@ covered_files:
   - tests/inventory/ci.txt
   - tests/libretro/host.c
   - tests/libretro/tests.cmake
-covered_digest: "v4:sha256:734d2541859f6641c61884cbb268fe32be8bfdbeb27b0e61553fa4774e3aef6f"
+covered_digest: "v4:sha256:050e18b12bf53139fa6157b5507c6478ed8a2ab06ad1995c29387a1b91e0a910"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:

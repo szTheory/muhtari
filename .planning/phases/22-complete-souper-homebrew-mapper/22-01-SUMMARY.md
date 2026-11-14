@@ -6,7 +6,7 @@ tags: [souper, cartridge, diagnostics, libretro, emscripten]
 
 requires:
   - phase: 21-measured-milestone-tune-up
-    provides: Selected v7.0 Souper mapper scope and source-qualified evidence boundaries
+    provides: Source-qualified shipped baseline and bounded milestone tune-up records for the already-selected v7.0 scope
 provides:
   - Exact v3/v4 admission and refusal rules for the 512 KiB Souper software profile
   - Initial CPU/MARIA map with zeroed, instance-owned 32 KiB EXRAM

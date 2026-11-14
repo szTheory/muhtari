@@ -73,7 +73,11 @@ scope, authority, risk, cost or irreversible-action boundary. Start useful autom
 verification early, including integration, end-to-end, smoke and seam checks. A
 throwaway local check is valid; retain a check in CI only for recurring regression
 value. Inspect each CI/release run for measured iteration-time improvements while
-preserving its required coverage. This is standing guidance, not another UAT gate.
+preserving its required coverage. Put cheap, deterministic consistency and sanity
+checks ahead of long builds or suites when they can catch a likely failure early;
+keep them narrowly tied to that failure mode rather than adding setup with no useful
+screening value. Treat one run as a lead, not enough evidence for structural,
+timeout, or cache changes. This is standing guidance, not another UAT gate.
 
 Owner reaffirmation, 2026-11-11: use upstream scoping to keep milestone and later
 phase work directionally correct and economical. Retain the high-signal result,
