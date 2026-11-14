@@ -1,8 +1,8 @@
 ---
 phase: 22-complete-souper-homebrew-mapper
-verified: 2026-11-14T06:21:57Z
-status: passed
-score: "8/8 must-haves verified"
+verified: 2026-11-14T07:06:40Z
+status: gaps_found
+score: "7/8 must-haves verified; 1 partial"
 covered_files:
   - .planning/phases/22-complete-souper-homebrew-mapper/22-01-PLAN.md
   - .planning/phases/22-complete-souper-homebrew-mapper/22-01-SUMMARY.md
@@ -60,7 +60,7 @@ covered_files:
   - tests/runner/tests.cmake
   - tests/state-compat/CMakeLists.txt
 covered_digest: "v4:sha256:d9608a69c7f2be089206be53fc76b914d54d2c9b15450be5e7f90b1a64697d44"
-behavior_unverified: 0
+behavior_unverified: 1
 overrides_applied: 0
 decision_coverage:
   honored: 9
@@ -87,12 +87,12 @@ decision_coverage:
 | 4 | Reset, unload/reload and separate instances initialize and own mapper latches and EXRAM deterministically. | ✓ VERIFIED | `core.souper.lifecycle` passed. `cart_reset` clears the mapper latches and the full instance-owned RAM span; cart install checks and allocates the complete ROM+EXRAM extent before replacing live content. |
 | 5 | Souper format-3 / behavior-8 state restores every latch and EXRAM byte into existing storage; malformed state is rejected before mutation or allocation. | ✓ VERIFIED | `core.state.souper` passed. `src/state.c` visits all Souper latches and the full EXRAM span, validates envelope, topology and payload before apply, and uses existing allocation. The focused test covers continuation and repaired-integrity semantic faults. |
 | 6 | Existing legacy format-1 / behavior-6 and YM format-2 / behavior-7 state bytes and continuation remain compatible in both directions; API 8 / ABI 1 remain unchanged. | ✓ VERIFIED | Reran `tests/core/state_compat.cmake` against the current `a2efefb` library and genuine pre-Souper producer. Exit 0: 10 pre-Souper legacy cases, 2 pre-Souper YM cases, 10 historical cases, both producer/consumer directions, and semantic/content refusal controls passed. `src/instance.c` selects version 3/8 only for the Souper topology. |
-| 7 | The same generated diagnostic works through the public C library, headless runner, loaded libretro module and production portable module, and `$8007` adds no BupChip audio behavior. | ✓ VERIFIED | The diagnostic test links the public library and invokes the real runner with the owned fixture and literal oracle. `libretro.observe.souper` and `libretro.host.souper` passed with fixture dependencies and load the actual module. The actual production Wasm host passed 12-frame native-parity, mailbox and format-3 state verification. `souper_audio_event` rejects any event/audio side effect from the mapper-only register. |
+| 7 | The same generated diagnostic works through the public C library, headless runner, loaded libretro module and production portable module, and `$8007` adds no BupChip audio behavior. | ⚠ PARTIAL | The public library, runner, statically linked libretro observer and production Wasm host pass their generated-image/literal-oracle checks. The dynamically loaded native test checks Souper memory descriptors with a separate program; it does not load the generated diagnostic or exercise Souper save/restore continuation. `$8007` audio controls pass. |
 | 8 | Integrator docs describe the exact profile, reset/EXRAM and snapshot policy, unsupported forms, and software-model evidence limits without claiming physical-cartridge accuracy. | ✓ VERIFIED | `docs/hardware/cartridge.md`, `docs/runner.md`, `docs/libretro.md`, `docs/testing.md` and `docs/emscripten-hosting.md` agree on the profile, state versions and host boundaries. The diagnostic fixture is generated and listed as owned; no copyrighted image is used. The phase review is clean, and the local quality receipt has zero ABI findings, zero warnings and archive size within the established ceiling. |
 
-**Score:** 8/8 truths verified (0 present, behavior-unverified)
+**Score:** 7/8 truths verified; truth 7 is partial.
 
-All five roadmap success criteria are covered by truths 1–8. All seven SOUPER requirements are mapped below. No behavior-dependent truth was left at symbol-presence evidence alone: state, lifecycle, HALT transition and consumer replay have passing behavioral checks.
+The first four roadmap success criteria pass. The fifth is partial until the same generated diagnostic and a restored continuation run through the dynamically loaded native libretro module. All seven SOUPER requirements remain mapped below; SOUPER-04 and SOUPER-06 are partial at that consumer seam.
 
 ## Deferred Items
 
@@ -126,7 +126,7 @@ The query matcher did not recognize C and CMake data-flow links as direct source
 | `tests/libretro/observe.c` | `tests/emscripten/host.mjs` | Same fixture and source-qualified result | WIRED | Native observer writes schema-4 receipt; portable host consumes it and executes the production Wasm module. |
 | `src/cart.c` | `src/bus.c` | Tick-aware DMA reader identity | WIRED | `muhtari__cart_dma_read` asks the bus which reader is selected at the DMA tick. |
 | `tests/diag/souper.s` | `tests/diag/driver.c` | Real CPU/MARIA stimuli | WIRED | CMake assembles the owned template, creates the generated image, and passes it to the driver/runner tests. |
-| `libretro/libretro.c` | `tests/libretro/host.c` | Loaded-core memory descriptors | WIRED | `libretro.host.souper` loads the module and checks descriptors across mapper changes. |
+| `libretro/libretro.c` | `tests/libretro/host.c` | Loaded-core memory descriptors and generated Souper continuation | PARTIAL | The loaded host checks descriptors across mapper changes using a separate ROM program; it does not load the generated Souper diagnostic or test loaded-module save/restore. |
 | `src/state.c` | `src/internal.h` | Serialized mutable latches and EXRAM | WIRED | Visitor fields correspond to instance-owned latches and the full RAM span; topology validation checks size. |
 | `src/instance.c` | `src/state.c` | Topology-specific format version | WIRED | Version selection follows the loaded cartridge topology: legacy 1/6, YM 2/7, Souper 3/8. |
 | `tests/core/test_state.c` | `tests/diag/driver.c` | Restore and independent mapping continuation | WIRED | Both paths load state then judge subsequent CPU/MARIA values; state tests retain their own expected values, and the diagnostic uses the separate literal CSV oracle. |
@@ -152,7 +152,7 @@ No rendered/dynamic value ends in a static return, mock, or hardcoded empty prop
 | Transactional Souper state | `ctest --test-dir build/ci --output-on-failure --no-tests=error -R '^core[.]state[.]souper$'` | Passed 1/1. | PASS |
 | MARIA/HALT transition | `ctest --test-dir build/ci --output-on-failure --no-tests=error -R '^bus[.]souper[.]halt_views$'` | Passed 1/1. | PASS |
 | Public library and headless runner diagnostic | `ctest --test-dir build/ci --output-on-failure --no-tests=error -R '^diag[.]souper_tracer$'` | Passed; real CPU/mailbox and MARIA/pixel expectations were evaluated. | PASS |
-| Native loaded libretro observers | `ctest --test-dir build/ci --output-on-failure --no-tests=error -R '^libretro[.]observe[.]souper$'` and `... -R '^libretro[.]host[.]souper$'` | Observer plus fixture and loaded-host plus its fixture dependencies passed (2/2 and 3/3). | PASS |
+| Static observer and loaded libretro module | `ctest --test-dir build/ci --output-on-failure --no-tests=error -R '^libretro[.]observe[.]souper$'` and `... -R '^libretro[.]host[.]souper$'` | The observer exercises the generated diagnostic but compiles `libretro.c` into the test executable. The loaded module test exercises stable descriptors with a separate program; it does not exercise the generated diagnostic/state continuation through that module. | PARTIAL |
 | Prior state compatibility | `cmake -DROOT="$PWD" -DOLD_SOURCE="$PWD/.worktrees/ym-state-baseline" -DOLD_BUILD="$PWD/build/v6-state-baseline" -DPRE_SOURCE="$PWD/.worktrees/22-03-pre-souper" -DPRE_BUILD="$PWD/build/22-03-pre-souper" -DNEW_BUILD="$PWD/build/ci" -DWORK="$PWD/build/22-verify-state-compat" -DMODE=controls -P tests/core/state_compat.cmake` | Exit 0; current `a2efefb` is recorded in `result.json`; all legacy/YM matrices and controls passed. | PASS |
 | Production portable Wasm consumer | `node tests/emscripten/host.mjs --module build/emscripten/libretro/muhtari_libretro.mjs --fixture build/ci/tests/diag/souper/souper.a78 --native build/ci/tests/emscripten/souper-native.json --mode verify` | Passed: 12 native-parity frames, mailbox and format-3 state. | PASS |
 | Portable CTest wrapper on host | `ctest --test-dir build/emscripten --output-on-failure --no-tests=error -R '^emscripten[.]souper$'` | Not Run: this build tree was configured in the pinned container and refers to `/src/.../cmake`, which is unavailable on the host. The same registered production host script and generated artifacts passed directly above. | SKIP (environment path) |
@@ -171,9 +171,9 @@ Not applicable. No phase plan declares a shell probe, no probe markers occur in 
 | SOUPER-01 | 22-01, 22-03 | Exact declarations/geometry and refusal before allocation or mutation | SATISFIED | Profile and no-allocation tests passed; parser/install trace and docs agree. |
 | SOUPER-02 | 22-01, 22-02, 22-03 | CPU bank, aliases, EXRAM modes and boundaries | SATISFIED | CPU test and generated tracer passed against independent literal rows. |
 | SOUPER-03 | 22-02, 22-03 | Separate MARIA character/fetch mapping and HALT transition | SATISFIED | Bus transition and diagnostic tests passed. |
-| SOUPER-04 | 22-01, 22-03 | Lifecycle, instance ownership, complete snapshots and transactional refusal | SATISFIED | Lifecycle/state tests and current-source compatibility harness passed. |
+| SOUPER-04 | 22-01, 22-03 | Lifecycle, instance ownership, complete snapshots and transactional refusal | PARTIAL | Core and portable continuation pass; loaded native module continuation has not been exercised with the generated Souper diagnostic. |
 | SOUPER-05 | 22-01, 22-02, 22-03 | Owned pattern, independent literal expectations and malformed/non-Souper controls | SATISFIED | Owned fixture is admitted by the manifest; literal diagnostic and controls are wired and passed. |
-| SOUPER-06 | 22-01, 22-02, 22-03 | Public C, runner, loaded libretro, portable consumer; no BupChip audio | SATISFIED | Public diagnostic, separate runner, loaded module and Wasm consumer checks passed; audio event check rejects mapper audio. |
+| SOUPER-06 | 22-01, 22-02, 22-03 | Public C, runner, loaded libretro, portable consumer; no BupChip audio | PARTIAL | Public diagnostic, separate runner, static observer and Wasm consumer pass; the generated diagnostic is missing from the dynamically loaded native module path. |
 | SOUPER-07 | 22-01, 22-02, 22-03 | Integrator profile, reset/state policy, unsupported forms and evidence limits | SATISFIED | Public cartridge, runner, libretro, testing and Emscripten docs reviewed against implementation. |
 
 **Orphaned requirements:** None. REQUIREMENTS.md assigns exactly SOUPER-01 through SOUPER-07 to Phase 22, and all appear in the plans.
@@ -182,7 +182,7 @@ Not applicable. No phase plan declares a shell probe, no probe markers occur in 
 
 - The expected mapping bytes are literal checked-in rows; test setup generates fixture and report outputs but does not calculate expected values from the production mapper or learn them from a successful run.
 - Numeric CPU assertions, pixel/MARIA assertions, state continuation, state refusal and HALT transition are value/behavior-level checks. Consumer hashes are integration receipts after independent judgments, not the only oracle.
-- The tests load the public library, run `muhtari-run`, load the libretro module and execute the production Wasm module. No mock emulator substitutes for those consumers.
+- The tests load the public library, run `muhtari-run`, compile the libretro observer directly, load the native module for descriptor checks, and execute the production Wasm module. The generated Souper diagnostic is not yet connected to loaded native-module save/restore; a mock emulator is not involved.
 - Test registration is present in the core, cart, bus, diagnostic, libretro and portable CMake files and CI/portable inventories. No phase-added disabled tests, skipped placeholders, or circular expected-value paths were found.
 - Test-generated files are fixture builds, run reports, state images and explicit negative-control inputs; the immutable expected mapping table remains checked in.
 
@@ -200,11 +200,13 @@ None. The acceptance claims are deterministic core, state, loaded-module and off
 
 `22-CONTEXT.md` decision coverage is 9/9 honored. No decision override was applied.
 
-## Gaps Summary
+## Integration Gap Summary
 
-No goal gaps remain. The host-side CTest wrapper for the container-built Emscripten tree could not find its container-only `/src` CMake path; the actual production Node/Wasm consumer passed directly using the built module, generated fixture and native receipt. This is a local wrapper-path limitation, not an unresolved product behavior. The clean review at `13d4982` has no open findings, and no implementation files changed after it. No human action is needed.
+The milestone integration checker traced the code and CTest registration and found one partial native libretro path. `libretro.host.souper` dynamically loads the production module, but its descriptor case uses a separate inline ROM program; `libretro.observe.souper` consumes the generated Souper image through an observer that compiles `libretro.c` into its test executable. The loaded module is not yet tested with the generated Souper diagnostic or with save/restore continuation.
+
+This leaves the loaded-native portion of the Phase 22 Plan 22-03 acceptance unmet and SOUPER-04/SOUPER-06 partial. Close it with a focused loaded-module test that loads the generated fixture, judges the literal CPU/MARIA observations, serializes at a fixed diagnostic boundary, restores, and compares the continued observations; retain malformed-state refusal coverage. No product defect has been demonstrated. The host-side CTest wrapper for the container-built Emscripten tree remains unavailable at its container-only `/src` path, while the actual production Node/Wasm consumer passed directly.
 
 ---
 
-_Verified: 2026-11-14T06:21:57Z_  
+_Verified: 2026-11-14T07:06:40Z_
 _Verifier: the agent (gsd-verifier)_
