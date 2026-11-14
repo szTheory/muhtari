@@ -1350,6 +1350,8 @@ static int observe_souper(const char *fixture_path, const char *output_path)
     OBS_CHECK(library_state_bytes == adapter_state_bytes,
               "public library/adapter state sizes differ: %lu/%lu",
               (unsigned long)library_state_bytes, (unsigned long)adapter_state_bytes);
+    OBS_CHECK(memcmp(library_state, adapter_state, library_state_bytes) == 0,
+              "public library/adapter initial Souper snapshot bytes differ");
     OBS_CHECK(library_state[8] == 3u && library_state[20] == 8u,
               "public library emitted wrong format/revision: %u/%u", library_state[8],
               library_state[20]);
