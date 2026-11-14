@@ -1,5 +1,14 @@
 cmake_minimum_required(VERSION 3.25)
 
+function(souper_valid_sha256 result digest)
+  string(LENGTH "${digest}" digest_length)
+  if("${digest}" MATCHES "^[0-9a-f]+$" AND digest_length EQUAL 64)
+    set(${result} TRUE PARENT_SCOPE)
+  else()
+    set(${result} FALSE PARENT_SCOPE)
+  endif()
+endfunction()
+
 foreach(required OBSERVER FIXTURE OUT EMULATOR SOURCE_ID_FILE)
   if(NOT DEFINED ${required})
     message(FATAL_ERROR "souper observer: -D${required} is required")
@@ -36,6 +45,10 @@ string(JSON failed_reload_unloaded ERROR_VARIABLE failed_reload_error GET "${jso
 string(JSON frame_count ERROR_VARIABLE frames_error LENGTH "${json}" frames)
 string(LENGTH "${fixture_hash}" fixture_hash_length)
 string(LENGTH "${source_identity}" source_identity_length)
+souper_valid_sha256(library_state_hash_valid "${library_state_hash}")
+souper_valid_sha256(adapter_state_hash_valid "${adapter_state_hash}")
+souper_valid_sha256(library_continuation_hash_valid "${library_continuation_hash}")
+souper_valid_sha256(adapter_continuation_hash_valid "${adapter_continuation_hash}")
 if(schema_error OR workload_error OR fixture_error OR source_error OR width_error OR height_error OR
     state_error OR state_behaviour_error OR state_bytes_error OR library_state_error OR adapter_state_error OR
     library_continuation_error OR adapter_continuation_error OR replay_count_error OR refused_states_error OR
@@ -47,9 +60,8 @@ if(schema_error OR workload_error OR fixture_error OR source_error OR width_erro
     NOT source_identity STREQUAL expected_source_identity OR
     NOT width EQUAL 320 OR NOT height EQUAL 242 OR NOT state_format EQUAL 3 OR
     NOT state_behaviour EQUAL 8 OR NOT state_bytes GREATER 32768 OR
-    NOT library_state_hash MATCHES "^[0-9a-f]+$" OR NOT adapter_state_hash MATCHES "^[0-9a-f]+$" OR
-    NOT library_continuation_hash MATCHES "^[0-9a-f]+$" OR
-    NOT adapter_continuation_hash MATCHES "^[0-9a-f]+$" OR
+    NOT library_state_hash_valid OR NOT adapter_state_hash_valid OR
+    NOT library_continuation_hash_valid OR NOT adapter_continuation_hash_valid OR
     NOT replay_count EQUAL 2 OR
     NOT refused_states OR NOT preserved_refusal OR NOT failed_reload_unloaded OR
     NOT frame_count EQUAL 12)
@@ -80,4 +92,10 @@ foreach(i RANGE 0 11)
     message(FATAL_ERROR "Souper native frame receipt ${i} is incomplete")
   endif()
 endforeach()
-message(STATUS "Souper native receipt: public library and loaded libretro module replayed 12 judged frames twice; malformed states preserved both consumers")
+string(REPEAT "0" 64 full_hash_control)
+souper_valid_sha256(full_hash_accepted "${full_hash_control}")
+souper_valid_sha256(truncated_hash_accepted "0")
+if(NOT full_hash_accepted OR truncated_hash_accepted)
+  message(FATAL_ERROR "Souper native state SHA-256 validator accepted a truncated digest")
+endif()
+message(STATUS "Souper native receipt: public library and loaded libretro module replayed 12 judged frames twice; malformed states preserved both consumers; truncated digest rejected")
