@@ -339,6 +339,16 @@ if(DIAG_BANKSET_RUN)
   return()
 endif()
 
+if(DIAG_SOUPER_RUN)
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --souper-case
+    "${ROOT}/tests/diag/souper.a78"
+    RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 30)
+  if(NOT rc STREQUAL "0")
+    message(FATAL_ERROR "souper initial-map load: ${rc}: ${out}${err}")
+  endif()
+  return()
+endif()
+
 # Sustained acceptance is never shortened by MUHTARI_SHORT_RUNS. Numeric
 # startup/full-frame judgment runs before any native/raw/PCM equality row.
 if(DIAG_PAL_RUN)
@@ -853,6 +863,7 @@ muhtari_add_test(NAME diag.controllers COMMAND ${CMAKE_COMMAND} -P ${diag_contro
   LABELS diag portable TIMEOUT 30)
 
 set(diag_bankset ${PROJECT_BINARY_DIR}/tests/diag/bankset.cmake)
+set(diag_souper ${PROJECT_BINARY_DIR}/tests/diag/souper.cmake)
 set(diag_expansion ${PROJECT_BINARY_DIR}/tests/diag/expansion.cmake)
 file(GENERATE OUTPUT ${diag_expansion} CONTENT
 "set(DIAG_EXPANSION_RUN TRUE)
@@ -881,6 +892,15 @@ set(EMULATOR [==[${CMAKE_CROSSCOMPILING_EMULATOR}]==])
 include([==[${CMAKE_CURRENT_LIST_FILE}]==])
 ")
 muhtari_add_test(NAME diag.bankset_tracer COMMAND ${CMAKE_COMMAND} -P ${diag_bankset}
+  LABELS diag portable TIMEOUT 30)
+file(GENERATE OUTPUT ${diag_souper} CONTENT
+"set(DIAG_SOUPER_RUN TRUE)
+set(ROOT [==[${PROJECT_SOURCE_DIR}]==])
+set(DRIVER [==[$<TARGET_FILE:muhtari-test-diag>]==])
+set(EMULATOR [==[${CMAKE_CROSSCOMPILING_EMULATOR}]==])
+include([==[${CMAKE_CURRENT_LIST_FILE}]==])
+")
+muhtari_add_test(NAME diag.souper_tracer COMMAND ${CMAKE_COMMAND} -P ${diag_souper}
   LABELS diag portable TIMEOUT 30)
 # Each test writes its own tree, so neither reads the other's half-written files under parallel ctest.
 set(diag_bankset_matrix ${PROJECT_BINARY_DIR}/tests/diag/bankset-matrix.cmake)

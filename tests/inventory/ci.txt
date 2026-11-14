@@ -476,6 +476,7 @@ diag.rebuild	built,portable
 diag.rebuild.self_test	built,portable
 diag.retail	diag,portable
 diag.sg144	diag,portable
+diag.souper_tracer	diag,portable
 docs.api_names	policy
 docs.api_names.self_test	policy
 docs.budgets	policy

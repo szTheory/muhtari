@@ -1270,6 +1270,36 @@ static int controller_library(const char *path, const char *expected, const char
     return failed;
 }
 
+static int souper_case(const char *path)
+{
+    size_t bytes = 0u;
+    uint8_t *image = read_file(path, &bytes);
+    muhtari_config config = {0};
+    muhtari_media media = {0};
+    muhtari *m = NULL;
+    config.size = (uint32_t)sizeof config;
+    config.allocator.alloc = diag_alloc;
+    config.allocator.free = diag_free;
+    media.size = (uint32_t)sizeof media;
+    media.image = image;
+    media.image_size = bytes;
+    muhtari_status status = image == NULL ? MUHTARI_STATUS_ERR_ARGUMENT : muhtari_create(&config, &m);
+    if (status == MUHTARI_STATUS_OK)
+        status = muhtari_load(m, &media);
+    int failed = status != MUHTARI_STATUS_OK;
+    if (failed)
+        fprintf(stderr, "souper: expected initial-map image to load, got status %u\n",
+                (unsigned)status);
+    if (!failed && (m->cart.info.board != MUHTARI_BOARD_SOUPER ||
+                    m->cart.info.rom_size != 512u * 1024u || m->cart.info.ram_size != 32u * 1024u)) {
+        fprintf(stderr, "souper: loaded profile geometry mismatch\n");
+        failed = 1;
+    }
+    muhtari_destroy(m);
+    free(image);
+    return failed;
+}
+
 static int retail_library(const uint8_t *image, size_t n, const char *rom)
 {
     muhtari_config cfg = {0};
@@ -2906,6 +2936,8 @@ pal_cleanup:
 
 int main(int argc, char **argv)
 {
+    if (argc == 3 && strcmp(argv[1], "--souper-case") == 0)
+        return souper_case(argv[2]);
     if ((argc == 6 || argc == 7) && strcmp(argv[1], "--expansion-refuse") == 0) {
         expansion_case = 1;
         expansion_profile =
