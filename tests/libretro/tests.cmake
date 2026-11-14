@@ -237,12 +237,12 @@ if(TARGET muhtari_libretro)
     FIXTURES_REQUIRED "built_simple;built_openbios")
   # Fault prevented: an achievement map that points rcheevos at the wrong
   # bytes, a register, or a banked window.
-  muhtari_add_test(NAME libretro.host.memory_map
+  muhtari_add_test(NAME libretro.host.souper
     COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> memory_map
       ${libretro_input_cart} ${MUHTARI_BUILT_DIR}/doublebuffer/doublebuffer.bas.a78
       ${PROJECT_SOURCE_DIR}/tests/diag/sg144.a78
     LABELS libretro portable TIMEOUT 1)  # 2 x 0.08 s, Linux x64, slowest of 10 runs, run 39373524239
-  set_tests_properties(libretro.host.memory_map PROPERTIES
+  set_tests_properties(libretro.host.souper PROPERTIES
     FIXTURES_REQUIRED "input_carts;built_doublebuffer")
 
   muhtari_add_test(NAME libretro.host.audio

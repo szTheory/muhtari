@@ -276,7 +276,7 @@ Atari 7800 console (number 51) addresses memory, and tells the frontend that it 
 | $1800-$27FF | system RAM, 4 KiB, flagged as system RAM |
 | $2800-$2FFF | system RAM's second half, $2000-$27FF, again |
 | $3000-$3FFF | the installed HSC ROM or signature stub, read-only, only when HSC is attached |
-| $4000-$7FFF | cartridge RAM, when the board has unbanked RAM, except Fractalus as below |
+| $4000-$7FFF | cartridge RAM, when the board has a stable unbanked window, except Fractalus as below |
 | ROM | the fixed ROM, read-only: linear ROM; SuperGame's last bank at $C000 and, without RAM, its fixed bank at $4000; Absolute and Fractalus at $8000-$FFFF; Activision's four fixed windows below |
 
 Everything else has no memory behind it: the TIA, MARIA and RIOT registers, absent HSC ranges, banked windows and the
@@ -298,6 +298,14 @@ all cartridge windows at $4000-$7FFF remain holes for the entire session, even
 while expansion RAM is disabled. XM's HSC SRAM and ROM windows remain holes
 regardless of their gate. Physical cartridge/expansion RAM and HSC SAVE_RAM
 retain their dedicated storage access and lifetime independently of these holes.
+
+Souper publishes only EXRAM's fixed first 8 KiB at $4000-$5FFF and the fixed
+final CPU ROM bank at $C000-$FFFF. The $6000-$7FFF EXRAM pages and switchable
+$8000-$BFFF ROM bank remain holes because legal mapper writes can change their
+backing. If an expansion overlays $4000-$7FFF, that whole cartridge region
+stays a hole; the upper fixed ROM remains stable. These descriptors are
+checked through the loaded module before and after a ROM changes Souper's
+segment, page, and bank registers.
 
 BankSet descriptors expose only the CPU ROM half: linear sets end at $FFFF,
 and switched sets expose the last bank at $C000 plus the second-to-last at

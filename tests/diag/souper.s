@@ -137,6 +137,8 @@ reset SUBROUTINE
         ldy #20
         jsr mb_record
         jsr mb_finish
+        lda #0
+        sta $D003 ; restore flat EXRAM for the real MARIA EXRAM pixel workload
         ; The mailbox samples the power-on zeros first. Then graphics at $4000
         ; exercise the same EXRAM through MARIA's real DMA fetches.
         lda #$40

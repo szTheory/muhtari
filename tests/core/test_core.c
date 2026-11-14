@@ -3561,6 +3561,9 @@ static void make_core_souper(void)
     fixed[0] = 0x4Cu; /* JMP $C000, fixed in the final 16 KiB ROM bank. */
     fixed[1] = 0x00u;
     fixed[2] = 0xC0u;
+    body[0x10080u] = 0xC1u; /* Character A, selector $21, row/address $A000. */
+    body[0x10180u] = 0xC2u; /* Character A, preserved A8/row bit. */
+    body[0x21000u] = 0xC3u; /* Character B, selector $42. */
     body[CORE_SOUPER_BODY - 4u] = 0x00u;
     body[CORE_SOUPER_BODY - 3u] = 0xC0u;
 }
@@ -3639,6 +3642,27 @@ static void souper_cpu(void)
     CHECK_EQ_U64(m->cart.souper_character_b, 0x5Au);
     CHECK_EQ_U64(m->synth.pokeys, 0u);
     CHECK_EQ_U64(m->synth.ym_installed, 0u);
+
+    /* Character A/B, row bits and the A12 alias change MARIA alone. */
+    muhtari__cart_write(m, 0x8001u, 0x21u);
+    muhtari__cart_write(m, 0x8002u, 0x42u);
+    m->bus.maria_from = 1u;
+    m->bus.maria_until = 2u;
+    muhtari__cart_write(m, 0x8003u, 2u);
+    CHECK_EQ_U64(muhtari__cart_read(m, 0xC000u, 0), 0x4Cu);
+    CHECK_EQ_U64(muhtari__cart_dma_read(m, 0xA000u, 1u), 0xC1u);
+    CHECK_EQ_U64(muhtari__cart_dma_read(m, 0xA100u, 1u), 0xC2u);
+    CHECK_EQ_U64(muhtari__cart_dma_read(m, 0xA080u, 1u), 0xC3u);
+    CHECK_EQ_U64(muhtari__cart_dma_read(m, 0xB000u, 1u), 0xC1u);
+    CHECK_EQ_U64(muhtari__cart_dma_read(m, 0x9FFFu, 1u), 0x5Fu);
+    CHECK_EQ_U64(muhtari__cart_dma_read(m, 0xA000u, 0u), 0x5Fu);
+
+    /* Fetch trapping and character mapping combine with segmented EXRAM;
+       only MARIA's upper window changes while the CPU fixed ROM remains. */
+    muhtari__cart_write(m, 0x8003u, 7u);
+    CHECK_EQ_U64(muhtari__cart_dma_read(m, 0xC000u, 1u), 0xA0u);
+    CHECK_EQ_U64(muhtari__cart_dma_read(m, 0xE000u, 1u), 0xA7u);
+    CHECK_EQ_U64(muhtari__cart_read(m, 0xC000u, 0), 0x4Cu);
 
     /* Undefined command registers are intentionally inert in this mapper-only
        profile; no audio route is installed or queued. */

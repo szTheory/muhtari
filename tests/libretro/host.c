@@ -2167,6 +2167,53 @@ static void case_memory_map(void)
         CHECK_EQ_U64(memory_map->num_descriptors, 0u);
         CHECK_EQ_U64(p_get_memory_size(RETRO_MEMORY_SAVE_RAM), 0u);
     }
+
+    /* The real loaded module must keep only Souper's stable CPU windows in
+       its descriptors while a ROM program changes every mapper control. */
+    static uint8_t souper_image[128u + 512u * 1024u];
+    static const uint8_t souper_program[] = {
+        0xA9u, 0x07u, 0x8Du, 0x03u, 0x80u, /* segment, character and fetch trap */
+        0xA9u, 0x06u, 0x8Du, 0x04u, 0x80u, /* video page */
+        0xA9u, 0x07u, 0x8Du, 0x05u, 0x80u, /* data page */
+        0xA9u, 0x1Fu, 0x8Du, 0xF8u, 0xFFu, /* paged ROM bank */
+        0xA9u, 0x5Au, 0x8Du, 0x00u, 0x18u, /* prove the program ran */
+        0x4Cu, 0x19u, 0xC0u
+    };
+    static const want_span souper[] = {
+        SHARED_SPANS,
+        {0x4000u, 0x6000u, CART_RAM, 0u, 0u},
+        {0xC000u, 0x10000u, ROM, 128u + 512u * 1024u - 0x4000u,
+         RETRO_MEMDESC_CONST}
+    };
+    struct retro_game_info souper_game = {0};
+    souper_game.data = souper_image;
+    souper_game.size = images_a78(souper_image, 3u, 512u * 1024u, 0x1000u, 512u * 1024u);
+    uint8_t *fixed = souper_image + 128u + 31u * 16384u;
+    memcpy(fixed, souper_program, sizeof souper_program);
+    for (unsigned vector = 0u; vector < 3u; vector++) {
+        fixed[0x3FFAu + vector * 2u] = 0x00u;
+        fixed[0x3FFBu + vector * 2u] = 0xC0u;
+    }
+    set_var("muhtari_expansion", "off");
+    set_var("muhtari_hsc", "off");
+    memory_map = NULL;
+    p_set_environment(env);
+    p_init();
+    p_set_video_refresh(video);
+    p_set_audio_sample(sample);
+    p_set_audio_sample_batch(batch);
+    p_set_input_poll(on_poll);
+    p_set_input_state(input);
+    CHECK_EQ_U64(p_load_game(&souper_game), 1u);
+    check_map(souper, 7u, souper_image);
+    p_run();
+    uint8_t *program_ram = (uint8_t *)p_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+    CHECK(program_ram != NULL);
+    if (program_ram != NULL)
+        CHECK_EQ_U64(program_ram[0], 0x5Au);
+    check_map(souper, 7u, souper_image);
+    p_unload_game();
+    p_deinit();
     set_var("muhtari_expansion", "auto");
     set_var("muhtari_hsc", "auto");
     stop();

@@ -126,6 +126,7 @@ bus.open_bus.unmapped	portable,riot
 bus.open_bus.write_only	portable,riot
 bus.rdy.holds_reads_only	portable,sally
 bus.rdy.rmw_completes_both_writes	portable,sally
+bus.souper.halt_views	bus,portable
 cart.identify.2600_prefix	cart,portable
 cart.identify.activision_swap	cart,portable
 cart.identify.bundled_has_no_test_entries	cart,portable

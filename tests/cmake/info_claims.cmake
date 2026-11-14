@@ -13,7 +13,7 @@ endforeach()
 # Claim to the test that proves it. is_experimental is a warning label, not
 # a capability, so it needs no test.
 set(claim_supports_no_game libretro.host.xrgb8888)
-set(claim_memory_descriptors libretro.host.memory_map)
+set(claim_memory_descriptors libretro.host.souper)
 set(claim_input_descriptors libretro.host.devices)
 set(claim_core_options libretro.host.options)
 set(claim_firmware0_opt libretro.host.bios)

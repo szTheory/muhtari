@@ -1284,15 +1284,18 @@ static uint16_t souper_crc(const uint8_t mailbox[256])
 
 static int souper_mailbox(const uint8_t *memory, size_t bytes, char *reason, size_t capacity)
 {
-    static const uint8_t values[5] = {0u, 0u, 64u, 64u, 224u};
+    static const uint8_t values[20] = {
+        0u, 0u, 64u, 64u, 224u, 160u, 161u, 162u, 162u, 163u,
+        163u, 166u, 166u, 167u, 167u, 160u, 161u, 94u, 94u, 224u
+    };
     if (memory == NULL || bytes < 0xB00u)
         return fail_reason(reason, capacity, "Souper system RAM mailbox is unavailable");
     const uint8_t *mailbox = memory + 0xA00u;
     uint16_t crc = (uint16_t)((uint16_t)mailbox[8] | ((uint16_t)mailbox[9] << 8));
     if (memcmp(mailbox, "M7DG", 4u) != 0 || mailbox[4] != 1u || mailbox[5] != 0u ||
-        mailbox[6] != 5u || mailbox[7] != 22u || crc != souper_crc(mailbox))
+        mailbox[6] != sizeof values || mailbox[7] != 22u || crc != souper_crc(mailbox))
         return fail_reason(reason, capacity, "Souper mailbox header or CRC differs from literal oracle");
-    for (unsigned i = 0u; i < 5u; i++) {
+    for (unsigned i = 0u; i < sizeof values / sizeof values[0]; i++) {
         const uint8_t *record = mailbox + 16u + 4u * i;
         if (record[0] != i + 1u || record[1] != 1u || record[2] != values[i] || record[3] != 0u)
             return fail_reason(reason, capacity, "Souper mailbox record %u differs from literal oracle",
@@ -1374,7 +1377,8 @@ static int observe_souper(const char *fixture_path, const char *output_path)
     fprintf(out,
             "{\"schema\":3,\"workload\":\"souper\",\"fixture_sha256\":\"%s\","
             "\"source_identity\":\"%s\",\"numeric_oracles\":{\"width\":320,"
-            "\"height\":242,\"sample_rate\":48000,\"mailbox_values\":[0,0,64,64,224],"
+            "\"height\":242,\"sample_rate\":48000,\"mailbox_values\":["
+            "0,0,64,64,224,160,161,162,162,163,163,166,166,167,167,160,161,94,94,224],"
             "\"state_unavailable\":true},\"abi\":{\"environment\":{"
             "\"get_core_options_version\":%u,\"set_core_options\":%u,\"get_variable\":%u,"
             "\"get_variable_update\":%u,\"set_pixel_format\":%u,\"set_support_no_game\":%u,"

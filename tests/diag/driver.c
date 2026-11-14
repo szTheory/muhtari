@@ -1334,7 +1334,7 @@ static int souper_image(const char *template_path, const char *path)
     muhtari_cart_info info = {0};
     info.size = (uint32_t)sizeof info;
     if (n != 524416u ||
-        strcmp(hex, "d6c8883e4afe10d40a9dd7d2383b905562a72b809af8bd7be3223ae9727dcc67") != 0 ||
+        strcmp(hex, "bb4a6315d7708dd0a8f57d0a533a8f84f3ca900e15fa9156bfbcd4116c6dfb72") != 0 ||
         memcmp(image + 128u + 0x7F6F0u, "SOUPER01", 8u) != 0 ||
         muhtari_probe(image, n, &info) != MUHTARI_STATUS_OK ||
         info.board != MUHTARI_BOARD_SOUPER || info.rom_size != 512u * 1024u) {
@@ -1343,6 +1343,13 @@ static int souper_image(const char *template_path, const char *path)
     }
     for (unsigned bank = 0u; bank < 31u; bank++)
         memset(image + 128u + (size_t)bank * 16384u, (int)(0x40u + bank), 16384u);
+    /* Sparse literal character/fixed-window tags make the generated source
+       distinguish selector bits without sharing the mapper's address code. */
+    image[128u + 0x10080u] = 0xC1u;
+    image[128u + 0x10180u] = 0xC2u;
+    image[128u + 0x21000u] = 0xC3u;
+    image[128u + 0x7DFFFu] = 0xC4u;
+    image[128u + 0x7E000u] = 0xC5u;
     FILE *f = fopen(path, "wb");
     int failed = f == NULL;
     if (f != NULL) {
@@ -1350,6 +1357,140 @@ static int souper_image(const char *template_path, const char *path)
         failed |= fclose(f) != 0;
     }
     free(image);
+    return failed;
+}
+
+static const struct row *souper_map_row(const char *name)
+{
+    for (uint32_t i = 0u; i < nrows; i++) {
+        if (strcmp(rows[i].test, name) == 0)
+            return &rows[i];
+    }
+    return NULL;
+}
+
+static int souper_map_value(const char *name, uint8_t actual)
+{
+    const struct row *r = souper_map_row(name);
+    if (r == NULL || !in_range(&r->value, actual)) {
+        fprintf(stderr, "souper mapper: %s expected %s got %u\n", name,
+                r == NULL ? "a literal row" : "its literal byte", (unsigned)actual);
+        return 1;
+    }
+    return 0;
+}
+
+static int souper_map_matches(const char *name, uint8_t actual)
+{
+    const struct row *r = souper_map_row(name);
+    return r != NULL && in_range(&r->value, actual);
+}
+
+/* A second, independently listed literal matrix covers direct CPU/MARIA
+   boundaries and the selectors that a short mailbox cannot fit. */
+static int souper_map_judge(muhtari *m, const char *expected)
+{
+    static const struct {
+        const char *name;
+        uint16_t addr;
+        uint8_t value;
+    } flat[] = {
+        {"cpu_flat_4000", 0x4000u, 0xA0u}, {"cpu_flat_5fff", 0x5FFFu, 0xA1u},
+        {"cpu_flat_6000", 0x6000u, 0xA2u}, {"cpu_flat_7fff", 0x7FFFu, 0xA3u}
+    };
+    int failed = 0;
+    if (muhtari__cart_read(m, 0x4000u, 0) != 0u ||
+        muhtari__cart_read(m, 0x7FFFu, 0) != 0u ||
+        muhtari__cart_read(m, 0x8000u, 0) != 0x40u ||
+        muhtari__cart_read(m, 0xBFFFu, 0) != 0x40u ||
+        muhtari__cart_read(m, 0xC000u, 0) != 0xE0u ||
+        muhtari__cart_dma_read(m, 0x8000u, 0u) != 0x40u ||
+        muhtari__cart_dma_read(m, 0xC000u, 0u) != 0xE0u) {
+        fprintf(stderr, "souper mapper: initial CPU/MARIA map did not match literal endpoints\n");
+        failed = 1;
+    }
+    memset(m->cart.ram, 0, m->cart.info.ram_size);
+    for (unsigned page = 0u; page < 8u; page++)
+        memset(m->cart.ram + page * 4096u, (int)(0xA0u + page), 4096u);
+    nrows = 0u;
+    if (read_expected(expected, "souper_map") != 0 || nrows != 26u) {
+        fprintf(stderr, "souper mapper: expected all 26 literal boundary rows\n");
+        return 1;
+    }
+    muhtari__cart_write(m, 0x8003u, 0u);
+    for (size_t i = 0u; i < sizeof flat / sizeof flat[0]; i++)
+        failed |= souper_map_value(flat[i].name, muhtari__cart_read(m, flat[i].addr, 0));
+
+    muhtari__cart_write(m, 0xFFF8u, 0u);
+    failed |= souper_map_value("cpu_bank_0", muhtari__cart_read(m, 0x8000u, 0));
+    muhtari__cart_write(m, 0xFFF8u, 30u);
+    failed |= souper_map_value("cpu_bank_30", muhtari__cart_read(m, 0xBFFFu, 0));
+    muhtari__cart_write(m, 0xFFF8u, 31u);
+    failed |= souper_map_value("cpu_bank_31", muhtari__cart_read(m, 0x8000u, 0));
+    failed |= souper_map_value("cpu_fixed_c000", muhtari__cart_read(m, 0xC000u, 0));
+
+    muhtari__cart_write(m, 0xC003u, 4u);
+    muhtari__cart_write(m, 0xC004u, 6u);
+    muhtari__cart_write(m, 0xC005u, 7u);
+    failed |= souper_map_value("seg_video_page6", muhtari__cart_read(m, 0x6000u, 0));
+    failed |= souper_map_value("seg_data_page7", muhtari__cart_read(m, 0x7FFFu, 0));
+    failed |= souper_map_value("seg_fixed_4000", muhtari__cart_read(m, 0x4000u, 0));
+
+    muhtari__cart_write(m, 0xC001u, 0x21u);
+    muhtari__cart_write(m, 0xC002u, 0x42u);
+    m->bus.maria_from = 1u;
+    m->bus.maria_until = 2u;
+    muhtari__cart_write(m, 0xC003u, 2u);
+    failed |= souper_map_value("char_a", muhtari__cart_dma_read(m, 0xA000u, 1u));
+    failed |= souper_map_value("char_a_row", muhtari__cart_dma_read(m, 0xA100u, 1u));
+    failed |= souper_map_value("char_b", muhtari__cart_dma_read(m, 0xA080u, 1u));
+    failed |= souper_map_value("char_a12_alias", muhtari__cart_dma_read(m, 0xB000u, 1u));
+    failed |= souper_map_value("char_fixed_last", muhtari__cart_dma_read(m, 0x9FFFu, 1u));
+    failed |= souper_map_value("char_cpu_stays_banked", muhtari__cart_read(m, 0xA000u, 0));
+
+    muhtari__cart_write(m, 0xC003u, 1u);
+    failed |= souper_map_value("trap_only_cpu_fixed", muhtari__cart_read(m, 0xC000u, 0));
+    failed |= souper_map_value("trap_only_maria_exram", muhtari__cart_dma_read(m, 0xC000u, 1u));
+    failed |= souper_map_value("trap_only_maria_rom", muhtari__cart_dma_read(m, 0xA000u, 1u));
+
+    muhtari__cart_write(m, 0xC003u, 7u);
+    failed |= souper_map_value("combined_maria_exram", muhtari__cart_dma_read(m, 0xC000u, 1u));
+    failed |= souper_map_value("combined_maria_video_page", muhtari__cart_dma_read(m, 0xE000u, 1u));
+    failed |= souper_map_value("combined_maria_data_page", muhtari__cart_dma_read(m, 0xF000u, 1u));
+    failed |= souper_map_value("combined_maria_character", muhtari__cart_dma_read(m, 0xA000u, 1u));
+
+    /* Controls ensure the numeric oracle rejects wrong selector/page results. */
+    muhtari__cart_write(m, 0xC002u, 0u);
+    failed |= souper_map_value("fault_wrong_character_rejected",
+                               (uint8_t)!souper_map_matches(
+                                   "char_b", muhtari__cart_dma_read(m, 0xA080u, 1u)));
+    muhtari__cart_write(m, 0xC002u, 0x42u);
+    muhtari__cart_write(m, 0xC004u, 5u);
+    failed |= souper_map_value("fault_wrong_page_rejected",
+                               (uint8_t)!souper_map_matches(
+                                   "combined_maria_video_page",
+                                   muhtari__cart_dma_read(m, 0xE000u, 1u)));
+    return failed;
+}
+
+static int souper_map_case(const uint8_t *image, size_t bytes, const char *expected)
+{
+    muhtari_config config = {0};
+    muhtari_media media = {0};
+    muhtari *m = NULL;
+    config.size = (uint32_t)sizeof config;
+    config.allocator.alloc = diag_alloc;
+    config.allocator.free = diag_free;
+    media.size = (uint32_t)sizeof media;
+    media.image = image;
+    media.image_size = bytes;
+    muhtari_status status = muhtari_create(&config, &m);
+    if (status == MUHTARI_STATUS_OK)
+        status = muhtari_load(m, &media);
+    int failed = status != MUHTARI_STATUS_OK;
+    if (!failed)
+        failed = souper_map_judge(m, expected);
+    muhtari_destroy(m);
     return failed;
 }
 
@@ -1376,16 +1517,6 @@ static int souper_case(const char *path, const char *expected, const char *repor
     if (!failed && (m->cart.info.board != MUHTARI_BOARD_SOUPER ||
                     m->cart.info.rom_size != 512u * 1024u || m->cart.info.ram_size != 32u * 1024u)) {
         fprintf(stderr, "souper: loaded profile geometry mismatch\n");
-        failed = 1;
-    }
-    if (!failed && (muhtari__cart_read(m, 0x4000u, 0) != 0u ||
-                    muhtari__cart_read(m, 0x7FFFu, 0) != 0u ||
-                    muhtari__cart_read(m, 0x8000u, 0) != 0x40u ||
-                    muhtari__cart_read(m, 0xBFFFu, 0) != 0x40u ||
-                    muhtari__cart_read(m, 0xC000u, 0) != 0xE0u ||
-                    muhtari__cart_dma_read(m, 0x8000u, 0u) != 0x40u ||
-                    muhtari__cart_dma_read(m, 0xC000u, 0u) != 0xE0u)) {
-        fprintf(stderr, "souper: initial CPU/MARIA map did not match the literal endpoints\n");
         failed = 1;
     }
     uint8_t state_bytes[64];
@@ -1415,26 +1546,32 @@ static int souper_case(const char *path, const char *expected, const char *repor
         }
     }
     if (!failed && (m->cart.bank != state_bank || m->bus.ticks != state_ticks ||
-                    m->cpu.pc != state_pc || m->bus.open_bus != state_open_bus ||
-                    muhtari__cart_read(m, 0x4000u, 0) != 0u ||
-                    muhtari__cart_read(m, 0x8000u, 0) != 0x40u)) {
+                    m->cpu.pc != state_pc || m->bus.open_bus != state_open_bus)) {
         fprintf(stderr, "souper: unavailable state operation changed the machine\n");
         failed = 1;
     }
-    uint8_t *pixels = (uint8_t *)calloc(12u * 320u * 242u, 1u);
+    uint8_t *pixels = (uint8_t *)calloc(13u * 320u * 242u, 1u);
     int16_t pcm[963];
     uint32_t audio_counts[12] = {0};
     if (pixels == NULL)
         failed = 1;
     for (unsigned frame = 0u; frame < 12u && !failed; frame++) {
         muhtari_frame io = {0};
+        muhtari_input_ex input = {0};
+        input.size = (uint32_t)sizeof input;
+        failed = muhtari_set_input_ex(m, &input) != MUHTARI_STATUS_OK;
         io.size = (uint32_t)sizeof io;
-        io.video = pixels + (size_t)frame * 320u * 242u;
+        /* The runner reuses one host-owned frame buffer. Keep this oracle on
+           the same output-surface lifecycle, then snapshot each result. */
+        io.video = pixels + 12u * 320u * 242u;
         io.video_pitch = 320u;
         io.audio = pcm;
         io.audio_capacity = 963u;
-        failed = muhtari_run_frame(m, &io) != MUHTARI_STATUS_OK;
+        failed |= muhtari_run_frame(m, &io) != MUHTARI_STATUS_OK;
         audio_counts[frame] = io.audio_count;
+        if (!failed)
+            memcpy(pixels + (size_t)frame * 320u * 242u,
+                   pixels + 12u * 320u * 242u, 320u * 242u);
     }
     uint8_t mailbox[256];
     if (!failed) {
@@ -1443,7 +1580,24 @@ static int souper_case(const char *path, const char *expected, const char *repor
         int pixel_failed = souper_native_judge(pixels, 12u);
         failed = retail_judge(mailbox, "souper") || pixel_failed ||
                  m->cart.info.sound != 0u || m->synth.pokeys != 0u || m->synth.ym_installed != 0u;
+        if (!failed) {
+            for (unsigned frame = 4u; frame < 12u; frame++) {
+                uint8_t *row = pixels + (size_t)frame * 320u * 242u + 17u * 320u;
+                memset(row, 0, 8u); /* CPU-view ROM would not supply MARIA's EXRAM pixels. */
+            }
+            int rejected_cpu_view = souper_native_judge(pixels, 12u) != 0;
+            for (unsigned frame = 4u; frame < 12u; frame++) {
+                uint8_t *row = pixels + (size_t)frame * 320u * 242u + 17u * 320u;
+                memset(row, 0x38, 8u);
+            }
+            if (!rejected_cpu_view) {
+                fprintf(stderr, "souper: native pixel judge accepted a CPU-view fault\n");
+                failed = 1;
+            }
+        }
     }
+    if (!failed)
+        failed = souper_map_case(image, bytes, expected);
     FILE *report = !failed ? fopen(report_path, "wb") : NULL;
     if (!failed && report == NULL)
         failed = 1;

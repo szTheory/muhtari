@@ -408,6 +408,20 @@ if(DIAG_SOUPER_RUN)
   if(NOT rc STREQUAL "1")
     message(FATAL_ERROR "souper patterned-image generator accepted a changed template")
   endif()
+  file(READ "${EXPECTED}" source_expected)
+  string(REPLACE "souper_map,char_a,193,fit" "souper_map,char_a,194,fit"
+    wrong_character_expected "${source_expected}")
+  if(wrong_character_expected STREQUAL source_expected)
+    message(FATAL_ERROR "souper literal mapper fault row was not found")
+  endif()
+  file(CONFIGURE OUTPUT "${OUT}/wrong-map-expected.csv" CONTENT "${wrong_character_expected}"
+    @ONLY NEWLINE_STYLE UNIX)
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --souper-case
+    "${image}" "${OUT}/wrong-map-expected.csv" "${OUT}/wrong-map-reference.txt"
+    RESULT_VARIABLE rc OUTPUT_QUIET ERROR_QUIET TIMEOUT 30)
+  if(NOT rc STREQUAL "1")
+    message(FATAL_ERROR "souper mapper judge accepted a wrong character-selection literal")
+  endif()
   return()
 endif()
 

@@ -675,6 +675,65 @@ static int halt_views(void)
     return ok;
 }
 
+/* Souper changes MARIA's upper fetch view only during the tick-qualified
+   HALT reader interval. The slow gate cycle advances that boundary without
+   changing ordinary CPU peeks. */
+static int souper_halt_views(void)
+{
+    static uint8_t rom[512u * 1024u];
+    static uint8_t ram[32u * 1024u];
+    static muhtari snapshot;
+    muhtari *m = fresh(LOCKED_7800);
+    memset(rom, 0, sizeof rom);
+    memset(ram, 0, sizeof ram);
+    rom[0x7C000u] = 0x51u;
+    ram[0] = 0xA0u;
+    ram[2u * 4096u] = 0xA2u;
+    ram[7u * 4096u] = 0xA7u;
+    m->cart.rom = rom;
+    m->cart.ram = ram;
+    m->cart.info.board = MUHTARI_BOARD_SOUPER;
+    m->cart.info.rom_size = sizeof rom;
+    m->cart.info.ram_size = sizeof ram;
+    muhtari__cart_write(m, 0x8003u, 5u); /* fetch trap plus EXRAM segmentation */
+    muhtari__cart_write(m, 0x8004u, 2u);
+    muhtari__cart_write(m, 0x8005u, 7u);
+
+    int ok = muhtari__cart_peek(m, 0xC000u) == 0x51u &&
+             muhtari__cart_peek(m, 0xE000u) != 0xA2u &&
+             muhtari__cart_dma_read(m, 0xC000u, 0u) == 0x51u;
+    memcpy(&snapshot, m, sizeof snapshot);
+    ok &= muhtari__peek(m, 0xC000u) == 0x51u;
+    ok &= memcmp(&snapshot, m, sizeof snapshot) == 0;
+
+    /* First slow read and second slow read put the edge at tick 11. */
+    m->bus.halt_gate_writes = 2u;
+    m->maria.dl = 0x8000u;
+    m->maria.offset = 1u;
+    m->maria.dma_lrc = 454u;
+    m->maria.dma_line = 20u;
+    muhtari__bus_request_halt(m, 0u, MUHTARI__HALT_UNTIL_MARIA);
+    (void)muhtari__bus_read(m, 0x0480u);
+    (void)muhtari__bus_read(m, 0x0480u);
+    uint64_t from = m->bus.maria_from;
+    ok &= from == 11u;
+    ok &= muhtari__cart_dma_read(m, 0xC000u, from - 1u) == 0x51u;
+    ok &= muhtari__cart_dma_read(m, 0xC000u, from) == 0xA0u;
+    ok &= muhtari__cart_dma_read(m, 0xC000u, from + 1u) == 0xA0u;
+    ok &= muhtari__cart_dma_read(m, 0xE000u, from) == 0xA2u;
+    ok &= muhtari__cart_dma_read(m, 0xF000u, from) == 0xA7u;
+    ok &= muhtari__cart_peek(m, 0xC000u) == 0x51u;
+
+    (void)muhtari__bus_read(m, 0x1800u);
+    uint64_t until = m->bus.maria_until;
+    ok &= until > from + 1u;
+    ok &= muhtari__cart_dma_read(m, 0xC000u, until - 1u) == 0xA0u;
+    ok &= muhtari__cart_dma_read(m, 0xC000u, until) == 0x51u;
+    ok &= muhtari__cart_dma_read(m, 0xC000u, until + 1u) == 0x51u;
+    ok &= muhtari__cart_peek(m, 0xC000u) == 0x51u;
+    return ok;
+}
+
 /* Bus-level counterexample, not a demonstrated ROM instruction stream:
    slow RIOT c0 then fast cartridge-RAM c1 commits at tick 10. */
 static int halt_store_order(void)
@@ -774,6 +833,7 @@ static int halt_latency_two_cycles(void)
     ok &= expect_ticks("c2", read_ticks(m), 24u, "no freeze", 4u);
     ok &= expect_count("phi2 after c2", "cycles", m->bus.phi2, 9u, "frozen cycles uncounted", 4u);
     return bankset_frame() && bankset_ram_frame() && xm_halt_edges() && halt_views() &&
+           souper_halt_views() &&
            halt_store_order() && halt_stretched_costs() && ok;
 }
 
@@ -1025,6 +1085,7 @@ static const struct {
     {"halt.waits_for_slow_fall", halt_waits_for_slow_fall},
     {"halt.freezes_writes", halt_freezes_writes},
     {"halt.one_window_at_a_time", halt_one_window_at_a_time},
+    {"souper.halt_views", souper_halt_views},
     {"nmi.latched_in_cycle", nmi_latched_in_cycle},
     {"nmi.last_cycle_after_next", nmi_last_cycle_after_next},
     {"nmi.held_fetch_after_wsync", nmi_held_fetch_after_wsync},
