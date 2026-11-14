@@ -173,6 +173,7 @@ core.pal.lifecycle	core,portable
 core.pal.tracer	core,portable
 core.set_input.latched_at_vblank	core,portable
 core.set_input.validates	core,portable
+core.souper.cpu	core,portable
 core.souper.lifecycle	core,portable
 core.state.aliases	core,portable
 core.state.battery	core,portable

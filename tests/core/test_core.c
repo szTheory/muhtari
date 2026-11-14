@@ -3555,13 +3555,68 @@ static void make_core_souper(void)
 {
     images_header(core_souper_image, 3u, "Souper lifecycle", CORE_SOUPER_BODY, 0x1000u);
     uint8_t *body = core_souper_image + IMAGES_HEADER;
-    memset(body, 0xEA, CORE_SOUPER_BODY);
+    for (uint32_t bank = 0u; bank < 32u; bank++)
+        memset(body + bank * 16384u, (int)(0x40u + bank), 16384u);
     uint8_t *fixed = body + CORE_SOUPER_BODY - 16384u;
     fixed[0] = 0x4Cu; /* JMP $C000, fixed in the final 16 KiB ROM bank. */
     fixed[1] = 0x00u;
     fixed[2] = 0xC0u;
     body[CORE_SOUPER_BODY - 4u] = 0x00u;
     body[CORE_SOUPER_BODY - 3u] = 0xC0u;
+}
+
+/* CPU mapping follows the selected independent Souper software profile.
+   Direct cartridge calls isolate mapper address behavior; the generated ROM
+   diagnostic separately exercises the same accesses through real CPU code. */
+static void souper_cpu(void)
+{
+    muhtari *m = make();
+    CHECK(m != NULL);
+    if (m == NULL)
+        return;
+    make_core_souper();
+    muhtari_media media = media_for(core_souper_image, sizeof core_souper_image);
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    if (m->cart.rom == NULL) {
+        muhtari_destroy(m);
+        return;
+    }
+
+    for (uint32_t page = 0u; page < 8u; page++)
+        memset(m->cart.ram + page * 4096u, (int)(0xA0u + page), 4096u);
+    CHECK_EQ_U64(muhtari__cart_read(m, 0x4000u, 0), 0xA0u);
+    CHECK_EQ_U64(muhtari__cart_read(m, 0x5FFFu, 0), 0xA1u);
+    CHECK_EQ_U64(muhtari__cart_read(m, 0x6000u, 0), 0xA2u);
+    CHECK_EQ_U64(muhtari__cart_read(m, 0x7FFFu, 0), 0xA7u);
+
+    /* Low-three-bit register aliases cover the whole upper 32 KiB. */
+    muhtari__cart_write(m, 0xFFF8u, 31u);
+    CHECK_EQ_U64(muhtari__cart_read(m, 0x8000u, 0), 0x5Fu);
+    CHECK_EQ_U64(muhtari__cart_read(m, 0xBFFFu, 0), 0x5Fu);
+    CHECK_EQ_U64(muhtari__cart_read(m, 0xC010u, 0), 0x5Fu);
+    CHECK_EQ_U64(muhtari__cart_read(m, 0x8000u, 0), 0x5Fu); /* Reads do not write. */
+
+    /* Register 2's segment bit and the two 4 KiB page selectors are separate
+       latches; the fixed lower 8 KiB remains pages zero and one. */
+    muhtari__cart_write(m, 0xFFFAu, 0x04u);
+    muhtari__cart_write(m, 0xFFFBu, 6u);
+    muhtari__cart_write(m, 0xFFFCu, 7u);
+    CHECK_EQ_U64(muhtari__cart_read(m, 0x4000u, 0), 0xA0u);
+    CHECK_EQ_U64(muhtari__cart_read(m, 0x5FFFu, 0), 0xA1u);
+    CHECK_EQ_U64(muhtari__cart_read(m, 0x6000u, 0), 0xA6u);
+    CHECK_EQ_U64(muhtari__cart_read(m, 0x6FFFu, 0), 0xA6u);
+    CHECK_EQ_U64(muhtari__cart_read(m, 0x7000u, 0), 0xA7u);
+    CHECK_EQ_U64(muhtari__cart_read(m, 0x7FFFu, 0), 0xA7u);
+
+    /* Undefined command registers are intentionally inert in this mapper-only
+       profile; no audio route is installed or queued. */
+    muhtari__cart_write(m, 0xFFFEu, 0xFFu);
+    muhtari__cart_write(m, 0xFFFFu, 0xA5u);
+    CHECK_EQ_U64(m->cart.info.sound, 0u);
+    CHECK_EQ_U64(m->synth.pokeys, 0u);
+    CHECK_EQ_U64(m->synth.ym_installed, 0u);
+    CHECK_EQ_U64(m->cart.bank, 31u);
+    muhtari_destroy(m);
 }
 
 /* Souper EXRAM belongs to each loaded cartridge and clears only at cartridge
@@ -3788,6 +3843,7 @@ static const struct {
     {"load.invalid_bios", test_load_invalid_bios},
     {"load.keeps_previous", test_load_keeps_previous},
     {"load.supergame_one_allocation", test_load_supergame_one_allocation},
+    {"souper.cpu", souper_cpu},
     {"souper.lifecycle", souper_lifecycle},
     {"no_alloc_after_load", test_no_alloc_after_load},
     {"set_input.latched_at_vblank", test_set_input_latched_at_vblank},
