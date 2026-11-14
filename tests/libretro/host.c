@@ -2271,10 +2271,68 @@ static int souper_trace_pixels(const unsigned char *pixels, unsigned width, unsi
     return 1;
 }
 
+typedef struct {
+    unsigned video_width;
+    unsigned video_height;
+    size_t video_pitch;
+    int video_calls;
+    int video_null;
+    int batch_calls;
+    size_t sample_frames;
+    size_t batch_frames;
+    uint8_t pixels[W * 4u];
+    uint8_t mailbox[256];
+} souper_trace_frame;
+
+static void souper_trace_observe_frame(souper_trace_frame *observed, bool check_cpu,
+                                       bool check_maria)
+{
+    memset(observed, 0, sizeof *observed);
+    video_calls = video_null = 0;
+    video_width = video_height = 0u;
+    video_pitch = 0u;
+    sample_frames = 0u;
+    sample_nonzero = 0;
+    batch_calls = 0;
+    batch_frames = 0u;
+    batch_nonzero = 0;
+    p_run();
+    CHECK_EQ_U64(video_calls, 1u);
+    CHECK_EQ_U64(video_null, 0u);
+    CHECK_EQ_U64(video_width, W);
+    CHECK_EQ_U64(video_height, 242u);
+    CHECK(video_pitch >= (size_t)W * 4u);
+    if (check_maria)
+        CHECK(souper_trace_pixels(frame, video_width, video_height));
+
+    const uint8_t *memory = (const uint8_t *)p_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+    size_t bytes = p_get_memory_size(RETRO_MEMORY_SYSTEM_RAM);
+    CHECK_EQ_U64(bytes, 4096u);
+    if (check_cpu)
+        CHECK(souper_trace_mailbox(memory, bytes));
+    if (memory != NULL && bytes >= 0xB00u)
+        memcpy(observed->mailbox, memory + 0xA00u, sizeof observed->mailbox);
+    memcpy(observed->pixels, frame + (size_t)17u * W * 4u, sizeof observed->pixels);
+    observed->video_width = video_width;
+    observed->video_height = video_height;
+    observed->video_pitch = video_pitch;
+    observed->video_calls = video_calls;
+    observed->video_null = video_null;
+    observed->batch_calls = batch_calls;
+    observed->sample_frames = sample_frames;
+    observed->batch_frames = batch_frames;
+}
+
 /* Runs the generated CPU/MARIA diagnostic through the runtime-loaded module,
    not the observer that compiles libretro.c into its own executable. */
 static void case_souper_trace(void)
 {
+    souper_trace_frame first_six[6], uninterrupted[6], restored[6];
+    uint8_t *checkpoint = NULL, *oversize = NULL, *after_refusal = NULL, *corrupt = NULL;
+    uint8_t *final_state = NULL, *replayed_state = NULL;
+    uint8_t *fault_pixels = NULL;
+    size_t state_bytes = 0u;
+
     set_var("muhtari_region", "ntsc");
     set_var("muhtari_expansion", "off");
     set_var("muhtari_hsc", "off");
@@ -2289,25 +2347,110 @@ static void case_souper_trace(void)
     p_set_controller_port_device(0u, RETRO_DEVICE_JOYPAD);
     p_set_controller_port_device(1u, RETRO_DEVICE_JOYPAD);
 
-    for (unsigned i = 0u; i < 12u; i++) {
-        video_calls = video_null = 0;
-        video_width = video_height = 0u;
-        video_pitch = 0u;
-        p_run();
-        CHECK_EQ_U64(video_calls, 1u);
-        CHECK_EQ_U64(video_null, 0u);
-        CHECK_EQ_U64(video_width, W);
-        CHECK_EQ_U64(video_height, 242u);
-        CHECK(video_pitch >= (size_t)W * 4u);
-        if (i >= 4u)
-            CHECK(souper_trace_pixels(frame, video_width, video_height));
+    for (unsigned i = 0u; i < 6u; i++) {
+        souper_trace_observe_frame(&first_six[i], i == 5u, i >= 4u);
     }
 
     const uint8_t *memory = (const uint8_t *)p_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
-    size_t bytes = p_get_memory_size(RETRO_MEMORY_SYSTEM_RAM);
-    CHECK_EQ_U64(bytes, 4096u);
-    CHECK(souper_trace_mailbox(memory, bytes));
+    size_t memory_bytes = p_get_memory_size(RETRO_MEMORY_SYSTEM_RAM);
+    CHECK(souper_trace_mailbox(memory, memory_bytes));
+
+    state_bytes = p_serialize_size();
+    CHECK(state_bytes > 0u && state_bytes <= TEST_STATE_MAX_BYTES);
+    if (state_bytes == 0u || state_bytes > TEST_STATE_MAX_BYTES) {
+        CHECK(0);
+        stop();
+        set_var("muhtari_region", "auto");
+        set_var("muhtari_expansion", "auto");
+        set_var("muhtari_hsc", "auto");
+        return;
+    }
+    checkpoint = (uint8_t *)malloc(state_bytes);
+    oversize = (uint8_t *)malloc(state_bytes + 1u);
+    after_refusal = (uint8_t *)malloc(state_bytes);
+    corrupt = (uint8_t *)malloc(state_bytes);
+    final_state = (uint8_t *)malloc(state_bytes);
+    replayed_state = (uint8_t *)malloc(state_bytes);
+    CHECK(checkpoint != NULL && oversize != NULL && after_refusal != NULL && corrupt != NULL &&
+          final_state != NULL && replayed_state != NULL);
+    if (checkpoint == NULL || oversize == NULL || after_refusal == NULL || corrupt == NULL ||
+        final_state == NULL || replayed_state == NULL) {
+        free(checkpoint);
+        free(oversize);
+        free(after_refusal);
+        free(corrupt);
+        free(final_state);
+        free(replayed_state);
+        stop();
+        set_var("muhtari_region", "auto");
+        set_var("muhtari_expansion", "auto");
+        set_var("muhtari_hsc", "auto");
+        return;
+    }
+    CHECK(p_serialize(checkpoint, state_bytes));
+    CHECK_EQ_U64(checkpoint[8], 3u);
+    CHECK_EQ_U64(checkpoint[20], 8u);
+
+    /* Every malformed snapshot must preserve the exact midpoint state. */
+    CHECK(!p_unserialize(NULL, state_bytes));
+    CHECK(p_serialize(after_refusal, state_bytes));
+    CHECK(memcmp(after_refusal, checkpoint, state_bytes) == 0);
+    CHECK(!p_unserialize(checkpoint, state_bytes - 1u));
+    CHECK(p_serialize(after_refusal, state_bytes));
+    CHECK(memcmp(after_refusal, checkpoint, state_bytes) == 0);
+    memcpy(oversize, checkpoint, state_bytes);
+    CHECK(!p_unserialize(oversize, state_bytes + 1u));
+    CHECK(p_serialize(after_refusal, state_bytes));
+    CHECK(memcmp(after_refusal, checkpoint, state_bytes) == 0);
+    memcpy(corrupt, checkpoint, state_bytes);
+    corrupt[state_bytes - 1u] ^= 1u;
+    CHECK(!p_unserialize(corrupt, state_bytes));
+    CHECK(p_serialize(after_refusal, state_bytes));
+    CHECK(memcmp(after_refusal, checkpoint, state_bytes) == 0);
+
+    for (unsigned i = 0u; i < 6u; i++)
+        souper_trace_observe_frame(&uninterrupted[i], true, true);
+    CHECK(p_serialize(final_state, state_bytes));
+
+    CHECK(p_unserialize(checkpoint, state_bytes));
+    for (unsigned i = 0u; i < 6u; i++) {
+        souper_trace_observe_frame(&restored[i], true, true);
+        CHECK(memcmp(&restored[i], &uninterrupted[i], sizeof restored[i]) == 0);
+    }
+    CHECK(p_serialize(replayed_state, state_bytes));
+    CHECK(memcmp(replayed_state, final_state, state_bytes) == 0);
+
+    /* Fault the independent judges using copies of actual loaded-module output. */
+    uint8_t fault_ram[0xB00u] = {0};
+    uint8_t *fault_mailbox = fault_ram + 0xA00u;
+    memcpy(fault_mailbox, uninterrupted[5].mailbox, sizeof uninterrupted[5].mailbox);
+    fault_mailbox[16u + 4u * 2u + 2u] ^= 1u;
+    uint16_t fault_crc = souper_trace_crc(fault_mailbox);
+    fault_mailbox[8] = (uint8_t)fault_crc;
+    fault_mailbox[9] = (uint8_t)(fault_crc >> 8);
+    CHECK((uint16_t)((uint16_t)fault_mailbox[8] | ((uint16_t)fault_mailbox[9] << 8)) == fault_crc);
+    CHECK(!souper_trace_mailbox(fault_ram, sizeof fault_ram));
+    CHECK(souper_trace_mailbox(memory, memory_bytes));
+
+    size_t frame_bytes = (size_t)W * 242u * 4u;
+    fault_pixels = (uint8_t *)malloc(frame_bytes);
+    CHECK(fault_pixels != NULL);
+    if (fault_pixels != NULL) {
+        memcpy(fault_pixels, frame, frame_bytes);
+        uint32_t wrong_pixel = muhtari__palette_rgb_region(0u, MUHTARI_REGION_NTSC);
+        memcpy(fault_pixels + ((size_t)17u * W) * 4u, &wrong_pixel, sizeof wrong_pixel);
+        CHECK(!souper_trace_pixels(fault_pixels, W, 242u));
+        CHECK(souper_trace_pixels(frame, W, 242u));
+    }
+
     stop();
+    free(checkpoint);
+    free(oversize);
+    free(after_refusal);
+    free(corrupt);
+    free(final_state);
+    free(replayed_state);
+    free(fault_pixels);
     set_var("muhtari_region", "auto");
     set_var("muhtari_expansion", "auto");
     set_var("muhtari_hsc", "auto");
