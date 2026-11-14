@@ -577,8 +577,22 @@ static muhtari_status cart_header(const uint8_t *img, size_t n, const struct car
         out->warnings |= MUHTARI_CART_WARN_CART_TYPE_CONFLICT;
     }
     if (version >= 4u) {
-        if (cart_decode_v4(img, &v4) &&
-            (v4.board == MUHTARI_BOARD_BANKSET || cart_refused(&v4) || cart_fits(&v4, mapped))) {
+        if (out->a78_mapper == 4u) {
+            /* Mapper 4 is an explicit Souper selection. Keep it effective
+               even when its options/audio or geometry are unsupported, so
+               a valid v3 fallback board cannot make this declaration run. */
+            if (cart_decode_v4(img, &v4)) {
+                b = v4;
+            } else {
+                memset(&v4, 0, sizeof v4);
+                v4.board = MUHTARI_BOARD_SOUPER;
+                v4.ram = 32u * CART_KIB;
+                v4.unsupported = 1u;
+                b = v4;
+            }
+        } else if (cart_decode_v4(img, &v4) &&
+                   (v4.board == MUHTARI_BOARD_BANKSET || cart_refused(&v4) ||
+                    cart_fits(&v4, mapped))) {
             b = v4;
         } else {
             out->warnings |= MUHTARI_CART_WARN_HEADER_V4_IGNORED;
@@ -636,6 +650,9 @@ static muhtari_status cart_header(const uint8_t *img, size_t n, const struct car
     cart_set_board(out, &b);
     if (cart_refused(&b)) {
         return MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD;
+    }
+    if (b.board == MUHTARI_BOARD_SOUPER && field != body) {
+        return field > body ? MUHTARI_STATUS_ERR_TRUNCATED_IMAGE : MUHTARI_STATUS_ERR_INVALID_IMAGE;
     }
     if (b.board == MUHTARI_BOARD_BANKSET && field != body) {
         return field > body ? MUHTARI_STATUS_ERR_TRUNCATED_IMAGE : MUHTARI_STATUS_ERR_INVALID_IMAGE;

@@ -363,6 +363,14 @@ bytes are refused before the running cartridge changes. Existing POKEY metadata
 is parsed by the common loader; this profile adds no Souper-specific POKEY
 wiring, and `$8007` does not queue BupChip audio.
 
+For either declaration, the A78 ROM-size field must equal the complete body
+length, and both must be exactly 512 KiB. A declared body longer than the
+available bytes is truncated; a shorter declaration with trailing bytes, or
+any other body size, is invalid. When v4 explicitly names mapper 4, invalid
+options, audio or geometry refuse that declaration instead of selecting a
+geometry-compatible v3 fallback; other valid v4 board declarations retain
+their usual precedence.
+
 At load and power cycle, EXRAM and mapper latches are zeroed. CPU and MARIA both
 read EXRAM at `$4000–$7FFF`, ROM bank 0 at `$8000–$BFFF`, and the fixed final ROM
 bank at `$C000–$FFFF`. The selected mapping is based on the A78/game software
