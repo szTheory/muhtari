@@ -159,7 +159,7 @@ Souper snapshots now preserve every mapper latch and all EXRAM bytes, while the 
 - `ctest --preset asan --output-on-failure --no-tests=error -R '^(cart[.]souper[.]profile|core[.]souper[.](cpu|lifecycle)|core[.]state[.]souper|bus[.]souper[.]halt_views|diag[.](souper|souper_tracer)|libretro[.]host[.]souper)$'` — passed, 9/9 focused mapper, lifecycle, state, diagnostic, and consumer checks. The local `clang-21` alias was unavailable, so the existing AppleClang 21.0 compiler paths were selected for this build without changing repository presets.
 - `ctest --preset ci --verbose --no-tests=error -R '^libretro[.]observe[.]souper$'` — passed after receipt validation was tightened.
 - `cmake -DROOT=. -P tests/cmake/budgets.cmake` — passed; 24 documentation files are within their existing budgets.
-- `sh scripts/hygiene.sh` — passed with exit 0. The targeted staged hygiene check and `git diff --check` also passed during task commits.
+- Hygiene check: sh scripts/hygiene.sh — exit 0. The targeted staged hygiene check and `git diff --check` also passed during task commits.
 - `gsd_run check tdd-red-evidence build/ci/tdd-22-03-task1-red.json --raw` — passed: the named `core.state.souper` test failed on the intended unavailable-state/version assertions before implementation; the committed implementation then passed the focused and full suites.
 - No actual RetroArch session, physical cartridge check, host action, remote dispatch, publication, push, or merge was run or implied.
 

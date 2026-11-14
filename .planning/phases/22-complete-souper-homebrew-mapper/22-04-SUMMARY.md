@@ -113,7 +113,7 @@ The first ASan CTest tool response exceeded its output limit. The recorded `buil
 - Task 2 Release: required host target build — exit 0; verbose focused `libretro.host.souper(_trace)?` CTest — exit 0 (5 tests including fixtures; 0.43 seconds).
 - Task 2 ASan: `cmake --preset asan -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++` — exit 0; required target build — exit 0; focused CTest — exit 0 (fixture chain and both loaded-module cases passed; the new loaded trace case took 0.11 seconds).
 - `cmake --workflow --preset ci` — exit 0; build, all 722 ordinary tests, packaging, and all 8 release tests passed. The ordinary CTest phase took 45.67 seconds; the release test phase took 1.08 seconds.
-- `sh scripts/hygiene.sh` — exit 0 (about 31 seconds); no personal paths, unmanifested binary, or other hygiene finding.
+- Hygiene check: sh scripts/hygiene.sh — exit 0 (about 31 seconds); no personal paths, unmanifested binary, or other hygiene finding.
 - Stub scan over the three changed source/test files — no TODO, FIXME, placeholder, or equivalent stub markers found.
 
 All evidence is from local commands; no hosted CI URL applies. No committed test log was added.
