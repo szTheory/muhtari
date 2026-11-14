@@ -181,7 +181,7 @@ function(quality_sample_identity out candidate trusted)
       if(NOT count EQUAL 1)
         message(FATAL_ERROR "quality: sample annotation must be unique")
       endif()
-      if(NOT "${${input}_text}" MATCHES "(^|\n)# behaviour_revision ([234567])\n")
+      if(NOT "${${input}_text}" MATCHES "(^|\n)# behaviour_revision ([2345678])\n")
         message(FATAL_ERROR "quality: invalid sample revision transition")
       endif()
       set(${input}_revision "${CMAKE_MATCH_2}")
@@ -190,7 +190,8 @@ function(quality_sample_identity out candidate trusted)
         NOT (trusted_revision EQUAL 3 AND candidate_revision EQUAL 4) AND
         NOT (trusted_revision EQUAL 4 AND candidate_revision EQUAL 5) AND
         NOT (trusted_revision EQUAL 5 AND candidate_revision EQUAL 6) AND
-        NOT (trusted_revision EQUAL 6 AND candidate_revision EQUAL 7))
+        NOT (trusted_revision EQUAL 6 AND candidate_revision EQUAL 7) AND
+        NOT (trusted_revision EQUAL 7 AND candidate_revision EQUAL 8))
       message(FATAL_ERROR "quality: invalid sample revision transition")
     endif()
     string(REGEX REPLACE "(^|\n)# behaviour_revision ${candidate_revision}\n" "\\1# behaviour_revision ${trusted_revision}\n"

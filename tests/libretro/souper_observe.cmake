@@ -22,17 +22,25 @@ string(JSON fixture_hash ERROR_VARIABLE fixture_error GET "${json}" fixture_sha2
 string(JSON source_identity ERROR_VARIABLE source_error GET "${json}" source_identity)
 string(JSON width ERROR_VARIABLE width_error GET "${json}" numeric_oracles width)
 string(JSON height ERROR_VARIABLE height_error GET "${json}" numeric_oracles height)
-string(JSON state_unavailable ERROR_VARIABLE state_error GET "${json}" numeric_oracles state_unavailable)
+string(JSON state_format ERROR_VARIABLE state_error GET "${json}" state format)
+string(JSON state_behaviour ERROR_VARIABLE state_behaviour_error GET "${json}" state behaviour)
+string(JSON state_bytes ERROR_VARIABLE state_bytes_error GET "${json}" state bytes)
+string(JSON library_state_hash ERROR_VARIABLE library_state_error GET "${json}" state library_sha256)
+string(JSON adapter_state_hash ERROR_VARIABLE adapter_state_error GET "${json}" state adapter_sha256)
 string(JSON frame_count ERROR_VARIABLE frames_error LENGTH "${json}" frames)
 string(LENGTH "${fixture_hash}" fixture_hash_length)
 string(LENGTH "${source_identity}" source_identity_length)
 if(schema_error OR workload_error OR fixture_error OR source_error OR width_error OR height_error OR
-    state_error OR frames_error OR NOT schema EQUAL 3 OR NOT workload STREQUAL "souper" OR
+    state_error OR state_behaviour_error OR state_bytes_error OR library_state_error OR adapter_state_error OR
+    frames_error OR NOT schema EQUAL 4 OR NOT workload STREQUAL "souper" OR
     NOT fixture_hash MATCHES "^[0-9a-f]+$" OR NOT fixture_hash_length EQUAL 64 OR
     NOT fixture_hash STREQUAL expected_fixture_hash OR
     NOT source_identity MATCHES "^[0-9a-f]+$" OR NOT source_identity_length EQUAL 64 OR
     NOT source_identity STREQUAL expected_source_identity OR
-    NOT width EQUAL 320 OR NOT height EQUAL 242 OR NOT state_unavailable OR NOT frame_count EQUAL 12)
+    NOT width EQUAL 320 OR NOT height EQUAL 242 OR NOT state_format EQUAL 3 OR
+    NOT state_behaviour EQUAL 8 OR NOT state_bytes GREATER 32768 OR
+    NOT library_state_hash MATCHES "^[0-9a-f]+$" OR NOT adapter_state_hash MATCHES "^[0-9a-f]+$" OR
+    NOT frame_count EQUAL 12)
   message(FATAL_ERROR "Souper native receipt is malformed or has the wrong source/image identity")
 endif()
 string(JSON mailbox_count ERROR_VARIABLE mailbox_error LENGTH "${json}" numeric_oracles mailbox_values)

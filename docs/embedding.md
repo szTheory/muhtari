@@ -49,7 +49,8 @@ PKG_CONFIG_PATH=<unzipped directory>/lib/pkgconfig cc app.c $(pkg-config --cflag
 
 ## Expansion selection
 
-API 7 retains ABI 1 and behavior revision 6. The appended `muhtari_media.expansion`
+API 7 introduced `muhtari_media.expansion`, retaining ABI 1. The current library
+reports the latest behavior revision separately below. The appended expansion
 selects one of `MUHTARI_EXPANSION_*`: `MUHTARI_EXPANSION_AUTO`, `MUHTARI_EXPANSION_OFF`, `MUHTARI_EXPANSION_XBOARD`
 or `MUHTARI_EXPANSION_XM`. Zero, omitted and incomplete fields mean Auto. Explicit
 selection wins; Auto uses the resolved cartridge XM request, otherwise Off.
@@ -152,8 +153,8 @@ production BIOS snapshot. The warm PAL table is a licensed presentation seed;
 native hashes do not depend on it. Region is fixed at successful load and survives
 power cycle; libretro region changes require reload, while palette changes affect
 presentation immediately. See [PAL diagnostic evidence](pal-tests.md) and
-[audio model limits](hardware/audio.md). API 7, ABI 1 and behavior revision 6
-retain old structure prefixes, status values and zero defaults. Query geometry
+[audio model limits](hardware/audio.md). API 7, ABI 1 and the current behavior
+revision retain old structure prefixes, status values and zero defaults. Query geometry
 rather than depend on the former PAL refusal.
 
 ## Probing a cartridge image
@@ -543,15 +544,21 @@ battery span addresses remain stable across a restore.
 State envelopes are versioned and byte-wise little-endian. Unchanged machines
 without YM use format 1 / behaviour revision 6; the selected XM/YM profile uses
 format 2 / behaviour revision 7 and includes a domain-separated YM profile
-identity. The CRC-32 detects accidental corruption; it is not authentication.
+identity. The selected Souper profile uses format 3 / behaviour revision 8 and
+adds a domain-separated mapper identity, all five mapper latches and its full
+32 KiB EXRAM. These topology-specific envelopes preserve the exact bytes and
+identities of the existing legacy and YM profiles. The CRC-32 detects accidental
+corruption; it is not authentication.
 The effective machine identity uses SHA-256 over installed media and
 machine-affecting configuration, not a filename or header CRC. Clock values are
 checked against current hardware producers and their cross-field timing
 relationships; the format does not impose an arbitrary absolute tick ceiling.
 
-Ten NTSC/PAL cases against pre-YM code prove identical states and both
+Ten NTSC/PAL cases against pre-YM code prove identical legacy states and both
 continuation directions for linear, SuperGame RAM, XBoard, XM/HSC and pending
-SaveKey. Old code safely refuses YM; length checks may precede version refusal.
+SaveKey. A clean pre-Souper producer separately checks unchanged legacy and YM
+states in both directions. Pre-YM code safely refuses YM; length checks may
+precede version refusal.
 See the [compatibility check](../tests/core/state_compat.cmake).
 
 Both functions return `MUHTARI_STATUS_ERR_ARGUMENT` for a NULL instance or
@@ -612,14 +619,15 @@ Statuses are only ever added. Those after the probe's:
 `MUHTARI_API_VERSION` in the header is the API the program was compiled against. At run time,
 `muhtari_get_versions` fills a `muhtari_versions`:
 
-The current interface is API 8, ABI 1, latest supported behaviour revision 7
-and latest supported state format 2. These global values report the library's
+The current interface is API 8, ABI 1, latest supported behaviour revision 8
+and latest supported state format 3. These global values report the library's
 latest support; a saved state's envelope is selected by its installed machine.
 API 8 appends portable state operations and the state-format version field. The
 earlier API 7 additions, original media/info prefixes, prior status values and
 size minima remain compatible. Revision 6 includes the corrected slow-edge DMA
-handoff; revision 7 adds the selected YM profile. No-YM frame, audio and state
-bytes remain on their revision-6/format-1 path.
+handoff; revision 7 adds the selected YM profile; revision 8 adds the Souper
+snapshot profile. Non-Souper legacy and YM frame, audio and state bytes remain
+on their revision-6/format-1 and revision-7/format-2 paths, respectively.
 
 | Field | Meaning |
 |---|---|

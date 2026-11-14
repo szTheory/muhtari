@@ -1519,35 +1519,40 @@ static int souper_case(const char *path, const char *expected, const char *repor
         fprintf(stderr, "souper: loaded profile geometry mismatch\n");
         failed = 1;
     }
-    uint8_t state_bytes[64];
+    if (m == NULL) {
+        free(image);
+        return 1;
+    }
+    size_t state_size = muhtari_state_size(m);
+    uint8_t *state_bytes = state_size > 0u ? (uint8_t *)malloc(state_size + 8u) : NULL;
+    uint8_t *state_saved = state_size > 0u ? (uint8_t *)malloc(state_size) : NULL;
     uint64_t state_ticks = m->bus.ticks;
     uint16_t state_pc = m->cpu.pc;
     uint8_t state_bank = m->cart.bank;
     uint8_t state_open_bus = m->bus.open_bus;
-    memset(state_bytes, 0xA5, sizeof state_bytes);
-    if (!failed && (muhtari_state_size(m) != 0u ||
-                    muhtari_save_state(m, state_bytes, sizeof state_bytes) !=
-                        MUHTARI_STATUS_ERR_STATE_UNAVAILABLE ||
-                    muhtari_load_state(m, state_bytes, sizeof state_bytes) !=
-                        MUHTARI_STATUS_ERR_STATE_UNAVAILABLE ||
-                    muhtari__state_payload_size(m) != 0u ||
-                    muhtari__state_payload_write(m, state_bytes, sizeof state_bytes) != 0 ||
-                    muhtari__state_payload_validate(m, state_bytes, sizeof state_bytes) != 0)) {
-        fprintf(stderr, "souper: incomplete snapshot profile was not unavailable\n");
+    if (!failed && (state_size == 0u || state_bytes == NULL || state_saved == NULL)) {
+        fprintf(stderr, "souper: complete snapshot storage is unavailable\n");
         failed = 1;
     }
-    if (!failed)
-        muhtari__state_payload_apply(m, state_bytes, sizeof state_bytes);
-    for (size_t i = 0u; i < sizeof state_bytes; i++) {
-        if (state_bytes[i] != 0xA5u) {
-            fprintf(stderr, "souper: unavailable state operation changed caller bytes\n");
-            failed = 1;
-            break;
+    if (!failed) {
+        memset(state_bytes, 0xA5, state_size + 8u);
+        failed = muhtari_save_state(m, state_bytes, state_size + 8u) != MUHTARI_STATUS_OK ||
+                 state_bytes[8] != 3u || state_bytes[20] != 8u;
+        if (!failed) {
+            memcpy(state_saved, state_bytes, state_size);
+            for (size_t i = state_size; i < state_size + 8u; i++)
+                failed |= state_bytes[i] != 0xA5u;
+            muhtari__cart_write(m, 0xFFF8u, (uint8_t)((state_bank + 1u) & 31u));
+            failed |= m->cart.bank == state_bank;
+            failed |= muhtari_load_state(m, state_saved, state_size) != MUHTARI_STATUS_OK;
+            failed |= m->cart.bank != state_bank || memcmp(state_saved, state_bytes, state_size) != 0;
         }
+        if (failed)
+            fprintf(stderr, "souper: complete snapshot save/restore failed\n");
     }
     if (!failed && (m->cart.bank != state_bank || m->bus.ticks != state_ticks ||
                     m->cpu.pc != state_pc || m->bus.open_bus != state_open_bus)) {
-        fprintf(stderr, "souper: unavailable state operation changed the machine\n");
+        fprintf(stderr, "souper: snapshot restore changed unrelated machine state\n");
         failed = 1;
     }
     uint8_t *pixels = (uint8_t *)calloc(13u * 320u * 242u, 1u);
@@ -1621,6 +1626,8 @@ static int souper_case(const char *path, const char *expected, const char *repor
     muhtari_destroy(m);
     free(image);
     free(pixels);
+    free(state_saved);
+    free(state_bytes);
     return failed;
 }
 
@@ -1681,7 +1688,7 @@ static int retail_transaction(uint8_t *image)
     muhtari_versions versions = {0};
     versions.size = (uint32_t)sizeof versions;
     if (muhtari_get_versions(&versions) != MUHTARI_STATUS_OK || versions.abi != 1u ||
-        versions.behaviour_revision != 7u) {
+        versions.behaviour_revision != 8u) {
         return 1;
     }
     muhtari_config cfg = {0};
@@ -2907,7 +2914,7 @@ static int pal_report(const char *path, const char *expected)
                                          "audio_frames 601\n",
                                          "audio_samples 577879\n",
                                          "audio_rate 48000/1\n",
-                                         "audio_behaviour_revision 7\n",
+                                         "audio_behaviour_revision 8\n",
                                          "audio_synthesis exact-q23-16x64-dc20\n"};
     for (unsigned i = 0u; i < 7u && !failed; i++) {
         size_t n = strlen(fields[i]);
@@ -3227,7 +3234,7 @@ static int pal_case(const char *path, const char *expected, const char *out,
         controller_digest(reference, "audio_transitions_sha256", &trace.hash);
         controller_digest(reference, "audio_pcm_sha256", &pcm);
         fputs("audio_frames 601\naudio_samples 577879\naudio_rate 48000/1\n"
-              "audio_behaviour_revision 7\naudio_synthesis exact-q23-16x64-dc20\n",
+              "audio_behaviour_revision 8\naudio_synthesis exact-q23-16x64-dc20\n",
               reference);
         pal_mailbox_line(reference, mb);
         printf("pal: startup960/rem336960 +600 full142102-tick frames; 281x961+319x962; "

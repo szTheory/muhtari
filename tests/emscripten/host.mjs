@@ -681,15 +681,17 @@ function validateYmNative(native, fixture, sourceIdentity) {
 }
 
 function validateSouperNative(native, fixture, sourceIdentity) {
-  check(native.schema === 3 && native.workload === 'souper' &&
+  check(native.schema === 4 && native.workload === 'souper' &&
         native.fixture_sha256 === sha256(fixture), 'wrong Souper workload or fixture');
   check(validHash(native.source_identity) && native.source_identity === sourceIdentity,
         'wrong Souper source identity');
   check(native.numeric_oracles?.width === WIDTH && native.numeric_oracles?.height === HEIGHT &&
         native.numeric_oracles?.sample_rate === 48000 &&
         JSON.stringify(native.numeric_oracles?.mailbox_values) === '[0,0,64,64,224]' &&
-        native.numeric_oracles?.state_unavailable === true,
-        'Souper numeric oracle or state-unavailable contract is incomplete');
+        native.state?.format === 3 && native.state?.behaviour === 8 &&
+        Number.isInteger(native.state?.bytes) && native.state.bytes > 32768 &&
+        validHash(native.state?.library_sha256) && validHash(native.state?.adapter_sha256),
+        'Souper numeric oracle or complete snapshot evidence is incomplete');
   check(native.abi?.memory_system_ram !== undefined && native.abi?.device_joypad !== undefined &&
         native.abi?.pixel_format_xrgb8888 !== undefined, 'Souper libretro ABI receipt is incomplete');
   check(Array.isArray(native.frames) && native.frames.length === 12, 'incomplete Souper frame set');
@@ -779,21 +781,16 @@ async function runSouper(options, evidence, factory) {
   const core = new Core(await factory({ wasmBinary: evidence.wasm }), evidence);
   try {
     core.startSouperGame(evidence.fixture);
-    const sentinel = core.allocate(32, 'Souper unavailable-state sentinel');
-    try {
-      core.module.HEAPU8.fill(0xa5, sentinel, sentinel + 32);
-      check(core.module._retro_serialize(sentinel, 32) === 0,
-            'Souper serialization was accepted while state support is unavailable');
-      check(core.module.HEAPU8.subarray(sentinel, sentinel + 32).every((byte) => byte === 0xa5),
-            'Souper serialization refusal changed caller storage');
-      check(core.module._retro_unserialize(sentinel, 32) === 0,
-            'Souper unserialization was accepted while state support is unavailable');
-      check(core.module.HEAPU8.subarray(sentinel, sentinel + 32).every((byte) => byte === 0xa5),
-            'Souper unserialization refusal changed caller storage');
-    } finally { core.module._free(sentinel); }
+    const saved = core.serialize();
+    check(saved.readUInt32LE(8) === 3 && saved.readUInt32LE(20) === 8 &&
+          saved.length === evidence.native.state.bytes &&
+          sha256(saved) === evidence.native.state.adapter_sha256,
+          'portable Souper snapshot differs from the native module');
+    check(core.unserialize(saved) && sha256(core.serialize()) === sha256(saved),
+          'portable Souper core refused its own complete snapshot');
     for (const frame of evidence.native.frames) runSouperFrame(core, frame);
     assertSouperMailbox(core);
-    process.stdout.write('Souper production Wasm verification passed (12 native-parity frames, mailbox, unavailable state)\n');
+    process.stdout.write('Souper production Wasm verification passed (12 native-parity frames, mailbox, format-3 state)\n');
   } finally { core.dispose(); }
 }
 

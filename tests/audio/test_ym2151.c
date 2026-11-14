@@ -220,7 +220,7 @@ static int ym_public_fixture(const char *image_path, const char *state_path, uin
     printf("fixture_sha256 %s\nframe 6 sha256 %s\nstate 2 sha256 %s\n"
            "audio_pcm_sha256 %s\n"
            "audio_frames 6\naudio_samples %lu\naudio_rate 48000/1\n"
-           "audio_behaviour_revision 7\naudio_synthesis exact-q23-16x64-dc20\n"
+           "audio_behaviour_revision 8\naudio_synthesis exact-q23-16x64-dc20\n"
            "audio_min %d\naudio_max %d\naudio_nonzero %llu\ndiagnostic %s\n",
            fixture_hash, frame_hash, state_hash, pcm_hex, (unsigned long)sample_total, (int)minimum,
            (int)maximum, (unsigned long long)nonzero, diagnostic);

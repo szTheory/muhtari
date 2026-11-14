@@ -400,9 +400,11 @@ physical EXRAM startup is not established. The owned diagnostic uses generated
 images and literal mapper observations through the library, runner and loaded
 module. Those results establish conformance to this selected software model,
 not physical hardware accuracy, BupChip audio, or retail-game compatibility.
-Complete snapshot support remains a separate follow-up; until then,
-`muhtari_state_size` returns zero and save/load report
-`MUHTARI_STATUS_ERR_STATE_UNAVAILABLE` for Souper.
+Souper snapshots use format 3 / behavior revision 8 and include all five mapper
+latches plus every EXRAM byte, including hidden pages. Restore validates the
+complete payload before changing the instance and reuses its existing EXRAM
+allocation. Other installed topologies keep their legacy format 1 / revision 6
+or YM format 2 / revision 7 bytes and identities.
 
 ### Linear
 
@@ -491,7 +493,7 @@ policies are not new cartridge measurements. Console RESET input remains a
 switch read by software; it does not power-cycle the board.
 
 Behaviour revision 3 first made this board executable. The current public API
-is 7, ABI 1 and behaviour revision 6. The disposable Absolute
+is 8, ABI 1 and latest behaviour revision 8. The disposable Absolute
 tracer copies a version-1 numeric mailbox from fixed ROM and replaces its
 record with a real $4000 read: the independently selected bank-zero tag $5A
 must report value 90. The library, runner and actual libretro module validate

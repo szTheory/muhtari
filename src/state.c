@@ -16,6 +16,9 @@
 #define STATE_LEGACY_BEHAVIOUR_REVISION 6u
 #define STATE_YM_FORMAT 2u
 #define STATE_YM_BEHAVIOUR_REVISION 7u
+#define STATE_SOUPER_FORMAT 3u
+#define STATE_SOUPER_BEHAVIOUR_REVISION 8u
+#define STATE_SOUPER_LATCH_BYTES 5u
 #define STATE_EXPANSION_BYTES 131072u
 #define STATE_SYNTH_IMPULSE_LIMIT INT64_C(320961867552000)
 #define STATE_SYNTH_INTEGRATOR_LIMIT INT64_C(274877906944)
@@ -202,6 +205,7 @@ void muhtari__state_bind_identity(muhtari *m)
 {
     static const uint8_t domain[] = "MUHTARI-STATE-IDENTITY";
     static const uint8_t ym_profile[] = "MUHTARI-XM-YM2151-OPM-PROFILE-v1";
+    static const uint8_t souper_profile[] = "MUHTARI-SOUPER-MAPPER-PROFILE-v1";
     muhtari__sha256 hash;
     uint8_t sound[8];
     uint8_t profile[6];
@@ -246,6 +250,8 @@ void muhtari__state_bind_identity(muhtari *m)
     state_identity_u32(&hash, 22u, m->synth.secondary);
     if (m->synth.ym_installed != 0u)
         state_identity_bytes(&hash, 23u, ym_profile, sizeof ym_profile);
+    if (m->cart.info.board == MUHTARI_BOARD_SOUPER)
+        state_identity_bytes(&hash, 24u, souper_profile, sizeof souper_profile);
     muhtari__sha256_final(&hash, m->state_identity);
 }
 
@@ -439,6 +445,8 @@ static int state_rule_valid(const struct state_cursor *cursor, enum state_rule r
         }
         if (info->board == MUHTARI_BOARD_ACTIVISION)
             return value <= 7u;
+        if (info->board == MUHTARI_BOARD_SOUPER)
+            return value <= 31u;
         if (info->board == MUHTARI_BOARD_ABSOLUTE)
             return value <= 1u;
         if (info->board == MUHTARI_BOARD_SUPERGAME) {
@@ -1147,6 +1155,13 @@ static void state_visit(const muhtari *source, muhtari *target, struct state_cur
                 source->battery.bytes, SIZE_MAX);
     if (source->synth.ym_installed != 0u)
         state_ym_visit(source, target, cursor);
+    if (source->cart.info.board == MUHTARI_BOARD_SOUPER) {
+        FIELD(cart.souper_mode, 1u, 0, STATE_RANGE, 0u, 7u, MARK_COUNT);
+        U8(cart.souper_character_a);
+        U8(cart.souper_character_b);
+        FIELD(cart.souper_exram_video_page, 1u, 0, STATE_RANGE, 0u, 7u, MARK_COUNT);
+        FIELD(cart.souper_exram_data_page, 1u, 0, STATE_RANGE, 0u, 7u, MARK_COUNT);
+    }
 
 #undef CHECK_U64
 #undef CHECK_U32
@@ -1310,9 +1325,9 @@ static int state_topology_valid(const muhtari *m)
     if (m == NULL || m->loaded == 0u || m->cart.rom == NULL || m->cart.info.rom_size == 0u ||
         m->battery.bytes > sizeof m->battery.data)
         return 0;
-    /* Souper's mapper latches and EXRAM do not enter the public state format
-       until the complete profile-specific visitor is installed. */
-    if (m->cart.info.board == MUHTARI_BOARD_SOUPER)
+    if (m->cart.info.board == MUHTARI_BOARD_SOUPER &&
+        (m->cart.info.rom_size != 512u * 1024u || m->cart.info.ram_size != 32768u ||
+         m->cart.info.board_options != 0u))
         return 0;
     if (m->synth.ym_installed > 1u)
         return 0;
@@ -1442,7 +1457,8 @@ void muhtari__state_payload_apply(muhtari *m, const uint8_t *bytes, size_t size)
     if (state_topology_valid(m) == 0 || muhtari__state_payload_validate(m, bytes, size) == 0)
         return;
     size_t ym_bytes = m->synth.ym_installed != 0u ? STATE_YM_BYTES : 0u;
-    size_t battery_at = size - m->battery.bytes - ym_bytes;
+    size_t souper_bytes = m->cart.info.board == MUHTARI_BOARD_SOUPER ? STATE_SOUPER_LATCH_BYTES : 0u;
+    size_t battery_at = size - m->battery.bytes - ym_bytes - souper_bytes;
     int battery_changed = memcmp(m->battery.data, bytes + battery_at, m->battery.bytes) != 0;
     (void)state_walk(m, m, STATE_APPLY, bytes, NULL, size);
     muhtari__synth_observe_reset(m);
@@ -1482,9 +1498,6 @@ muhtari_status muhtari_save_state(const muhtari *m, void *buffer, size_t capacit
         return MUHTARI_STATUS_ERR_ARGUMENT;
     if (m->loaded == 0u)
         return MUHTARI_STATUS_ERR_STATE_UNAVAILABLE;
-    if (m->cart.info.board == MUHTARI_BOARD_SOUPER)
-        return MUHTARI_STATUS_ERR_STATE_UNAVAILABLE;
-
     size_t total = muhtari_state_size(m);
     if (total == 0u)
         return MUHTARI_STATUS_ERR_INVALID_STATE;
@@ -1503,11 +1516,17 @@ muhtari_status muhtari_save_state(const muhtari *m, void *buffer, size_t capacit
        branch for that same source-defined layout. */
     (void)state_walk(m, NULL, STATE_WRITE, NULL, output + STATE_HEADER_BYTES, payload);
     memcpy(output, magic, sizeof magic);
-    state_put_u32(output + 8u, m->synth.ym_installed != 0u ? STATE_YM_FORMAT : STATE_LEGACY_FORMAT);
+    uint32_t format = m->cart.info.board == MUHTARI_BOARD_SOUPER ? STATE_SOUPER_FORMAT
+                      : m->synth.ym_installed != 0u                ? STATE_YM_FORMAT
+                                                                    : STATE_LEGACY_FORMAT;
+    uint32_t behaviour = m->cart.info.board == MUHTARI_BOARD_SOUPER
+                             ? STATE_SOUPER_BEHAVIOUR_REVISION
+                         : m->synth.ym_installed != 0u ? STATE_YM_BEHAVIOUR_REVISION
+                                                      : STATE_LEGACY_BEHAVIOUR_REVISION;
+    state_put_u32(output + 8u, format);
     state_put_u32(output + 12u, STATE_HEADER_BYTES);
     state_put_u32(output + 16u, (uint32_t)total);
-    state_put_u32(output + 20u, m->synth.ym_installed != 0u ? STATE_YM_BEHAVIOUR_REVISION
-                                                            : STATE_LEGACY_BEHAVIOUR_REVISION);
+    state_put_u32(output + 20u, behaviour);
     state_put_u32(output + 24u, 0u);
     memcpy(output + 28u, m->state_identity, sizeof m->state_identity);
     state_put_u32(output + 60u, 0u);
@@ -1522,9 +1541,6 @@ muhtari_status muhtari_load_state(muhtari *m, const void *buffer, size_t bytes)
         return MUHTARI_STATUS_ERR_ARGUMENT;
     if (m->loaded == 0u)
         return MUHTARI_STATUS_ERR_STATE_UNAVAILABLE;
-    if (m->cart.info.board == MUHTARI_BOARD_SOUPER)
-        return MUHTARI_STATUS_ERR_STATE_UNAVAILABLE;
-
     size_t expected = muhtari_state_size(m);
     if (expected == 0u || bytes != expected)
         return MUHTARI_STATUS_ERR_INVALID_STATE;
@@ -1535,9 +1551,13 @@ muhtari_status muhtari_load_state(muhtari *m, const void *buffer, size_t bytes)
     if (memcmp(input, magic, sizeof magic) != 0 ||
         state_get_u32(input + 12u) != STATE_HEADER_BYTES || state_get_u32(input + 16u) != expected)
         return MUHTARI_STATUS_ERR_INVALID_STATE;
-    uint32_t expected_format = m->synth.ym_installed != 0u ? STATE_YM_FORMAT : STATE_LEGACY_FORMAT;
-    uint32_t expected_revision =
-        m->synth.ym_installed != 0u ? STATE_YM_BEHAVIOUR_REVISION : STATE_LEGACY_BEHAVIOUR_REVISION;
+    uint32_t expected_format = m->cart.info.board == MUHTARI_BOARD_SOUPER ? STATE_SOUPER_FORMAT
+                               : m->synth.ym_installed != 0u                ? STATE_YM_FORMAT
+                                                                            : STATE_LEGACY_FORMAT;
+    uint32_t expected_revision = m->cart.info.board == MUHTARI_BOARD_SOUPER
+                                     ? STATE_SOUPER_BEHAVIOUR_REVISION
+                                 : m->synth.ym_installed != 0u ? STATE_YM_BEHAVIOUR_REVISION
+                                                              : STATE_LEGACY_BEHAVIOUR_REVISION;
     if (state_get_u32(input + 8u) != expected_format ||
         state_get_u32(input + 20u) != expected_revision)
         return MUHTARI_STATUS_ERR_UNSUPPORTED_STATE;

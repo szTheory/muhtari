@@ -78,6 +78,9 @@ synced and closed. A failed write leaves an existing destination intact.
 The versioned state bytes are little-endian, carry a SHA-256 effective machine identity, and use CRC-32 for
 corruption detection only; CRC-32 does not authenticate a file. The core validates saved clocks against the
 installed hardware's producer ranges and relationships rather than an arbitrary absolute tick limit.
+Envelope versions depend on the loaded topology: legacy machines use format 1 / behavior 6, the selected XM/YM
+profile uses format 2 / behavior 7, and the selected Souper mapper uses format 3 / behavior 8. Souper states include
+all mapper controls and the complete 32 KiB EXRAM. The legacy and YM envelope bytes and identities remain unchanged.
 
 `--load-state` runs after the cartridge, selected hardware and optional battery file are loaded, and before any
 movie input or frame. `N` on `--state-at-frame` and `--hash-state` counts successful frame calls in this
@@ -523,7 +526,7 @@ audio_synthesis exact-q23-16x64-dc20
 ```
 
 The revision line reports the library's latest supported behaviour revision
-(currently 7), including for runs without YM. A revision-6 movie therefore
+(currently 8), including for runs without YM. A revision-6 movie therefore
 keeps the existing “replaying anyway” warning; the revision number is metadata,
 separate from unchanged no-YM frame and audio hashes.
 

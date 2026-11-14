@@ -1314,7 +1314,9 @@ static int observe_souper(const char *fixture_path, const char *output_path)
     muhtari *reference = NULL;
     struct retro_game_info game = {0};
     frame_observation frames[12] = {{0}};
-    uint8_t unavailable[32];
+    uint8_t *library_state = NULL, *adapter_state = NULL;
+    size_t library_state_bytes = 0u, adapter_state_bytes = 0u;
+    char library_state_sha256[65], adapter_state_sha256[65];
 
     OBS_CHECK(read_file(fixture_path, &image, &image_bytes), "cannot read patterned Souper fixture");
     hash_hex(image, image_bytes, fixture_hash);
@@ -1342,17 +1344,25 @@ static int observe_souper(const char *fixture_path, const char *output_path)
     game.size = image_bytes;
     OBS_CHECK(retro_load_game(&game), "production native libretro adapter refused Souper fixture");
 
-    memset(unavailable, 0xA5, sizeof unavailable);
-    OBS_CHECK(muhtari_state_size(reference) == 0u &&
-                  muhtari_save_state(reference, unavailable, sizeof unavailable) ==
-                      MUHTARI_STATUS_ERR_STATE_UNAVAILABLE &&
-                  muhtari_load_state(reference, unavailable, sizeof unavailable) ==
-                      MUHTARI_STATUS_ERR_STATE_UNAVAILABLE &&
-                  retro_serialize_size() == 0u && !retro_serialize(unavailable, sizeof unavailable) &&
-                  !retro_unserialize(unavailable, sizeof unavailable),
-              "Souper state operations were not unavailable");
-    for (size_t i = 0u; i < sizeof unavailable; i++)
-        OBS_CHECK(unavailable[i] == 0xA5u, "Souper state refusal changed caller storage");
+    OBS_CHECK(save_library_state(reference, &library_state, &library_state_bytes) &&
+                  save_adapter_state(&adapter_state, &adapter_state_bytes),
+              "could not save public library or loaded adapter Souper state");
+    OBS_CHECK(library_state_bytes == adapter_state_bytes,
+              "public library/adapter state sizes differ: %lu/%lu",
+              (unsigned long)library_state_bytes, (unsigned long)adapter_state_bytes);
+    OBS_CHECK(library_state[8] == 3u && library_state[20] == 8u,
+              "public library emitted wrong format/revision: %u/%u", library_state[8],
+              library_state[20]);
+    OBS_CHECK(adapter_state[8] == 3u && adapter_state[20] == 8u,
+              "loaded adapter emitted wrong format/revision: %u/%u", adapter_state[8],
+              adapter_state[20]);
+    hash_hex(library_state, library_state_bytes, library_state_sha256);
+    hash_hex(adapter_state, adapter_state_bytes, adapter_state_sha256);
+    OBS_CHECK(retro_unserialize(adapter_state, adapter_state_bytes) &&
+                  muhtari_load_state(reference, library_state, library_state_bytes) ==
+                      MUHTARI_STATUS_OK &&
+                  adapter_state_unchanged(adapter_state, adapter_state_bytes),
+              "public library or loaded adapter refused its complete Souper snapshot");
 
     for (unsigned frame = 0u; frame < 12u; frame++)
         OBS_CHECK(run_pair_frame(reference, 0u, 0u, frame, -1, frame > 0u, &frames[frame], reason,
@@ -1375,18 +1385,21 @@ static int observe_souper(const char *fixture_path, const char *output_path)
     FILE *out = fopen(output_path, "wb");
     OBS_CHECK(out != NULL, "cannot create Souper native receipt");
     fprintf(out,
-            "{\"schema\":3,\"workload\":\"souper\",\"fixture_sha256\":\"%s\","
+            "{\"schema\":4,\"workload\":\"souper\",\"fixture_sha256\":\"%s\","
             "\"source_identity\":\"%s\",\"numeric_oracles\":{\"width\":320,"
             "\"height\":242,\"sample_rate\":48000,\"mailbox_values\":["
-            "0,0,64,64,224,160,161,162,162,163,163,166,166,167,167,160,161,94,94,224],"
-            "\"state_unavailable\":true},\"abi\":{\"environment\":{"
+            "0,0,64,64,224,160,161,162,162,163,163,166,166,167,167,160,161,94,94,224]},"
+            "\"state\":{\"format\":3,\"behaviour\":8,\"bytes\":%lu,"
+            "\"library_sha256\":\"%s\",\"adapter_sha256\":\"%s\"},"
+            "\"abi\":{\"environment\":{"
             "\"get_core_options_version\":%u,\"set_core_options\":%u,\"get_variable\":%u,"
             "\"get_variable_update\":%u,\"set_pixel_format\":%u,\"set_support_no_game\":%u,"
             "\"set_controller_info\":%u,\"set_input_descriptors\":%u,\"set_memory_maps\":%u,"
             "\"set_support_achievements\":%u,\"set_message\":%u,"
             "\"get_savestate_context\":%u},\"pixel_format_xrgb8888\":%u,"
             "\"device_joypad\":%u,\"joypad_up\":%u,\"memory_system_ram\":%u},\"frames\":[",
-            fixture_hash, MUHTARI_CORE_SOURCE_ID,
+            fixture_hash, MUHTARI_CORE_SOURCE_ID, (unsigned long)library_state_bytes,
+            library_state_sha256, adapter_state_sha256,
             (unsigned)RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION,
             (unsigned)RETRO_ENVIRONMENT_SET_CORE_OPTIONS, (unsigned)RETRO_ENVIRONMENT_GET_VARIABLE,
             (unsigned)RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE,
@@ -1410,6 +1423,8 @@ static int observe_souper(const char *fixture_path, const char *output_path)
     retro_deinit();
     muhtari_destroy(reference);
     free(image);
+    free(adapter_state);
+    free(library_state);
     return 1;
 }
 
