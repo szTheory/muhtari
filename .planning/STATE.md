@@ -31,16 +31,16 @@ See [PROJECT.md](PROJECT.md) (updated 2026-11-13), [REQUIREMENTS.md](REQUIREMENT
 
 Phase: 22 (Complete Souper homebrew mapper) — IN PROGRESS
 Current Plan: 3 of 3
-Status: Plan 22-01 complete; plan 22-02 is next
-Last activity: 2026-11-14 — Plan 22-01 completed
+Status: Plans 22-01 and 22-02 complete; plan 22-03 is next
+Last activity: 2026-11-14 — Plan 22-02 completed
 
-Progress: [█████░░░░░] 50% (2/4 plans)
+Progress: [███████░░░] 75% (3/4 plans)
 
 
 ## Performance Metrics
 
-v7.0 has two planned phases. Phase 21 is complete; Phase 22 plan 22-01 is complete,
-four Souper requirements are complete, and three Souper requirements remain open.
+v7.0 has two planned phases. Phase 21 is complete; Phase 22 plans 22-01 and 22-02 are complete,
+six Souper requirements are complete, and SOUPER-04 remains open for plan 22-03.
 Phase 21 is report-only; no v7.0 product build, test, host or CI acceptance is claimed. Prior milestone metrics
 and accepted v0.14.0 publication evidence remain in the
 [v6.0 roadmap](milestones/v6.0-ROADMAP.md) and [ship receipt](milestones/v6.0-SHIP.md).
@@ -118,12 +118,12 @@ Last session: 2026-11-14T04:00:36.658Z
 Stopped at: Completed 22-02-PLAN.md
 Resume file: None
 
-Next action: Clear context and run `$gsd-discuss-phase 22` from the current checkout. No directory switch is needed.
+Next action: Continue Phase 22 with `$gsd-execute-phase 22`; plan 22-03 and phase acceptance checks remain. No directory switch is needed.
 
 ## Operator Next Steps
 
 
-- Discuss Phase 22 with `$gsd-discuss-phase 22`, reusing the current [roadmap](ROADMAP.md), [requirements](REQUIREMENTS.md), saved [recommendation](research/next-milestone/v7-SOUPER.md), and [Phase 21 tune-up](phases/21-measured-milestone-tune-up/21-TUNEUP.md). No directory switch is needed.
+- Execute Phase 22 plan 22-03 with `$gsd-execute-phase 22`; plan 22-02 is complete, and phase acceptance remains pending. No directory switch is needed.
 
 
 ## Decisions
@@ -146,4 +146,4 @@ Next action: Clear context and run `$gsd-discuss-phase 22` from the current chec
 
 ## Next action
 
-Phase 22 plan 22-01 is complete. Continue with `$gsd-execute-phase 22`; phase acceptance remains pending until plans 22-02 and 22-03 and their phase checks complete. Original Phase 12/14 host and remote stops remain binding.
+Phase 22 plans 22-01 and 22-02 are complete. Continue with `$gsd-execute-phase 22`; phase acceptance remains pending until plan 22-03 and its phase checks complete. Original Phase 12/14 host and remote stops remain binding.

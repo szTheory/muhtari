@@ -79,8 +79,8 @@ and [engineering rules](preparation/ENGINEERING.md) before new research.
 
 ## Progress
 
-Phase 21 is complete, and Phase 22 plan 22-01 is complete. TUNE-11 and four
-Souper requirements are complete; three Souper requirements remain pending.
+Phase 21 is complete, and Phase 22 plans 22-01 and 22-02 are complete. TUNE-11
+and six Souper requirements are complete; SOUPER-04 remains pending for plan 22-03.
 All eight requirements map to exactly one phase; no requirement is orphaned or
 accepted ahead of verification.
 
@@ -91,8 +91,8 @@ accepted ahead of verification.
 
 ## Next boundary
 
-Continue Phase 22 with `$gsd-execute-phase 22`; plans 22-02 and 22-03 remain
-before phase acceptance. Publication, merge, remote dispatch and
+Continue Phase 22 with `$gsd-execute-phase 22`; plan 22-03 and phase acceptance
+checks remain. Publication, merge, remote dispatch and
 host/device/identity-bound actions remain separate boundaries.
 Original Phase 12/14 denied/spent scopes, all nine deferred v3.0 requirements and
 unaccepted hardware/platform claims remain unchanged.
