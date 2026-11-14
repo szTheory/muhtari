@@ -1334,7 +1334,7 @@ static int souper_image(const char *template_path, const char *path)
     muhtari_cart_info info = {0};
     info.size = (uint32_t)sizeof info;
     if (n != 524416u ||
-        strcmp(hex, "234b943b5e2f5e67539718128a8b435491e1fac3973ab8b37b33243a1774bc3c") != 0 ||
+        strcmp(hex, "d6c8883e4afe10d40a9dd7d2383b905562a72b809af8bd7be3223ae9727dcc67") != 0 ||
         memcmp(image + 128u + 0x7F6F0u, "SOUPER01", 8u) != 0 ||
         muhtari_probe(image, n, &info) != MUHTARI_STATUS_OK ||
         info.board != MUHTARI_BOARD_SOUPER || info.rom_size != 512u * 1024u) {

@@ -371,19 +371,38 @@ options, audio or geometry refuse that declaration instead of selecting a
 geometry-compatible v3 fallback; other valid v4 board declarations retain
 their usual precedence.
 
-At load and power cycle, EXRAM and mapper latches are zeroed. CPU and MARIA both
-read EXRAM at `$4000–$7FFF`, ROM bank 0 at `$8000–$BFFF`, and the fixed final ROM
-bank at `$C000–$FFFF`. The selected mapping is based on the A78/game software
-profile collected in cartridge preparation (CART.25/CART.42), not a physical
-cartridge measurement or a retail-game compatibility claim. Plan 22-02 adds
-register-selected banking; Plan 22-03 adds complete snapshot support. Until that
-state work lands, `muhtari_state_size` returns zero and save/load report
-`MUHTARI_STATUS_ERR_STATE_UNAVAILABLE` for Souper.
+At load and power cycle, EXRAM and mapper latches are zeroed. Writes anywhere in
+`$8000–$FFFF` select a register by the low three address bits; reads never write
+a register. Register 0 selects the low five bits of the 16 KiB `$8000–$BFFF` ROM
+bank, while `$C000–$FFFF` remains the final ROM bank. Registers 1 and 2 retain
+the complete character A/B selectors. Register 3 independently selects MARIA
+fetch trapping (bit 0), character mapping (bit 1), and segmented EXRAM (bit 2).
+Registers 4 and 5 select the video and data 4 KiB EXRAM pages from their low
+three bits. Register 6 is undefined; register 7's BupChip command is outside
+this mapper-only profile and has no audio effect.
 
-The owned diagnostic proves this initial map through CPU and MARIA accesses and
-checks the generated image in the library, runner, native libretro adapter and
-production portable loader. It does not establish later banking modes, complete
-gameplay, or physical hardware behavior.
+CPU reads expose the first 16 KiB of EXRAM at `$4000–$7FFF` in flat mode. With
+segmentation enabled, `$4000–$5FFF` remains on the first 8 KiB, and the
+independent register 4/5 pages appear at `$6000–$6FFF` and `$7000–$7FFF`.
+MARIA uses the same CPU window for `$4000–$7FFF`. When character mapping is
+enabled, MARIA sees the final ROM bank at `$8000–$9FFF` and selected character
+ROM at `$A000–$BFFF`; address A12 aliases, and address A7 chooses selector A or
+B. Selector bits 7..1 supply ROM address bits 18..12, address bits 11..8 are
+preserved, selector bit 0 supplies bit 7, and address bits 6..0 are preserved.
+When fetch trapping is enabled, MARIA's `$C000–$FFFF` window uses the selected
+CPU EXRAM view; the CPU still reads fixed ROM there. The controls combine
+independently. These view rules follow the public software map and development
+description gathered in cartridge preparation (CART.25/CART.42), not a
+calibrated physical measurement or a Rikki & Vikki compatibility claim.
+
+The zero-filled EXRAM power-on behavior is an explicit emulator policy because
+physical EXRAM startup is not established. The owned diagnostic uses generated
+images and literal mapper observations through the library, runner and loaded
+module. Those results establish conformance to this selected software model,
+not physical hardware accuracy, BupChip audio, or retail-game compatibility.
+Complete snapshot support remains a separate follow-up; until then,
+`muhtari_state_size` returns zero and save/load report
+`MUHTARI_STATUS_ERR_STATE_UNAVAILABLE` for Souper.
 
 ### Linear
 

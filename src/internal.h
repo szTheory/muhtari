@@ -304,6 +304,11 @@ struct muhtari__cart {
     uint8_t bank;
     uint8_t ram_bank;
     uint8_t irq_mask;
+    /* Souper has independent bank, character, mode and EXRAM page latches
+       (docs/hardware/cartridge.md, Souper). */
+    uint8_t souper_mode;
+    uint8_t souper_character_a, souper_character_b;
+    uint8_t souper_exram_video_page, souper_exram_data_page;
     uint16_t pokey_at[2];
     muhtari_cart_info info;
 };

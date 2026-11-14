@@ -3587,26 +3587,58 @@ static void souper_cpu(void)
     CHECK_EQ_U64(muhtari__cart_read(m, 0x4000u, 0), 0xA0u);
     CHECK_EQ_U64(muhtari__cart_read(m, 0x5FFFu, 0), 0xA1u);
     CHECK_EQ_U64(muhtari__cart_read(m, 0x6000u, 0), 0xA2u);
-    CHECK_EQ_U64(muhtari__cart_read(m, 0x7FFFu, 0), 0xA7u);
+    CHECK_EQ_U64(muhtari__cart_read(m, 0x7FFFu, 0), 0xA3u);
 
     /* Low-three-bit register aliases cover the whole upper 32 KiB. */
-    muhtari__cart_write(m, 0xFFF8u, 31u);
-    CHECK_EQ_U64(muhtari__cart_read(m, 0x8000u, 0), 0x5Fu);
+    for (uint32_t bank = 0u; bank < 31u; bank++) {
+        muhtari__cart_write(m, 0xFFF8u, (uint8_t)bank);
+        CHECK_EQ_U64(m->cart.bank, bank);
+        CHECK_EQ_U64(muhtari__cart_read(m, 0x8000u, 0), 0x40u + bank);
+        CHECK_EQ_U64(muhtari__cart_read(m, 0xBFFFu, 0), 0x40u + bank);
+    }
+    muhtari__cart_write(m, 0xFFF8u, 0xFFu);
+    CHECK_EQ_U64(m->cart.bank, 31u);
+    CHECK_EQ_U64(muhtari__cart_read(m, 0x8000u, 0), 0x4Cu); /* Final bank holds code. */
     CHECK_EQ_U64(muhtari__cart_read(m, 0xBFFFu, 0), 0x5Fu);
     CHECK_EQ_U64(muhtari__cart_read(m, 0xC010u, 0), 0x5Fu);
-    CHECK_EQ_U64(muhtari__cart_read(m, 0x8000u, 0), 0x5Fu); /* Reads do not write. */
+    CHECK_EQ_U64(muhtari__cart_read(m, 0x8000u, 0), 0x4Cu); /* Reads do not write. */
 
     /* Register 3's segment bit and registers 4/5's 4 KiB page selectors are
        separate latches; the fixed lower 8 KiB remains pages zero and one. */
     muhtari__cart_write(m, 0xFFFBu, 0x04u);
-    muhtari__cart_write(m, 0xFFFCu, 6u);
-    muhtari__cart_write(m, 0xFFFDu, 7u);
+    CHECK_EQ_U64(m->cart.souper_mode, 4u);
     CHECK_EQ_U64(muhtari__cart_read(m, 0x4000u, 0), 0xA0u);
     CHECK_EQ_U64(muhtari__cart_read(m, 0x5FFFu, 0), 0xA1u);
-    CHECK_EQ_U64(muhtari__cart_read(m, 0x6000u, 0), 0xA6u);
-    CHECK_EQ_U64(muhtari__cart_read(m, 0x6FFFu, 0), 0xA6u);
-    CHECK_EQ_U64(muhtari__cart_read(m, 0x7000u, 0), 0xA7u);
-    CHECK_EQ_U64(muhtari__cart_read(m, 0x7FFFu, 0), 0xA7u);
+    for (uint32_t page = 0u; page < 8u; page++) {
+        muhtari__cart_write(m, 0xFFFCu, (uint8_t)page);
+        muhtari__cart_write(m, 0xFFFDu, (uint8_t)page);
+        CHECK_EQ_U64(muhtari__cart_read(m, 0x6000u, 0), 0xA0u + page);
+        CHECK_EQ_U64(muhtari__cart_read(m, 0x6FFFu, 0), 0xA0u + page);
+        CHECK_EQ_U64(muhtari__cart_read(m, 0x7000u, 0), 0xA0u + page);
+        CHECK_EQ_U64(muhtari__cart_read(m, 0x7FFFu, 0), 0xA0u + page);
+    }
+
+    /* Character registers retain all eight selector bits, and reads from
+       aliased register addresses are ordinary ROM reads. */
+    muhtari__cart_write(m, 0xC001u, 0xA5u);
+    muhtari__cart_write(m, 0xC002u, 0x5Au);
+    CHECK_EQ_U64(m->cart.souper_character_a, 0xA5u);
+    CHECK_EQ_U64(m->cart.souper_character_b, 0x5Au);
+    CHECK_EQ_U64(muhtari__cart_read(m, 0xC001u, 0), 0x00u);
+    CHECK_EQ_U64(m->cart.souper_character_a, 0xA5u);
+
+    /* Low mode bits are independent and high bits are ignored. */
+    muhtari__cart_write(m, 0xC003u, 0xFBu);
+    CHECK_EQ_U64(m->cart.souper_mode, 3u);
+    CHECK_EQ_U64(m->cart.souper_character_a, 0xA5u);
+    CHECK_EQ_U64(m->cart.souper_character_b, 0x5Au);
+    muhtari__cart_write(m, 0xC006u, 0xFFu);
+    muhtari__cart_write(m, 0xC007u, 0xFFu);
+    CHECK_EQ_U64(m->cart.souper_mode, 3u);
+    CHECK_EQ_U64(m->cart.souper_character_a, 0xA5u);
+    CHECK_EQ_U64(m->cart.souper_character_b, 0x5Au);
+    CHECK_EQ_U64(m->synth.pokeys, 0u);
+    CHECK_EQ_U64(m->synth.ym_installed, 0u);
 
     /* Undefined command registers are intentionally inert in this mapper-only
        profile; no audio route is installed or queued. */

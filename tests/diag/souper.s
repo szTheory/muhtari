@@ -42,6 +42,100 @@ reset SUBROUTINE
         ldx #0
         ldy #5
         jsr mb_record
+
+        ; Distinguish both ends of each flat EXRAM half with CPU stores.
+        lda #$A0
+        sta $4000
+        lda #$A1
+        sta $5FFF
+        lda #$A2
+        sta $6000
+        sta $6FFF
+        lda #$A3
+        sta $7000
+        sta $7FFF
+        lda $4000
+        ldx #0
+        ldy #6
+        jsr mb_record
+        lda $5FFF
+        ldx #0
+        ldy #7
+        jsr mb_record
+        lda $6000
+        ldx #0
+        ldy #8
+        jsr mb_record
+        lda $6FFF
+        ldx #0
+        ldy #9
+        jsr mb_record
+        lda $7000
+        ldx #0
+        ldy #10
+        jsr mb_record
+        lda $7FFF
+        ldx #0
+        ldy #11
+        jsr mb_record
+
+        ; Enable all independent mode bits, then select distinct video/data
+        ; pages through register aliases. Lower EXRAM remains fixed.
+        lda #7
+        sta $D003
+        lda #6
+        sta $D004
+        lda #7
+        sta $D005
+        lda #$A6
+        sta $6000
+        sta $6FFF
+        lda #$A7
+        sta $7000
+        sta $7FFF
+        lda $6000
+        ldx #0
+        ldy #12
+        jsr mb_record
+        lda $6FFF
+        ldx #0
+        ldy #13
+        jsr mb_record
+        lda $7000
+        ldx #0
+        ldy #14
+        jsr mb_record
+        lda $7FFF
+        ldx #0
+        ldy #15
+        jsr mb_record
+        lda $4000
+        ldx #0
+        ldy #16
+        jsr mb_record
+        lda $5FFF
+        ldx #0
+        ldy #17
+        jsr mb_record
+
+        ; Exercise the high bank selector and its low-three-bit alias. The
+        ; fixed upper bank remains executable while the lower bank changes.
+        lda #30
+        sta $FFF8
+        lda $8000
+        ldx #0
+        ldy #18
+        jsr mb_record
+        lda $BFFF
+        ldx #0
+        ldy #19
+        jsr mb_record
+        lda #31
+        sta $FFF8
+        lda $8000
+        ldx #0
+        ldy #20
+        jsr mb_record
         jsr mb_finish
         ; The mailbox samples the power-on zeros first. Then graphics at $4000
         ; exercise the same EXRAM through MARIA's real DMA fetches.
