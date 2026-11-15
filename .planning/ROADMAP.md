@@ -9,8 +9,9 @@
 - [x] **v5.0 — Downloadable WebAssembly core** — phases 17–18; shipped as v0.13.1 on 2026-11-11. [Archive](milestones/v5.0-ROADMAP.md) · [Ship receipt](milestones/v5.0-SHIP.md)
 - [x] **v6.0 — YM2151 homebrew sound** — phases 19–20; shipped as v0.14.0 on 2026-11-13. [Archive](milestones/v6.0-ROADMAP.md) · [Ship receipt](milestones/v6.0-SHIP.md)
 - [x] **v7.0 — Souper homebrew mapper** — phases 21–22; closed locally 2026-11-14 with `override_closeout`, all eight requirements passed. This is not a package shipment. [Audit](milestones/v7.0-MILESTONE-AUDIT.md) · [Archive](milestones/v7.0-ROADMAP.md) · [Requirements](milestones/v7.0-REQUIREMENTS.md)
+- [ ] **v8.0 — GameDrive streamed-audio contract qualification** — phases 23–24; selected 2026-11-15. Qualification only; no implementation or public compatibility change. [Requirements](REQUIREMENTS.md) · [Recommendation](research/next-milestone/2026-11-15-game-drive-qualification.md)
 
-## Phases
+## Completed phase history
 
 <details>
 <summary>✅ v7.0 — Souper homebrew mapper (phases 21–22) — CLOSED LOCALLY 2026-11-14</summary>
@@ -22,10 +23,42 @@ All five plans have summaries. Native integration found and closed the loaded-mo
 
 </details>
 
+## v8.0 — GameDrive streamed-audio contract qualification (in progress)
+
+**Goal:** Determine whether GameDrive streamed ADPCM can be supported on a complete, bounded and lawfully testable contract, while keeping Muhtari's public media/API/state compatibility unchanged until a separate decision.
+
+**Scope boundary:** Phase 23 measures the shipped/release/CI baseline and checks for cheap applicable preflights. Phase 24 qualifies contract facts, lawful generated fixtures and an independent audio oracle, deterministic lifecycle/state needs, resource bounds, and existing-consumer consequences. A no-go is valid if a required source fact or oracle is unavailable. No ADPCM implementation, sidecar API, API/ABI change, state-format change or physical-hardware run is included.
+
+## Phases
+
+### Phase 23: Measured milestone tune-up
+
+**Goal:** Establish the current source-specific release, CI, hygiene and quality baseline and record a low-risk, evidence-backed correction or bounded no-change result, while using cheap applicable consistency checks before longer suites.
+**Depends on:** v7.0 local closeout and merged implementation; no unfinished predecessor phase.
+**Requirements:** TUNE-12
+**Success Criteria** (what must be TRUE):
+1. Maintainers can identify the exact current main/release source, publication state, required and report-only gates, prior failure receipts and applicable reproduced lessons without mistaking a later source pass for acceptance of the older release SHA.
+2. Queue time, critical-path job durations, canceled work and the most significant current bottleneck are recorded from comparable CI evidence; timeout, cache, topology or parallelism changes are made only with sufficient repeated evidence.
+3. Cheap, deterministic consistency checks that apply to the upcoming qualification work are identified and run before any longer local suite/process; failures are investigated before retry and no required workload or fault coverage is weakened.
+4. The phase records one low-risk, reproduced correction or a bounded no-change disposition with commands, exit statuses, source identity and run URLs.
+**Plans:** Not planned
+
+### Phase 24: Qualify the GameDrive audio contract
+
+**Goal:** Produce a source-qualified go/no-go for a future GameDrive streamed-ADPCM feature, including legal independent-fixture feasibility, finite resource needs, state continuation and compatibility consequences, without implementing the feature or choosing a public API/state change.
+**Depends on:** Phase 23
+**Requirements:** GDA-01, GDA-02, GDA-03, GDA-04
+**Success Criteria** (what must be TRUE):
+1. The evidence ledger gives a source revision, evidence class, confidence and status for each needed command/register, track/sidecar identity, stream framing, playback clock, output/mixing, error, pause/resume/reset and save/load field, clearly separating facts, inference, unknowns and contradictions.
+2. The work establishes whether generated legal fixtures can exercise the documented profile with expected PCM authored independently of production code; if not, the no-go names the missing normative details or permissions and does not use unlicensed sample/encoder code or copyrighted game data.
+3. A bounded design note evaluates media ownership and identity, mono output, deterministic lifecycle/state continuation, memory/work bounds, refusal behavior and existing library/runner/libretro/portable consumers. It lists possible versioned API/state consequences without selecting or implementing them.
+4. The final recommendation states go/no-go, strongest alternative, rejected options, compatibility risks and concrete evidence that would reopen the decision. Missing authority or a future hardware run is not inferred as passed.
+**Plans:** Not planned
+
+**Current evidence:** RetroHQ firmware 26.01.2266 notes a potential ADPCM playback-glitch fix and save/load support for ADPCM audio. The release note does not specify the complete stream timing/framing or an independent expected-PCM contract. The sample and encoder repositories remain unlicensed. See the [qualification review](research/next-milestone/2026-11-15-game-drive-qualification.md).
+
+**Progress:** Planning complete; 0/2 phases executed. Phase numbering continues after v7.0 Phase 22.
+
 ## Next boundary
 
-v7.0 is locally complete and archived. No successor scope is selected; use
-`$gsd-new-milestone` for recommendation-first discussion. The owner has
-preauthorized normal publication, PR merge and the CI/release automation they
-trigger at natural delivery points. Original Phase 12/14 stops, the nine deferred
-v3.0 requirements and unaccepted hardware/platform claims remain unchanged.
+Start Phase 23 through `$gsd-autonomous`. The owner has authorized ordinary in-scope recommendation following, Git publication, PR merge and required CI/release automation at natural delivery points. Preserve the v0.15.0 exact-source release stop, original Phase 12/14 stops, nine deferred v3.0 requirements and all unaccepted hardware/platform claims.

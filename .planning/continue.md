@@ -1,23 +1,33 @@
-# Current continuation — v7.0 archived locally; no successor selected
+# Current continuation — v8.0 selected; Phase 23 is next
 
-v7.0 — Souper homebrew mapper — is complete and archived locally. Its eight
-requirements, two phases, integration review and source-qualified local checks
-passed. The milestone used `override_closeout` because one workspace record was
-acknowledged as deferred with its `unknown` verdict intact; no worktree was
-changed. This is not package publication, push, merge or tag.
+The selected milestone is **v8.0 — GameDrive streamed-audio contract
+qualification**. It has two phases: Phase 23 measures the current release/CI
+baseline and checks cheap applicable preflights; Phase 24 qualifies source
+facts, lawful generated-fixture and independent-audio-oracle feasibility,
+resource bounds, and public compatibility consequences. A documented no-go is
+valid if the contract cannot be established. No audio implementation, sidecar
+API, API/ABI or state-format change is selected.
 
-The next command is `$gsd-new-milestone`, which begins a recommendation-first
-scope discussion. No successor scope has been selected. Preserve existing host,
-remote and identity-bound stops; v7.0 does not renew them.
+Context can be cleared. Run `$gsd-autonomous` from the root session to execute
+Phases 23–24 through a go/no-go recommendation. Stop before a future
+implementation or public compatibility choice that needs owner approval.
+
+v7.0's local closeout remains historical. The implementation merged in PR #63;
+PR #65 fixed the Wasm32 test-stack failure and its full PR CI passed. The v0.15.0
+tag/draft still identifies the failed source and remains unpublished; see the
+[shipping receipt](milestones/v7.0-SHIP.md). No tag retarget or other release
+identity change is in scope. Original Phase 12/14 host, remote and identity stops
+remain binding.
+
+Do not use `$gsd-progress` to reconstruct archived phase counts: OpenGSD 1.20.0
+reports archived phases 19–20 as absent from the active phase index. Saved
+STATE/ROADMAP records remain authoritative; see the reproduced limitation in
+[LESSONS.md](LESSONS.md#opengsd-progress-over-archived-milestones-2026-11-13).
 
 The sections below preserve historical v7.0 kickoff and cross-project scoping
-provenance. Their former Phase 22 execution action has been superseded by this
-current handoff.
+provenance; they are not the current scope choice.
 
-The active v7.0 position is recorded in STATE and ROADMAP. Do not use
-`$gsd-progress` to reconstruct archived phase counts: OpenGSD 1.20.0 currently
-reports archived phases 19–20 as absent from the active phase index. See the
-reproduced limitation in [LESSONS.md](LESSONS.md#opengsd-progress-over-archived-milestones-2026-11-13).
+The active v8.0 position is recorded in STATE, ROADMAP and REQUIREMENTS.
 [State](STATE.md), [milestone audit](milestones/v6.0-MILESTONE-AUDIT.md) and
 [Phase20 evidence](milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-COST-EVIDENCE.md)
 carry the current result and precise unavailable-platform limits.
