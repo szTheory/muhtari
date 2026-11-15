@@ -31,6 +31,9 @@ All five plans have summaries. Native integration found and closed the loaded-mo
 
 ## Phases
 
+- [x] **Phase 23: Measured milestone tune-up** — Establish source-qualified CI, release and hygiene evidence with a bounded no-change disposition. (completed 2026-11-15)
+- [ ] **Phase 24: Qualify the GameDrive audio contract** — Produce a source-qualified go/no-go without implementation or public compatibility changes.
+
 ### Phase 23: Measured milestone tune-up
 
 **Goal:** Establish the current source-specific release, CI, hygiene and quality baseline and record a low-risk, evidence-backed correction or bounded no-change result, while using cheap applicable consistency checks before longer suites.
@@ -58,8 +61,8 @@ All five plans have summaries. Native integration found and closed the loaded-mo
 
 **Current evidence:** RetroHQ firmware 26.01.2266 notes a potential ADPCM playback-glitch fix and save/load support for ADPCM audio. The release note does not specify the complete stream timing/framing or an independent expected-PCM contract. The sample and encoder repositories remain unlicensed. See the [qualification review](research/next-milestone/2026-11-15-game-drive-qualification.md).
 
-**Progress:** Planning complete; 0/2 phases executed. Phase numbering continues after v7.0 Phase 22.
+**Progress:** Phase 23 complete; Phase 24 not started (1/2 phases complete). Phase numbering continues after v7.0 Phase 22.
 
 ## Next boundary
 
-Start Phase 23 through `$gsd-autonomous`. The owner has authorized ordinary in-scope recommendation following, Git publication, PR merge and required CI/release automation at natural delivery points. Preserve the v0.15.0 exact-source release stop, original Phase 12/14 stops, nine deferred v3.0 requirements and all unaccepted hardware/platform claims.
+Continue Phase 24 through `$gsd-autonomous`. The owner has authorized ordinary in-scope recommendation following, Git publication, PR merge and required CI/release automation at natural delivery points. Preserve the v0.15.0 exact-source release stop, original Phase 12/14 stops, nine deferred v3.0 requirements and all unaccepted hardware/platform claims.
