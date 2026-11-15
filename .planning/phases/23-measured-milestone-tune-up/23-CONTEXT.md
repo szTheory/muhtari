@@ -25,7 +25,8 @@ Record the current v8.0 source, publication, CI and quality baseline; inspect cu
 
 ### Local verification order
 - Run cheap checks first: `git diff --check`, the GSD roadmap analyzer, the existing tree hygiene check, and the CMake hygiene workflow.
-- Do not repeat the full product CI workflow if these checks pass and the current merged source already has green required CI with unchanged product/test/workflow bytes. Record that limitation explicitly; this report is not a new product acceptance claim.
+- After those four checks and report tasks, run the GSD execute-phase post-plan test gate `cmake --workflow --preset ci` once. Record its local command and exit separately from hosted receipts; this workflow gate does not create a new product-source acceptance claim.
+- Do not dispatch or rerun hosted CI. Do not run any additional product suite beyond the single GSD post-plan gate.
 - Keep the evidence in the phase report as commands and exits plus hosted run URLs; do not commit logs or generated ROM, firmware, save, or screenshot bytes.
 
 ### the agent's Discretion
