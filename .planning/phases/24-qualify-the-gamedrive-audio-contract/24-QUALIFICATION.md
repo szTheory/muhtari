@@ -145,6 +145,7 @@ Commands and exit statuses are local receipts. Run URLs are N/A-local. The check
 | Committed phase range | `git diff --check 5350b9777294909fc83f2add73a1f25350373d9f..HEAD` | 0 on both runs | N/A-local | The committed plan-start through Task 1 range has no whitespace errors. |
 | Report working diff | `git diff --check -- .planning/phases/24-qualify-the-gamedrive-audio-contract/24-QUALIFICATION.md` | 0 | N/A-local | The tracked report had no whitespace errors; the subsequent full-tree check also passed after the final receipt rows were added. |
 | Final report recheck | `cmake -DREPORT="$PWD/.planning/phases/24-qualify-the-gamedrive-audio-contract/24-QUALIFICATION.md" -P build/phase24/qualification-check.cmake` | 0 | N/A-local | Final check after Task 2 content and local receipt rows were present. |
+| Configured local CI | `cmake --workflow --preset ci` | 0 | N/A-local | Repository regression workflow passed. It does not establish GameDrive conformance, independent expected PCM, or hardware behavior. |
 | Untracked report check | `git diff --no-index --check /dev/null .planning/phases/24-qualify-the-gamedrive-audio-contract/24-QUALIFICATION.md` | not applicable | N/A-local | The report is tracked since the Task 1 commit, so this untracked-file check was not used. |
 
 Fault copies are disposable under ignored `build/phase24`; they are not report evidence or tracked files. The checker accepts cited unknowns and only checks schema, required fields, readiness labels, and repository-relative Markdown destinations.
