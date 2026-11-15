@@ -244,14 +244,11 @@ There is no technology or dependency adoption in this phase. The project policy 
 
 | # | Claim | Section | Risk if Wrong |
 |---|-------|---------|---------------|
-| — | No unverified technology, package, or platform assumption is needed. The remaining decision depends on local preflight outcomes, which execution must record. | Summary / Open Questions | A reproduced fault may turn the bounded no-change result into a narrow required fix. |
+| — | No unverified technology, package, or platform assumption is needed. Execution must record the local preflight outcomes and follow the already specified result branch; no planning choice remains. | Summary / Open Questions | A reproduced fault may require the plan's bounded investigation and correction branch. |
 
 ## Open Questions
 
-1. **Do any of the four cheap local preflights reproduce a fault?**
-   - What we know: the merged source has two green required CI receipts, while this research intentionally did not run local checks. [CITED: both run URLs; task scope]
-   - What's unclear: the exit status of `git diff --check`, GSD `roadmap.analyze`, `scripts/hygiene.sh --tree`, and `cmake --workflow --preset hygiene` on the execution snapshot. [VERIFIED: `.planning/phases/23-measured-milestone-tune-up/23-CONTEXT.md:26-29`]
-   - Recommendation: run them in that order; investigate and resolve a reproduced failure before retrying. If all pass and product/test/workflow bytes remain unchanged from the merged baseline, do not rerun the full product CI and state the acceptance limitation clearly. [VERIFIED: `.planning/phases/23-measured-milestone-tune-up/23-CONTEXT.md:26-29`]
+None block planning. The four preflight outcomes are intentionally unknown until execution; they are execution-time acceptance inputs, not an unresolved research or planning decision. The approved plan already specifies the exact check order and both branches: if checks pass and product/test/workflow bytes are unchanged, record bounded no-change without repeating full product CI; if a check fails, investigate the fault and use the bounded correction path while preserving existing fault detection. No result is asserted here. [VERIFIED: `.planning/phases/23-measured-milestone-tune-up/23-CONTEXT.md:21-29`]
 
 ## Environment Availability
 
