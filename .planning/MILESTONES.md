@@ -1,10 +1,27 @@
 # Project Milestones: muhtari
 
+## v8.0 GameDrive streamed-audio contract qualification (In progress: 2026-11-15)
+
+**Goal:** Decide whether GameDrive streamed ADPCM has a complete, bounded and lawfully testable contract for a future Muhtari implementation, without changing public media/API/state compatibility.
+
+**Scope:** Phase 23 performs the measured milestone tune-up and cheap applicable preflights. Phase 24 qualifies source-backed command/media/timing/lifecycle/state facts, a legal generated fixture and independent PCM oracle, resource limits and existing-consumer consequences. It ends in a go/no-go recommendation; a documented no-go is valid if required evidence is missing. No product implementation or public compatibility decision is included.
+**Requirements:** TUNE-12 and GDA-01–04; all map to Phases 23–24 in [REQUIREMENTS.md](REQUIREMENTS.md).
+**Recommendation:** GameDrive is the strongest bounded qualification candidate. The strongest alternative is to keep the horizon open until an authoritative profile or a lawful title-blocking correction exists. See the [2026-11-15 evidence review](research/next-milestone/2026-11-15-game-drive-qualification.md).
+**Next:** `$gsd-autonomous` starts Phase 23 and advances through the qualification gates. Stop before any later implementation/API/state choice that requires owner approval.
+
+---
+
+## v7.0 shipping reconciliation (2026-11-15)
+
+The v7.0 local archive remains historical. PR [#63](https://github.com/szTheory/muhtari/pull/63) merged the mapper implementation; release PR #64 created tag/draft v0.15.0 at `2b47656cb0307fb5fc10d9ea3fbfd2236830c355`. Its exact-source Wasm32 `core.state.souper` check failed because the test exceeded the WASI stack. PR [#65](https://github.com/szTheory/muhtari/pull/65) moved scratch storage out of the stack without reducing assertions and merged the correction. The full PR CI and Nightly equality passed; the post-merge main CI and the exact release identity remain documented in [v7.0-SHIP.md](milestones/v7.0-SHIP.md). The v0.15.0 tag still targets the failed source and the draft remains unpublished; the release workflow skipped publication for the test-only follow-up. No tag was retargeted.
+
+---
+
 ## v7.0 Souper homebrew mapper (Closed locally: 2026-11-14)
 
 **Phases completed:** 2 phases, 5 plans, 10 tasks
 
-**Closeout type:** `override_closeout`; all eight requirements and both phases pass. Known verification overrides: 1 newly acknowledged, 49 carried forward from prior closes (see STATE.md Deferred Items). The acknowledged workspace record retains its `unknown` verdict; no worktree was changed. This planning closeout does not claim package publication, push, merge or a tag.
+**Closeout type:** `override_closeout`; all eight requirements and both phases pass. At the time of this local planning closeout, no package publication, push, merge or tag was claimed. Known verification overrides: 1 newly acknowledged, 49 carried forward from prior closes (see STATE.md Deferred Items). The acknowledged workspace record retains its `unknown` verdict; no worktree was changed. See the separate 2026-11-15 shipping reconciliation above for subsequent evidence.
 
 **Key accomplishments:**
 - A source-qualified v0.14.0 release and quality report records a bounded no-change disposition and preserves earlier failures.
@@ -14,7 +31,7 @@
 
 **Audit:** [v7.0 milestone audit](milestones/v7.0-MILESTONE-AUDIT.md). The Phase 21 spec-less probe remains explicitly unresolved and nonblocking; no probe pass is claimed.
 **Archive:** [roadmap](milestones/v7.0-ROADMAP.md), [requirements](milestones/v7.0-REQUIREMENTS.md), [product roadmap snapshot](milestones/v7.0-PRODUCT-ROADMAP.md), [audit](milestones/v7.0-MILESTONE-AUDIT.md), [phase records](milestones/v7.0-phases/).
-**Next:** `$gsd-new-milestone` begins the next scope discussion; no successor is selected.
+**Next:** v8.0 is selected and active; see the current scope above and [ROADMAP.md](ROADMAP.md).
 
 ---
 
@@ -31,7 +48,7 @@
 **Closeout:** `verified_closeout`; nine current requirements, both phases and all five integration flows pass. Zero newly acknowledged items; 49 previously acknowledged items retain their verdicts. The nine deferred v3 requirements and original Phase12/14 stops remain unchanged.
 **Publication:** [v0.14.0](https://github.com/szTheory/muhtari/releases/tag/v0.14.0) is published with 19 ZIP archives and `SHA256SUMS` (20 assets, matching the release contract). Release run [43441765548](https://github.com/szTheory/muhtari/actions/runs/43441765548) passed, including latest installation. PR [#61](https://github.com/szTheory/muhtari/pull/61) merged; CI on its merge commit passed. See the [ship receipt](milestones/v6.0-SHIP.md).
 **Archive:** [roadmap](milestones/v6.0-ROADMAP.md), [requirements](milestones/v6.0-REQUIREMENTS.md), [audit](milestones/v6.0-MILESTONE-AUDIT.md), [phase records](milestones/v6.0-phases/).
-**Next:** v7.0 Souper mapper-only support is complete locally; see its [audit](milestones/v7.0-MILESTONE-AUDIT.md) and the [rolling roadmap](PRODUCT-ROADMAP.md). No package publication or merge is claimed.
+**At the v6.0 closeout, next:** v7.0 Souper mapper-only support was selected; see its [audit](milestones/v7.0-MILESTONE-AUDIT.md) and the [rolling roadmap](PRODUCT-ROADMAP.md). Its later merge and unpublished package state are recorded in the v7.0 shipping reconciliation above.
 
 ---
 

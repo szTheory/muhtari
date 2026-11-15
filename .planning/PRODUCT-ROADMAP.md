@@ -2,7 +2,7 @@
 title: "Product roadmap (rolling)"
 summary: "Immediate / Near / Mid / Long direction for muhtari with evidence and promotion triggers."
 read_when: "At every new-milestone and complete-milestone step, and when a finding changes priorities."
-updated: 2026-11-14
+updated: 2026-11-15
 ---
 
 # Product roadmap (rolling)
@@ -35,39 +35,46 @@ handheld or unavailable-platform acceptance is inferred. Muhtari retains exactly
 three deliverables and no device/UI code. No new numerical quota, dependency,
 cache, workflow topology or unrelated deadline was introduced.
 
-## Immediate — successor scope not selected
+## Immediate — v8.0 GameDrive contract qualification
 
-v7.0 — Souper homebrew mapper support — is complete and archived locally as an
-`override_closeout`. All eight scoped requirements and both phases passed. The
-closeout acknowledged one workspace-reconciliation record as deferred while
-preserving its `unknown` verdict; 49 earlier acknowledgments remain carried
-forward. This is a planning closeout only: no package publication, push, merge
-or tag is claimed. See the [v7.0 audit](milestones/v7.0-MILESTONE-AUDIT.md),
-[requirements](milestones/v7.0-REQUIREMENTS.md),
-[phase records](milestones/v7.0-phases/) and
-[source recommendation](research/next-milestone/v7-SOUPER.md).
+v7.0 — Souper homebrew mapper — is implemented, locally audited and merged
+through PR #63. The local `override_closeout` acknowledged one workspace
+reconciliation item as deferred with its `unknown` verdict preserved; 49 prior
+acknowledgments remain carried forward. The later shipping attempt is recorded
+in the [v7.0 receipt](milestones/v7.0-SHIP.md). Tag and draft release v0.15.0
+still identify `2b47656`, whose exact-source Wasm32 test failed. The test-only
+correction merged through PR #65; [post-merge main CI](https://github.com/szTheory/muhtari/actions/runs/43720418561)
+also passed, including Wasm32. The [Release workflow](https://github.com/szTheory/muhtari/actions/runs/43720418613)
+passed its target check but skipped publication because that `test:` commit did
+not create a new release. The package is not published; the existing tag is not
+retargeted. This limitation does not change the v8 qualification scope.
 
-No successor has been selected. **Current recommendation: do not promote a new
-core behavior yet.** The strongest next feature candidate is GameDrive streamed
-ADPCM for homebrew music: RetroHQ publishes a `$420` command interface and
-sidecar track convention. Supporting it would add sidecar data to Muhtari's
-versioned public media contract and snapshots, while the available sources do
-not establish the complete playback clock and stream contract. Those are
-material API/state compatibility decisions, so this is not ready to become a
-committed implementation scope.
+**Selected recommendation:** v8.0 qualifies whether GameDrive streamed ADPCM
+has a complete, bounded and lawfully testable contract for a future Muhtari
+implementation. Phase 23 performs the recurring measured tune-up and cheap
+preflights; Phase 24 records source-backed command/media/timing/state facts,
+fixture/oracle feasibility, compatibility implications and a go/no-go result.
+The v0.15.0 release failure and new test fix also reinforce the existing rule:
+run a narrow consistency check before starting a longer suite and investigate
+failures before retrying.
 
-The strongest alternative is to keep the horizon open until a source-qualified
-feature profile or a lawful, reproducible title-blocking correction appears.
-The saved accuracy review found no current defect. BupChip is less ready: its
-licensed BupBoop renderer is a possible seed, but no public command/media
-schedule or generated fixture exercises the actual `$8007` path. See the
-[2026-11-14 successor review](research/next-milestone/2026-11-14-successor-review.md)
-for exact evidence, sources and revisit gates. Preserve the existing host,
-phase-specific remote-attempt and identity-bound stops. Normal milestone Git
-publication, PR merge and required CI/release automation are authorized at
-natural delivery points; this does not renew any other stopped allowance.
+RetroHQ firmware 26.01.2266 now notes both a potential ADPCM playback-glitch
+fix and save/load support for ADPCM audio. This makes playback recovery and
+continuation important to qualify, but it does not supply the stream clock,
+framing, or independent PCM expectations. Its examples document `$420` controls
+and sidecar tracks; the linked sample/encoder sources remain unlicensed and are
+not reusable. See the [2026-11-15 evidence review](research/next-milestone/2026-11-15-game-drive-qualification.md)
+for source identity, confidence, contradictions, exclusions and revisit triggers.
 
-## Near term — source-qualify homebrew audio before promotion
+**Strongest alternative:** keep the horizon open until an authoritative stream
+profile or a lawful, reproducible title-blocking correction appears. No current
+accuracy defect is established. BupChip is less ready: no public command/media
+schedule or generated fixture exercises the actual `$8007` path. Preserve the
+host, phase-specific remote-attempt and identity-bound stops. Normal milestone
+Git publication, PR merge and required CI/release automation remain authorized
+at natural delivery points; this does not renew another stopped allowance.
+
+## Later — implementation only after qualification
 
 For an accuracy milestone, require one concrete title-blocking 7800 correction
 backed by a lawful discriminating input and an independent expected result. Do
@@ -77,12 +84,12 @@ counterexample exists, keep that path open rather than inventing a defect.
 LibFuturo owns its PAL browser/profile qualification; its current work has not
 established a new Muhtari API or package requirement.
 
-GameDrive streamed ADPCM is the most concrete homebrew-audio candidate if the
-owner accepts a new caller-supplied sidecar contract. Before implementation,
-qualify stream framing, playback timing, generated independent audio results,
-and bounded save/load continuation. The sample and encoder repositories are
-unlicensed and cannot seed Muhtari. BupChip remains deferred until its bus
-command and music-payload format have a source-qualified profile.
+Do not implement GameDrive streamed audio unless Phase 24 closes the contract
+and oracle gaps and the owner separately accepts the concrete sidecar, public
+API/ABI and save-state consequences. If evidence is still missing, retain a
+no-go and wait for authoritative material; do not reverse-engineer from or copy
+the unlicensed sample/encoder repositories. BupChip remains deferred until its
+bus command and music-payload format have a source-qualified profile.
 
 The nine v3.0 gaps remain open: TUNE-06/07, PLAY-01–04 and FRONT-02–04. Keep the
 published-core RetroArch/input/battery proof, paired Playstead flow and actual
@@ -180,6 +187,7 @@ example; reproduce sibling lessons locally before adopting them.
 | 2026-11-13 | Selected v7.0 Souper mapper-only support after consumer, hardware and adversarial review | TailChao explicitly released the mapper for other developers, Muhtari refuses its declaration, and a public mapping example enables generated acceptance. Keep claims to the published mapper model; exclude BupChip and named-game compatibility. LibFuturo's PAL/browser work remains sibling-owned. |
 | 2026-11-14 | Closed and archived v7.0 locally; left successor scope unselected | All eight requirements and both phase verifications pass. One `unknown` workspace record was acknowledged and deferred, with 49 prior acknowledgments carried forward. This does not claim publication, push, merge or tag. |
 | 2026-11-14 | Refreshed successor candidates after v7.0 | GameDrive documents useful streamed-audio commands, but its unlicensed encoder and missing timing contract leave a new sidecar/API/state surface unqualified. BupChip's licensed renderer still lacks a public bus/media profile. Recommend holding scope selection until the API consequence is accepted and one profile has independent generated acceptance, or a real gameplay counterexample appears. |
+| 2026-11-15 | Selected v8.0 GameDrive contract qualification; reconciled v7.0 shipping | Firmware 26.01.2266 adds a potential ADPCM glitch fix and ADPCM save/load support, but the full stream/PCM oracle contract remains unproven. v7.0 is merged; v0.15.0 remains an unpublished draft pinned to the failing exact source. Keep implementation and its compatibility decision out of v8.0. |
 
 | 2026-11-10 | Completed the offline v4.0 core slice; retain ship and real-browser work as distinct next decisions | All five scoped requirements and integration flows passed locally; measured SDK results are explicitly headless and emulated. |
 

@@ -18,11 +18,20 @@ that any host can embed.
 
 v6.0 YM2151 homebrew sound is implemented, verified and shipped as package v0.14.0. Both phases, all nine current requirements, required local gates and independent review/integration pass. The release workflow and latest-install check passed; PR #61 merged and main CI passed. See the [v6.0 ship receipt](milestones/v6.0-SHIP.md).
 
-v7.0 Souper mapper support is implemented, phase-verified, audited and archived locally. Its scope is one generated-fixture-testable mapper profile for homebrew developers; BupChip audio and Rikki & Vikki compatibility are excluded. All eight v7.0 requirements pass their phase verifications. The mapper follows the cited software profile; physical-cartridge accuracy and retail-game compatibility are not claimed. See the [v7.0 audit](milestones/v7.0-MILESTONE-AUDIT.md), [archived Phase 22 verification](milestones/v7.0-phases/22-complete-souper-homebrew-mapper/22-VERIFICATION.md) and [rolling product roadmap](PRODUCT-ROADMAP.md).
+v7.0 Souper mapper support is implemented, phase-verified, audited and merged through PR #63. Its scope is one generated-fixture-testable mapper profile for homebrew developers; BupChip audio and Rikki & Vikki compatibility are excluded. All eight v7.0 requirements pass their phase verifications. The mapper follows the cited software profile; physical-cartridge accuracy and retail-game compatibility are not claimed. The v0.15.0 tag and draft release still point to `2b47656`, whose Wasm32 test failed; the test-only correction is merged as PR #65 and post-merge main CI passed, including Wasm32. The package is not published because the exact tag still identifies the failed source. See the [v7.0 shipping record](milestones/v7.0-SHIP.md), [v7.0 audit](milestones/v7.0-MILESTONE-AUDIT.md), [archived Phase 22 verification](milestones/v7.0-phases/22-complete-souper-homebrew-mapper/22-VERIFICATION.md) and [rolling product roadmap](PRODUCT-ROADMAP.md).
 
-Phase 21 completed its source-qualified tune-up with a bounded no-change disposition. Phase 22 delivered and verified the Souper profile, deterministic CPU/MARIA mapping, snapshot continuation, and existing-consumer paths. The v7.0 local planning closeout is complete; publication, push and merge have not occurred.
+Phase 21 completed its source-qualified tune-up with a bounded no-change disposition. Phase 22 delivered and verified the Souper profile, deterministic CPU/MARIA mapping, snapshot continuation, and existing-consumer paths. The v7.0 local planning closeout remains historical; subsequent publication work merged the implementation, but the package release remains blocked on its exact-source gate.
 
 Nine v3.0 gaps and every original denied/spent Phase12/14 host/remote scope remain unchanged. Older dirty worktrees stay preserved and root remains canonical. [Milestone audit](milestones/v6.0-MILESTONE-AUDIT.md) and [requirements](milestones/v6.0-REQUIREMENTS.md) retain the exact accepted scope.
+
+## Current Milestone: v8.0 GameDrive streamed-audio contract qualification
+
+**Goal:** Decide whether GameDrive streamed ADPCM has a complete, bounded and lawfully testable contract for a future Muhtari implementation, without guessing at public media, audio or state compatibility.
+
+**Target features:**
+- Phase 23: inspect current release, CI, hygiene and quality evidence; run cheap relevant consistency checks before long suites; record a measured correction or bounded no-change result.
+- Phase 24: qualify the GameDrive command, sidecar, stream timing/framing, audio oracle, lifecycle/state behavior, finite resource bounds and existing-consumer path; produce a go/no-go recommendation.
+- Keep ADPCM implementation, sidecar API/ABI and snapshot changes out of this milestone. Any such change needs a separately reviewed compatibility decision.
 
 ## Latest Locally Completed Milestone: v7.0 Souper homebrew mapper
 
@@ -35,7 +44,7 @@ Nine v3.0 gaps and every original denied/spent Phase12/14 host/remote scope rema
 
 **Scope boundary:** Mapper-profile conformance only. No BupChip/BupBoop audio, Rikki & Vikki gameplay claim, unsupported extra payloads or flash variants, physical hardware calibration, host/UI work or new dependency. The result establishes the selected software model, not physical hardware or retail-game compatibility.
 
-**Closeout:** Locally archived on 2026-11-14 with an override for one separately documented workspace-reconciliation item; the source verdict remains `unknown`. No package publication, push, merge or tag is claimed. See the [v7.0 audit](milestones/v7.0-MILESTONE-AUDIT.md), [roadmap archive](milestones/v7.0-ROADMAP.md), [requirements archive](milestones/v7.0-REQUIREMENTS.md), [product roadmap snapshot](milestones/v7.0-PRODUCT-ROADMAP.md) and [phase archive](milestones/v7.0-phases/).
+**Closeout:** Locally archived on 2026-11-14 with an override for one separately documented workspace-reconciliation item; the source verdict remains `unknown`. The later shipping result is recorded separately in [v7.0-SHIP.md](milestones/v7.0-SHIP.md); the v0.15.0 package remains unpublished. See the [v7.0 audit](milestones/v7.0-MILESTONE-AUDIT.md), [roadmap archive](milestones/v7.0-ROADMAP.md), [requirements archive](milestones/v7.0-REQUIREMENTS.md), [product roadmap snapshot](milestones/v7.0-PRODUCT-ROADMAP.md) and [phase archive](milestones/v7.0-phases/).
 
 ## Latest Shipped Milestone: v6.0 YM2151 homebrew sound
 
@@ -45,7 +54,7 @@ API8/ABI1 remain unchanged. Global latest behavior7/format2 is distinct from unc
 
 **Publication:** [v0.14.0](https://github.com/szTheory/muhtari/releases/tag/v0.14.0) is published. The [release run](https://github.com/szTheory/muhtari/actions/runs/43441765548) and its latest-install check passed. PR [#61](https://github.com/szTheory/muhtari/pull/61) merged and current-main CI passed. See the [ship receipt](milestones/v6.0-SHIP.md).
 
-**Next boundary:** v7.0 is audited and archived locally. No next milestone is selected. Package shipping, publication, merge, remote dispatch, host/device and identity-bound actions remain separate boundaries.
+**At the v6.0 closeout:** v7.0 had been audited locally and package shipping, publication, merge, remote dispatch, host/device and identity-bound actions remained separate boundaries. The current v8.0 selection is recorded above.
 
 ## Earlier Published Milestone: v5.0 Downloadable WebAssembly core
 
@@ -205,7 +214,7 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 ### Active
 
-No v7.0 requirements remain active; all eight were verified in Phases 21 and 22. The nine unmet v3.0 requirements remain deferred with their original evidence and stops; see the [v6.0 archive](milestones/v6.0-REQUIREMENTS.md).
+v8.0 requirements TUNE-12 and GDA-01–04 are active and map to Phases 23 and 24. No v7.0 requirements remain active; all eight were verified in Phases 21 and 22. The nine unmet v3.0 requirements remain deferred with their original evidence and stops; see the [v6.0 archive](milestones/v6.0-REQUIREMENTS.md).
 
 ### Out of Scope
 
@@ -220,15 +229,16 @@ No v7.0 requirements remain active; all eight were verified in Phases 21 and 22.
 - A test framework dependency — plain CTest executables with an in-repo check header cover the need.
 - Atari 2600 emulation — owned by the sibling project `twentysixhundo` (owner correction, 2026-11-11);
   SEED-006 is retired. Existing image recognition/refusal remains supported.
-- BupChip/BupBoop audio, other YM2151 topologies, Covox/ADPCM, ACE, full OpenHSC, AtariVox speech,
-  measured-accuracy oracles, the browser player, full movie recording/generalized continuation, advanced AI/TAS tools and ports — later milestones;
-  see `.planning/seeds/` and `.planning/PRODUCT-ROADMAP.md`.
+- BupChip/BupBoop implementation, other YM2151 topologies, Covox/ADPCM implementation, ACE, full OpenHSC,
+  AtariVox speech, measured-accuracy oracles, the browser player, full movie recording/generalized continuation,
+  advanced AI/TAS tools and ports — outside v8.0; see `.planning/seeds/` and `.planning/PRODUCT-ROADMAP.md`.
 
 ## Context
 
 - **v3.0 closeout.** Phase 13's portable machine-state path is verified; Phase 12's host and Windows claims and Phase 14's RetroArch state acceptance remain unresolved. The denied Phase 12 permission request ended before preflight/content and is not retried. See the v3.0 audit for exact scope and evidence.
 - **Next portability slice.** The owner delegated downscoping and milestone selection after the v3.0 acceptance deadlock. v4.0 takes the already-ranked browser/WebAssembly direction but limits Muhtari work to the existing libretro core and offline deterministic checks; the browser host owns presentation and devices.
 - **v7.0 evidence.** The original Souper author released the mapper so other developers could build on it. A public GameDrive code example and the read-only pinned RTL cross-check define one testable software profile; neither is physical-hardware evidence. The older Rikki & Vikki image-size claim is conflicting, and its game image is not a fixture. LibFuturo's GabbaBoy save work is sibling-owned and creates no demonstrated Muhtari requirement.
+- **v8.0 boundary.** RetroHQ firmware 26.01.2266 notes a potential ADPCM playback-glitch fix and save/load support for ADPCM audio. This makes lifecycle/state qualification relevant but does not define stream timing, framing or independent expected audio. The sample and encoder repositories remain unlicensed; do not copy their code. See the [2026-11-15 qualification review](research/next-milestone/2026-11-15-game-drive-qualification.md).
 
 - **Ecosystem.** The only libretro 7800 core is ProSystem (GPL-2, per-line timing, many homebrew failures); the
   accuracy references are a7800 (MAME-derived, last release 2022), BizHawk's A7800Hawk (C#) and the MiSTer FPGA
@@ -351,4 +361,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-14 after v7.0 milestone closeout*
+*Last updated: 2026-11-15 after selecting v8.0*
