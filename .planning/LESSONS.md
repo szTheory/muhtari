@@ -831,6 +831,24 @@ test's 320 by 292 video frame occupies about 91 KiB on the stack. Keep the frame
 in static test storage; retain the frame guards, hostile execution and
 allocation checks.
 
+The same 64 KiB stack limit was reproduced in `core.state.souper` on exact v7.0
+source `19066fa`: [PR CI run 43620055164, job 132541707562](https://github.com/szTheory/muhtari/actions/runs/43620055164/job/132541707562),
+[Release run 43619982705, job 132535265873](https://github.com/szTheory/muhtari/actions/runs/43619982705/job/132535265873),
+and the merged-main [CI run 43630097925, job 132567138514](https://github.com/szTheory/muhtari/actions/runs/43630097925/job/132567138514)
+all trapped in `test_souper` with a Wasm linear-memory fault. The test had two
+32 KiB automatic buffers in that function. Moving its reusable comparison
+buffer to static test storage fixed the focused case: `cmake --build
+build/wasm32 --target muhtari-test-state -j2` and
+`ctest --test-dir build/wasm32 --output-on-failure -R
+'^core[.]state[.]souper$'` both passed locally. The full local
+`cmake --workflow --preset wasm32` run also passed `core.state.souper` but exited
+8 with only `runner.movie.v2_edges` and `runner.region.pal` timing out; it printed
+`sh: /bin/ps: Operation not permitted` under this host sandbox. Keep these
+historical local results separate from hosted acceptance and do not change
+deadlines from this one environment-specific sample. Check aggregate local
+buffers in WASI test frames before a full suite; use bounded static or heap
+storage without weakening the state/refusal assertions.
+
 ## Resume publication after a release gate is cancelled (2026-11-12)
 
 Release equality was cancelled at its 30-minute deadline on exact release SHA

@@ -51,6 +51,7 @@ static int16_t public_audio_reference[3u][962u];
 static uint8_t invalid_image[4] = {0u, 0u, 0u, 0u};
 static uint8_t battery_control[34816u];
 static uint8_t state_ym_expansion[131072u];
+static uint8_t state_souper_scratch[32768u];
 static muhtari snapshot;
 
 enum boundary_mode { BOUNDARY_AFTER_INSTANCE, BOUNDARY_AFTER_CART };
@@ -560,40 +561,40 @@ static void test_souper(void)
     CHECK_EQ_U64(muhtari_save_state(restored, public_second, total), MUHTARI_STATUS_OK);
     CHECK(memcmp(first, public_second, total) == 0);
 
-    uint8_t exram_before[32768u];
-    memcpy(exram_before, source->cart.ram, sizeof exram_before);
+    /* Keep the 32 KiB comparison buffer off the 64 KiB WASI test stack. */
+    memcpy(state_souper_scratch, source->cart.ram, sizeof state_souper_scratch);
     uint32_t observer_before = observed;
     memcpy(public_control, first, total);
     public_control[total - 1u] = 8u;
     state_rechecksum(public_control, total);
     state_souper_expect_refusal(source, public_control, total, MUHTARI_STATUS_ERR_INVALID_STATE,
-                                exram_before, observer_before);
+                                state_souper_scratch, observer_before);
     memcpy(public_control, first, total);
     public_control[total - STATE_SOUPER_LATCH_BYTES] = 8u;
     state_rechecksum(public_control, total);
     state_souper_expect_refusal(source, public_control, total, MUHTARI_STATUS_ERR_INVALID_STATE,
-                                exram_before, observer_before);
+                                state_souper_scratch, observer_before);
     memcpy(public_control, first, total);
     put_u32(public_control + 8u, 2u);
     state_rechecksum(public_control, total);
     state_souper_expect_refusal(source, public_control, total, MUHTARI_STATUS_ERR_UNSUPPORTED_STATE,
-                                exram_before, observer_before);
+                                state_souper_scratch, observer_before);
     memcpy(public_control, first, total);
     put_u32(public_control + 20u, 7u);
     state_rechecksum(public_control, total);
     state_souper_expect_refusal(source, public_control, total, MUHTARI_STATUS_ERR_UNSUPPORTED_STATE,
-                                exram_before, observer_before);
+                                state_souper_scratch, observer_before);
     memcpy(public_control, first, total);
     public_control[28u] ^= 1u;
     state_rechecksum(public_control, total);
     state_souper_expect_refusal(source, public_control, total, MUHTARI_STATUS_ERR_STATE_MISMATCH,
-                                exram_before, observer_before);
+                                state_souper_scratch, observer_before);
     memcpy(public_control, first, total);
     public_control[total - 1u] ^= 1u;
     state_souper_expect_refusal(source, public_control, total, MUHTARI_STATUS_ERR_INVALID_STATE,
-                                exram_before, observer_before);
+                                state_souper_scratch, observer_before);
     state_souper_expect_refusal(source, first, total - 1u, MUHTARI_STATUS_ERR_INVALID_STATE,
-                                exram_before, observer_before);
+                                state_souper_scratch, observer_before);
 
     memset(public_control, 0xA5, total + 8u);
     CHECK_EQ_U64(muhtari_save_state(source, public_control, total + 8u), MUHTARI_STATUS_OK);
@@ -639,12 +640,12 @@ static void test_souper(void)
     CHECK_EQ_U64(source->cart.souper_character_b, 0u);
     CHECK_EQ_U64(source->cart.souper_exram_video_page, 0u);
     CHECK_EQ_U64(source->cart.souper_exram_data_page, 0u);
-    uint8_t zero_exram[32768u] = {0};
-    CHECK(memcmp(source->cart.ram, zero_exram, sizeof zero_exram) == 0);
+    memset(state_souper_scratch, 0, sizeof state_souper_scratch);
+    CHECK(memcmp(source->cart.ram, state_souper_scratch, sizeof state_souper_scratch) == 0);
     CHECK_EQ_U64(state_load(source, STATE_SOUPER, 0), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(source->cart.bank, 0u);
     CHECK_EQ_U64(source->cart.souper_mode, 0u);
-    CHECK(memcmp(source->cart.ram, zero_exram, sizeof zero_exram) == 0);
+    CHECK(memcmp(source->cart.ram, state_souper_scratch, sizeof state_souper_scratch) == 0);
 
     CHECK_EQ_U64(muhtari__synth_observe(source, NULL, NULL), MUHTARI_STATUS_OK);
     muhtari_destroy(restored);
