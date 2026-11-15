@@ -1,7 +1,7 @@
 # Phase 23: Measured milestone tune-up — Research
 
-**Researched:** 2026-11-15  
-**Domain:** Source-qualified CI operations and evidence review  
+**Researched:** 2026-11-15<br>
+**Domain:** Source-qualified CI operations and evidence review<br>
 **Confidence:** MEDIUM
 
 <user_constraints>
@@ -297,5 +297,5 @@ Validation and security configuration were checked. The project explicitly disab
 - Architecture: HIGH — current workflow and two complete run job graphs agree; the workflow files at the two compared source commits are identical. [VERIFIED: `.github/workflows/ci.yml:375-405,724-785`; `git diff --exit-code` comparison, exit 0]
 - Pitfalls and recommendation: MEDIUM — the no-change recommendation is bounded to two successful observations and the local checks still belong to execution. Exact run data remain linked as citations because the confidence seam does not classify the `gh` provider above LOW. [VERIFIED: `.planning/phases/23-measured-milestone-tune-up/23-CONTEXT.md:17-29`; `.planning/preparation/ENGINEERING.md:305-309`]
 
-**Research date:** 2026-11-15  
+**Research date:** 2026-11-15<br>
 **Valid until:** 2026-12-15 for the stable project pattern; rerun receipt queries before relying on current GitHub status.
