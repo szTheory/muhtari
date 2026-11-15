@@ -689,6 +689,15 @@ A one-time release-policy exception still has to satisfy the existing title and 
 
 A required one-second OpenBIOS setup can time out at1.01s and leave15 required dependents unrun even when another exact-source CI build completes the same fixture. Separate censored failures from complete measurements and separate target cohorts. Four completed Windows run pairs give OpenBIOS maxima0.52s x64/0.79s ARM64, PAL BIOS3.60s x64 and directions1.73s x64; DEC.47 yields2/2/8/4s. A bounded scan of the already observed near-limit cases avoids further one-case publication loops; all assertions, fixture relationships, scales and job caps stay intact. Keep immutable tagged-source publication distinct from ordinary non-release CI maintenance on current main. [Measurements and checks](milestones/v5.0-SHIP.md#non-release-fixture-margin-maintenance).
 
+The same measured-margin rule applied to `title.pal.bios` on macOS x64. Six
+successful main CI runs supplied 12 complete current/base samples, with a
+5.88-second maximum; an 8-second scaled deadline later expired at 8.06 seconds
+in run 43748043795. Raising only the macOS x64 base timeout from 4 to 6 seconds
+sets its scaled bound to 12 seconds, twice the complete maximum, without
+changing other lanes or the test. The quality join's missing macOS artifact
+and required-gate failure were downstream of this timeout. No host-load cause
+is claimed. [Source, samples, failure and correction](phases/23-measured-milestone-tune-up/23-CI-TIMEOUT-FOLLOWUP.md).
+
 ## Incoming integration hypotheses — not locally reproduced (2026-11-11)
 
 LibFuturo's PAL evidence corrections are relevant when another Muhtari consumer
