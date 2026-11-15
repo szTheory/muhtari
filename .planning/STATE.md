@@ -4,17 +4,17 @@ milestone: v8.0
 milestone_name: GameDrive streamed-audio contract qualification (in progress)
 current_phase: 23
 current_phase_name: Measured milestone tune-up
-status: executing
-stopped_at: v8.0 requirements and roadmap set; Phase 23 not yet started
-last_updated: "2026-11-15T16:03:35.861Z"
+status: verifying
+stopped_at: Completed 23-01-PLAN.md; post-plan gate pending
+last_updated: "2026-11-15T16:43:06.947Z"
 last_activity: 2026-11-15
-last_activity_desc: Phase 23 execution started
-state_head: 0aecb1bd5067e1748957e3980cb46ea6695d689a
+last_activity_desc: Phase 23 plan report and ordered local checks completed; post-plan CI gate pending
+state_head: eca33d9e8746961455e8a8d1dbf223d868c487fe
 progress:
   total_phases: 2
   completed_phases: 0
   total_plans: 1
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
 ---
 
@@ -28,18 +28,18 @@ See [PROJECT.md](PROJECT.md) (updated 2026-11-15), [REQUIREMENTS.md](REQUIREMENT
 
 ## Current Position
 
-Phase: 23 (Measured milestone tune-up) — EXECUTING
+Phase: 23 (Measured milestone tune-up) — PLAN TASKS COMPLETE; POST-PLAN GATE PENDING
 Plan: 1 of 1
-Status: Executing Phase 23
-Last activity: 2026-11-15 — Phase 23 execution started
+Status: Plan complete — ready for the configured post-plan CI gate and phase verification
+Last activity: 2026-11-15 — Phase 23 report and ordered local checks completed
 
 
 ## Performance Metrics
 
-v8.0 has two planned phases and no executed plans yet. Its Phase 23 tune-up must record current source-specific
-release/CI evidence and cheap applicable consistency preflights before any longer suite. Phase 24 will qualify
-GameDrive streamed-audio contract evidence and produce a go/no-go; implementation and public compatibility
-changes are out of scope. v7.0's phase verification remains archived at
+v8.0 has two planned phases. Phase 23 plan 23-01 recorded current source-specific release/CI evidence and ran
+the ordered cheap consistency preflights. Its configured post-plan CI gate and phase verification remain pending.
+Phase 24 will qualify GameDrive streamed-audio contract evidence and produce a go/no-go; implementation and
+public compatibility changes are out of scope. v7.0's phase verification remains archived at
 [22-VERIFICATION.md](milestones/v7.0-phases/22-complete-souper-homebrew-mapper/22-VERIFICATION.md), while its
 post-closeout package/shipping status is tracked separately in [v7.0-SHIP.md](milestones/v7.0-SHIP.md).
 **Per-Plan Metrics:**
@@ -50,6 +50,7 @@ post-closeout package/shipping status is tracked separately in [v7.0-SHIP.md](mi
 | Phase 22 P02 | 77min | 2 tasks | 24 files |
 | Phase 22 P03 | 94min | 2 tasks | 32 files |
 | Phase 22 P04 | not recorded | 2 tasks | 3 files |
+| Phase 23 P01 | 23min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -65,7 +66,7 @@ Inherited todos and optional seeds retain their dispositions except the selected
 
 ### Blockers/Concerns
 
-- v8.0 has five active requirements; Phase 23 and Phase 24 are not executed yet. The v7.0 implementation is merged; post-merge main CI, including Wasm32, passes on `bb70dcf`. The v0.15.0 tag/draft remains on earlier source `2b47656`, whose exact-source Wasm32 test failed, so the package is still unpublished. See [v7.0-SHIP.md](milestones/v7.0-SHIP.md).
+- v8.0 defines five requirements: TUNE-12 is checked, and four GameDrive requirements remain pending. Phase 23 plan tasks are complete, with its configured post-plan CI gate and phase verification pending; Phase 24 has not started. The v7.0 implementation is merged; post-merge main CI, including Wasm32, passes on `bb70dcf`. The v0.15.0 tag/draft remains on earlier source `2b47656`, whose exact-source Wasm32 test failed, so the package is still unpublished. See [v7.0-SHIP.md](milestones/v7.0-SHIP.md).
 - The Phase 21 spec-less probe classification remains unresolved and explicitly nonblocking; no probe pass or resolution is claimed. Phase 22 follows the selected software model; it does not establish retail compatibility or physical-cartridge accuracy. The original Phase 12/14 host and remote stops remain binding; normal milestone PR publication, merge and required CI/release automation are authorized at natural delivery points.
 - Phase 12's exact diagnostic-app request was denied before preflight/content and must not be retried. Original Phase 12 host/remote stops, Phase 14's spent host scope, expired windows and specific no-retry limits remain binding. No v6.0 action renews them or accepts the nine deferred v3.0 requirements.
 - v6.0 publication and PR #61 merge are complete. Future publication, merge, remote dispatch and host/device/identity-bound actions remain separate boundaries. Browser/player, Playstead, physical audibility, calibrated hardware accuracy, public stereo and full XM are excluded. Earlier combined-source/failed release evidence remains source-specific in archived receipts.
@@ -117,17 +118,17 @@ At v7.0 close, one debug-session item was newly acknowledged and 49 were carried
 
 ## Session Continuity
 
-Last session: 2026-11-15T14:30:26.000Z
-Stopped at: v8.0 requirements and roadmap set; Phase 23 not yet started
-Resume file: continue.md
+Last session: 2026-11-15T16:43:06.918Z
+Stopped at: Completed 23-01-PLAN.md; post-plan gate pending
+Resume file: None
 
-Next action: After clearing context, run `$gsd-autonomous` to execute Phase 23 and Phase 24 through a go/no-go recommendation. Stop before any future implementation or public API/state compatibility choice that requires owner approval.
+Next action: Complete the configured Phase 23 post-plan CI gate and phase verification. If they pass, continue `$gsd-autonomous` into Phase 24 and its go/no-go recommendation. Stop before any future implementation or public API/state compatibility choice that requires owner approval.
 
 ## Operator Next Steps
 
 
 
-- Execute v8.0 autonomously with $gsd-autonomous
+- Complete the configured Phase 23 post-plan CI gate and phase verification, then continue v8.0 autonomously with $gsd-autonomous
 
 
 ## Decisions
@@ -150,7 +151,10 @@ Next action: After clearing context, run `$gsd-autonomous` to execute Phase 23 a
 - [Phase 22]: Souper snapshots use additive format 3 / behavior 8; legacy 1/6 and YM 2/7 bytes and identities remain unchanged, with API 8 / ABI 1 fixed.
 - [Phase 22]: Consumer continuation is judged independently; cross-consumer byte equality is not assumed, while source-qualified compatibility still checks exact bytes within a profile.
 - [Phase 22]: Resource measurements remain descriptive and source-qualified; no unrelated quota, timeout, cache, or CI structure was changed.
+- [Phase 23]: Keep CI topology, deadlines, quality policy, Windows serial baseline and required/report-only membership unchanged on two completed observations.
+- [Phase 23]: Keep hosted timing, Release state, local workflow checks and exact-source failures attached to their own sources.
+- [Phase 23]: Replace only three research Markdown hard-break markers after the committed-range whitespace check reproduced the fault.
 
 ## Next action
 
-v8.0 requirements and roadmap are selected. After clearing context, run `$gsd-autonomous` to execute Phase 23 and Phase 24 through a go/no-go recommendation. No ADPCM implementation, public API/state change, hardware run or tag retarget is in scope. Preserve the v0.15.0 exact-source publication stop and all original Phase 12/14 host and remote stops.
+v8.0 requirements and roadmap are selected. Phase 23 plan 23-01 is complete; its configured post-plan CI gate and phase verification remain pending. After those pass, run `$gsd-autonomous` to continue Phase 24 through a go/no-go recommendation. No ADPCM implementation, public API/state change, hardware run or tag retarget is in scope. Preserve the v0.15.0 exact-source publication stop and all original Phase 12/14 host and remote stops.

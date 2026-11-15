@@ -8,7 +8,7 @@
 
 ### Measured milestone tune-up
 
-- [ ] **TUNE-12**: Maintainers begin the milestone from current release, CI, hygiene and quality evidence; inspect queue time, critical path, cancellations and reproduced lessons; run cheap applicable consistency checks before longer suites; and record one evidence-backed low-risk correction or a bounded no-change result without weakening required checks or obscuring failures.
+- [x] **TUNE-12**: Maintainers begin the milestone from current release, CI, hygiene and quality evidence; inspect queue time, critical path, cancellations and reproduced lessons; run cheap applicable consistency checks before longer suites; and record one evidence-backed low-risk correction or a bounded no-change result without weakening required checks or obscuring failures.
 
 ### GameDrive streamed-audio qualification
 
