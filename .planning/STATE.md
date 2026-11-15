@@ -1,44 +1,46 @@
 ---
 gsd_state_version: "1.0"
 milestone: v8.0
-milestone_name: GameDrive streamed-audio contract qualification (in progress)
-current_phase: 24
-status: completed
-stopped_at: Phase 24 complete — all phases complete
-last_updated: "2026-11-15T18:36:05.389Z"
+milestone_name: GameDrive streamed-audio contract qualification (closed locally)
+status: Awaiting next milestone
+stopped_at: Milestone v8.0 archived locally; successor scope boundary
+last_updated: "2026-11-15T21:26:03.089Z"
 last_activity: 2026-11-15
-last_activity_desc: "Phase 24 shipped as PR #67"
-state_head: 3d858dea7a0d307ba58af7f74667e5f514220fdb
+last_activity_desc: Milestone v8.0 completed and archived
+state_head: 022271e0239bab325593c178779cfa7b92b21a68
 progress:
   total_phases: 2
   completed_phases: 2
   total_plans: 2
   completed_plans: 2
   percent: 100
+current_phase: 24
 ---
 
 # Project State
 
 ## Project Reference
 
-See [PROJECT.md](PROJECT.md) (updated 2026-11-15), [REQUIREMENTS.md](REQUIREMENTS.md), [ROADMAP.md](ROADMAP.md), [v7.0 archive](milestones/v7.0-ROADMAP.md), [v7.0 shipping receipt](milestones/v7.0-SHIP.md) and [v8.0 evidence review](research/next-milestone/2026-11-15-game-drive-qualification.md).
+See [PROJECT.md](PROJECT.md) (updated 2026-11-15), [ROADMAP.md](ROADMAP.md), [rolling product roadmap](PRODUCT-ROADMAP.md), [v8.0 archive](milestones/v8.0-ROADMAP.md), [v8.0 requirements](milestones/v8.0-REQUIREMENTS.md), [v8.0 audit](milestones/v8.0-MILESTONE-AUDIT.md), [v7.0 shipping receipt](milestones/v7.0-SHIP.md) and [v8.0 evidence review](research/next-milestone/2026-11-15-game-drive-qualification.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** Phase 24 — Qualify the GameDrive audio contract
+**Current focus:** v8.0 is closed; successor scope is not selected.
 
 ## Current Position
 
-Phase: 24
-Plan: Not started
-Status: All phases complete
-Last activity: 2026-11-15 -- Phase 24 shipped as PR #67
-
+Phase: No active phase; v8.0 closed locally
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-11-15 — Milestone v8.0 completed and archived
 
 ## Performance Metrics
 
-v8.0 has two planned phases. Phase 23 plan 23-01 recorded current source-specific release/CI evidence and ran
-the ordered cheap consistency preflights. Its configured post-plan CI gate passed; phase-goal verification remains pending.
-Phase 24 will qualify GameDrive streamed-audio contract evidence and produce a go/no-go; implementation and
-public compatibility changes are out of scope. v7.0's phase verification remains archived at
+v8.0 completed both planned phases, two plans and four plan tasks. Phase 23 records source-specific release/CI,
+hygiene and quality evidence, with the macOS x64 `title.pal.bios` deadline calibrated from twelve completed suite
+samples; Phase 24 records the GameDrive contract assessment and implementation-readiness **NO-GO**. Both phase
+verifications and the milestone audit passed. Main CI on the final correction commit passed at
+[run 43757444707](https://github.com/szTheory/muhtari/actions/runs/43757444707); Release passed at
+[run 43757444676](https://github.com/szTheory/muhtari/actions/runs/43757444676) and skipped package publication.
+v7.0's phase verification remains archived at
 [22-VERIFICATION.md](milestones/v7.0-phases/22-complete-souper-homebrew-mapper/22-VERIFICATION.md), while its
 post-closeout package/shipping status is tracked separately in [v7.0-SHIP.md](milestones/v7.0-SHIP.md).
 **Per-Plan Metrics:**
@@ -50,13 +52,14 @@ post-closeout package/shipping status is tracked separately in [v7.0-SHIP.md](mi
 | Phase 22 P03 | 94min | 2 tasks | 32 files |
 | Phase 22 P04 | not recorded | 2 tasks | 3 files |
 | Phase 23 P01 | 23min | 2 tasks | 2 files |
+| Phase 24 P01 | 30min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
 - v3.0 closed with deferred scope: only Phase 13 verified; nine requirements remain unchecked in the [archive](milestones/v3.0-MILESTONE-AUDIT.md). v4.0 promotes no old host acceptance claim.
 - Root remains canonical; stale dirty worktrees stay preserved and require content/ancestry reconciliation before import. See [workspace reconciliation](debug/workspace-reconciliation-2026-11-10.md).
 - The owner selected v7.0 Souper mapper-only support after recommendation-first research. One published 512 KiB ROM/32 KiB EXRAM software model, independent generated CPU/MARIA expectations and complete existing-consumer/state acceptance belong together in Phase 22. BupChip/BupBoop, Rikki & Vikki compatibility, flash variants and physical cartridge accuracy are excluded.
-- v8.0 qualifies, but does not implement, GameDrive streamed ADPCM. RetroHQ firmware 26.01.2266 notes a potential playback-glitch fix and save/load support; complete stream framing/timing and independent PCM expectations remain unproven. Keep all unlicensed sample/encoder source out of the repository.
+- v8.0 closes with GameDrive implementation readiness NO-GO. Firmware 26.01.2266 notes a potential playback-glitch fix and save/load support, but stream framing/timing, an independent exact-profile PCM oracle and finite resource facts remain unproven. Keep all unlicensed sample/encoder source out of the repository.
 - Phase 22 recorded the exact reset/EXRAM model policy and snapshot format/version consequences under DEC.26/DEC.36 before implementation. No new API/ABI, dependency or host was selected; follow the settled compatibility policy for future changes.
 - Owner-selected v6.0 keeps one source-qualified XM/YM2151 profile, public mono PCM and C17 integer-only instance ownership. Profile, finite resource bounds and concrete API/behavior/native-format compatibility consequences are qualified before implementation; materially new consequences remain owner decisions.
 - Required chip/bus/audio/state, library/runner/libretro/Wasm/package acceptance, tests, docs and cost stay together in Phase 20. All seven plans, required local gates, goal verification and milestone integration are complete. YM state now uses format 2/behavior 7 while no-YM snapshots retain format 1/behavior 6; independent genuine old/new continuation remains in Plan 20-06. Reuse saved research, current mechanisms and [fan-out guidance](research/fan-out/prompt.txt); do not add a validation-tail phase or repeat upstream research.
@@ -65,14 +68,14 @@ Inherited todos and optional seeds retain their dispositions except the selected
 
 ### Blockers/Concerns
 
-- v8.0 defines five requirements: TUNE-12 is checked and verified; four GameDrive requirements remain pending. Phase 23 is complete, and Phase 24 is ready for planning. The v7.0 implementation is merged; post-merge main CI, including Wasm32, passes on `bb70dcf`. The v0.15.0 tag/draft remains on earlier source `2b47656`, whose exact-source Wasm32 test failed, so the package is still unpublished. See [v7.0-SHIP.md](milestones/v7.0-SHIP.md).
+- v8.0's five requirements are covered by the passing milestone audit, and both phase verification reports retain passing verdicts. The Phase 23 fingerprint predates the merged timeout follow-up; its stale status is accepted under GSD-HANDOFF §3 because the audit covers the phase and exact-main CI passed. GameDrive implementation remains NO-GO pending a complete authoritative profile, independent legal PCM oracle and finite resource facts. PRs #67 and #68 are merged; exact-main CI passed in [run 43757444707](https://github.com/szTheory/muhtari/actions/runs/43757444707), and Release passed while skipping package publication in [run 43757444676](https://github.com/szTheory/muhtari/actions/runs/43757444676). The v0.15.0 tag/draft remains on the earlier exact source that failed its Wasm32 gate and is unpublished; no tag was moved. See the [v8.0 audit](milestones/v8.0-MILESTONE-AUDIT.md) and [v7.0-SHIP.md](milestones/v7.0-SHIP.md).
 - The Phase 21 spec-less probe classification remains unresolved and explicitly nonblocking; no probe pass or resolution is claimed. Phase 22 follows the selected software model; it does not establish retail compatibility or physical-cartridge accuracy. The original Phase 12/14 host and remote stops remain binding; normal milestone PR publication, merge and required CI/release automation are authorized at natural delivery points.
 - Phase 12's exact diagnostic-app request was denied before preflight/content and must not be retried. Original Phase 12 host/remote stops, Phase 14's spent host scope, expired windows and specific no-retry limits remain binding. No v6.0 action renews them or accepts the nine deferred v3.0 requirements.
 - v6.0 publication and PR #61 merge are complete. Future publication, merge, remote dispatch and host/device/identity-bound actions remain separate boundaries. Browser/player, Playstead, physical audibility, calibrated hardware accuracy, public stereo and full XM are excluded. Earlier combined-source/failed release evidence remains source-specific in archived receipts.
 
 ## Deferred Items
 
-At v7.0 close, one debug-session item was newly acknowledged and 49 were carried forward. Its `unknown` verdict is preserved; suppression expires if the artifact changes. Earlier disclosures from v3.0 and prior closes remain below.
+At v8.0 close, no new items were acknowledged; 50 items acknowledged at earlier closes remain suppressed with their original verdicts. At v7.0 close, one debug-session item was newly acknowledged and 49 were carried forward. Its `unknown` verdict is preserved; suppression expires if the artifact changes. Earlier disclosures from v3.0 and prior closes remain below.
 
 | Category | Item | Status | Deferred At | Milestone |
 |----------|------|--------|-------------|-----------|
@@ -117,17 +120,18 @@ At v7.0 close, one debug-session item was newly acknowledged and 49 were carried
 
 ## Session Continuity
 
-Last session: 2026-11-15T17:10:41Z
-Stopped at: Phase 24 complete — all phases complete
+Last session: 2026-11-15 — v8.0 closeout
+Stopped at: v8.0 archived locally; successor scope boundary
 Resume file: None
 
-Next action: Finish PR #67 delivery: wait for its CI, merge when checks pass, and confirm main CI and Release before milestone archival. No implementation, public compatibility change, or hardware acceptance is in scope.
+Next action: Present the current recommendation and strongest alternative, then use `$gsd-new-milestone` when the owner is ready to select successor scope. No GameDrive implementation, public compatibility change, or hardware acceptance is authorized by v8.0.
 
 ## Operator Next Steps
 
 
 
-- Complete PR #67 delivery, then archive v8.0 after post-merge CI and Release are green.
+
+- Start the next milestone with $gsd-new-milestone
 
 
 ## Decisions
@@ -153,7 +157,9 @@ Next action: Finish PR #67 delivery: wait for its CI, merge when checks pass, an
 - [Phase 23]: Keep CI topology, deadlines, quality policy, Windows serial baseline and required/report-only membership unchanged on two completed observations.
 - [Phase 23]: Keep hosted timing, Release state, local workflow checks and exact-source failures attached to their own sources.
 - [Phase 23]: Replace only three research Markdown hard-break markers after the committed-range whitespace check reproduced the fault.
+- [Phase 23 follow-up]: Calibrate only the macOS x64 PAL BIOS predicate timeout to twelve seconds from twelve completed matching-suite samples; preserve every assertion, other lane and failure receipt.
+- [Phase 24]: GameDrive implementation remains NO-GO until the authoritative profile, independent exact-profile PCM oracle and finite resource facts are available; public API/state consequences need a separate decision.
 
 ## Next action
 
-Phase 24's qualification and phase-goal verification are complete. PR #67 contains the v8.0 delivery and is awaiting checks and merge. After merge, confirm main CI and Release before milestone archival. No ADPCM implementation, public API/state change, hardware run, or tag retarget is in scope. Preserve the v0.15.0 exact-source publication stop and all original Phase 12/14 host and remote stops.
+v8.0 is closed locally with all requirements verified and its archive prepared for delivery. No successor milestone is selected. Recommendation: keep the GameDrive horizon open until its authoritative profile, independent legal PCM oracle and finite resource facts are available; the strongest alternative is a narrowly scoped correction for a lawful, reproducible title-blocking defect. Run `$gsd-new-milestone` to make that scope choice. Preserve the v0.15.0 exact-source publication stop and all original Phase 12/14 host and remote stops.

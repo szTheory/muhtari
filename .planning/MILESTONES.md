@@ -1,13 +1,22 @@
 # Project Milestones: muhtari
 
-## v8.0 GameDrive streamed-audio contract qualification (In progress: 2026-11-15)
+## v8.0 GameDrive streamed-audio contract qualification (Closed locally: 2026-11-15)
 
-**Goal:** Decide whether GameDrive streamed ADPCM has a complete, bounded and lawfully testable contract for a future Muhtari implementation, without changing public media/API/state compatibility.
+**Phases completed:** 2 phases, 2 plans, 4 tasks
 
-**Scope:** Phase 23 performs the measured milestone tune-up and cheap applicable preflights. Phase 24 qualifies source-backed command/media/timing/lifecycle/state facts, a legal generated fixture and independent PCM oracle, resource limits and existing-consumer consequences. It ends in a go/no-go recommendation; a documented no-go is valid if required evidence is missing. No product implementation or public compatibility decision is included.
-**Requirements:** TUNE-12 and GDA-01–04; all map to Phases 23–24 in [REQUIREMENTS.md](REQUIREMENTS.md).
-**Recommendation:** GameDrive is the strongest bounded qualification candidate. The strongest alternative is to keep the horizon open until an authoritative profile or a lawful title-blocking correction exists. See the [2026-11-15 evidence review](research/next-milestone/2026-11-15-game-drive-qualification.md).
-**Next:** `$gsd-autonomous` starts Phase 23 and advances through the qualification gates. Stop before any later implementation/API/state choice that requires owner approval.
+**Key accomplishments:**
+- Source-qualified v8.0 CI baseline, local hygiene evidence, and a bounded documentation correction without CI policy changes
+- GameDrive streamed-audio evidence and compatibility assessed, with implementation blocked by the incomplete public profile and independent-oracle threshold
+
+**Closeout type:** `override_closeout`; all five requirements are covered by the passing milestone audit, and both phase verification reports retain passing verdicts. Phase 23's verification fingerprint predates the merged timeout follow-up; the stale fingerprint is accepted under GSD-HANDOFF §3 because the audit covers the phase and exact-main CI passes. Zero new artifacts acknowledged; 50 previously acknowledged items carried forward with their original verdicts (see STATE.md Deferred Items).
+
+**Decision:** Implementation readiness is **NO-GO** until a permission-qualified normative profile, independent exact-profile PCM oracle and finite resource facts exist. No API/ABI, state-format, fixture, firmware, hardware or product implementation change was made.
+
+**Delivery evidence:** PRs [#67](https://github.com/szTheory/muhtari/pull/67) and [#68](https://github.com/szTheory/muhtari/pull/68) merged. Main CI on the timeout-correction merge commit passed in [run 43757444707](https://github.com/szTheory/muhtari/actions/runs/43757444707). Release passed its target checks in [run 43757444676](https://github.com/szTheory/muhtari/actions/runs/43757444676); package publication was skipped. No milestone or package tag was created.
+
+**Archives:** [roadmap](milestones/v8.0-ROADMAP.md), [requirements](milestones/v8.0-REQUIREMENTS.md), [audit](milestones/v8.0-MILESTONE-AUDIT.md), [phase records](milestones/v8.0-phases/) and [product roadmap snapshot](milestones/v8.0-PRODUCT-ROADMAP.md).
+
+**Next:** No successor milestone is selected. The current recommendation and strongest alternative are in the [rolling product roadmap](PRODUCT-ROADMAP.md). Run `$gsd-new-milestone` to make that scope choice; no GameDrive implementation is authorized by this closeout.
 
 ---
 
