@@ -16,6 +16,8 @@ that any host can embed.
 
 ## Current State
 
+v8.0 GameDrive contract qualification is closed locally. The milestone audit covers all five requirements and passed; both phase verification reports retain passing verdicts. `override_closeout` accepts Phase 23's stale verification fingerprint because it predates the merged timeout follow-up, as allowed by GSD-HANDOFF §3 after merged-head CI passed. The qualification result is **NO-GO** for implementation because the authoritative stream profile, independent exact-profile PCM oracle and finite resource facts remain incomplete. PRs [#67](https://github.com/szTheory/muhtari/pull/67) and [#68](https://github.com/szTheory/muhtari/pull/68) are merged. Exact-main CI passed on the timeout-correction merge commit in [run 43757444707](https://github.com/szTheory/muhtari/actions/runs/43757444707); the Release workflow passed in [run 43757444676](https://github.com/szTheory/muhtari/actions/runs/43757444676) and skipped package publication. No GameDrive implementation, public compatibility change or hardware claim was made. The v0.15.0 tag/draft remains unpublished at its earlier failing source.
+
 v6.0 YM2151 homebrew sound is implemented, verified and shipped as package v0.14.0. Both phases, all nine current requirements, required local gates and independent review/integration pass. The release workflow and latest-install check passed; PR #61 merged and main CI passed. See the [v6.0 ship receipt](milestones/v6.0-SHIP.md).
 
 v7.0 Souper mapper support is implemented, phase-verified, audited and merged through PR #63. Its scope is one generated-fixture-testable mapper profile for homebrew developers; BupChip audio and Rikki & Vikki compatibility are excluded. All eight v7.0 requirements pass their phase verifications. The mapper follows the cited software profile; physical-cartridge accuracy and retail-game compatibility are not claimed. The v0.15.0 tag and draft release still point to `2b47656`, whose Wasm32 test failed; the test-only correction is merged as PR #65 and post-merge main CI passed, including Wasm32. The package is not published because the exact tag still identifies the failed source. See the [v7.0 shipping record](milestones/v7.0-SHIP.md), [v7.0 audit](milestones/v7.0-MILESTONE-AUDIT.md), [archived Phase 22 verification](milestones/v7.0-phases/22-complete-souper-homebrew-mapper/22-VERIFICATION.md) and [rolling product roadmap](PRODUCT-ROADMAP.md).
@@ -24,16 +26,23 @@ Phase 21 completed its source-qualified tune-up with a bounded no-change disposi
 
 Nine v3.0 gaps and every original denied/spent Phase12/14 host/remote scope remain unchanged. Older dirty worktrees stay preserved and root remains canonical. [Milestone audit](milestones/v6.0-MILESTONE-AUDIT.md) and [requirements](milestones/v6.0-REQUIREMENTS.md) retain the exact accepted scope.
 
-## Current Milestone: v8.0 GameDrive streamed-audio contract qualification
+## Latest Locally Completed Milestone: v8.0 GameDrive streamed-audio contract qualification
 
 **Goal:** Decide whether GameDrive streamed ADPCM has a complete, bounded and lawfully testable contract for a future Muhtari implementation, without guessing at public media, audio or state compatibility.
 
-**Target features:**
-- Phase 23: inspect current release, CI, hygiene and quality evidence; run cheap relevant consistency checks before long suites; record a measured correction or bounded no-change result.
-- Phase 24: qualify the GameDrive command, sidecar, stream timing/framing, audio oracle, lifecycle/state behavior, finite resource bounds and existing-consumer path; produce a go/no-go recommendation.
-- Keep ADPCM implementation, sidecar API/ABI and snapshot changes out of this milestone. Any such change needs a separately reviewed compatibility decision.
+**Outcome:** The public sources do not yet define the complete stream timing/framing contract or an independent exact-profile PCM oracle. Phase 24 therefore recommends **NO-GO** for implementation; no ADPCM playback, sidecar API, API/ABI or state-format change was made. Firmware 26.01.2266's potential glitch fix and save/load note establish a reason to qualify lifecycle behavior, not a complete implementation profile. The detailed evidence and reopen triggers are in the [qualification](milestones/v8.0-phases/24-qualify-the-gamedrive-audio-contract/24-QUALIFICATION.md).
 
-## Latest Locally Completed Milestone: v7.0 Souper homebrew mapper
+**Closeout:** `override_closeout`; all five scoped requirements are covered by the passing milestone audit, and both phase verification reports retain passing verdicts. Phase 23's verification fingerprint predates the merged timeout follow-up; GSD-HANDOFF §3 accepts the stale fingerprint because the milestone audit covers the phase and exact-main CI passes. No new artifact was acknowledged; 50 prior acknowledgments remain suppressed with their original verdicts. The follow-up calibrated only the macOS x64 `title.pal.bios` deadline from 12 successful suite samples; other coverage and limits remain unchanged.
+
+**Delivery:** PRs [#67](https://github.com/szTheory/muhtari/pull/67) and [#68](https://github.com/szTheory/muhtari/pull/68) are merged. Exact-main CI passed at [run 43757444707](https://github.com/szTheory/muhtari/actions/runs/43757444707). Release passed its target checks at [run 43757444676](https://github.com/szTheory/muhtari/actions/runs/43757444676), with package publication skipped. No milestone tag or package version was created; the separate v0.15.0 exact-source stop remains.
+
+**Next:** No successor milestone is selected. The current recommendation and strongest alternative are in the [rolling product roadmap](PRODUCT-ROADMAP.md). Preserve the original Phase 12/14 stops, nine deferred v3.0 requirements and unaccepted hardware/platform claims.
+
+## Next Milestone Goals
+
+No successor scope is selected. At the next milestone boundary, use the rolling roadmap's recommendation and strongest alternative: hold scope until GameDrive's authoritative profile, independent lawful PCM oracle and finite resource facts exist; alternatively, promote one lawful, reproducible title-blocking 7800 correction if its independent expected result is established. Start the scope decision with `$gsd-new-milestone`.
+
+## Prior Locally Completed Milestone: v7.0 Souper homebrew mapper
 
 **Goal:** Let homebrew developers load and run their own cartridges that use the published Souper mapper profile through Muhtari's existing C library, runner and libretro core.
 
@@ -211,10 +220,12 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 - ✓ Current publication/docs and proportionate measured quality/efficiency baseline — TUNE-10, v6.0 Phase 19.
 - ✓ Source-qualified release/docs and quality/efficiency tune-up with a bounded no-change disposition — TUNE-11, v7.0 Phase 21.
 - ✓ Exact Souper mapper-only software profile, CPU/MARIA mapping, deterministic lifecycle/state and existing consumers — SOUPER-01–07, v7.0 Phase 22; local verification passed.
+- ✓ Source-qualified release, CI, hygiene and quality evidence with a bounded tune-up and a measured single-deadline correction — TUNE-12, v8.0 Phase 23.
+- ✓ GameDrive contract evidence, legal generated-fixture/oracle feasibility, consumer/resource/state consequences and an evidence-backed no-go — GDA-01–04, v8.0 Phase 24.
 
 ### Active
 
-v8.0 requirements TUNE-12 and GDA-01–04 are active and map to Phases 23 and 24. No v7.0 requirements remain active; all eight were verified in Phases 21 and 22. The nine unmet v3.0 requirements remain deferred with their original evidence and stops; see the [v6.0 archive](milestones/v6.0-REQUIREMENTS.md).
+No requirements are assigned to a successor milestone; its scope remains unselected. The nine unmet v3.0 requirements remain deferred with their original evidence and stops; see the [v3.0 archive](milestones/v3.0-MILESTONE-AUDIT.md).
 
 ### Out of Scope
 
@@ -229,16 +240,16 @@ v8.0 requirements TUNE-12 and GDA-01–04 are active and map to Phases 23 and 24
 - A test framework dependency — plain CTest executables with an in-repo check header cover the need.
 - Atari 2600 emulation — owned by the sibling project `twentysixhundo` (owner correction, 2026-11-11);
   SEED-006 is retired. Existing image recognition/refusal remains supported.
-- BupChip/BupBoop implementation, other YM2151 topologies, Covox/ADPCM implementation, ACE, full OpenHSC,
+- GameDrive/Covox ADPCM implementation until its source profile, legal independent oracle, finite bounds and public compatibility consequences are qualified; BupChip/BupBoop implementation, other YM2151 topologies, ACE, full OpenHSC,
   AtariVox speech, measured-accuracy oracles, the browser player, full movie recording/generalized continuation,
-  advanced AI/TAS tools and ports — outside v8.0; see `.planning/seeds/` and `.planning/PRODUCT-ROADMAP.md`.
+  advanced AI/TAS tools and ports — remain outside current scope; see `.planning/seeds/` and `.planning/PRODUCT-ROADMAP.md`.
 
 ## Context
 
 - **v3.0 closeout.** Phase 13's portable machine-state path is verified; Phase 12's host and Windows claims and Phase 14's RetroArch state acceptance remain unresolved. The denied Phase 12 permission request ended before preflight/content and is not retried. See the v3.0 audit for exact scope and evidence.
 - **Next portability slice.** The owner delegated downscoping and milestone selection after the v3.0 acceptance deadlock. v4.0 takes the already-ranked browser/WebAssembly direction but limits Muhtari work to the existing libretro core and offline deterministic checks; the browser host owns presentation and devices.
 - **v7.0 evidence.** The original Souper author released the mapper so other developers could build on it. A public GameDrive code example and the read-only pinned RTL cross-check define one testable software profile; neither is physical-hardware evidence. The older Rikki & Vikki image-size claim is conflicting, and its game image is not a fixture. LibFuturo's GabbaBoy save work is sibling-owned and creates no demonstrated Muhtari requirement.
-- **v8.0 boundary.** RetroHQ firmware 26.01.2266 notes a potential ADPCM playback-glitch fix and save/load support for ADPCM audio. This makes lifecycle/state qualification relevant but does not define stream timing, framing or independent expected audio. The sample and encoder repositories remain unlicensed; do not copy their code. See the [2026-11-15 qualification review](research/next-milestone/2026-11-15-game-drive-qualification.md).
+- **v8.0 result.** The qualification found that firmware 26.01.2266's potential playback-glitch fix and save/load note do not define stream timing, framing or independent expected audio. The sample and encoder repositories remain unlicensed; do not copy their code. Implementation remains NO-GO until an authoritative profile, legal independent oracle and finite bounds are available. See the [archived qualification](milestones/v8.0-phases/24-qualify-the-gamedrive-audio-contract/24-QUALIFICATION.md).
 
 - **Ecosystem.** The only libretro 7800 core is ProSystem (GPL-2, per-line timing, many homebrew failures); the
   accuracy references are a7800 (MAME-derived, last release 2022), BizHawk's A7800Hawk (C#) and the MiSTer FPGA
@@ -299,6 +310,9 @@ v8.0 requirements TUNE-12 and GDA-01–04 are active and map to Phases 23 and 24
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
+| Keep GameDrive implementation at NO-GO until its profile, independent PCM oracle and finite resource facts are qualified | Prevents guessed stream timing/framing or unlicensed fixture reuse from becoming public media/API/state behavior | ✓ v8.0 Phase 24: all four consumer and compatibility consequences recorded; no implementation or public compatibility change selected |
+| Calibrate only the macOS x64 PAL BIOS predicate deadline from completed matching-lane samples | The exact-source timeout and missing quality artifact share one failed matrix result; measured samples justify a bounded correction without reducing coverage | ✓ v8.0 Phase 23 follow-up: 12 complete suite samples, 5.88 s maximum, 12 s registered timeout; exact-main CI green |
+| Keep CI topology, quality policy, Windows serial order and unrelated deadlines unchanged after v8.0's measured review | The new timeout has a bounded sample-based correction; one critical-path observation does not justify structural or cache changes | ✓ Phase 23: original coverage, fault behavior and job structure remain intact; no safe queue/critical-path change was supported by the reviewed runs |
 | Keep required CI coverage, workload limits and quality floors unchanged after the measured tune-up | One accepted hosted release sample and different-source local measurements do not establish a safe reduction with equivalent fault detection | ✓ Phase 21: source-qualified report records bounded no change, preserves prior failures and leaves the spec-less probe unresolved |
 | Deliver one mapper-only Souper software profile with additive state compatibility | A published mapping example supports generated CPU/MARIA oracles; physical and retail compatibility remain outside the evidence | ✓ Phase 22: exact 512 KiB ROM/32 KiB EXRAM profile, deterministic lifecycle, format 3/behavior 8 snapshots, and existing consumer paths verified; API 8/ABI 1 and legacy/YM state contracts preserved |
 | One source-qualified XM/YM2151 digital profile and approved exact-pin BSD-3 OPM specialization | Preserve C17 integer instance ownership, existing scheduler and evidence boundaries | ✓ v6.0: native/portable/package diagnostics, exact-seed parity and maintained notices |
@@ -361,4 +375,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-15 after selecting v8.0*
+*Last updated: 2026-11-15 after closing v8.0*

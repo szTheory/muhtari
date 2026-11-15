@@ -1,8 +1,8 @@
 ---
 title: "Prompt coverage: every owner ask and where it lives"
-summary: "Maps each of the owner's 66 asks (the preparation brief, all layers, plus later messages) to the file section, rule, seed or milestone that carries it, with a status and what remains."
+summary: "Maps each of the owner's 68 asks (the preparation brief, all layers, plus later messages) to the file section, rule, seed or milestone that carries it, with a status and what remains."
 read_when: "At kickoff review and at every milestone close; also before calling an owner ask done, deferred or out of scope."
-updated: 2026-11-11
+updated: 2026-11-15
 ---
 
 # Prompt coverage
@@ -93,16 +93,27 @@ at the root; LESSONS, PRODUCT-ROADMAP, SEED-NNN under `.planning/`. "v1.0 ph2" =
 | 59 | Bank a possible interface alongside libretro, investigating observability, automated play, configuration and performance | INTENT; PRODUCT-ROADMAP sibling boundaries; research/emulator-interface; research/next-milestone | Documented | LibFuturo implements an experimental interface and real native/browser consumers. Its existence is no longer exploratory-only; stability, broader qualification, adoption and superiority remain unproved. Keep libretro support. |
 
 | 60 | When a host or identity-bound acceptance gate is denied, preserve that exact stop but continue independently buildable local core work; choose a truthful override closeout and downscope when needed | AGENTS rules 6–8; v3.0 audit and retrospective; PRODUCT-ROADMAP | Documented | v3.0 closes with nine requirements deferred and original Phase 12/14 verdicts intact; v4.0 proceeds on offline WebAssembly work without another permission request. |
-| 61 | Reconcile artifacts and give the exact next valid OpenGSD command at handoff | AGENTS; GSD-HANDOFF; STATE; continue.md; final v5.0 ship receipt | Documented | v0.13.1 public-byte verification, installation and current-main CI are finished. v6.0 is selected; continue the autonomous local run from its live plan index. |
+| 61 | Reconcile artifacts and give the exact next valid OpenGSD command at handoff | AGENTS; GSD-HANDOFF; STATE; continue.md; milestone archives | Documented | v8.0 closeout reconciles merged source, current-main CI and Release receipts; the next command is `$gsd-new-milestone` at the owner scope boundary. |
 | 62 | For an explicitly requested milestone run, continue through phases and closeout, fan out relevant decisions, reuse reviewed plans, auto-follow routine recommendations, and automate useful verification while preserving real owner-only boundaries | AGENTS rules 6 and 8; `.planning/research/fan-out/prompt.txt`; GSD-HANDOFF 3 and 6; ENGINEERING 4, 8, 11 and 12 | Documented | `$gsd-autonomous` is opt-in; use no `--auto`/`--chain` flags. Human checks are limited to genuinely owner-only evidence or material authority/risk decisions; inspect CI/release queue, critical path, durations and cancellations without weakening required coverage. |
 
 | 63 | Remove Atari 2600 emulation from Muhtari's candidates because twentysixhundo owns it; retain shared lessons/tools | AGENTS; DEC.03; PROJECT; PRODUCT-ROADMAP; retired SEED-006 | Documented | Owner correction 2026-11-11 supersedes the old after-7800 proposal. |
 | 64 | Verify current LibFuturo routes and qualification limits before proposing Muhtari successor scope; preserve source-specific stops | continue.md; research/next-milestone; PRODUCT-ROADMAP sibling boundaries | Documented | Read actual primary checkout, commits, workstreams and dirty inputs; old branch labels/shared summaries alone do not establish freshness or acceptance. No sibling writes. |
 | 65 | Scope the next milestone upstream with bounded relevant-role fan-out, primary-source provenance and an adversarial synthesis; retain high-signal findings in the project second brain and rolling horizons | research/fan-out/prompt.txt; research/next-milestone; README; INTENT; PRODUCT-ROADMAP | Documented | Upstream recommendations guide milestone and phase choices; do not turn hypotheses into reproduced lessons or prematurely implement downstream phases. Small permissive seeds before justified dependencies. |
 
-| 66 | Add YM2151 homebrew sound and carry this milestone in gsd-autonomous style | INTENT; PROJECT current v6.0; REQUIREMENTS TUNE-10/YM-01–08; ROADMAP phases 19–20 | Documented | Agent continues dependent local planning, implementation, verification/review and closeout; material compatibility, publication/merge, new host/remote boundaries still pause. |
+| 66 | Add YM2151 homebrew sound and carry this milestone in gsd-autonomous style | INTENT; PROJECT v6.0; v6.0 REQUIREMENTS TUNE-10/YM-01–08; archived ROADMAP phases 19–20 | Documented | v6.0 shipped as v0.14.0; its evidence and later v7/v8 boundaries are preserved in their milestone records. |
+| 67 | At milestone boundaries, refresh the rolling roadmap and present a concrete recommendation with its strongest alternative; carry selected milestones through dependent work autonomously while preserving material stops | AGENTS owner direction; INTENT; research/fan-out/prompt.txt; PRODUCT-ROADMAP | Documented | Applied at v8.0 closeout: recommend holding scope until an authoritative GameDrive profile/oracle or lawful reproducible title-blocking defect appears; the strongest alternative is a narrowly scoped correction when that evidence exists. |
+| 68 | Publish at natural delivery points and finish each milestone with green main CI; inspect real queue, critical path, job durations and cancellations before proposing efficiency changes | AGENTS owner direction; INTENT; ENGINEERING; LESSONS; phase tune-up and ship receipts | Documented | Applied to v8.0 PRs #67/#68 and main run 43757444707; no safe CI topology/cache change was supported by the measured evidence. |
 
-Totals: Documented 60, Partial 3, Later 3, Inapplicable 0.
+Totals: Documented 62, Partial 3, Later 3, Inapplicable 0.
+
+## v8.0 closeout receipt — 2026-11-15
+
+The 68 numbered owner asks retain their homes. Rows 67–68 record the latest
+recommendation-first autonomous workflow and natural-delivery CI expectations.
+The v8.0 audit covers all five requirements; its closeout accepts the stale
+Phase 23 verification fingerprint under GSD-HANDOFF §3. The GameDrive
+implementation result remains NO-GO. Main CI passed on the final Phase 23
+timeout-correction commit in [run 43757444707](https://github.com/szTheory/muhtari/actions/runs/43757444707).
 
 
 ## 2. Owner constraints vs agent recommendations

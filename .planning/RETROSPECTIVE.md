@@ -243,6 +243,38 @@ Prove each deliverable through the artifact its consumer loads, and use independ
 
 The saved local `ci` run passed 722 ordinary and 8 release tests. Its ordinary phase took 45.67 seconds and the longest observed test, `policy.publish.controls`, took 44.75 seconds. One sample is insufficient for structural CI changes. Session count and model mix are not recorded; no estimate is asserted.
 
+## Milestone: v8.0 — GameDrive streamed-audio contract qualification
+
+**Closed locally:** 2026-11-15 with `override_closeout`; two phases, two plans, four tasks, all five scoped requirements covered by the passing audit. Phase 23's verification fingerprint predates the merged timeout follow-up; the stale fingerprint is accepted under GSD-HANDOFF §3 because the audit covers the phase and exact-main CI passes. No package release or milestone tag was created.
+
+### What Was Built
+
+- Recorded source-qualified CI, Release, hygiene and quality evidence, then qualified GameDrive command/media/timing/state gaps, legal fixture/oracle feasibility, resource limits and existing-consumer consequences.
+- Reached an evidence-backed **NO-GO** for implementation because authoritative stream framing/timing, independent exact-profile PCM expectations and finite resource facts remain missing.
+- Calibrated only the macOS x64 PAL BIOS predicate deadline after a later exact-source failure; product behavior, test assertions and other lane limits stayed unchanged.
+
+### What Worked
+
+The source ledger separated first-party firmware notes, developer examples, inference and unknowns, so the firmware save/load note did not turn into an invented playback contract. The independent-oracle and license gates produced a clear no-go without using unlicensed sample/encoder code or asking for hardware access. The failed main run was investigated before any retry; one bounded deadline correction was supported by six successful main runs and twelve complete suite timings.
+
+### What Was Inefficient
+
+The `title.pal.bios` timeout also prevented its quality artifact upload, so the downstream exact-set check failed in the same workflow. The root failure was one under-sized test deadline; the quality failure was downstream, not a second product-test defect. The Windows ARM64 serial job remained the main CI critical path at about 42 minutes, but this observation did not justify changing the job graph, cache or coverage.
+
+### Patterns Established
+
+Keep firmware behavior notes distinct from a normative emulation contract. A potential fix or state-save feature motivates qualification, but does not supply stream framing, clocks, PCM expectations or finite work/memory bounds. For hosted runtime changes, use completed comparable lane samples and preserve the original failed receipt; local cross-architecture configuration does not substitute for executing on that architecture.
+
+### Key Lessons
+
+1. A CTest timeout must cover observed work on its exact runner while keeping all existing assertions; here twice the slowest of twelve completed macOS x64 suite samples rounded to a 12-second registration (`MU-CI-021`).
+2. Main CI and a successful Release target check do not imply package publication when release-please created no package change; keep package status source-specific.
+3. A no-go is a valid qualification result when a normative contract or independent oracle is absent; preserve concrete evidence and reopen only on stated triggers.
+
+### Cost Observations
+
+Hosted v8 delivery runs started within seconds and had no canceled jobs. Windows ARM64 remained the critical path at approximately 42 minutes. The local verification passed 723 CI tests and 8 release checks before merge; exact-main CI and Release receipts are linked in the milestone records. Session count and model mix are not recorded; no cost estimate is asserted.
+
 ## Cross-Milestone Trends
 
 | Milestone | Phases | Plans | Requirements | Test evidence | Closeout |
@@ -261,3 +293,4 @@ output paths and measured calibration; aggregate record counts never prove accep
 | v5.0 | 2 | 3 plans, 7 tasks | 6/6 scoped | Native/release, SDK, extracted package, publisher and one-slot hygiene pass | Verified locally; publication pending; zero new acknowledgments, 50 carried |
 | v6.0 | 2 | 8 | 9/9 scoped | Native, sanitizer, portable, package and integration evidence passed | Shipped v0.14.0; zero new acknowledgments, 49 carried |
 | v7.0 | 2 | 5 | 8/8 scoped | Native 722/722 ordinary + 8/8 release; focused Release/ASan and hygiene passed | Closed locally with override; 1 newly acknowledged, 49 carried; no publication/merge/tag |
+| v8.0 | 2 | 2 plans, 4 tasks | 5/5 scoped | Local 723/723 CI + 8/8 release; final exact-main CI and Release passed; audit passed | Closed locally with override for stale Phase 23 fingerprint; 0 new acknowledgments, 50 carried; GameDrive implementation NO-GO |

@@ -2,7 +2,7 @@
 title: "Lesson exchange"
 summary: "Lessons imported from the owner's sibling emulators (hypotheses until reproduced here) and the template for exporting this project's lessons."
 read_when: "At each phase or milestone boundary, when a sibling lesson might apply, or when the owner asks to export lessons."
-updated: 2026-11-12
+updated: 2026-11-15
 ---
 
 # Lesson exchange
@@ -82,6 +82,34 @@ Status: observed | reproduced | adopted | superseded
 
 Exported to the sibling projects on 2026-10-15 (preparation, `8ab05fa`). GSD findings were read in the installed
 1.17.0 package; a sibling on another version re-checks them there.
+
+## Calibrate the PAL BIOS predicate deadline from completed lane samples
+
+Lesson MU-CI-021 (2026-11-15, muhtari@022271e)
+Symptom and reproduction: `title.pal.bios` timed out at 8.06 seconds on the
+macOS x64 main lane with a registered four-second base deadline scaled by two;
+its missing quality artifact caused the downstream quality set check to fail.
+Root cause / invariant: a one-run timeout is not a performance regression
+measurement. For this lane, DEC.47 uses twice the slowest recent completed
+sample; keep the original failed receipt and distinguish the dependent quality
+failure from a second product-test failure.
+Fix and evidence: six successful main runs after test registration change
+12953bc supplied twelve completed current/base suite samples; the slowest was
+5.88 seconds, so two times that value rounded up to a 12-second registration.
+PR #68 and exact-main CI run
+43757444707 (https://github.com/szTheory/muhtari/actions/runs/43757444707)
+passed. The failed source remains recorded in the archived
+23-CI-TIMEOUT-FOLLOWUP.md.
+Applies when: calibrating a CTest test timeout from comparable samples on the
+same hosted architecture and lane.
+Does not establish: the timed-out test's performance root cause, an x64 binary
+run on local Apple Silicon, or justification to change another timeout, lane,
+cache, job topology or assertion.
+Suggested check: query the exact completed lane samples, compute twice the
+maximum, inspect the generated test registration, then require the exact-source
+hosted lane to pass.
+Sources: [Phase 23 timeout follow-up](milestones/v8.0-phases/23-measured-milestone-tune-up/23-CI-TIMEOUT-FOLLOWUP.md); PR #68; main CI run 43757444707.
+Status: reproduced
 
 | ID | Lesson | Evidence | Status |
 |---|---|---|---|
@@ -696,7 +724,7 @@ in run 43748043795. Raising only the macOS x64 base timeout from 4 to 6 seconds
 sets its scaled bound to 12 seconds, twice the complete maximum, without
 changing other lanes or the test. The quality join's missing macOS artifact
 and required-gate failure were downstream of this timeout. No host-load cause
-is claimed. [Source, samples, failure and correction](phases/23-measured-milestone-tune-up/23-CI-TIMEOUT-FOLLOWUP.md).
+is claimed. [Source, samples, failure and correction](milestones/v8.0-phases/23-measured-milestone-tune-up/23-CI-TIMEOUT-FOLLOWUP.md).
 
 ## Incoming integration hypotheses — not locally reproduced (2026-11-11)
 
