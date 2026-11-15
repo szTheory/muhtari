@@ -37,8 +37,15 @@ cache, workflow topology or unrelated deadline was introduced.
 
 ## Completed — v8.0 GameDrive contract qualification
 
-v8.0 closed locally with all five requirements covered by the passing audit and
-both phase reports retaining passing verdicts. Its `override_closeout` accepts
+v8.0 is archived and merged through PR
+[#69](https://github.com/szTheory/muhtari/pull/69), with all five requirements
+covered by the passing audit and both phase reports retaining passing verdicts.
+The audit has no open items. Main CI passed on the merge commit in
+[run 43765372722](https://github.com/szTheory/muhtari/actions/runs/43765372722);
+Release passed and skipped package publication in
+[run 43765372812](https://github.com/szTheory/muhtari/actions/runs/43765372812).
+Neither run canceled jobs. No package tag was moved; v0.15.0 remains
+unpublished. Its `override_closeout` accepts
 the stale Phase 23 verification fingerprint after the merged timeout follow-up,
 under GSD-HANDOFF §3, because the milestone audit covers the phase and exact-main
 CI passes. Phase 24's implementation-readiness result is
@@ -195,6 +202,7 @@ example; reproduce sibling lessons locally before adopting them.
 | 2026-11-14 | Refreshed successor candidates after v7.0 | GameDrive documents useful streamed-audio commands, but its unlicensed encoder and missing timing contract leave a new sidecar/API/state surface unqualified. BupChip's licensed renderer still lacks a public bus/media profile. Recommend holding scope selection until the API consequence is accepted and one profile has independent generated acceptance, or a real gameplay counterexample appears. |
 | 2026-11-15 | Selected v8.0 GameDrive contract qualification; reconciled v7.0 shipping | Firmware 26.01.2266 adds a potential ADPCM glitch fix and ADPCM save/load support, but the full stream/PCM oracle contract remains unproven. v7.0 is merged; v0.15.0 remains an unpublished draft pinned to the failing exact source. Keep implementation and its compatibility decision out of v8.0. |
 | 2026-11-15 | Closed v8.0 with GameDrive implementation readiness NO-GO and left successor scope open | The authoritative stream timing/framing profile, legal independent PCM oracle and finite resource facts remain incomplete. Reopen only with those sources or a lawful reproducible title-blocking 7800 defect; preserve existing host, remote and exact-source release stops. |
+| 2026-11-15 | Delivered the v8.0 archive through PR #69 and refreshed the successor recommendation | Main CI passed on the merge commit and Release skipped package publication; no jobs were cancelled and the audit has no open items. GameDrive remains NO-GO, v0.15.0 remains unpublished, and no successor scope is selected. |
 
 | 2026-11-10 | Completed the offline v4.0 core slice; retain ship and real-browser work as distinct next decisions | All five scoped requirements and integration flows passed locally; measured SDK results are explicitly headless and emulated. |
 
