@@ -71,6 +71,7 @@ status: complete
 - Ran the four ordered preflights. After identifying missing ignored pinned inputs and fetching them through the existing SHA-256-verifying script, CMake hygiene passed all 30 registered tests.
 - Reconstructed the required CI path, kept report-only Wasm32 separate, reviewed existing quality bounds and lessons, and left CI policy and product files unchanged.
 - Corrected the three committed research whitespace findings with a plan-approved, narrowly scoped change; the committed-range check then passed.
+- Resolved the post-plan CI gate's missing ignored inputs with the existing pinned fetch script; the retry completed all configure/build/package steps, 723 CI tests and 8 release tests successfully.
 
 ## Task Commits
 
@@ -99,6 +100,7 @@ The bounded amendment approved after the committed-range check assigned one narr
 ## Issues Encountered
 
 - Initial CMake hygiene configuration stopped because the clean build tree lacked two ignored pinned MAME XML inputs. Both prescribed SHA-256-verified fetches passed; the one targeted retry passed.
+- The first post-plan CI gate attempt stopped at configure because the Wasmtime, 7800basic, and OpenBIOS local inputs (plus the CI-standard rcheevos test source) were absent. The four exact CI fetches passed hash verification; the same configured gate then passed, including packaging and the release test preset.
 - The initial committed-range whitespace check found three trailing-space hard breaks in `23-RESEARCH.md`. Replacing them with `<br>` preserved rendered formatting and made the same range check pass.
 - The first report schema check identified an omitted explicit `TUNE-12` label. The report was corrected and the same validator passed.
 - The initial summary schema query showed `duration` and `completed` must be top-level fields; the frontmatter was corrected before closeout.
@@ -110,7 +112,7 @@ None.
 
 ## Next Phase Readiness
 
-Phase 23 report tasks and local checks are complete. The configured GSD post-plan `cmake --workflow --preset ci` gate remains pending and is owned by the orchestrator; it must be recorded before phase verification and progression to Phase 24. This plan does not make a new product-source acceptance claim.
+Phase 23 report tasks and the configured GSD post-plan `cmake --workflow --preset ci` gate are complete. The gate passed after the missing ignored inputs were fetched and the initial configure-only failure was preserved. Phase-goal verification remains pending before progression to Phase 24. This plan does not make a new product-source acceptance claim.
 
 ## Self-Check: PASSED
 
