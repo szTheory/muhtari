@@ -45,7 +45,11 @@ muhtari_add_test(NAME title.pal.fast
 # provisional: 4 s, ceil(2 x 1.49 s) is 3 s; macOS arm64 local, slowest of 10 runs alone (0.69 s) and one full ci run (1.49 s)
 # Budget floor 4 s, as for eightysix, the BIOS-path analogue: 1.23 s in run 39529469630 and a 2 s budget ran out twice in run 39530145463.
 set(compat_pal_bios_timeout 4)
-if(WIN32 AND MUHTARI_ARCH STREQUAL "x64")
+if(MUHTARI_OS STREQUAL "macos" AND MUHTARI_ARCH STREQUAL "x64")
+  # ceil(2 x 5.88 s) = 12 s at timeout scale 2; max of 12 CI samples,
+  # six completed runs, slowest 5.88 s in run 43474047661.
+  set(compat_pal_bios_timeout 6)
+elseif(WIN32 AND MUHTARI_ARCH STREQUAL "x64")
   # ceil(2 x 3.60s), complete run43083961768/job130743736846.
   set(compat_pal_bios_timeout 8)
 endif()
