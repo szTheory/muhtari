@@ -12,10 +12,10 @@
 
 ### GameDrive streamed-audio qualification
 
-- [ ] **GDA-01**: The qualification records an evidence-backed status for each needed GameDrive audio contract field, including command/register behavior, sidecar discovery and identity, stream framing, playback clock, sample/output mixing, pause/resume/reset, error behavior and state continuation; it separates sourced facts, inference and unknowns and includes source revision and confidence.
-- [ ] **GDA-02**: The qualification establishes whether legally authored generated fixtures and an independent expected-PCM oracle can exercise the documented profile without using unlicensed sample/encoder code or copyrighted game data; if not, it records the precise missing evidence and a no-go result.
-- [ ] **GDA-03**: The qualification evaluates caller-owned media identity and bounds, deterministic mono output, finite work/memory, lifecycle behavior and save/load continuation against existing Muhtari consumers; it documents possible public API/ABI and state-format consequences without implementing or selecting them.
-- [ ] **GDA-04**: The milestone ends with an evidence-backed go/no-go recommendation, strongest alternative, unresolved contradictions, rejected options and concrete revisit triggers; a no-go is accepted when the source or independent-oracle threshold cannot be met.
+- [x] **GDA-01**: The qualification records an evidence-backed status for each needed GameDrive audio contract field, including command/register behavior, sidecar discovery and identity, stream framing, playback clock, sample/output mixing, pause/resume/reset, error behavior and state continuation; it separates sourced facts, inference and unknowns and includes source revision and confidence.
+- [x] **GDA-02**: The qualification establishes whether legally authored generated fixtures and an independent expected-PCM oracle can exercise the documented profile without using unlicensed sample/encoder code or copyrighted game data; if not, it records the precise missing evidence and a no-go result.
+- [x] **GDA-03**: The qualification evaluates caller-owned media identity and bounds, deterministic mono output, finite work/memory, lifecycle behavior and save/load continuation against existing Muhtari consumers; it documents possible public API/ABI and state-format consequences without implementing or selecting them.
+- [x] **GDA-04**: The milestone ends with an evidence-backed go/no-go recommendation, strongest alternative, unresolved contradictions, rejected options and concrete revisit triggers; a no-go is accepted when the source or independent-oracle threshold cannot be met.
 
 ## Out of Scope
 
