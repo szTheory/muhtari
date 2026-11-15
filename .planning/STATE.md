@@ -1,19 +1,19 @@
 ---
 gsd_state_version: "1.0"
 milestone: v8.0
-milestone_name: GameDrive streamed-audio contract qualification (closed locally)
 status: Awaiting next milestone
 stopped_at: Milestone v8.0 archived locally; successor scope boundary
-last_updated: "2026-11-15T21:26:03.089Z"
+last_updated: "2026-11-15T21:42:02.436Z"
 last_activity: 2026-11-15
-last_activity_desc: Milestone v8.0 completed and archived
-state_head: 022271e0239bab325593c178779cfa7b92b21a68
+last_activity_desc: "v8.0 closeout PR #69 opened"
+state_head: c93d2138478164ea63b0c474f173b03bad807096
 progress:
   total_phases: 2
   completed_phases: 2
   total_plans: 2
   completed_plans: 2
   percent: 100
+milestone_name: GameDrive streamed-audio contract qualification (closed locally)
 current_phase: 24
 ---
 
@@ -30,7 +30,7 @@ See [PROJECT.md](PROJECT.md) (updated 2026-11-15), [ROADMAP.md](ROADMAP.md), [ro
 Phase: No active phase; v8.0 closed locally
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-11-15 — Milestone v8.0 completed and archived
+Last activity: 2026-11-15 -- v8.0 closeout PR #69 opened
 
 ## Performance Metrics
 
