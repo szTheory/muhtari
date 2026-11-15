@@ -121,13 +121,13 @@ Last session: 2026-11-15T17:10:41Z
 Stopped at: Phase 24 complete — all phases complete
 Resume file: None
 
-Next action: Continue `$gsd-autonomous` through Phase 24's source-qualified GameDrive contract assessment and go/no-go recommendation. Stop before any implementation or public API/state compatibility choice that requires owner approval.
+Next action: Finish PR #67 delivery: wait for its CI, merge when checks pass, and confirm main CI and Release before milestone archival. No implementation, public compatibility change, or hardware acceptance is in scope.
 
 ## Operator Next Steps
 
 
 
-- Continue v8.0 autonomously through Phase 24 with $gsd-autonomous
+- Complete PR #67 delivery, then archive v8.0 after post-merge CI and Release are green.
 
 
 ## Decisions
@@ -156,4 +156,4 @@ Next action: Continue `$gsd-autonomous` through Phase 24's source-qualified Game
 
 ## Next action
 
-Phase 23 plan 23-01, its configured post-plan CI gate, and phase-goal verification are complete. Continue `$gsd-autonomous` through Phase 24's qualification and go/no-go recommendation. No ADPCM implementation, public API/state change, hardware run or tag retarget is in scope. Preserve the v0.15.0 exact-source publication stop and all original Phase 12/14 host and remote stops.
+Phase 24's qualification and phase-goal verification are complete. PR #67 contains the v8.0 delivery and is awaiting checks and merge. After merge, confirm main CI and Release before milestone archival. No ADPCM implementation, public API/state change, hardware run, or tag retarget is in scope. Preserve the v0.15.0 exact-source publication stop and all original Phase 12/14 host and remote stops.
