@@ -32,7 +32,7 @@ All five plans have summaries. Native integration found and closed the loaded-mo
 ## Phases
 
 - [x] **Phase 23: Measured milestone tune-up** — Establish source-qualified CI, release and hygiene evidence with a bounded no-change disposition. (completed 2026-11-15)
-- [ ] **Phase 24: Qualify the GameDrive audio contract** — Produce a source-qualified go/no-go without implementation or public compatibility changes.
+- [x] **Phase 24: Qualify the GameDrive audio contract** — Produce a source-qualified go/no-go without implementation or public compatibility changes. (completed 2026-11-15)
 
 ### Phase 23: Measured milestone tune-up
 
@@ -57,12 +57,13 @@ All five plans have summaries. Native integration found and closed the loaded-mo
 2. The work establishes whether generated legal fixtures can exercise the documented profile with expected PCM authored independently of production code; if not, the no-go names the missing normative details or permissions and does not use unlicensed sample/encoder code or copyrighted game data.
 3. A bounded design note evaluates media ownership and identity, mono output, deterministic lifecycle/state continuation, memory/work bounds, refusal behavior and existing library/runner/libretro/portable consumers. It lists possible versioned API/state consequences without selecting or implementing them.
 4. The final recommendation states go/no-go, strongest alternative, rejected options, compatibility risks and concrete evidence that would reopen the decision. Missing authority or a future hardware run is not inferred as passed.
-**Plans:** Not planned
+**Plans:** 1/1 plans complete
+- [x] 24-01-PLAN.md
 
-**Current evidence:** RetroHQ firmware 26.01.2266 notes a potential ADPCM playback-glitch fix and save/load support for ADPCM audio. The release note does not specify the complete stream timing/framing or an independent expected-PCM contract. The sample and encoder repositories remain unlicensed. See the [qualification review](research/next-milestone/2026-11-15-game-drive-qualification.md).
+**Current evidence:** Phase 24 completed its source-qualified assessment with implementation readiness **NO-GO**: the public profile and independent exact-profile PCM oracle remain unqualified. The record assesses all four consumers, resource and state consequences, and concrete revisit conditions. See the [GameDrive qualification](phases/24-qualify-the-gamedrive-audio-contract/24-QUALIFICATION.md) and [milestone research](research/next-milestone/2026-11-15-game-drive-qualification.md).
 
-**Progress:** Phase 23 complete; Phase 24 not started (1/2 phases complete). Phase numbering continues after v7.0 Phase 22.
+**Progress:** Phases 23 and 24 complete (2/2 phases complete). Phase numbering continues after v7.0 Phase 22.
 
 ## Next boundary
 
-Continue Phase 24 through `$gsd-autonomous`. The owner has authorized ordinary in-scope recommendation following, Git publication, PR merge and required CI/release automation at natural delivery points. Preserve the v0.15.0 exact-source release stop, original Phase 12/14 stops, nine deferred v3.0 requirements and all unaccepted hardware/platform claims.
+All v8.0 phase work is complete; run the milestone audit and closeout. The no-go authorizes no GameDrive implementation or public compatibility change. Preserve the v0.15.0 exact-source release stop, original Phase 12/14 stops, nine deferred v3.0 requirements and all unaccepted hardware/platform claims.

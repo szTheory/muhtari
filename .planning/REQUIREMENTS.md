@@ -24,12 +24,12 @@
 - BupChip/BupBoop audio, Rikki & Vikki compatibility, new hosts/UI, dependencies, or unrelated accuracy work.
 - Renewing any existing host, remote, identity-bound or no-retry stop.
 
-## Requirement-to-Phase Mapping
+## Traceability
 
-| Requirement | Phase |
-|---|---:|
-| TUNE-12 | 23 |
-| GDA-01 | 24 |
-| GDA-02 | 24 |
-| GDA-03 | 24 |
-| GDA-04 | 24 |
+| Requirement | Phase | Status |
+|---|---|---|
+| TUNE-12 | Phase 23 | Complete |
+| GDA-01 | Phase 24 | Complete |
+| GDA-02 | Phase 24 | Complete |
+| GDA-03 | Phase 24 | Complete |
+| GDA-04 | Phase 24 | Complete |
