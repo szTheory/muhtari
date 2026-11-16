@@ -275,6 +275,38 @@ Keep firmware behavior notes distinct from a normative emulation contract. A pot
 
 Hosted v8 delivery runs started within seconds and had no canceled jobs. Windows ARM64 remained the critical path at approximately 42 minutes. The local verification passed 723 CI tests and 8 release checks before merge; exact-main CI and Release receipts are linked in the milestone records. Session count and model mix are not recorded; no cost estimate is asserted.
 
+## Milestone: v9.0 — Publish the corrected Souper mapper package
+
+**Shipped:** 2026-11-16 | **Phases:** 1 | **Plans:** 1 | **Tasks:** 2
+
+### What Was Built
+
+- Published stable package v0.16.0 from exact release source `a0319a9c` through the existing release-please and publisher workflow.
+- Preserved the failed v0.15.0 draft and tag byte-for-byte, including its original target and zero-asset state.
+- Updated README/status availability and completion claims; closed the phase and milestone records without changing emulator behavior.
+
+### What Worked
+
+Exact-source release checks covered fixtures, package identity, provenance, publication and latest installation. The release receipt kept package-source evidence separate from documentation and closeout merge evidence. The final phase-closeout CI passed on exact main `9b75e6f`; the release workflow confirmed no new package release was needed after the planning-only merge.
+
+### What Was Inefficient
+
+Main CI had a one-second queue but took 48m08s. Windows ARM64 was the critical path at 45m41s, then Wasm32 took 2m16s. No jobs were cancelled. This is one more timing sample, not evidence for changing a timeout, cache or job graph. An initial `docs(25)` closeout PR title failed the repository title gate; the corrected scope-free title passed. Use the tested Conventional Commit form when opening planning-only PRs.
+
+### Patterns Established
+
+Publish existing behavior first, then update version-neutral public availability copy only after the latest-install path passes. Keep the failed release identity as a compared baseline, and record the exact source for each release, documentation and main-CI claim.
+
+### Key Lessons
+
+1. A new published package can be completed without a second release when the downstream merge contains only verified documentation and planning changes.
+2. A long Windows ARM64 quality step can still be healthy; inspect the active job and completed phases before considering a retry.
+3. One CI run with a longer-than-usual critical path and no queue or cancellation does not justify a structural optimization.
+
+### Cost Observations
+
+Release run 43801428444 took 52m23s; final phase-closeout main CI 43841380444 took 48m08s with a one-second first-job delay. Eighteen CI jobs passed; only the expected push-event title and perf jobs were skipped. Session count, model mix and monetary cost are not recorded.
+
 ## Cross-Milestone Trends
 
 | Milestone | Phases | Plans | Requirements | Test evidence | Closeout |
@@ -294,3 +326,4 @@ output paths and measured calibration; aggregate record counts never prove accep
 | v6.0 | 2 | 8 | 9/9 scoped | Native, sanitizer, portable, package and integration evidence passed | Shipped v0.14.0; zero new acknowledgments, 49 carried |
 | v7.0 | 2 | 5 | 8/8 scoped | Native 722/722 ordinary + 8/8 release; focused Release/ASan and hygiene passed | Closed locally with override; 1 newly acknowledged, 49 carried; no publication/merge/tag |
 | v8.0 | 2 | 2 plans, 4 tasks | 5/5 scoped | Local 723/723 CI + 8/8 release; final exact-main CI and Release passed; audit passed | Closed locally with override for stale Phase 23 fingerprint; 0 new acknowledgments, 50 carried; GameDrive implementation NO-GO |
+| v9.0 | 1 | 1 plan, 2 tasks | 4/4 scoped | Exact-source release/install passed; final main CI and audit passed | Shipped v0.16.0; 0 new acknowledgments, 50 carried; v0.15.0 unchanged |

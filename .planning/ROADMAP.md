@@ -2,7 +2,7 @@
 
 ## Milestones
 
-- [ ] **v9.0 — Publish the corrected Souper mapper package** — active scope; Phase 25 execution is verified, with the final phase PR and milestone audit pending. [Requirements](REQUIREMENTS.md) · [Product rationale](PRODUCT-ROADMAP.md)
+- [x] **v9.0 — Publish the corrected Souper mapper package** — shipped as v0.16.0 and archived 2026-11-16. [Audit](milestones/v9.0-MILESTONE-AUDIT.md) · [Archive](milestones/v9.0-ROADMAP.md) · [Requirements](milestones/v9.0-REQUIREMENTS.md) · [Product roadmap snapshot](milestones/v9.0-PRODUCT-ROADMAP.md)
 
 - [x] **v1.0 — 7800 games play with sound in RetroArch** — phases 1–4; shipped 2026-10-21. [Archive](milestones/v1.0-ROADMAP.md)
 - [x] **v2.0 — The whole library** — phases 5–11; shipped 2026-10-29. [Archive](milestones/v2.0-ROADMAP.md)
@@ -14,6 +14,15 @@
 - [x] **v8.0 — GameDrive streamed-audio contract qualification** — phases 23–24; closed locally 2026-11-15 with `override_closeout`, all five requirements covered by the audit. GameDrive implementation readiness is NO-GO. [Audit](milestones/v8.0-MILESTONE-AUDIT.md) · [Archive](milestones/v8.0-ROADMAP.md) · [Requirements](milestones/v8.0-REQUIREMENTS.md)
 
 ## Completed phase history
+
+<details>
+<summary>✅ v9.0 — Publish the corrected Souper mapper package — SHIPPED 2026-11-16</summary>
+
+- [x] Phase 25: Publish the corrected Souper mapper (1/1 plan) — all four requirements verified.
+
+Stable v0.16.0 was published from corrected source `a0319a9`; the failed v0.15.0 tag and draft were preserved. README/status PR #73 and phase closeout PR #74 merged. The milestone audit passed, and exact-main CI on the closeout merge passed in [run 43841380444](https://github.com/szTheory/muhtari/actions/runs/43841380444). See the [audit](milestones/v9.0-MILESTONE-AUDIT.md) and [release receipt](milestones/v9.0-phases/25-publish-the-corrected-souper-mapper/25-RELEASE.md).
+
+</details>
 
 <details>
 <summary>✅ v7.0 — Souper homebrew mapper (phases 21–22) — CLOSED LOCALLY 2026-11-14</summary>
@@ -35,27 +44,6 @@ The milestone audit and both phase reports passed. The Phase 23 verification fin
 
 </details>
 
-## v9.0 — Publish the corrected Souper mapper package
+## Successor scope
 
-**Goal:** Make the already-merged Souper mapper available in a tested package under a fresh release identity, preserving the unpublished v0.15.0 tag and draft.
-
-**Scope boundary:** Publish the already-merged Souper feature as v0.16.0 under the settled pre-1.0 minor-bump policy. This avoids repeating the explicitly one-time CI-only v0.13.1 patch exception. Preserve the v0.15.0 tag and draft. Use the established source-bound release workflow; do not add emulator behavior, dependencies, host/device tests, GameDrive support or new compatibility claims.
-
-### Phase 25: Publish the corrected Souper mapper
-
-**Goal:** Publish the corrected mainline source with Souper support and leave the public README and status page accurate.
-**Depends on:** None.
-**Requirements:** TUNE-13, REL-01, REL-02, DOC-01
-**Success Criteria:**
-1. A fresh v0.16.0 release identity is created from corrected mainline source. The existing v0.15.0 tag and draft remain unchanged.
-2. The established release workflow passes all required exact-source CI, artifact integrity, provenance/attestation, publication and latest-install checks. The release receipt records commands, exit statuses and run URLs.
-3. Existing Souper generated-fixture checks pass on the release source and the released library, runner and libretro artifacts are built from that source.
-4. The README and status page distinguish published v0.14.0 from merged-but-unpublished Souper support until publication succeeds, then accurately report the new release.
-5. CI queue, critical path, job durations and canceled work are reviewed. Any proposed structural, timeout or cache change has repeated evidence and preserves all coverage; otherwise record no safe change.
-
-- [x] **Phase 25:** Publish the corrected Souper mapper (1/1 plan). (completed 2026-11-16)
-**Plans:** 1/1 plans complete.
-
-## Next feature boundary
-
-After v9.0 ships, keep implementation scope open until a source-qualified title-blocking defect or complete GameDrive profile, lawful independent PCM oracle and finite resource facts are available. Preserve the original Phase 12/14 host stops and the nine deferred v3.0 requirements.
+No successor milestone is selected. The recommendation, strongest alternative, evidence threshold, sibling ownership and deferred host scope are in the [rolling product roadmap](PRODUCT-ROADMAP.md). Select scope at the next milestone boundary before creating new requirements or implementation work.

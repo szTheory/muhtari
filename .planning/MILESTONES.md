@@ -1,5 +1,23 @@
 # Project Milestones: muhtari
 
+## v9.0 Publish the corrected Souper mapper package (Shipped: 2026-11-16)
+
+**Phases completed:** 1 phase, 1 plan, 2 tasks
+
+**Closeout type:** `verified_closeout`; all four requirements and the phase verification pass. Known verification overrides: 0 newly acknowledged, 50 carried forward from prior closes (see STATE.md Deferred Items).
+
+**Key accomplishments:**
+- Corrected Souper is available in stable package v0.16.0 from exact source `a0319a9c29886d776e37b818d38d36fe810f486d`; the failed v0.15.0 tag and draft remain unchanged.
+- README and status documentation merged through PR #73; phase closeout merged through PR #74. Final main CI on `9b75e6f` passed in [run 43841380444](https://github.com/szTheory/muhtari/actions/runs/43841380444). The Release workflow passed in [run 43841380334](https://github.com/szTheory/muhtari/actions/runs/43841380334) and skipped publication because no new version was due.
+
+**Audit:** [v9.0 milestone audit](milestones/v9.0-MILESTONE-AUDIT.md) passed all four requirements, the phase record and all three integration flows. It also records the release run [43801428444](https://github.com/szTheory/muhtari/actions/runs/43801428444), queue/critical-path review and clean artifact scan.
+
+**Archives:** [roadmap](milestones/v9.0-ROADMAP.md), [requirements](milestones/v9.0-REQUIREMENTS.md), [product roadmap snapshot](milestones/v9.0-PRODUCT-ROADMAP.md), [audit](milestones/v9.0-MILESTONE-AUDIT.md) and [phase records](milestones/v9.0-phases/).
+
+**Next:** The successor scope remains unselected. See the recommendation and strongest alternative in [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md); select scope before running `$gsd-new-milestone`.
+
+---
+
 ## v8.0 GameDrive streamed-audio contract qualification (Closed locally: 2026-11-15)
 
 **Phases completed:** 2 phases, 2 plans, 4 tasks

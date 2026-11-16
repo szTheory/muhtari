@@ -1,8 +1,8 @@
 ---
 title: "Product roadmap (rolling)"
-summary: "Immediate / Near / Mid / Long direction for muhtari with evidence and promotion triggers."
+summary: "Completed / Next / Mid / Long direction for muhtari with evidence and promotion triggers."
 read_when: "At every new-milestone and complete-milestone step, and when a finding changes priorities."
-updated: 2026-11-15
+updated: 2026-11-16
 ---
 
 # Product roadmap (rolling)
@@ -15,27 +15,23 @@ At every milestone boundary, reconcile shipped and partial work, keep unresolved
 debt visible, re-rank the horizons, record why the order changed, promote only
 scoped work, and snapshot this file at close.
 
-## Immediate — publish the merged Souper support
+## Completed — publish the merged Souper support (v9.0)
 
-The v7.0 Souper mapper is implemented and merged, but the downloadable package
-still stops at v0.14.0. The attempted v0.15.0 source failed its Wasm32 test; the
-test fix is merged and later main CI passed. The current v9.0 milestone closes
-this delivery gap by publishing the corrected source as v0.16.0 through the
-existing release workflow. Keep the failed v0.15.0 tag and draft unchanged.
-This ships existing behavior; it does not add a hardware claim or new emulator
-feature.
+v9.0 shipped the already-merged Souper mapper as stable package v0.16.0 from
+corrected release source `a0319a9c`. Release run
+[43801428444](https://github.com/szTheory/muhtari/actions/runs/43801428444)
+passed its exact-source CI, equality, provenance, publication and latest-install
+gates. The failed v0.15.0 tag and draft stayed unchanged. README/status updates
+merged in PR #73, and planning closeout merged in PR #74. This publishes existing
+behavior; it adds no hardware claim or emulator feature. Main CI passed on the
+PR #74 merge commit in [run 43841380444](https://github.com/szTheory/muhtari/actions/runs/43841380444).
+See the [v9.0 audit](milestones/v9.0-MILESTONE-AUDIT.md)
+and [Phase 25 release receipt](milestones/v9.0-phases/25-publish-the-corrected-souper-mapper/25-RELEASE.md).
 
-The version choice follows the settled pre-1.0 policy: a feature release bumps
-the minor version (DEC.14 in preparation/DECISIONS.md). The v0.13.1 recovery
-was explicitly a one-time, owner-approved CI-only patch exception; its ship
-receipt says it is not standing policy. A v0.15.1 release would repeat that
-exception, so the recommended path is a fresh feature-level v0.16.0 release.
+The release version follows the settled pre-1.0 rule: feature releases bump the
+minor version (DEC.14 in preparation/DECISIONS.md). The v0.13.1 recovery was an
+explicitly one-time, owner-approved CI-only patch exception, not standing policy.
 See the [v0.13.1 ship receipt](milestones/v5.0-SHIP.md#final-publication-and-current-main-closure--reconciled-2026-11-11).
-
-The strongest alternative is a source-qualified fix for a reproducible,
-title-blocking 7800 defect. None is currently established. GameDrive remains
-blocked on an authoritative profile, a lawful independent PCM oracle and finite
-resource facts. Neither alternative justifies inventing compatibility claims.
 
 ## Completed — ship the YM2151 milestone
 
@@ -97,15 +93,21 @@ Phase 12/14 host and remote stops are unchanged.
 
 ### Next feature recommendation
 
-After the Souper package ships, keep the next feature scope open until an
-authoritative GameDrive profile, a lawful independent exact-profile PCM oracle
-and finite resource facts are available. A narrowly scoped implementation can
-then be considered after its concrete API/ABI and state consequences are
-accepted. The strongest alternative remains one source-qualified correction for
-a reproducible, title-blocking defect with a lawful independent fixture and
-expected result. No such defect is established. BupChip remains less ready
-because its command and media profile are incomplete. Do not use the unlicensed
-sample or encoder, start host validation, or infer owner-hardware results.
+Recommend one narrowly scoped fix for a named, title-blocking Atari 7800 defect,
+once a lawful discriminating input, independent expected result and source-
+qualified reproduction exist. No such defect is established today: the pinned
+204-title list still has 201 untested entries and 3 skipped entries. Keep the
+successor implementation scope open until that evidence identifies a real
+failure; do not turn the untested list into a broad compatibility claim.
+
+The strongest alternative is to resume GameDrive contract qualification if new
+authoritative material supplies the missing stream profile, lawful independent
+PCM oracle and finite resource facts. v8.0 remains NO-GO for implementation
+until then; BupChip's bus command and media profile are less complete. Preserve
+the nine deferred v3.0 requirements and original Phase 12/14 host and remote
+stops. LibFuturo owns browser-host work, and `twentysixhundo` owns Atari 2600.
+Do not reuse the unlicensed sample or encoder, start host validation, or infer
+owner-hardware results.
 
 ## Later — implementation only after qualification
 
@@ -224,6 +226,7 @@ example; reproduce sibling lessons locally before adopting them.
 | 2026-11-15 | Selected v8.0 GameDrive contract qualification; reconciled v7.0 shipping | Firmware 26.01.2266 adds a potential ADPCM glitch fix and ADPCM save/load support, but the full stream/PCM oracle contract remains unproven. v7.0 is merged; v0.15.0 remains an unpublished draft pinned to the failing exact source. Keep implementation and its compatibility decision out of v8.0. |
 | 2026-11-15 | Closed v8.0 with GameDrive implementation readiness NO-GO and left successor scope open | The authoritative stream timing/framing profile, legal independent PCM oracle and finite resource facts remain incomplete. Reopen only with those sources or a lawful reproducible title-blocking 7800 defect; preserve existing host, remote and exact-source release stops. |
 | 2026-11-15 | Delivered the v8.0 archive through PR #69 and refreshed the successor recommendation | Main CI passed on the merge commit and Release skipped package publication; no jobs were cancelled and the audit has no open items. GameDrive remains NO-GO, v0.15.0 remains unpublished, and no successor scope is selected. |
+| 2026-11-16 | Shipped v9.0 as v0.16.0 and left successor implementation scope open | Exact-source release and latest-install checks passed; v0.15.0 stayed unchanged. Final main CI 43841380444 passed with a one-second queue and no cancelled jobs; its Windows ARM64 critical path supplies no single-run basis for pipeline changes. No source-qualified title blocker or new GameDrive contract evidence emerged, so the next candidate remains one evidence-backed title correction, with GameDrive qualification as the alternative if its missing inputs arrive. |
 
 | 2026-11-10 | Completed the offline v4.0 core slice; retain ship and real-browser work as distinct next decisions | All five scoped requirements and integration flows passed locally; measured SDK results are explicitly headless and emulated. |
 
