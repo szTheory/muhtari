@@ -262,20 +262,17 @@ Keep trace event definitions in private source headers; keep trace option parsin
 | A5 | Existing lexical path validation is acceptable if expanded to trace output, or an identity check can be added proportionally. | Common Pitfalls | Alias paths could overwrite an input or another output. |
 | A6 | SYNC can identify opcode fetches for instruction records, allowing the record to use the fetch data edge, starting PC and pre-increment CPU context before the matching bus record. | Private instrumentation design | A wrong event source or order would make instruction records inconsistent with the CPU stream. |
 
-## Open Questions
+## Open Questions (RESOLVED FOR PLANNING; implementation evidence pending)
 
-1. **Exact event wire schema and CPU-context timing**
+1. **Exact event wire schema and CPU-context timing — RESOLVED**
    - What we know: CONTEXT locks numeric machine fields, event kind, address filter semantics, CPU context and deterministic observation order.
-   - What's unclear: Compact JSONL key names, instruction register sample point and byte widths remain implementation choices.
-   - Recommendation: Lock these in the implementation plan and exact fixture oracle; document instruction context as pre-fetch and bus context as sampled for that CPU access.
-2. **Does the 131,072-record hard cap meet the intended one-frame memory objective?**
+   - Disposition: 27-01 Task 1 defines the versioned numeric JSONL fields and pre-fetch/pre-access sampling points; 27-01 Task 2 must verify each field and ordering against an independent exact fixture oracle. Concrete serializer widths remain an implementation detail covered by that oracle.
+2. **Does the 131,072-record hard cap meet the intended one-frame memory objective? — RESOLVED**
    - What we know: Existing instruction and held-cycle comments give a conservative upper-bound starting point; ENGINEERING §11 requires an objective and measurements.
-   - What's unclear: Full scheduler interactions and encoded JSON line length have not been measured for a trace implementation.
-   - Recommendation: Validate the derived premise against code and actual sizeof/serializer limits before locking the cap; revise if the source bounds or target memory objective differ.
-3. **Should trace paths reject aliases beyond identical spelling?**
+   - Disposition: No candidate cap is accepted as fact by this research. 27-01 Task 1 and 27-02 Task 1 must prove the event ceiling, actual record and line sizes, finite memory/disk objective, and comparable measurements; replace the candidates if any premise fails before tests or documentation lock them.
+3. **Should trace paths reject aliases beyond identical spelling? — RESOLVED**
    - What we know: Existing path safety compares lexical spellings.
-   - What's unclear: The compatibility need for filesystem identity/normalization checks in the broader runner is not settled here.
-   - Recommendation: At minimum match existing behavior and cover exact input/output collisions; add alias identity checks only if a concrete safety gap is reproduced.
+   - Disposition: 27-02 Task 2 preserves existing lexical behavior, tests exact collisions and representative supported aliases, and requires a narrow identity/normalization check only if a trace-specific overwrite gap reproduces. This is scoped to trace paths and does not reopen general runner path policy.
 
 ## Environment Availability
 
