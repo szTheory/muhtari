@@ -131,6 +131,10 @@ GSD planning metadata is recorded in the separate metadata commit that includes 
 - All checks were local. Run URL: N/A-local; no RetroArch, device or external-host checks were in scope.
 - The hooks-off CPU cost gate remains for plan 27-03; it is not claimed by this summary.
 
+### Post-Wave Integration Gate
+
+- `cmake --workflow --preset ci` — exit 0; 733 CI tests and 8 release-preset checks passed, and all three package targets were produced. Run URL: N/A-local.
+
 ## Issues Encountered
 
 - The first strict build rejected casts from `const char *` in the new test argument helper; the helper now copies option tokens into bounded local buffers.
