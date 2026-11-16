@@ -165,6 +165,10 @@ status: complete
 - Trace-disabled configure/build with -DMUHTARI_TRACE_LOOP=OFF -DMUHTARI_TESTS=OFF -DMUHTARI_BUILD_LIBRETRO=OFF — exit 0; valid trace request returned expected exit 77 and MUHTARI_TRACE_LOOP=OFF refusal.
 - Run URLs: N/A-local. No RetroArch, device, or external-host checks were run.
 
+### Post-Wave Integration Gate
+
+- `cmake --workflow --preset ci` — exit 0; the CI workflow's 727-test suite and 8 release-preset checks passed, and all three package targets were produced. Run URL: N/A-local.
+
 ## Issues Encountered
 
 The optional GSD WINDOWS deviation append did not write because the existing ledger frontmatter totals disagree with its entries. The mismatch is logged in deferred-items.md; the shared ledger was left unchanged.
