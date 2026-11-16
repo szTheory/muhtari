@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.0](https://github.com/szTheory/muhtari/compare/v0.15.0...v0.16.0) (2026-11-16)
+
+
+### Features
+
+* make corrected Souper mapper support downloadable ([#71](https://github.com/szTheory/muhtari/issues/71)) ([4486a25](https://github.com/szTheory/muhtari/commit/4486a25e20020b6eec9949c5628cbbdfd686f6a4))
+
 ## [0.15.0](https://github.com/szTheory/muhtari/compare/v0.14.0...v0.15.0) (2026-11-14)
 
 
