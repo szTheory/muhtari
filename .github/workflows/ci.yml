@@ -613,9 +613,9 @@ jobs:
           name: retroarch-frames
           path: build/frames/*.png
 
-  # Cachegrind instructions per frame of the test card, the pull request's
-  # merge commit against its first parent measured twice (docs/testing.md,
-  # "Performance"). Direct runs only: release.yml's nested call checks out the
+  # Cachegrind keeps the test-card PR/base ratchet and adds a CPU-backed
+  # dual-loop versus trace-loop-OFF gate (docs/testing.md, "Performance").
+  # Direct runs only: release.yml's nested call checks out the
   # pull request head, whose first parent is not the merge base, and
   # github.event_name cannot tell that call apart, so the condition reads
   # inputs.ref. On workflow_dispatch it measures one commit three times.
@@ -657,6 +657,84 @@ jobs:
             echo "perf: base HEAD^1 has no CMakePresets.json; verdict NO_BASE"
             echo no_base=true >> "$GITHUB_OUTPUT"
           fi
+      - name: Build trace-loop variants and generated CPU workload
+        env:
+          RUN_ON: ${{ runner.temp }}/perf/trace-on/bin/muhtari-run
+          RUN_OFF: ${{ runner.temp }}/perf/trace-of/bin/muhtari-run
+        run: |
+          set -eu
+          # Reconfigure the head's existing Release build only for the one
+          # fixture generator; build only the runner and this test target.
+          cmake --preset ci -DMUHTARI_TESTS=ON -DMUHTARI_TRACE_LOOP=ON > /dev/null
+          cmake --build --preset ci --target muhtari-run muhtari-test-trace
+          cmake --install build/ci --component runner --prefix "$RUNNER_TEMP/perf/trace-on"
+
+          # The OFF variant uses the same source, compiler and CI Release
+          # preset, and is built without tests or the traced loop.
+          cmake --preset ci -B build/perf/trace-off \
+            -DMUHTARI_TESTS=OFF -DMUHTARI_TRACE_LOOP=OFF > /dev/null
+          cmake --build build/perf/trace-off --target muhtari-run
+          cmake --install build/perf/trace-off --component runner --prefix "$RUNNER_TEMP/perf/trace-of"
+
+          build/ci/tests/muhtari-test-trace cost_fixture "$RUNNER_TEMP/perf"
+          test "${#RUN_ON}" -eq "${#RUN_OFF}"
+          test -s "$RUN_ON" && test -s "$RUN_OFF" && test -s "$RUNNER_TEMP/perf/trace-cost.a78"
+          archive_on=build/ci/libmuhtari.a
+          archive_off=build/perf/trace-off/libmuhtari.a
+          test -s "$archive_on" && test -s "$archive_off"
+          runner_on_bytes=$(stat -c '%s' "$RUN_ON")
+          runner_off_bytes=$(stat -c '%s' "$RUN_OFF")
+          archive_on_bytes=$(stat -c '%s' "$archive_on")
+          archive_off_bytes=$(stat -c '%s' "$archive_off")
+          runner_delta=$((runner_on_bytes - runner_off_bytes))
+          archive_delta=$((archive_on_bytes - archive_off_bytes))
+          {
+            echo "MUHTARI_TRACE_RUNNER_ON_BYTES=$runner_on_bytes"
+            echo "MUHTARI_TRACE_RUNNER_OFF_BYTES=$runner_off_bytes"
+            echo "MUHTARI_TRACE_RUNNER_DELTA_BYTES=$runner_delta"
+            echo "MUHTARI_TRACE_ARCHIVE_ON_BYTES=$archive_on_bytes"
+            echo "MUHTARI_TRACE_ARCHIVE_OFF_BYTES=$archive_off_bytes"
+            echo "MUHTARI_TRACE_ARCHIVE_DELTA_BYTES=$archive_delta"
+          } >> "$GITHUB_ENV"
+          printf '| Trace-loop size observation | dual | OFF | dual minus OFF |\n' >> "$GITHUB_STEP_SUMMARY"
+          printf '| --- | ---: | ---: | ---: |\n' >> "$GITHUB_STEP_SUMMARY"
+          printf '| runner bytes | %s | %s | %s |\n' "$runner_on_bytes" "$runner_off_bytes" "$runner_delta" >> "$GITHUB_STEP_SUMMARY"
+          printf '| static archive bytes | %s | %s | %s |\n' "$archive_on_bytes" "$archive_off_bytes" "$archive_delta" >> "$GITHUB_STEP_SUMMARY"
+
+      # This CPU-backed check runs before the workflow_dispatch test-card
+      # control's intentional early exit. Its receipt is embedded in the
+      # existing quality-perf artifact on pull requests.
+      - name: CPU-backed trace hooks-off cost gate
+        env:
+          RUN_ON: ${{ runner.temp }}/perf/trace-on/bin/muhtari-run
+          RUN_OFF: ${{ runner.temp }}/perf/trace-of/bin/muhtari-run
+          ROM: ${{ runner.temp }}/perf/trace-cost.a78
+          WORK: ${{ runner.temp }}/perf/trace-work
+        run: |
+          set -eu
+          valgrind=$(command -v valgrind)
+          cmake -DMODE=measure -DRUN_ON="$RUN_ON" -DRUN_OFF="$RUN_OFF" \
+            -DROM="$ROM" -DWORK="$WORK" -DVALGRIND="$valgrind" \
+            -P tests/perf/trace.cmake
+          fixture_sha=$(sha256sum "$ROM" | cut -d ' ' -f1)
+          jq -n \
+            --arg source_sha "$(git rev-parse HEAD)" \
+            --arg compiler "$(cc --version | head -1)" \
+            --arg valgrind "$($valgrind --version)" \
+            --arg fixture_sha "$fixture_sha" \
+            --arg runner_on_sha "$(sha256sum "$RUN_ON" | cut -d ' ' -f1)" \
+            --arg runner_off_sha "$(sha256sum "$RUN_OFF" | cut -d ' ' -f1)" \
+            --argjson runner_on_bytes "$MUHTARI_TRACE_RUNNER_ON_BYTES" \
+            --argjson runner_off_bytes "$MUHTARI_TRACE_RUNNER_OFF_BYTES" \
+            --argjson runner_delta_bytes "$MUHTARI_TRACE_RUNNER_DELTA_BYTES" \
+            --argjson archive_on_bytes "$MUHTARI_TRACE_ARCHIVE_ON_BYTES" \
+            --argjson archive_off_bytes "$MUHTARI_TRACE_ARCHIVE_OFF_BYTES" \
+            --argjson archive_delta_bytes "$MUHTARI_TRACE_ARCHIVE_DELTA_BYTES" \
+            --slurpfile measurement "$WORK/trace-cost.json" \
+            '{producer:"tests/perf/trace.cmake",source_sha:$source_sha,compiler:$compiler,valgrind:$valgrind,fixture_sha256:$fixture_sha,runner_sha256:{dual:$runner_on_sha,off:$runner_off_sha},measurement:$measurement[0],size_observation:{runner_bytes:{dual:$runner_on_bytes,off:$runner_off_bytes,delta:$runner_delta_bytes},archive_bytes:{dual:$archive_on_bytes,off:$archive_off_bytes,delta:$archive_delta_bytes}}}' \
+            > "$RUNNER_TEMP/perf/trace-cost-receipt.json"
+          jq -r '"CPU trace hooks-off: source=" + .source_sha + " delta=" + (.measurement.delta_ir_frame|tostring) + " Ir/frame (raw=" + (.measurement.delta_raw|tostring) + "/300); dual 60=" + (.measurement.on_ir60|map(tostring)|join(",")) + " 360=" + (.measurement.on_ir360|map(tostring)|join(",")) + "; OFF 60=" + (.measurement.off_ir60|map(tostring)|join(",")) + " 360=" + (.measurement.off_ir360|map(tostring)|join(",")) + "; fixture=" + .fixture_sha256 + "; tools=" + .compiler + " / " + .valgrind' \
+            "$RUNNER_TEMP/perf/trace-cost-receipt.json" >> "$GITHUB_STEP_SUMMARY"
       - name: Instructions per frame
         env:
           EVENT: ${{ github.event_name }}
@@ -711,7 +789,8 @@ jobs:
               --arg source "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
               --arg tools "$(cc --version | head -1);$("$valgrind" --version)" \
               --argjson value "$head" --arg baseline "$base1" --arg repeated "$base2" \
-              '{producer:"tests/cmake/perf_compare.cmake",configuration:"testcard;360-60/300;equal-paths;stripped-env",tools:$tools,units:"Ir/frame",direction:"ceiling",availability:"advisory",sha:$head,base_sha:$base,source:$source,value:$value,baseline:$baseline,repeated:$repeated,status:(if $baseline == "" or $baseline != $repeated then "unavailable" else "measured" end)}' > quality-perf.json
+              --slurpfile trace_cost "$RUNNER_TEMP/perf/trace-cost-receipt.json" \
+              '{producer:"tests/cmake/perf_compare.cmake",configuration:"testcard;360-60/300;equal-paths;stripped-env",tools:$tools,units:"Ir/frame",direction:"ceiling",availability:"advisory",sha:$head,base_sha:$base,source:$source,value:$value,baseline:$baseline,repeated:$repeated,status:(if $baseline == "" or $baseline != $repeated then "unavailable" else "measured" end),trace_cost:$trace_cost[0]}' > quality-perf.json
           fi
           exit "$rc"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

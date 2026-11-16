@@ -34,12 +34,17 @@ typedef struct collector {
 
 static uint8_t fixture[TRACE_IMAGE_BYTES];
 static const uint8_t trace_program[] = {
-    0xA9u, 0x2Au,                         /* LDA #$2A */
-    0x8Du, 0x00u, 0x18u,                  /* STA $1800 */
-    0xADu, 0x00u, 0x18u,                  /* LDA $1800 */
-    0xADu, 0x00u, 0x00u,                  /* LDA $0000 (slow TIA read) */
-    0xADu, 0xFFu, 0xFFu,                  /* LDA $FFFF */
-    0x4Cu, 0x0Eu, 0xF0u                   /* JMP $F00E */
+    0xA9u, 0x2Au,        /* LDA #$2A */
+    0x8Du, 0x00u, 0x18u, /* STA $1800 */
+    0xADu, 0x00u, 0x18u, /* LDA $1800 */
+    0xADu, 0x00u, 0x00u, /* LDA $0000 (slow TIA read) */
+    0xADu, 0xFFu, 0xFFu, /* LDA $FFFF */
+    0x4Cu, 0x0Eu, 0xF0u  /* JMP $F00E */
+};
+static const uint8_t cost_program[] = {
+    0xA9u, 0xA5u,        /* LDA #$A5 */
+    0x8Du, 0x00u, 0x22u, /* STA $2200 */
+    0x4Cu, 0x00u, 0xF0u  /* JMP $F000 */
 };
 
 static void collect_event(void *user, const struct muhtari__trace_event *event)
@@ -78,6 +83,27 @@ static int write_fixture(const char *dir)
         return 1;
     CHECK_EQ_U64(fwrite(fixture, 1u, sizeof fixture, f), sizeof fixture);
     CHECK_EQ_U64(fclose(f), 0);
+    return check_failures != 0 ? 1 : 0;
+}
+
+static int write_cost_fixture(const char *dir)
+{
+    char path[1024];
+    int n = snprintf(path, sizeof path, "%s/trace-cost.a78", dir);
+    CHECK(n > 0 && (size_t)n < sizeof path);
+    if (n <= 0 || (size_t)n >= sizeof path)
+        return 1;
+    make_fixture();
+    memset(fixture + 128u, 0xEA, 4096u);
+    memcpy(fixture + 128u, cost_program, sizeof cost_program);
+    fixture[128u + 0xFFCu] = 0u;
+    fixture[128u + 0xFFDu] = 0xF0u;
+    FILE *f = fopen(path, "wb");
+    CHECK(f != NULL);
+    if (f == NULL)
+        return 1;
+    CHECK_EQ_U64(fwrite(fixture, 1u, sizeof fixture, f), sizeof fixture);
+    CHECK_EQ_U64(fclose(f), 0u);
     return check_failures != 0 ? 1 : 0;
 }
 
@@ -122,7 +148,8 @@ static int measure_trace(const char *path)
     CHECK_EQ_U64(sscanf(line,
                         "{\"format\":\"muhtari-trace\",\"version\":1,\"frame\":%*u,"
                         "\"lo\":%*u,\"hi\":%*u,\"limit\":%u}",
-                        &limit), 1u);
+                        &limit),
+                 1u);
     while (fgets(line, (int)sizeof line, f) != NULL) {
         size_t line_length = strlen(line);
         CHECK(line_length != 0u && line[line_length - 1u] == '\n');
@@ -136,7 +163,8 @@ static int measure_trace(const char *path)
         }
     }
     CHECK_EQ_U64(fclose(f), 0u);
-    printf("records=%zu status=%s limit=%u event_size=%zu capture_bytes=%zu max_line=%zu output_bytes=%ld\n",
+    printf("records=%zu status=%s limit=%u event_size=%zu capture_bytes=%zu max_line=%zu "
+           "output_bytes=%ld\n",
            records, status, limit, sizeof(struct muhtari__trace_event),
            (size_t)limit * sizeof(struct muhtari__trace_event), max_line, output_bytes);
     return check_failures != 0 ? 1 : 0;
@@ -145,13 +173,12 @@ static int measure_trace(const char *path)
 static int parse_record(const char *line, record *out)
 {
     unsigned long long tick = 0u;
-    int fields = sscanf(
-        line,
-        "{\"kind\":%u,\"tick\":%llu,\"line\":%u,\"t\":%u,\"pc\":%u,"
-        "\"a\":%u,\"x\":%u,\"y\":%u,\"s\":%u,\"p\":%u,\"addr\":%u,"
-        "\"rw\":%u,\"value\":%u}",
-        &out->kind, &tick, &out->line, &out->t, &out->pc, &out->a, &out->x, &out->y,
-        &out->s, &out->p, &out->addr, &out->rw, &out->value);
+    int fields = sscanf(line,
+                        "{\"kind\":%u,\"tick\":%llu,\"line\":%u,\"t\":%u,\"pc\":%u,"
+                        "\"a\":%u,\"x\":%u,\"y\":%u,\"s\":%u,\"p\":%u,\"addr\":%u,"
+                        "\"rw\":%u,\"value\":%u}",
+                        &out->kind, &tick, &out->line, &out->t, &out->pc, &out->a, &out->x, &out->y,
+                        &out->s, &out->p, &out->addr, &out->rw, &out->value);
     out->tick = (uint64_t)tick;
     return fields == 13;
 }
@@ -175,8 +202,9 @@ static int read_trace(const char *path, trace_file *out)
     while (fgets(line, (int)sizeof line, f) != NULL) {
         if (strncmp(line, "{\"status\":", 10u) == 0) {
             char status[16] = {0};
-            CHECK_EQ_U64(sscanf(line, "{\"status\":\"%15[^\"]\",\"count\":%zu}",
-                                status, &out->declared_count), 2);
+            CHECK_EQ_U64(sscanf(line, "{\"status\":\"%15[^\"]\",\"count\":%zu}", status,
+                                &out->declared_count),
+                         2);
             CHECK(strcmp(status, "complete") == 0 || strcmp(status, "truncated") == 0);
             out->truncated = strcmp(status, "truncated") == 0;
             footer_seen = 1;
@@ -431,10 +459,10 @@ static void test_fast_slow_and_dummy(void)
     muhtari *m = make_machine();
     collector capture = make_collector(128u);
     static const uint8_t code[] = {
-        0xA9u, 0x2Au,             /* LDA #$2A */
-        0xADu, 0x00u, 0x00u,      /* LDA $0000, slow final cycle */
-        0x8Du, 0x01u, 0x00u,      /* STA $0001, slow final cycle */
-        0xBDu, 0xFFu, 0x00u       /* LDA $00FF,X, page-cross dummy at $0000 */
+        0xA9u, 0x2Au,        /* LDA #$2A */
+        0xADu, 0x00u, 0x00u, /* LDA $0000, slow final cycle */
+        0x8Du, 0x01u, 0x00u, /* STA $0001, slow final cycle */
+        0xBDu, 0xFFu, 0x00u  /* LDA $00FF,X, page-cross dummy at $0000 */
     };
     CHECK(m != NULL && capture.events != NULL);
     if (m == NULL || capture.events == NULL)
@@ -581,8 +609,7 @@ static void test_jam_and_interrupt(void)
         CHECK_EQ_U64(nmi_capture.count, 10u);
         unsigned writes = 0u;
         for (size_t i = 0u; i < nmi_capture.count && i < nmi_capture.capacity; i++)
-            if (nmi_capture.events[i].kind == MUHTARI__TRACE_BUS &&
-                nmi_capture.events[i].rw == 1u)
+            if (nmi_capture.events[i].kind == MUHTARI__TRACE_BUS && nmi_capture.events[i].rw == 1u)
                 writes++;
         CHECK_EQ_U64(writes, 3u);
         if (nmi_capture.count >= 2u) {
@@ -671,6 +698,8 @@ int main(int argc, char **argv)
 {
     if (argc == 3 && strcmp(argv[1], "fixture") == 0)
         return write_fixture(argv[2]);
+    if (argc == 3 && strcmp(argv[1], "cost_fixture") == 0)
+        return write_cost_fixture(argv[2]);
     if (argc == 3 && strcmp(argv[1], "busy_fixture") == 0)
         return write_busy_fixture(argv[2]);
     if (argc == 3 && strcmp(argv[1], "measure") == 0)
