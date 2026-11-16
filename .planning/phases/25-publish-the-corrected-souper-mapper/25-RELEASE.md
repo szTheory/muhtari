@@ -1,6 +1,6 @@
 # Phase 25 package delivery receipt
 
-Status: v0.16.0 is published from the verified release source and is latest; its exact-source gates and unchanged v0.15.0 snapshot pass. The Task 2 README/status update passes local checks; its PR and final main CI are pending.
+Status: v0.16.0 is published from the verified release source and remains latest; its exact-source gates and unchanged v0.15.0 snapshot pass. The Task 2 README/status update is merged, and final main CI is green on f3e1a24d.
 
 ## Scope and source
 
@@ -101,7 +101,7 @@ Raw release API responses, full run responses/logs, and downloaded CI artifacts 
 - Read-only release/tag/latest API capture and validation passed (exit 0). `v016-release.json` identifies the target SHA and published stable state; `v016-tag.json` peels to the same commit; `latest.json` identifies v0.16.0.
 - Re-fetched and canonically normalized the full v0.15.0 release, paginated assets, and tag after publication. `cmp build/phase25/v015-before.json build/phase25/v015-after.json` passed (exit 0); both snapshots hash to `4aa0ea4e2d5090918e6d4c03c60bc8dd8efa7090bba050846f802e7266e2c9ad`. Release ID 445523668, draft state, body, zero assets, direct tag object, and peeled target remain equal to the baseline above.
 
-The release-source CI and equality evidence belong to a0319a9c. The docs follow-up PR and final main CI are still pending.
+The release-source CI and equality evidence belong to a0319a9c; the later documentation delivery and final main CI are recorded in the closeout section below.
 
 ## Task 2 documentation checks
 
@@ -126,4 +126,22 @@ The reviewed docs are on branch `phase/25-souper-availability-docs`, based on ex
 
 Drafting from the earlier milestone checkout briefly failed the existing claims policy twice because the required compatibility sentence was omitted/wrapped; it is restored verbatim on one line and the clean-branch owning test passes. An initial CTest selector used the wrong inventory and ran no tests (exit 8); `ctest -N` identified the correct configured inventory. The clean checkout's initial CMake configure also needed pinned inputs, all fetched with SHA-256 verification before retry. These failures were diagnosed and resolved without changing product behavior or policy.
 
-The documentation follow-up PR and final main CI are pending.
+The documentation follow-up PR and final main CI completed; final evidence follows.
+
+## Docs delivery and final main verification
+
+The clean documentation branch was based on main at a0319a9c29886d776e37b818d38d36fe810f486d. Its diff contained only README.md, docs/status.md, and this receipt. PR [#73](https://github.com/szTheory/muhtari/pull/73), titled `docs: document the published Souper package`, merged at 2026-11-16T06:37:53Z as squash commit f3e1a24d8a1372bfc689c19cb1d91dfad0575d97. The PR head was 1a715441544676394e9bb16cccdd1acd5c2ba75a.
+
+The PR CI response [43813049138](https://github.com/szTheory/muhtari/actions/runs/43813049138) was fetched with `gh run view 43813049138 --json attempt,status,conclusion,headSha,url,jobs` (exit 0). It completed successfully on the exact PR head, attempt 1. `cmake -DROOT="$PWD" -DINPUT=build/phase25/docs-pr-ci-sourcecheck.json -DEXPECTED_SHA=1a715441544676394e9bb16cccdd1acd5c2ba75a -P tools/check_ci_run.cmake` passed (exit 0); all 20 jobs succeeded, including the required aggregate, Windows ARM64, wasm32, equality, quality, and hosted RetroArch integration. No PR CI jobs failed, skipped, or were cancelled.
+
+The ordinary Release workflow on the docs merge, [43818074919](https://github.com/szTheory/muhtari/actions/runs/43818074919), completed successfully on the exact merge SHA. Its `release-please` and `release-target` jobs passed; the nine downstream package gates were skipped because the docs-only merge created no release event. A fresh latest-release API query (exit 0) still identifies stable v0.16.0, release ID 446591624, published at 2026-11-16T04:48:49Z from the package source a0319a9c. `gh pr list --repo szTheory/muhtari --state open --json number,title,headRefName,baseRefName,url` returned zero open PRs (exit 0); no additional release-please PR is pending.
+
+The final main CI run, [43818074765](https://github.com/szTheory/muhtari/actions/runs/43818074765), was triggered by the docs merge and completed successfully on exact main SHA f3e1a24d8a1372bfc689c19cb1d91dfad0575d97, attempt 1. `cmake -DROOT="$PWD" -DINPUT=build/phase25/main-ci-final.json -DEXPECTED_SHA=f3e1a24d8a1372bfc689c19cb1d91dfad0575d97 -P tools/check_ci_run.cmake` passed (exit 0). Eighteen jobs passed, including `CI required`, Windows ARM64, Windows x64, wasm32, equality, quality and hosted RetroArch integration. The only skips were the expected push-event `title` and `perf` jobs; no jobs failed, were cancelled, or were superseded. The complete run response and exact-source checker input are retained under ignored `build/phase25/`.
+
+After that merge, the full v0.15.0 release response, paginated asset list, and tag ref were fetched again (each API command exit 0) and normalized with the same fields as the original baseline. `cmp build/phase25/v015-before.json build/phase25/v015-after-final.json` passed (exit 0); both SHA-256 values remain `4aa0ea4e2d5090918e6d4c03c60bc8dd8efa7090bba050846f802e7266e2c9ad`. The old draft, tag object and peeled target, notes, and empty asset list remain unchanged. The latest release query still reports v0.16.0 at a0319a9c.
+
+### Final queue and critical-path review
+
+The docs PR CI ran from 05:52:32Z to 06:40:00Z (47m28s); its first job started three seconds after dispatch. Windows ARM64 was the longest job at 44m17s, followed by wasm32 at 2m55s; hosted RetroArch took 37s. The post-merge main CI ran from 06:37:55Z to 07:22:04Z (44m09s); its first job started one second after dispatch. Windows ARM64 took 39m39s and was followed by wasm32 at 4m18s; Windows x64 took 19m34s. Neither run had cancelled or superseded jobs. Queue delay was negligible. These samples support no safe change to workflow topology, caches, deadlines, test inventory, quality floors, or required/advisory membership; the existing Windows independent-base check remains the critical path and its coverage remains intact.
+
+After this receipt update, `git diff --check origin/main`, both current/NEXT single-version checks, document budgets, and the claims/version-source CTest group all passed (exit 0; six tests, captured 2026-11-16T08:04:22Z).

@@ -2,7 +2,7 @@
 
 ## Milestones
 
-- [ ] **v9.0 — Publish the corrected Souper mapper package** — active scope; Phase 25 planned, not yet discussed or planned. [Requirements](REQUIREMENTS.md) · [Product rationale](PRODUCT-ROADMAP.md)
+- [ ] **v9.0 — Publish the corrected Souper mapper package** — active scope; Phase 25 execution is verified, with the final phase PR and milestone audit pending. [Requirements](REQUIREMENTS.md) · [Product rationale](PRODUCT-ROADMAP.md)
 
 - [x] **v1.0 — 7800 games play with sound in RetroArch** — phases 1–4; shipped 2026-10-21. [Archive](milestones/v1.0-ROADMAP.md)
 - [x] **v2.0 — The whole library** — phases 5–11; shipped 2026-10-29. [Archive](milestones/v2.0-ROADMAP.md)
@@ -45,7 +45,7 @@ The milestone audit and both phase reports passed. The Phase 23 verification fin
 
 **Goal:** Publish the corrected mainline source with Souper support and leave the public README and status page accurate.
 **Depends on:** None.
-**Requirements:** TUNE-13, REL-01, REL-02, DOC-01.
+**Requirements:** TUNE-13, REL-01, REL-02, DOC-01
 **Success Criteria:**
 1. A fresh v0.16.0 release identity is created from corrected mainline source. The existing v0.15.0 tag and draft remain unchanged.
 2. The established release workflow passes all required exact-source CI, artifact integrity, provenance/attestation, publication and latest-install checks. The release receipt records commands, exit statuses and run URLs.
@@ -53,7 +53,8 @@ The milestone audit and both phase reports passed. The Phase 23 verification fin
 4. The README and status page distinguish published v0.14.0 from merged-but-unpublished Souper support until publication succeeds, then accurately report the new release.
 5. CI queue, critical path, job durations and canceled work are reviewed. Any proposed structural, timeout or cache change has repeated evidence and preserves all coverage; otherwise record no safe change.
 
-**Plans:** Not yet planned.
+- [x] **Phase 25:** Publish the corrected Souper mapper (1/1 plan). (completed 2026-11-16)
+**Plans:** 1/1 plans complete.
 
 ## Next feature boundary
 
