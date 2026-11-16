@@ -12,12 +12,12 @@
 
 ### Headless developer trace
 
-- [ ] **TRACE-01**: A developer can opt in to an instruction and bus-access trace from `muhtari-run` for a selected invocation frame and inclusive address range, and the trace contains only matching events in deterministic order.
-- [ ] **TRACE-02**: Each trace record identifies its event kind, master tick, beam position and CPU context; bus-access records also identify the address, direction and value, with instruction and bus address filtering semantics documented.
+- [x] **TRACE-01**: A developer can opt in to an instruction and bus-access trace from `muhtari-run` for a selected invocation frame and inclusive address range, and the trace contains only matching events in deterministic order.
+- [x] **TRACE-02**: Each trace record identifies its event kind, master tick, beam position and CPU context; bus-access records also identify the address, direction and value, with instruction and bus address filtering semantics documented.
 - [ ] **TRACE-03**: Trace output has a finite record limit, reports when that limit truncates the trace, rejects invalid frame/range/limit arguments before execution, and reports file-output failures without claiming a complete trace.
-- [ ] **TRACE-04**: A generated or owned diagnostic fixture produces an exact numeric trace oracle, and enabling tracing leaves the fixture's frame and canonical state hashes unchanged.
-- [ ] **TRACE-05**: The trace remains runner-only, preserves public API 8, ABI 1 and existing state formats, and keeps callback state and output buffers outside emulated machine state.
-- [ ] **TRACE-06**: With tracing disabled, the core preserves the existing hooks-off instruction-cost gate; instrumentation is selected only for calls that have tracing installed.
+- [x] **TRACE-04**: A generated or owned diagnostic fixture produces an exact numeric trace oracle, and enabling tracing leaves the fixture's frame and canonical state hashes unchanged.
+- [x] **TRACE-05**: The trace remains runner-only, preserves public API 8, ABI 1 and existing state formats, and keeps callback state and output buffers outside emulated machine state.
+- [x] **TRACE-06**: With tracing disabled, the core preserves the existing hooks-off instruction-cost gate; instrumentation is selected only for calls that have tracing installed.
 - [ ] **TRACE-07**: Runner documentation describes trace invocation, filtering, record fields, output bounds, truncation and known limits; committed fixtures and logs contain no ROM, BIOS or save bytes beyond the manifest.
 
 ## v2 Requirements
@@ -46,12 +46,12 @@ Deferred pending demonstrated users and a separate scope decision.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | TUNE-14 | Phase 26 | Complete |
-| TRACE-01 | Phase 27 | Pending |
-| TRACE-02 | Phase 27 | Pending |
+| TRACE-01 | Phase 27 | Complete |
+| TRACE-02 | Phase 27 | Complete |
 | TRACE-03 | Phase 27 | Pending |
-| TRACE-04 | Phase 27 | Pending |
-| TRACE-05 | Phase 27 | Pending |
-| TRACE-06 | Phase 27 | Pending |
+| TRACE-04 | Phase 27 | Complete |
+| TRACE-05 | Phase 27 | Complete |
+| TRACE-06 | Phase 27 | Complete |
 | TRACE-07 | Phase 27 | Pending |
 
 **Coverage:**
