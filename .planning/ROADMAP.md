@@ -2,6 +2,8 @@
 
 ## Milestones
 
+- [ ] **v9.0 — Publish the corrected Souper mapper package** — active scope; Phase 25 planned, not yet discussed or planned. [Requirements](REQUIREMENTS.md) · [Product rationale](PRODUCT-ROADMAP.md)
+
 - [x] **v1.0 — 7800 games play with sound in RetroArch** — phases 1–4; shipped 2026-10-21. [Archive](milestones/v1.0-ROADMAP.md)
 - [x] **v2.0 — The whole library** — phases 5–11; shipped 2026-10-29. [Archive](milestones/v2.0-ROADMAP.md)
 - [x] **v3.0 — Playstead-ready play and states** — phases 12–14; closed 2026-11-10 with deferred scope (`override_closeout`). Phase 13 passed; Phase 12 remains accepted 0/4 and Phase 14 remains `gaps_found` at 20/27; nine requirements remain unchecked. [Audit](milestones/v3.0-MILESTONE-AUDIT.md) · [Archive](milestones/v3.0-ROADMAP.md)
@@ -33,6 +35,26 @@ The milestone audit and both phase reports passed. The Phase 23 verification fin
 
 </details>
 
-## Next boundary
+## v9.0 — Publish the corrected Souper mapper package
 
-No successor milestone is selected. Recommendation: keep GameDrive at NO-GO and hold scope open until an authoritative profile, a lawful independent PCM oracle and finite resource facts are available. The strongest alternative is a single source-qualified correction for a reproducible title-blocking 7800 defect if a lawful independent fixture and expected result appear first. No such defect is established now. Preserve the v0.15.0 exact-source release stop, the original Phase 12/14 stops and the nine deferred v3.0 requirements.
+**Goal:** Make the already-merged Souper mapper available in a tested package under a fresh release identity, preserving the unpublished v0.15.0 tag and draft.
+
+**Scope boundary:** Publish the already-merged Souper feature as v0.16.0 under the settled pre-1.0 minor-bump policy. This avoids repeating the explicitly one-time CI-only v0.13.1 patch exception. Preserve the v0.15.0 tag and draft. Use the established source-bound release workflow; do not add emulator behavior, dependencies, host/device tests, GameDrive support or new compatibility claims.
+
+### Phase 25: Publish the corrected Souper mapper
+
+**Goal:** Publish the corrected mainline source with Souper support and leave the public README and status page accurate.
+**Depends on:** None.
+**Requirements:** TUNE-13, REL-01, REL-02, DOC-01.
+**Success Criteria:**
+1. A fresh v0.16.0 release identity is created from corrected mainline source. The existing v0.15.0 tag and draft remain unchanged.
+2. The established release workflow passes all required exact-source CI, artifact integrity, provenance/attestation, publication and latest-install checks. The release receipt records commands, exit statuses and run URLs.
+3. Existing Souper generated-fixture checks pass on the release source and the released library, runner and libretro artifacts are built from that source.
+4. The README and status page distinguish published v0.14.0 from merged-but-unpublished Souper support until publication succeeds, then accurately report the new release.
+5. CI queue, critical path, job durations and canceled work are reviewed. Any proposed structural, timeout or cache change has repeated evidence and preserves all coverage; otherwise record no safe change.
+
+**Plans:** Not yet planned.
+
+## Next feature boundary
+
+After v9.0 ships, keep implementation scope open until a source-qualified title-blocking defect or complete GameDrive profile, lawful independent PCM oracle and finite resource facts are available. Preserve the original Phase 12/14 host stops and the nine deferred v3.0 requirements.

@@ -1,0 +1,37 @@
+# Requirements: muhtari v9.0 — Publish the corrected Souper mapper package
+
+**Defined:** 2026-11-15
+**Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
+**Milestone goal:** Publish the already-merged and verified Souper mapper support from corrected mainline source using the existing release process, without changing emulator behavior or moving the failed v0.15.0 tag.
+
+## v9.0 Requirements
+
+### Release tune-up
+
+- [ ] **TUNE-13**: Review the current release and CI evidence, queue time, critical path, job durations, cancellations and reproduced lessons; run applicable cheap consistency checks before longer release work; record one evidence-backed low-risk correction or a bounded no-change result without weakening coverage.
+
+### Souper package delivery
+
+- [ ] **REL-01**: Publish a fresh v0.16.0 feature release from corrected mainline source under the settled pre-1.0 minor-bump rule. Preserve the existing unpublished v0.15.0 tag and draft exactly as they are; do not repeat the one-time CI-only v0.13.1 patch exception.
+- [ ] **REL-02**: Existing source-bound release gates pass for the exact release commit, including required CI, Souper fixture coverage, artifact integrity and provenance, publication, and latest-install verification; record command, exit status and run URL.
+
+### User-facing status
+
+- [ ] **DOC-01**: README and status documentation explain the three deliverables, current published-versus-merged support, known compatibility limits and a concrete completion standard in clear, concise language.
+
+## Out of Scope
+
+- New emulator behavior, mapper work, audio work, public API/ABI or state-format changes.
+- Retargeting or deleting the v0.15.0 tag or draft.
+- GameDrive/Covox streamed audio, BupChip/BupBoop audio, new host/device validation or renewed host/remote actions.
+- Claiming full compatibility for the 204-title pinned list or accepting the nine deferred v3.0 requirements.
+- New dependencies, CI structure, caches or timeout changes without repeated evidence.
+
+## Traceability
+
+| Requirement | Phase | Status |
+|---|---|---|
+| TUNE-13 | Phase 25 | Pending |
+| REL-01 | Phase 25 | Pending |
+| REL-02 | Phase 25 | Pending |
+| DOC-01 | Phase 25 | Pending |

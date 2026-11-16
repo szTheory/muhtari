@@ -1,38 +1,39 @@
 ---
 gsd_state_version: "1.0"
-milestone: v8.0
-status: Awaiting next milestone
-stopped_at: Milestone v8.0 archived locally; successor scope boundary
-last_updated: "2026-11-15T21:42:02.436Z"
+milestone: v9.0
+milestone_name: Publish the corrected Souper mapper package
+current_phase: 25
+current_phase_name: Publish the corrected Souper mapper
+status: v9.0 selected; Phase 25 ready for autonomous discussion and planning
+stopped_at: v9.0 scope recorded; phase discussion not started
+last_updated: "2026-11-16T01:47:11.727Z"
 last_activity: 2026-11-15
-last_activity_desc: "v8.0 closeout PR #69 opened"
-state_head: c93d2138478164ea63b0c474f173b03bad807096
+last_activity_desc: v9.0 Souper release milestone scoped
+state_head: d0217ad7f2d49d6b28bab99eef254c24f251b1a0
 progress:
-  total_phases: 2
-  completed_phases: 2
-  total_plans: 2
-  completed_plans: 2
-  percent: 100
-milestone_name: GameDrive streamed-audio contract qualification (closed locally)
-current_phase: 24
+  total_phases: 1
+  completed_phases: 0
+  total_plans: 1
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See [PROJECT.md](PROJECT.md) (updated 2026-11-15), [ROADMAP.md](ROADMAP.md), [rolling product roadmap](PRODUCT-ROADMAP.md), [v8.0 archive](milestones/v8.0-ROADMAP.md), [v8.0 requirements](milestones/v8.0-REQUIREMENTS.md), [v8.0 audit](milestones/v8.0-MILESTONE-AUDIT.md), [v7.0 shipping receipt](milestones/v7.0-SHIP.md) and [v8.0 evidence review](research/next-milestone/2026-11-15-game-drive-qualification.md).
+See [PROJECT.md](PROJECT.md) (updated 2026-11-15), [ROADMAP.md](ROADMAP.md), [REQUIREMENTS.md](REQUIREMENTS.md), [public status](../docs/status.md), [rolling product roadmap](PRODUCT-ROADMAP.md), [v8.0 archive](milestones/v8.0-ROADMAP.md), [v8.0 audit](milestones/v8.0-MILESTONE-AUDIT.md), [v7.0 shipping receipt](milestones/v7.0-SHIP.md) and [v8.0 evidence review](research/next-milestone/2026-11-15-game-drive-qualification.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** v8.0 is closed; successor scope is not selected.
+**Current focus:** v9.0 publishes merged Souper support in a fresh v0.16.0 release without moving v0.15.0.
 
 ## Current Position
 
-Phase: No active phase; v8.0 closed locally
-Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-11-15 -- v8.0 closeout PR #69 opened
+Phase: 25 (Publish the corrected Souper mapper) — READY TO EXECUTE
+Plan: Not yet planned
+Status: Milestone selected; autonomous execution not started
+Last activity: 2026-11-15 -- v9.0 scope recorded
 
-## Performance Metrics
+## Previous Milestone Metrics — v8.0
 
 v8.0 completed both planned phases, two plans and four plan tasks. Phase 23 records source-specific release/CI,
 hygiene and quality evidence, with the macOS x64 `title.pal.bios` deadline calibrated from twelve completed suite
@@ -120,11 +121,11 @@ At v8.0 close, no new items were acknowledged; 50 items acknowledged at earlier 
 
 ## Session Continuity
 
-Last session: 2026-11-15 — v8.0 closeout
-Stopped at: v8.0 archived locally; successor scope boundary
-Resume file: None
+Last session: 2026-11-16T00:35:26.650Z
+Stopped at: Forensic investigation complete
+Resume file: .planning/forensics/report-20261115-1934.md
 
-Next action: Present the current recommendation and strongest alternative, then use `$gsd-new-milestone` when the owner is ready to select successor scope. No GameDrive implementation, public compatibility change, or hardware acceptance is authorized by v8.0.
+Next action: Run `$gsd-autonomous --from 25` from this post-v8 worktree to discuss, plan, execute and verify the selected release milestone. No GameDrive implementation, public compatibility change, or hardware acceptance is authorized.
 
 ## Operator Next Steps
 
@@ -162,4 +163,4 @@ Next action: Present the current recommendation and strongest alternative, then 
 
 ## Next action
 
-v8.0 is closed locally with all requirements verified and its archive prepared for delivery. No successor milestone is selected. Recommendation: keep the GameDrive horizon open until its authoritative profile, independent legal PCM oracle and finite resource facts are available; the strongest alternative is a narrowly scoped correction for a lawful, reproducible title-blocking defect. Run `$gsd-new-milestone` to make that scope choice. Preserve the v0.15.0 exact-source publication stop and all original Phase 12/14 host and remote stops.
+v9.0 is selected to publish existing Souper support as v0.16.0; v0.15.0 remains unchanged. After shipment, keep GameDrive at NO-GO until its authoritative profile, independent legal PCM oracle and finite resource facts are available; the strongest technical alternative is a narrowly scoped correction for a lawful, reproducible title-blocking defect. Preserve all original Phase 12/14 host and remote stops.
