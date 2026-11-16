@@ -18,13 +18,26 @@ scoped work, and snapshot this file at close.
 ## Completed — publish the merged Souper support (v9.0)
 
 v9.0 shipped the already-merged Souper mapper as stable package v0.16.0 from
-corrected release source `a0319a9c`. Release run
-[43801428444](https://github.com/szTheory/muhtari/actions/runs/43801428444)
-passed its exact-source CI, equality, provenance, publication and latest-install
-gates. The failed v0.15.0 tag and draft stayed unchanged. README/status updates
-merged in PR #73, and planning closeout merged in PR #74. This publishes existing
-behavior; it adds no hardware claim or emulator feature. Main CI passed on the
-PR #74 merge commit in [run 43841380444](https://github.com/szTheory/muhtari/actions/runs/43841380444).
+exact source `a0319a9c29886d776e37b818d38d36fe810f486d`. Exact-source CI
+[43801428495](https://github.com/szTheory/muhtari/actions/runs/43801428495) and
+Release [43801428444](https://github.com/szTheory/muhtari/actions/runs/43801428444)
+passed, including publication and latest-install gates. The failed v0.15.0 tag
+and draft stayed unchanged. README/status updates merged in PR #73 and phase
+closeout in PR #74; their earlier main CI [43841380444](https://github.com/szTheory/muhtari/actions/runs/43841380444)
+and Release [43841380334](https://github.com/szTheory/muhtari/actions/runs/43841380334)
+receipts remain historical. Archive PR #75 merged source
+`bac988bea6a4ec070943c11b83298ac1eee5a8c3`, with passing CI
+[43854355858](https://github.com/szTheory/muhtari/actions/runs/43854355858) and
+Release [43854356086](https://github.com/szTheory/muhtari/actions/runs/43854356086).
+Post-archive state PR #76 established current source
+`89b6ff82812cd5be873e9f90d32ac55fded8694b`, with passing current-main CI
+[43866551295](https://github.com/szTheory/muhtari/actions/runs/43866551295) and
+Release [43866551368](https://github.com/szTheory/muhtari/actions/runs/43866551368);
+the latter skipped package work because no new release was created. This
+publishes existing behavior; it adds no hardware claim or emulator feature. The
+[Phase 26 tune-up report](phases/26-measured-milestone-tune-up/26-TUNEUP.md)
+records current timings, the report-only Nightly cancellation and the bounded
+no-change decision.
 See the [v9.0 audit](milestones/v9.0-MILESTONE-AUDIT.md)
 and [Phase 25 release receipt](milestones/v9.0-phases/25-publish-the-corrected-souper-mapper/25-RELEASE.md).
 
@@ -252,7 +265,7 @@ example; reproduce sibling lessons locally before adopting them.
 | 2026-11-15 | Selected v8.0 GameDrive contract qualification; reconciled v7.0 shipping | Firmware 26.01.2266 adds a potential ADPCM glitch fix and ADPCM save/load support, but the full stream/PCM oracle contract remains unproven. v7.0 is merged; v0.15.0 remains an unpublished draft pinned to the failing exact source. Keep implementation and its compatibility decision out of v8.0. |
 | 2026-11-15 | Closed v8.0 with GameDrive implementation readiness NO-GO and left successor scope open | The authoritative stream timing/framing profile, legal independent PCM oracle and finite resource facts remain incomplete. Reopen only with those sources or a lawful reproducible title-blocking 7800 defect; preserve existing host, remote and exact-source release stops. |
 | 2026-11-15 | Delivered the v8.0 archive through PR #69 and refreshed the successor recommendation | Main CI passed on the merge commit and Release skipped package publication; no jobs were cancelled and the audit has no open items. GameDrive remains NO-GO, v0.15.0 remains unpublished, and no successor scope is selected. |
-| 2026-11-16 | Shipped v9.0 as v0.16.0 and left successor implementation scope open | Exact-source release and latest-install checks passed; v0.15.0 stayed unchanged. Final main CI 43841380444 passed with a one-second queue and no cancelled jobs; its Windows ARM64 critical path supplies no single-run basis for pipeline changes. No source-qualified title blocker or new GameDrive contract evidence emerged, so the next candidate remains one evidence-backed title correction, with GameDrive qualification as the alternative if its missing inputs arrive. |
+| 2026-11-16 | Shipped v9.0, archived it, and reconciled the current main baseline | Exact-source CI 43801428495 and Release 43801428444 passed for v0.16.0. Archive PR #75 receipts 43854355858/43854356086 and current PR #76 receipts 43866551295/43866551368 are recorded separately; both main CI runs queued immediately and had Windows ARM64→WASM32 critical paths, with no required-CI cancellations. One report-only Nightly property job was cancelled at its configured cap. Two comparable main observations and no per-case profile support no timeout, cache, topology or coverage change; see the Phase 26 tune-up report. |
 | 2026-11-16 | Re-ranked and selected the successor after reviewing the owner's gameplay feedback and future-roadmap question | No player-blocking defect is established, GameDrive remains unqualified, and the pinned title count is not a bug queue. The owner selected one bounded headless trace slice from SEED-004 as a buildable developer capability; the strongest player-centered alternative remains a small lawful gameplay replay set with independent outcomes. Broader tool work still needs demonstrated users. |
 
 | 2026-11-10 | Completed the offline v4.0 core slice; retain ship and real-browser work as distinct next decisions | All five scoped requirements and integration flows passed locally; measured SDK results are explicitly headless and emulated. |

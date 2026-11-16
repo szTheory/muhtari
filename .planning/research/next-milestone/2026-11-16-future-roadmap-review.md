@@ -1,7 +1,7 @@
 # Future roadmap review after v9.0
 
-**Snapshot:** `origin/main` at `89b6ff82812cd5be873e9f90d32ac55fded8694b`  
-**Researched:** 2026-11-16  
+**Snapshot:** `origin/main` at `89b6ff82812cd5be873e9f90d32ac55fded8694b`<br>
+**Researched:** 2026-11-16<br>
 **Status:** The owner selected the bounded trace direction for v10.0 on
 2026-11-16. This report remains the durable candidate comparison and revisit
 record for the next milestone boundary.

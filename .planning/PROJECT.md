@@ -53,14 +53,25 @@ checks passed. The v0.15.0 draft and tag remained unchanged. All four milestone
 requirements passed audit; the only review note is an informational README
 repetition deferred until the overview is next revised.
 
-**Delivery:** Release run
-[43801428444](https://github.com/szTheory/muhtari/actions/runs/43801428444)
-passed. Docs PR [#73](https://github.com/szTheory/muhtari/pull/73) and phase
-closeout PR [#74](https://github.com/szTheory/muhtari/pull/74) merged. Main CI
-passed on its merge commit in
-[run 43841380444](https://github.com/szTheory/muhtari/actions/runs/43841380444);
-the Release workflow passed and skipped package work because no new release
-was created.
+**Delivery:** Stable v0.16.0 source
+`a0319a9c29886d776e37b818d38d36fe810f486d` passed exact-source CI
+[43801428495](https://github.com/szTheory/muhtari/actions/runs/43801428495)
+and Release [43801428444](https://github.com/szTheory/muhtari/actions/runs/43801428444),
+including publication and latest-install checks. Docs PR
+[#73](https://github.com/szTheory/muhtari/pull/73) and phase closeout PR
+[#74](https://github.com/szTheory/muhtari/pull/74) merged; their earlier main
+receipts were CI [43841380444](https://github.com/szTheory/muhtari/actions/runs/43841380444)
+and Release [43841380334](https://github.com/szTheory/muhtari/actions/runs/43841380334).
+Archive PR #75 then merged source `bac988bea6a4ec070943c11b83298ac1eee5a8c3`;
+its CI [43854355858](https://github.com/szTheory/muhtari/actions/runs/43854355858)
+and Release [43854356086](https://github.com/szTheory/muhtari/actions/runs/43854356086)
+passed. Post-archive state PR #76 is current source
+`89b6ff82812cd5be873e9f90d32ac55fded8694b`; current main CI
+[43866551295](https://github.com/szTheory/muhtari/actions/runs/43866551295)
+passed and Release [43866551368](https://github.com/szTheory/muhtari/actions/runs/43866551368)
+passed its target check with package work skipped because no new release was
+created. The exact-source baseline and bounded no-change disposition are in the
+[Phase 26 tune-up report](phases/26-measured-milestone-tune-up/26-TUNEUP.md).
 
 **Closeout:** `verified_closeout`; no new artifact was acknowledged. Fifty
 items acknowledged by earlier milestone closes remain suppressed with their
