@@ -54,7 +54,7 @@ The owner selected this scope on 2026-11-16. The [current requirements](REQUIREM
 
 ## Phases
 
-- [ ] **Phase 26: Measured milestone tune-up** - Preserve trustworthy release and CI evidence while making only measured, low-risk efficiency corrections.
+- [x] **Phase 26: Measured milestone tune-up** - Preserve trustworthy release and CI evidence while making only measured, low-risk efficiency corrections. (completed 2026-11-16)
 - [ ] **Phase 27: Headless developer trace** - Deliver one filtered, bounded instruction and bus-access trace with numeric acceptance and unchanged emulation results.
 
 ## Phase Details
@@ -68,7 +68,7 @@ The owner selected this scope on 2026-11-16. The [current requirements](REQUIREM
   1. Maintainers can identify the current release and CI sources and see their queue time, critical path, job durations and cancellations, with failed or incomplete runs retaining their original limits.
   2. Maintainers can see which reproduced lessons and applicable cheap consistency checks were considered before longer work, including fixture identity, changed-file formatting and shared inventories where relevant.
   3. Maintainers receive an evidence-backed low-risk correction or a bounded no-change disposition; required coverage, fault detection and existing safety stops remain intact, and structural, cache or timeout changes require comparable multi-run evidence.
-**Plans**: 3 plans
+**Plans**: 3/3 plans complete
 
 Plans:
 - [x] 26-01-PLAN.md — Reconcile release and CI receipts and record the bounded tune-up disposition.
@@ -102,7 +102,7 @@ The nine deferred v3.0 requirements and all original Phase 12/14 host/remote sto
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 26. Measured milestone tune-up | 3/3 | Executed; verification pending | - |
+| 26. Measured milestone tune-up | 3/3 | Complete    | 2026-11-16 |
 | 27. Headless developer trace | 0/0 | Unplanned | - |
 
 **Coverage:** All 8 v1 requirements map to exactly one phase: TUNE-14 to Phase 26 and TRACE-01–07 to Phase 27. No orphaned or duplicated requirements.

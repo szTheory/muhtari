@@ -8,7 +8,7 @@
 
 ### Measured milestone tune-up
 
-- [ ] **TUNE-14**: Review current release and CI evidence, queue time, critical path, job durations, cancellations and reproduced lessons; run applicable cheap consistency checks before longer work; and record an evidence-backed low-risk correction or bounded no-change result without weakening required coverage.
+- [x] **TUNE-14**: Review current release and CI evidence, queue time, critical path, job durations, cancellations and reproduced lessons; run applicable cheap consistency checks before longer work; and record an evidence-backed low-risk correction or bounded no-change result without weakening required coverage.
 
 ### Headless developer trace
 
@@ -45,7 +45,7 @@ Deferred pending demonstrated users and a separate scope decision.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TUNE-14 | Phase 26 | Pending |
+| TUNE-14 | Phase 26 | Complete |
 | TRACE-01 | Phase 27 | Pending |
 | TRACE-02 | Phase 27 | Pending |
 | TRACE-03 | Phase 27 | Pending |
