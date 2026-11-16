@@ -46,10 +46,10 @@ muhtari-run --help | --version
 | `--hash-frame N` | After frame N, print the SHA-256 of its picture. Repeat the option for more frames. N is from 1 to the frame count. |
 | `--diagnostic` | After the run, report the fixed diagnostic mailbox. Requires content and explicit `--frames N` with the ordinary frame bounds; no `--bench` or implicit movie frame count. |
 | `--dump-frame N:FILE` | After frame N, write its picture to FILE as a PNG. Repeat the option for more frames or files. |
-| `--trace FILE` | Write CPU instruction and bus events for one selected invocation frame as versioned JSON Lines. Requires a cartridge, `--trace-frame N` and inclusive `--trace-range LO:HI`. |
+| `--trace FILE` | Write CPU instruction and bus events for one selected invocation frame as versioned JSON Lines. Requires a cartridge, `--trace-frame N` and inclusive `--trace-range LO:HI`. Works with `--frames`, `--bench`, and a movie's default frame count. |
 | `--trace-frame N` | Select a successful one-based frame call in this invocation; restored machine frame counters do not affect the selection. |
-| `--trace-range LO:HI` | Keep events whose instruction-start PC or bus address falls within this inclusive address range. Bounds accept decimal or `0x` hexadecimal from 0 through 65535. |
-| `--trace-limit N` | Maximum matching events stored before the footer reports truncation. Defaults to 65536; values above 131072 are rejected. |
+| `--trace-range LO:HI` | Keep instruction rows by instruction-start PC and bus rows by their CPU bus address, independently, within this inclusive range. Bounds accept decimal or `0x` hexadecimal from 0 through 65535. |
+| `--trace-limit N` | Maximum matching events stored. Defaults to 65,536; positive values through 131,072 are accepted. A matching event beyond the limit marks the footer `truncated`. |
 | `--load-state FILE` | Restore one compatible canonical state before the next input or frame. Requires a cartridge; at most one state file may be loaded. |
 | `--state-at-frame N:FILE` | Atomically write canonical state after invocation frame N. Repeat at distinct points and paths; N is from 0 through the frame count. |
 | `--hash-state N` | Print the canonical state SHA-256 after invocation frame N. Repeat at distinct points; output is sorted by N. |
@@ -215,14 +215,44 @@ signature warnings as applicable. Unknown exact-sized firmware remains accepted.
 
 ## Output
 
-`--trace` writes a separate JSONL file only after its selected frame succeeds. The first row identifies
-`muhtari-trace` version 1, the invocation frame, filter bounds and effective limit. Instruction rows use
-numeric `kind: 0`; CPU bus rows use `kind: 1`. Both carry the data-edge tick, beam line and line clock,
-sampled CPU registers and numeric address, direction and value fields. An opcode's instruction row precedes
-its opcode-read bus row at the same tick. The footer reports `complete` or `truncated` and the stored event
-count. The file is replaced atomically; an unsuccessful capture leaves an existing destination intact.
-Tracing does not add output to ordinary stdout. Builds configured with `MUHTARI_TRACE_LOOP=OFF` reject
-trace requests with an explicit capability message.
+`--trace` writes JSONL only after its selected frame succeeds. Example:
+
+```sh
+muhtari-run --frames 2 --trace frame-2.jsonl --trace-frame 2 \
+  --trace-range 0xF000:0xF0FF --hash-frame 1 --hash-frame 2 game.a78
+```
+
+`--trace-frame` is a successful one-based call in this invocation; a loaded state does not resume an old
+selection. Without explicit `--frames` or `--bench`, a movie supplies the count. Tracing also works with
+`--bench`; its timing text varies, so compare deterministic hashes instead.
+
+JSONL version 1 starts with `format`, `version`, selected invocation `frame`, inclusive filter bounds `lo`
+and `hi`, and effective `limit`. Event rows have numeric fields:
+
+| Field | Meaning |
+|---|---|
+| `kind` | `0` is an instruction-start row; `1` is a CPU bus access. |
+| `tick` | Master-clock data edge: fast cycles tick 4; slow cycles tick 5. |
+| `line`, `t` | From MARIA's scan origin: `(tick-origin)/454`, `(tick-origin)%454`; `t` is 0–453. |
+| `pc` | Instruction-start PC; CPU PC at each access. |
+| `a`, `x`, `y`, `s`, `p` | Registers sampled before the access. |
+| `addr` | Instruction PC, or accessed CPU address for bus rows. |
+| `rw` | Bus rows: `0` read, `1` write; instruction rows: `0`. |
+| `value` | Opcode byte, or bus byte read/written. |
+
+`kind` is `0` for instruction starts and `1` for CPU bus events. The filter uses instruction `pc` and bus
+`addr` independently. Opcode rows precede their opcode-read bus row at the same tick; CPU dummy reads and
+writes are included. The footer has `status` (`complete` or `truncated`) and stored `count`. Exactly
+filling the limit is complete; one more matching event marks truncation, without stopping emulation.
+
+The default is 65,536 events (1.5 MiB); hard maximum: 131,072 (3 MiB), 149 bytes per line and
+19,529,920 bytes per file. The source-derived PAL maximum is 81,416 events including instruction/interrupt
+overshoot; [trace bounds](../.planning/phases/27-headless-developer-trace/27-BOUNDS.md) derives these limits.
+
+Only a successful selected frame is atomically published. Frame refusal or output failure preserves an old
+file or creates none. Failures exit `1` (a refusal may exit `77`); invalid arguments exit `2`;
+`MUHTARI_TRACE_LOOP=OFF` rejects trace requests with `77`. This is CPU-only: no MARIA DMA/other masters,
+peeks, symbols, stepping, scripts, GUI or host validation. It adds no bus access or serialized state.
 
 `--info` adds these newline-terminated key/value lines, in this order, after successful
 load, validation and output allocation and before any frames run. For PAL:
