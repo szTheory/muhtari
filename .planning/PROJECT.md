@@ -66,19 +66,34 @@ was created.
 items acknowledged by earlier milestone closes remain suppressed with their
 original verdicts. See [STATE.md](STATE.md) and the v9.0 audit.
 
-**Next:** No successor milestone is selected. The current recommendation and
-strongest alternative are in the [rolling product roadmap](PRODUCT-ROADMAP.md).
+**Current milestone:** v10.0 Headless developer trace. The scope selection and
+strongest player-centered alternative are in the
+[rolling product roadmap](PRODUCT-ROADMAP.md).
 
-## Next Milestone Goals
+## Current Milestone: v10.0 Headless developer trace
 
-No successor is selected yet. The current recommendation is a narrowly scoped
-fix for a named, lawful and reproducible title-blocking Atari 7800 defect; no
-such defect is established today. The strongest alternative is to resume
-GameDrive contract qualification only when an authoritative profile, lawful
-independent PCM oracle and finite resource facts are available. See the
-[rolling product roadmap](PRODUCT-ROADMAP.md) for the evidence thresholds and
-ownership boundaries. The 201 untested titles, 3 skipped titles, nine deferred
-v3.0 requirements and original Phase 12/14 stops remain open.
+**Goal:** Help homebrew authors and Muhtari maintainers diagnose Atari 7800
+instruction and bus timing through an opt-in, reproducible headless trace.
+
+**Target features:**
+- Select trace output by frame and address range, with instruction/bus event,
+  tick, beam position and CPU context.
+- Bound trace output and verify its numeric event order using generated or
+  owned test inputs.
+- Prove observation leaves frame and state results unchanged and preserves the
+  hooks-off performance gate.
+- Document the runner workflow and trace record format.
+
+**Compatibility boundary:** Keep the feature in `muhtari-run`, preserve public
+API 8 and existing state formats, and keep callbacks/output host-owned. If a
+public observer API or version change proves necessary, stop for an explicit
+compatibility decision before expanding the scope. No GUI, host/device code,
+interactive debugger, symbols, patching, scripting, Python/Gymnasium, BK2 or
+AI/TAS work is selected. The milestone review and evidence are in
+[the v9.0 successor review](research/next-milestone/2026-11-16-future-roadmap-review.md).
+
+The 201 unevaluated titles and 3 skipped titles are not known failures. The
+nine deferred v3.0 requirements and original Phase 12/14 stops remain open.
 
 v8.0 GameDrive contract qualification is closed locally. The milestone audit covers all five requirements and passed; both phase verification reports retain passing verdicts. `override_closeout` accepts Phase 23's stale verification fingerprint because it predates the merged timeout follow-up, as allowed by GSD-HANDOFF §3 after merged-head CI passed. The qualification result is **NO-GO** for implementation because the authoritative stream profile, independent exact-profile PCM oracle and finite resource facts remain incomplete. PRs [#67](https://github.com/szTheory/muhtari/pull/67) and [#68](https://github.com/szTheory/muhtari/pull/68) are merged. Exact-main CI passed on the timeout-correction merge commit in [run 43757444707](https://github.com/szTheory/muhtari/actions/runs/43757444707); the Release workflow passed in [run 43757444676](https://github.com/szTheory/muhtari/actions/runs/43757444676) and skipped package publication. No GameDrive implementation, public compatibility change or hardware claim was made. The v0.15.0 tag/draft remains unpublished at its earlier failing source.
 
@@ -289,7 +304,9 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 ### Active
 
-No requirements are assigned to a successor milestone; its scope remains unselected. The nine unmet v3.0 requirements remain deferred with their original evidence and stops; see the [v3.0 archive](milestones/v3.0-MILESTONE-AUDIT.md).
+v10.0 requirements are being defined for the selected headless developer trace.
+The nine unmet v3.0 requirements remain deferred with their original evidence
+and stops; see the [v3.0 archive](milestones/v3.0-MILESTONE-AUDIT.md).
 
 ### Out of Scope
 
@@ -440,4 +457,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-16 after shipping and archiving v9.0*
+*Last updated: 2026-11-16 as v10.0 milestone planning began*

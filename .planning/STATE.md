@@ -1,20 +1,16 @@
 ---
 gsd_state_version: "1.0"
-milestone: v9.0
-milestone_name: Publish the corrected Souper mapper package
-status: Awaiting next milestone
-stopped_at: Milestone v9.0 archived; successor scope unselected
-last_updated: "2026-11-16T12:22:49Z"
+milestone: v10.0
+milestone_name: Headless developer trace
+status: planning
+last_updated: "2026-11-16T15:31:11.991Z"
 last_activity: 2026-11-16
-last_activity_desc: v9.0 archive PR #75 merged; final main CI and Release passed
-state_head: bac988bea6a4ec070943c11b83298ac1eee5a8c3
 progress:
-  total_phases: 1
-  completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
-  percent: 100
-current_phase: null
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -27,10 +23,11 @@ See [PROJECT.md](PROJECT.md) (updated 2026-11-16), [ROADMAP.md](ROADMAP.md), [pu
 
 ## Current Position
 
-Phase: Milestone v9.0 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-11-16 — v9.0 archive PR #75 merged; exact-main CI and Release passed
+Status: Defining requirements
+Last activity: 2026-11-16 — Milestone v10.0 started
+
 
 ## Previous Milestone Metrics — v8.0
 

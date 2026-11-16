@@ -91,23 +91,48 @@ The v0.15.0 tag/draft still targets the earlier source that failed its exact
 Wasm32 gate; it remains unpublished and was not retargeted. The original
 Phase 12/14 host and remote stops are unchanged.
 
-### Next feature recommendation
+### Selected next milestone — v10.0 headless developer trace
 
-Recommend one narrowly scoped fix for a named, title-blocking Atari 7800 defect,
-once a lawful discriminating input, independent expected result and source-
-qualified reproduction exist. No such defect is established today: the pinned
-204-title list still has 201 untested entries and 3 skipped entries. Keep the
-successor implementation scope open until that evidence identifies a real
-failure; do not turn the untested list into a broad compatibility claim.
+The owner selected this direction on 2026-11-16. Keep v10.0 to one deliberately
+small **headless developer trace**: an opt-in `muhtari-run` trace of instruction
+and bus-access events, with tick and beam position, restricted to a selected
+frame and address range. This is useful for homebrew authors and emulator
+maintainers debugging banked code or timing; it is not a player quality-of-life
+feature and does not fix a known game defect.
+The trace should use generated or owned inputs, have a literal numeric event
+oracle, remain bounded, preserve frame/state hashes when enabled, and pass the
+existing hooks-off cost gate. Keep interactive stepping, symbols, overlays,
+patching, Lua, Python/Gymnasium, BK2 and AI/TAS out of this milestone. The
+architecture already plans an optional trace loop, the runner has no trace
+option, and SEED-004's v4-shipped trigger has fired. Developer documentation
+supports the value of trace/debug tools, but does not prove direct demand for
+Muhtari's implementation. See the [bounded candidate review](research/next-milestone/2026-11-16-future-roadmap-review.md).
 
-The strongest alternative is to resume GameDrive contract qualification if new
-authoritative material supplies the missing stream profile, lawful independent
-PCM oracle and finite resource facts. v8.0 remains NO-GO for implementation
-until then; BupChip's bus command and media profile are less complete. Preserve
-the nine deferred v3.0 requirements and original Phase 12/14 host and remote
-stops. LibFuturo owns browser-host work, and `twentysixhundo` owns Atari 2600.
-Do not reuse the unlicensed sample or encoder, start host validation, or infer
-owner-hardware results.
+This recommendation follows the owner's 2026-11-16 report that several games
+played well: that is useful positive experience, but the exact titles and setup
+were not specified, so it does not add compatibility-ledger passes. The pinned
+204-title list still has 201 unevaluated rows and 3 skipped rows; unevaluated
+does not mean failing. Of 49 owned sample/diagnostic rows, 46 pass, mostly for
+title-screen, boot-only or model-conformance evidence. Do not turn either count
+into a queue of bugs.
+
+The strongest player-centered alternative is a **finite gameplay replay set**
+for a few named, rights-cleared titles, each with an independent expected
+gameplay outcome. That would improve confidence for actual play, but no such
+set is currently qualified; a movie replay or title-screen hash alone would
+not establish gameplay. If developer diagnostics do not justify another
+feature, prefer maintenance and evidence-backed fixes over inventing features.
+For a future accuracy fix, require a named title-blocking defect with a lawful
+discriminating input and source-qualified reproduction.
+
+Keep the selected trace runner-only and the public API at version 8. If a
+public observer API or API-version change proves necessary, pause for an
+explicit compatibility decision before expanding scope. GameDrive remains NO-GO until
+authoritative stream timing/framing, a lawful independent PCM oracle and finite
+resource facts exist. Preserve the nine deferred v3.0 requirements and original
+Phase 12/14 host and remote stops. LibFuturo owns browser-host work, and
+`twentysixhundo` owns Atari 2600. Do not reuse the unlicensed GameDrive sample
+or encoder, start host validation, or infer owner-hardware results.
 
 ## Later — implementation only after qualification
 
@@ -203,9 +228,10 @@ policy.
 
 ## Long-term — tools, emulator family and more devices
 
-Inspection/hooks, Python/AI environments, Lua on demand, full recording, BK2/TAS
-and speedrun tooling follow demonstrated users (SEED-002/004). Handheld ports
-retain SEED-005 and require measured frame-time/power budgets. Atari 2600 emulation
+Beyond the single trace slice proposed above, inspection/debugger expansion,
+Python/AI environments, Lua on demand, full recording, BK2/TAS and speedrun
+tooling follow demonstrated users (SEED-002/004). Handheld ports retain
+SEED-005 and require measured frame-time/power budgets. Atari 2600 emulation
 belongs to the sibling project `twentysixhundo`; SEED-006 is retired by owner
 direction on 2026-11-11. Muhtari remains the current emulator-family
 example; reproduce sibling lessons locally before adopting them.
@@ -227,6 +253,7 @@ example; reproduce sibling lessons locally before adopting them.
 | 2026-11-15 | Closed v8.0 with GameDrive implementation readiness NO-GO and left successor scope open | The authoritative stream timing/framing profile, legal independent PCM oracle and finite resource facts remain incomplete. Reopen only with those sources or a lawful reproducible title-blocking 7800 defect; preserve existing host, remote and exact-source release stops. |
 | 2026-11-15 | Delivered the v8.0 archive through PR #69 and refreshed the successor recommendation | Main CI passed on the merge commit and Release skipped package publication; no jobs were cancelled and the audit has no open items. GameDrive remains NO-GO, v0.15.0 remains unpublished, and no successor scope is selected. |
 | 2026-11-16 | Shipped v9.0 as v0.16.0 and left successor implementation scope open | Exact-source release and latest-install checks passed; v0.15.0 stayed unchanged. Final main CI 43841380444 passed with a one-second queue and no cancelled jobs; its Windows ARM64 critical path supplies no single-run basis for pipeline changes. No source-qualified title blocker or new GameDrive contract evidence emerged, so the next candidate remains one evidence-backed title correction, with GameDrive qualification as the alternative if its missing inputs arrive. |
+| 2026-11-16 | Re-ranked and selected the successor after reviewing the owner's gameplay feedback and future-roadmap question | No player-blocking defect is established, GameDrive remains unqualified, and the pinned title count is not a bug queue. The owner selected one bounded headless trace slice from SEED-004 as a buildable developer capability; the strongest player-centered alternative remains a small lawful gameplay replay set with independent outcomes. Broader tool work still needs demonstrated users. |
 
 | 2026-11-10 | Completed the offline v4.0 core slice; retain ship and real-browser work as distinct next decisions | All five scoped requirements and integration flows passed locally; measured SDK results are explicitly headless and emulated. |
 
