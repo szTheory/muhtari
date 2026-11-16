@@ -44,6 +44,14 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     endif()
   endfunction()
 
+  function(trace_expect_cli_usage name)
+    execute_process(COMMAND ${EMULATOR} "${RUN}" ${ARGN} "${DIR}/trace.a78"
+      RESULT_VARIABLE rejected OUTPUT_VARIABLE output ERROR_VARIABLE err TIMEOUT 20)
+    if(NOT rejected STREQUAL "2" OR NOT output STREQUAL "")
+      message(FATAL_ERROR "invalid trace invocation ${name} did not fail as a silent usage error: ${rejected}\n${output}${err}")
+    endif()
+  endfunction()
+
   if(CASE STREQUAL "smoke")
     file(MAKE_DIRECTORY "${DIR}")
     execute_process(COMMAND ${EMULATOR} "${SAVE_TEST}" "${DIR}" roundtrip
@@ -225,6 +233,88 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
         message(STATUS "${region} ${mode}: ${metrics} serialization_write_ns=${serialization_ns}")
       endforeach()
     endforeach()
+  elseif(CASE STREQUAL "arguments")
+    trace_fixture()
+    execute_process(COMMAND ${EMULATOR} "${SAVE_TEST}" "${DIR}" trace_arguments
+      RESULT_VARIABLE harness_rc OUTPUT_VARIABLE harness_out ERROR_VARIABLE harness_err TIMEOUT 30)
+    if(NOT harness_rc STREQUAL "0" OR NOT harness_out STREQUAL "")
+      message(FATAL_ERROR "actual-main trace argument matrix failed or wrote stdout: ${harness_rc}\n${harness_out}${harness_err}")
+    endif()
+    trace_expect_cli_usage("missing range" --frames 1 --trace "${DIR}/bad.jsonl"
+      --trace-frame 1)
+    trace_expect_cli_usage("signed frame" --frames 1 --trace "${DIR}/bad.jsonl"
+      --trace-frame +1 --trace-range 0:65535)
+    trace_expect_cli_usage("overflow range" --frames 1 --trace "${DIR}/bad.jsonl"
+      --trace-frame 1 --trace-range 0:65536)
+    trace_expect_cli_usage("over-limit" --frames 1 --trace "${DIR}/bad.jsonl"
+      --trace-frame 1 --trace-range 0:65535 --trace-limit 131073)
+    trace_expect_cli_usage("selector without destination" --frames 1 --trace-frame 1
+      --trace-range 0:65535)
+    trace_expect_cli_usage("probe with trace" --probe "${DIR}/trace.a78" --trace
+      "${DIR}/bad.jsonl")
+    set(endpoint_trace "${DIR}/endpoint.jsonl")
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --frames 1 --trace "${endpoint_trace}"
+        --trace-frame 1 --trace-range 0xFFFF:0xFFFF "${DIR}/trace.a78"
+      RESULT_VARIABLE endpoint_rc OUTPUT_VARIABLE endpoint_out ERROR_VARIABLE endpoint_err TIMEOUT 30)
+    if(NOT endpoint_rc STREQUAL "0" OR NOT EXISTS "${endpoint_trace}")
+      message(FATAL_ERROR "trace address endpoints were not accepted: ${endpoint_rc}\n${endpoint_out}${endpoint_err}")
+    endif()
+
+    set(movie "${DIR}/one-frame.movie")
+    set(movie_trace "${DIR}/movie-default.jsonl")
+    set(state "${DIR}/saved.state")
+    set(loaded_trace "${DIR}/loaded-invocation.jsonl")
+    set(combined_trace "${DIR}/trace-with-outputs.jsonl")
+    set(combined_state "${DIR}/combined.state")
+    set(combined_png "${DIR}/combined.png")
+    file(REMOVE "${movie_trace}" "${state}" "${loaded_trace}" "${combined_trace}"
+      "${combined_state}" "${combined_png}")
+    file(WRITE "${movie}" "muhtari-movie 1\nport1 savekey\nport2 none\n|||...BB|\n")
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --movie "${movie}" --trace "${movie_trace}"
+        --trace-frame 1 --trace-range 0:65535 "${DIR}/trace.a78"
+      RESULT_VARIABLE movie_rc OUTPUT_VARIABLE movie_out ERROR_VARIABLE movie_err TIMEOUT 30)
+    if(NOT movie_rc STREQUAL "0" OR NOT EXISTS "${movie_trace}")
+      message(FATAL_ERROR "movie-default trace frame resolution failed: ${movie_rc}\n${movie_out}${movie_err}")
+    endif()
+    file(READ "${movie_trace}" movie_records LIMIT 256)
+    string(FIND "${movie_records}" "\"frame\":1" movie_invocation)
+    if(movie_invocation EQUAL -1)
+      message(FATAL_ERROR "movie default did not select invocation frame one")
+    endif()
+
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --frames 1 --state-at-frame "1:${state}"
+        "${DIR}/trace.a78"
+      RESULT_VARIABLE state_rc OUTPUT_VARIABLE state_out ERROR_VARIABLE state_err TIMEOUT 30)
+    if(NOT state_rc STREQUAL "0" OR NOT EXISTS "${state}")
+      message(FATAL_ERROR "could not prepare loaded-state invocation fixture: ${state_rc}\n${state_out}${state_err}")
+    endif()
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --frames 1 --load-state "${state}"
+        --trace "${loaded_trace}" --trace-frame 1 --trace-range 0:65535 "${DIR}/trace.a78"
+      RESULT_VARIABLE loaded_rc OUTPUT_VARIABLE loaded_out ERROR_VARIABLE loaded_err TIMEOUT 30)
+    if(NOT loaded_rc STREQUAL "0" OR NOT EXISTS "${loaded_trace}")
+      message(FATAL_ERROR "loaded-state invocation trace failed: ${loaded_rc}\n${loaded_out}${loaded_err}")
+    endif()
+    file(READ "${loaded_trace}" loaded_records LIMIT 256)
+    string(FIND "${loaded_records}" "\"frame\":1" loaded_invocation)
+    if(loaded_invocation EQUAL -1)
+      message(FATAL_ERROR "loaded-state tracing must number this run's first invocation as frame one")
+    endif()
+
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --frames 1 --trace "${combined_trace}"
+        --trace-frame 1 --trace-range 0:65535 --state-at-frame "1:${combined_state}"
+        --dump-frame "1:${combined_png}" "${DIR}/trace.a78"
+      RESULT_VARIABLE combined_rc OUTPUT_VARIABLE combined_out ERROR_VARIABLE combined_err TIMEOUT 30)
+    if(NOT combined_rc STREQUAL "0" OR NOT EXISTS "${combined_trace}" OR
+        NOT EXISTS "${combined_state}" OR NOT EXISTS "${combined_png}")
+      message(FATAL_ERROR "valid trace/state/PNG outputs did not run together: ${combined_rc}\n${combined_out}${combined_err}")
+    endif()
+  elseif(CASE STREQUAL "paths")
+    file(MAKE_DIRECTORY "${DIR}")
+    execute_process(COMMAND ${EMULATOR} "${SAVE_TEST}" "${DIR}" trace_paths
+      RESULT_VARIABLE harness_rc OUTPUT_VARIABLE harness_out ERROR_VARIABLE harness_err TIMEOUT 30)
+    if(NOT harness_rc STREQUAL "0" OR NOT harness_out STREQUAL "")
+      message(FATAL_ERROR "actual-main trace path ownership matrix failed or wrote stdout: ${harness_rc}\n${harness_out}${harness_err}")
+    endif()
   else()
     message(FATAL_ERROR "unknown trace CASE '${CASE}'")
   endif()
@@ -245,7 +335,7 @@ muhtari_add_test(NAME runner.trace.smoke
     "-DSAVE_TEST=$<TARGET_FILE:muhtari-test-save-runner>" "-DRUN=$<TARGET_FILE:muhtari-run>"
     "-DDIR=${PROJECT_BINARY_DIR}/tests/trace-smoke" -DCASE=smoke -P ${CMAKE_CURRENT_LIST_FILE}
   LABELS runner portable TIMEOUT 30)
-foreach(case IN ITEMS oracle filters limits bounds)
+foreach(case IN ITEMS arguments bounds filters limits paths oracle)
   file(MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/tests/trace-${case}")
   muhtari_add_test(NAME runner.trace.${case}
     COMMAND ${CMAKE_COMMAND} "-DEMULATOR=${trace_emulator}"

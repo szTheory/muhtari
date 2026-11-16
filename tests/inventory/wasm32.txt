@@ -659,11 +659,13 @@ runner.state.files	portable,runner
 runner.state.options	portable,runner
 runner.state.roundtrip	portable,runner
 runner.stop	portable,runner
+runner.trace.arguments	portable,runner
 runner.trace.bounds	portable,runner
 runner.trace.filters	portable,runner
 runner.trace.limits	portable,runner
 runner.trace.memory	portable,runner
 runner.trace.oracle	portable,runner
+runner.trace.paths	portable,runner
 runner.trace.smoke	portable,runner
 runner.usage.boot_bios_no_file	portable,runner
 runner.usage.dump_syntax	portable,runner

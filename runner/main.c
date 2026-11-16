@@ -612,31 +612,230 @@ static int same_lexical_path(const char *left, const char *right)
     return left != NULL && right != NULL && strcmp(left, right) == 0;
 }
 
-/* save_import spells the derived destination as DIR/<ROM stem>.sav. Compare
-   that spelling without allocating or touching a file during validation. */
-static int trace_conflicts_save_path(const options *o)
+/* Normalize the WASI parent spelling lexically; existing file identity is
+   still checked separately with stat where that filesystem supports it. */
+#if defined(__wasi__)
+static char *trace_normalize_wasi_parent(const char *path)
 {
-    if (o->trace_file == NULL || o->save_dir == NULL || o->rom == NULL)
-        return 0;
-    const char *base = o->rom;
-    for (const char *p = base; *p != '\0'; p++) {
-        if (*p == '/'
-#ifdef _WIN32
-            || *p == '\\'
-#endif
-        )
-            base = p + 1;
+    char *cwd = NULL;
+    if (path[0] != '/') {
+        size_t capacity = 256u;
+        for (;;) {
+            cwd = (char *)malloc(capacity);
+            if (cwd == NULL)
+                return NULL;
+            if (getcwd(cwd, capacity) != NULL)
+                break;
+            int error = errno;
+            free(cwd);
+            cwd = NULL;
+            if (error != ERANGE || capacity > SIZE_MAX / 2u)
+                return NULL;
+            capacity *= 2u;
+        }
     }
-    const char *dot = strrchr(base, '.');
-    size_t stem = dot != NULL && dot != base ? (size_t)(dot - base) : strlen(base);
-    size_t dir = strlen(o->save_dir);
-    size_t trace_len = strlen(o->trace_file);
-    if (stem > SIZE_MAX - 5u || dir > SIZE_MAX - stem - 5u ||
-        trace_len != dir + stem + 5u)
+    size_t path_len = strlen(path);
+    size_t cwd_len = cwd != NULL ? strlen(cwd) : 0u;
+    if (cwd_len > SIZE_MAX - path_len - 2u) {
+        free(cwd);
+        return NULL;
+    }
+    size_t full_capacity = cwd_len + path_len + 2u;
+    char *full = (char *)malloc(full_capacity);
+    char *normalized = (char *)malloc(full_capacity);
+    if (full == NULL || normalized == NULL) {
+        free(full);
+        free(normalized);
+        free(cwd);
+        return NULL;
+    }
+    if (path[0] == '/') {
+        memcpy(full, path, path_len + 1u);
+    } else {
+        (void)snprintf(full, full_capacity, "%s/%s", cwd, path);
+    }
+    free(cwd);
+    size_t out = 1u;
+    normalized[0] = '/';
+    normalized[1] = '\0';
+    const char *cursor = full;
+    while (*cursor != '\0') {
+        while (*cursor == '/')
+            cursor++;
+        const char *component = cursor;
+        while (*cursor != '\0' && *cursor != '/')
+            cursor++;
+        size_t component_len = (size_t)(cursor - component);
+        if (component_len == 0u || (component_len == 1u && component[0] == '.'))
+            continue;
+        if (component_len == 2u && component[0] == '.' && component[1] == '.') {
+            while (out > 1u && normalized[out - 1u] != '/')
+                out--;
+            if (out > 1u)
+                out--;
+            normalized[out] = '\0';
+            continue;
+        }
+        if (out > 1u)
+            normalized[out++] = '/';
+        memcpy(normalized + out, component, component_len);
+        out += component_len;
+        normalized[out] = '\0';
+    }
+    free(full);
+    return normalized;
+}
+#endif
+
+/* Normalize the final parent and basename. POSIX realpath resolves symlinked
+   parents even when the destination itself does not exist. Windows _fullpath
+   and the WASI lexical fallback normalize dot/parent components. */
+static char *trace_normalized_path(const char *path)
+{
+#ifdef _WIN32
+    return _fullpath(NULL, path, 0u);
+#else
+    const char *base = path;
+    const char *last_separator = NULL;
+    for (const char *p = path; *p != '\0'; p++) {
+        if (*p == '/') {
+            last_separator = p;
+            base = p + 1;
+        }
+    }
+    size_t parent_len = last_separator == NULL ? 1u : (size_t)(last_separator - path);
+    if (last_separator == path)
+        parent_len = 1u;
+    if (parent_len == SIZE_MAX)
+        return NULL;
+    char *parent = (char *)malloc(parent_len + 1u);
+    if (parent == NULL)
+        return NULL;
+    if (last_separator == NULL) {
+        parent[0] = '.';
+        parent[1] = '\0';
+    } else {
+        memcpy(parent, path, parent_len);
+        parent[parent_len] = '\0';
+    }
+#ifdef __wasi__
+    char *canonical_parent = trace_normalize_wasi_parent(parent);
+#else
+    char *canonical_parent = realpath(parent, NULL);
+#endif
+    free(parent);
+    if (canonical_parent == NULL)
+        return NULL;
+    size_t parent_n = strlen(canonical_parent);
+    size_t base_n = strlen(base);
+    int separator = parent_n != 0u && canonical_parent[parent_n - 1u] != '/';
+    size_t separator_n = (size_t)separator;
+    if (base_n > SIZE_MAX - separator_n - 1u ||
+        parent_n > SIZE_MAX - base_n - separator_n - 1u) {
+        free(canonical_parent);
+        return NULL;
+    }
+    size_t normalized_n = parent_n + separator_n + base_n;
+    char *normalized = (char *)malloc(normalized_n + 1u);
+    if (normalized == NULL) {
+        free(canonical_parent);
+        return NULL;
+    }
+    memcpy(normalized, canonical_parent, parent_n);
+    if (separator)
+        normalized[parent_n] = '/';
+    memcpy(normalized + parent_n + separator_n, base, base_n);
+    normalized[normalized_n] = '\0';
+    free(canonical_parent);
+    return normalized;
+#endif
+}
+
+static int trace_paths_equal(const char *left, const char *right)
+{
+    if (same_lexical_path(left, right))
+        return 1;
+    if (left == NULL || right == NULL)
         return 0;
-    return memcmp(o->trace_file, o->save_dir, dir) == 0 && o->trace_file[dir] == '/' &&
-           memcmp(o->trace_file + dir + 1u, base, stem) == 0 &&
-           memcmp(o->trace_file + dir + stem + 1u, ".sav", 4u) == 0;
+#ifdef _WIN32
+    struct _stat64 left_info, right_info;
+    int left_exists = _stat64(left, &left_info) == 0;
+    int right_exists = _stat64(right, &right_info) == 0;
+#else
+    struct stat left_info, right_info;
+    int left_exists = stat(left, &left_info) == 0;
+    int right_exists = stat(right, &right_info) == 0;
+#endif
+    if (left_exists && right_exists && left_info.st_ino != 0 &&
+        left_info.st_dev == right_info.st_dev && left_info.st_ino == right_info.st_ino)
+        return 1;
+    char *normalized_left = trace_normalized_path(left);
+    char *normalized_right = trace_normalized_path(right);
+    if (normalized_left == NULL || normalized_right == NULL) {
+        free(normalized_left);
+        free(normalized_right);
+        return -1;
+    }
+#ifdef _WIN32
+    int equal = _stricmp(normalized_left, normalized_right) == 0;
+#else
+    int equal = strcmp(normalized_left, normalized_right) == 0;
+#endif
+    free(normalized_left);
+    free(normalized_right);
+    return equal;
+}
+
+/* save_import spells the derived destination as DIR/<ROM stem>.sav. Resolve
+   that path against trace output along with the explicit inputs and outputs. */
+static int trace_path_conflicts(const options *o)
+{
+    if (o->trace_file == NULL)
+        return 0;
+    const char *inputs[] = {o->rom, o->movie, o->bios, o->hsc_rom, o->load_state};
+    for (size_t i = 0u; i < sizeof inputs / sizeof inputs[0]; i++) {
+        int equal = trace_paths_equal(o->trace_file, inputs[i]);
+        if (equal != 0)
+            return equal;
+    }
+    for (uint32_t i = 0u; i < o->dump_count; i++) {
+        int equal = trace_paths_equal(o->trace_file, o->dump_paths[i]);
+        if (equal != 0)
+            return equal;
+    }
+    for (uint32_t i = 0u; i < o->state_output_count; i++) {
+        int equal = trace_paths_equal(o->trace_file, o->state_outputs[i].path);
+        if (equal != 0)
+            return equal;
+    }
+    if (o->save_dir != NULL && o->rom != NULL) {
+        const char *base = o->rom;
+        for (const char *p = base; *p != '\0'; p++) {
+            if (*p == '/'
+#ifdef _WIN32
+                || *p == '\\'
+#endif
+            )
+                base = p + 1;
+        }
+        const char *dot = strrchr(base, '.');
+        size_t stem = dot != NULL && dot != base ? (size_t)(dot - base) : strlen(base);
+        size_t dir = strlen(o->save_dir);
+        if (stem == 0u || dir > SIZE_MAX - 6u || stem > SIZE_MAX - dir - 6u)
+            return -1;
+        char *save_path = (char *)malloc(dir + stem + 6u);
+        if (save_path == NULL)
+            return -1;
+        memcpy(save_path, o->save_dir, dir);
+        save_path[dir] = '/';
+        memcpy(save_path + dir + 1u, base, stem);
+        memcpy(save_path + dir + stem + 1u, ".sav", 5u);
+        int equal = trace_paths_equal(o->trace_file, save_path);
+        free(save_path);
+        if (equal != 0)
+            return equal;
+    }
+    return 0;
 }
 
 /* Returns 0 when the options are spelled right, 2 after a usage message, 1
@@ -938,8 +1137,6 @@ static int check_options(options *o, const muhtari__movie_header *h, uint32_t mo
             (size_t)o->trace_limit > TRACE_CAPTURE_BYTES_MAX / sizeof(struct muhtari__trace_event) ||
             (size_t)o->trace_limit > TRACE_OUTPUT_BODY_MAX / TRACE_RECORD_MAX_BYTES)
             return usage("--trace-limit cannot be represented by this platform");
-        if (trace_conflicts_save_path(o))
-            return usage("trace file path conflicts with the save file");
 #if !MUHTARI_TRACE_LOOP
         fprintf(stderr, "muhtari-run: trace support unavailable (MUHTARI_TRACE_LOOP=OFF)\n");
         return MUHTARI__EXIT_REFUSED;
@@ -962,22 +1159,6 @@ static int check_options(options *o, const muhtari__movie_header *h, uint32_t mo
     for (uint32_t k = 0; k < o->dump_count; k++) {
         if (o->dump_frames[k] > o->frames) {
             return usage("--dump-frame is beyond --frames");
-        }
-    }
-    if (o->trace_file != NULL) {
-        if (same_lexical_path(o->trace_file, o->rom) ||
-            same_lexical_path(o->trace_file, o->movie) ||
-            same_lexical_path(o->trace_file, o->bios) ||
-            same_lexical_path(o->trace_file, o->hsc_rom) ||
-            same_lexical_path(o->trace_file, o->load_state))
-            return usage("trace file path conflicts with an input file");
-        for (uint32_t i = 0; i < o->dump_count; i++) {
-            if (same_lexical_path(o->trace_file, o->dump_paths[i]))
-                return usage("trace file path conflicts with --dump-frame");
-        }
-        for (uint32_t i = 0; i < o->state_output_count; i++) {
-            if (same_lexical_path(o->trace_file, o->state_outputs[i].path))
-                return usage("trace file path conflicts with state output");
         }
     }
     for (uint32_t i = 0; i < o->state_output_count; i++) {
@@ -1006,6 +1187,15 @@ static int check_options(options *o, const muhtari__movie_header *h, uint32_t mo
             if (o->hash_state_frames[i] == o->hash_state_frames[j])
                 return usage("duplicate --hash-state point");
         }
+    }
+    if (o->trace_file != NULL) {
+        int conflicts = trace_path_conflicts(o);
+        if (conflicts < 0) {
+            fprintf(stderr, "muhtari-run: cannot safely validate trace destination path\n");
+            return MUHTARI__EXIT_FAILURE;
+        }
+        if (conflicts != 0)
+            return usage("trace file path conflicts with an input or output");
     }
     if (o->hash_state_count > 0u)
         qsort(o->hash_state_frames, o->hash_state_count, sizeof o->hash_state_frames[0],
