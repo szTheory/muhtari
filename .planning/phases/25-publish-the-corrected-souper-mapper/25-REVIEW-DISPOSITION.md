@@ -5,9 +5,9 @@ titles: json
 findings:
   - id: IN-01
     severity: info
-    disposition: open
+    disposition: deferred
     title: "Repeated deliverable summary"
-open: 1
+open: 0
 total: 1
 recorded: 2026-11-16T08:28:48.451Z
 ---
@@ -16,7 +16,7 @@ recorded: 2026-11-16T08:28:48.451Z
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| IN-01 | info | open | - |
+| IN-01 | info | deferred | Editorial repetition only; the README remains accurate and concise, so defer a copy edit until the overview is next revised. |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.

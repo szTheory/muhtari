@@ -3,19 +3,18 @@ gsd_state_version: "1.0"
 milestone: v9.0
 milestone_name: Publish the corrected Souper mapper package
 current_phase: 25
-current_phase_name: Publish the corrected Souper mapper
-status: v9.0 selected; Phase 25 ready for autonomous discussion and planning
-stopped_at: v9.0 scope recorded; phase discussion not started
-last_updated: "2026-11-16T01:47:11.727Z"
-last_activity: 2026-11-15
-last_activity_desc: v9.0 Souper release milestone scoped
-state_head: d0217ad7f2d49d6b28bab99eef254c24f251b1a0
+status: completed
+stopped_at: Phase 25 complete — all phases complete
+last_updated: "2026-11-16T09:25:04Z"
+last_activity: 2026-11-16
+last_activity_desc: Phase 25 complete
+state_head: f3badf06509a5a66a5bc2320b5c8a521a98a6553
 progress:
   total_phases: 1
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 1
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 100
 ---
 
 # Project State
@@ -24,14 +23,14 @@ progress:
 
 See [PROJECT.md](PROJECT.md) (updated 2026-11-15), [ROADMAP.md](ROADMAP.md), [REQUIREMENTS.md](REQUIREMENTS.md), [public status](../docs/status.md), [rolling product roadmap](PRODUCT-ROADMAP.md), [v8.0 archive](milestones/v8.0-ROADMAP.md), [v8.0 audit](milestones/v8.0-MILESTONE-AUDIT.md), [v7.0 shipping receipt](milestones/v7.0-SHIP.md) and [v8.0 evidence review](research/next-milestone/2026-11-15-game-drive-qualification.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** v9.0 publishes merged Souper support in a fresh v0.16.0 release without moving v0.15.0.
+**Current focus:** Phase 25 execution is complete; final phase PR and v9.0 milestone audit are pending.
 
 ## Current Position
 
-Phase: 25 (Publish the corrected Souper mapper) — READY TO EXECUTE
-Plan: Not yet planned
-Status: Milestone selected; autonomous execution not started
-Last activity: 2026-11-15 -- v9.0 scope recorded
+Phase: 25
+Plan: 1 of 1 complete
+Status: All phases complete; closeout PR pending
+Last activity: 2026-11-16 — Phase 25 complete
 
 ## Previous Milestone Metrics — v8.0
 
@@ -121,11 +120,11 @@ At v8.0 close, no new items were acknowledged; 50 items acknowledged at earlier 
 
 ## Session Continuity
 
-Last session: 2026-11-16T00:35:26.650Z
-Stopped at: Forensic investigation complete
+Last session: 2026-11-16T09:25:04Z
+Stopped at: Phase 25 verified and tracked; final phase PR pending
 Resume file: .planning/forensics/report-20261115-1934.md
 
-Next action: Run `$gsd-autonomous --from 25` from this post-v8 worktree to discuss, plan, execute and verify the selected release milestone. No GameDrive implementation, public compatibility change, or hardware acceptance is authorized.
+Next action: Publish the final Phase 25 closeout PR, confirm required main CI on its merge commit, then audit and archive v9.0. No GameDrive implementation, public compatibility change, or hardware acceptance is authorized.
 
 ## Operator Next Steps
 

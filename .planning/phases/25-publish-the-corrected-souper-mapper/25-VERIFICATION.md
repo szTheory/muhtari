@@ -1,6 +1,6 @@
 ---
 phase: 25-publish-the-corrected-souper-mapper
-verified: 2026-11-16T08:40:23Z
+verified: 2026-11-16T09:26:30Z
 status: passed
 score: 5/5 must-haves verified
 covered_files:
@@ -14,7 +14,7 @@ covered_files:
   - README.md
   - docs/status.md
   - version.txt
-covered_digest: "v4:sha256:df9db01d7238ef4d0e0a0b68b6b58bf7db05b0a30818fdab0b46ad857039bd50"
+covered_digest: "v4:sha256:7971a0e126c3218a47d148e0cb3983cd0d7753696f6dddcd36facf25c1ace3f9"
 behavior_unverified: 0
 overrides_applied: 0
 decision_coverage:
@@ -26,7 +26,7 @@ decision_coverage:
 # Phase 25: Publish the corrected Souper mapper — Verification Report
 
 **Phase Goal:** Publish the corrected mainline source with Souper support and leave the public README and status page accurate.
-**Verified:** 2026-11-16T08:40:23Z
+**Verified:** 2026-11-16T09:26:30Z
 **Status:** passed
 **Re-verification:** No — initial verification
 
@@ -113,7 +113,7 @@ The native expected mapper rows are fixed in the checked-in diagnostic oracle ra
 
 | File | Line | Pattern | Severity | Impact |
 |---|---:|---|---|---|
-| `README.md` | 3–5 | Opening repeats the deliverables summary | Info | Recorded by code review; no accuracy or release-blocking effect. |
+| `README.md` | 3–5 | Opening repeats the deliverables summary | Info | Dispositioned as deferred: the README remains accurate and concise, so the copy edit can wait until the overview is next revised. |
 
 No unresolved TODO, FIXME, XXX, HACK, placeholder, or empty-implementation marker was found in the phase's public docs and receipt.
 
@@ -127,9 +127,9 @@ None. The published release, latest installation, and integration checks have ex
 
 ### Gaps Summary
 
-No blocking gaps remain. The phase goal and all five roadmap success criteria are verified; the informational README repetition is recorded in the code-review disposition and does not affect acceptance.
+No blocking gaps remain. The phase goal and all five roadmap success criteria are verified. The sole informational review note is dispositioned as deferred with a reason; it does not affect acceptance.
 
 ---
 
-_Verified: 2026-11-16T08:40:23Z_  
+_Verified: 2026-11-16T09:26:30Z_
 _Verifier: the agent (gsd-verifier)_

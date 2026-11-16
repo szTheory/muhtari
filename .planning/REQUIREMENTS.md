@@ -8,16 +8,16 @@
 
 ### Release tune-up
 
-- [ ] **TUNE-13**: Review the current release and CI evidence, queue time, critical path, job durations, cancellations and reproduced lessons; run applicable cheap consistency checks before longer release work; record one evidence-backed low-risk correction or a bounded no-change result without weakening coverage.
+- [x] **TUNE-13**: Review the current release and CI evidence, queue time, critical path, job durations, cancellations and reproduced lessons; run applicable cheap consistency checks before longer release work; record one evidence-backed low-risk correction or a bounded no-change result without weakening coverage.
 
 ### Souper package delivery
 
-- [ ] **REL-01**: Publish a fresh v0.16.0 feature release from corrected mainline source under the settled pre-1.0 minor-bump rule. Preserve the existing unpublished v0.15.0 tag and draft exactly as they are; do not repeat the one-time CI-only v0.13.1 patch exception.
-- [ ] **REL-02**: Existing source-bound release gates pass for the exact release commit, including required CI, Souper fixture coverage, artifact integrity and provenance, publication, and latest-install verification; record command, exit status and run URL.
+- [x] **REL-01**: Publish a fresh v0.16.0 feature release from corrected mainline source under the settled pre-1.0 minor-bump rule. Preserve the existing unpublished v0.15.0 tag and draft exactly as they are; do not repeat the one-time CI-only v0.13.1 patch exception.
+- [x] **REL-02**: Existing source-bound release gates pass for the exact release commit, including required CI, Souper fixture coverage, artifact integrity and provenance, publication, and latest-install verification; record command, exit status and run URL.
 
 ### User-facing status
 
-- [ ] **DOC-01**: README and status documentation explain the three deliverables, current published-versus-merged support, known compatibility limits and a concrete completion standard in clear, concise language.
+- [x] **DOC-01**: README and status documentation explain the three deliverables, current published-versus-merged support, known compatibility limits and a concrete completion standard in clear, concise language.
 
 ## Out of Scope
 
@@ -31,7 +31,7 @@
 
 | Requirement | Phase | Status |
 |---|---|---|
-| TUNE-13 | Phase 25 | Pending |
-| REL-01 | Phase 25 | Pending |
-| REL-02 | Phase 25 | Pending |
-| DOC-01 | Phase 25 | Pending |
+| TUNE-13 | Phase 25 | Complete |
+| REL-01 | Phase 25 | Complete |
+| REL-02 | Phase 25 | Complete |
+| DOC-01 | Phase 25 | Complete |
