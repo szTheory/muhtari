@@ -3,75 +3,51 @@ gsd_state_version: "1.0"
 milestone: v10.0
 milestone_name: Headless developer trace
 status: planning
-last_updated: "2026-11-16T15:31:11.991Z"
+last_updated: "2026-11-16"
 last_activity: 2026-11-16
 progress:
-  total_phases: 0
+  total_phases: 2
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
   percent: 0
 ---
-
 # Project State
 
 ## Project Reference
-
-See [PROJECT.md](PROJECT.md) (updated 2026-11-16), [ROADMAP.md](ROADMAP.md), [public status](../docs/status.md), [rolling product roadmap](PRODUCT-ROADMAP.md), [v9.0 archive](milestones/v9.0-ROADMAP.md), [v9.0 requirements](milestones/v9.0-REQUIREMENTS.md), [v9.0 audit](milestones/v9.0-MILESTONE-AUDIT.md), [v8.0 archive](milestones/v8.0-ROADMAP.md), [v8.0 audit](milestones/v8.0-MILESTONE-AUDIT.md), [v7.0 shipping receipt](milestones/v7.0-SHIP.md) and [v8.0 evidence review](research/next-milestone/2026-11-15-game-drive-qualification.md).
+See [PROJECT.md](PROJECT.md) (updated 2026-11-16), [ROADMAP.md](ROADMAP.md), [REQUIREMENTS.md](REQUIREMENTS.md), [product roadmap](PRODUCT-ROADMAP.md) and [successor review](research/next-milestone/2026-11-16-future-roadmap-review.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** v9.0 is shipped, audited, archived and merged. Archive PR #75 passed exact-head CI; main CI passed on its merge commit in [run 43854355858](https://github.com/szTheory/muhtari/actions/runs/43854355858), and Release passed with package work skipped in [run 43854356086](https://github.com/szTheory/muhtari/actions/runs/43854356086). The successor scope remains unselected.
+**Current focus:** v10.0 Headless developer trace; Phase 26 measured milestone tune-up, followed by Phase 27's complete runner trace.
 
 ## Current Position
+Phase: 26 of 27 (Measured milestone tune-up; first of two v10.0 phases)
+Plan: 0 of TBD in current phase
+Status: Ready to plan
+Last activity: 2026-11-16 — v10.0 scope selected; roadmap created and all eight requirements mapped.
+Progress: [░░░░░░░░░░] 0%
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-11-16 — Milestone v10.0 started
-
-
-## Previous Milestone Metrics — v8.0
-
-v8.0 completed both planned phases, two plans and four plan tasks. Phase 23 records source-specific release/CI,
-hygiene and quality evidence, with the macOS x64 `title.pal.bios` deadline calibrated from twelve completed suite
-samples; Phase 24 records the GameDrive contract assessment and implementation-readiness **NO-GO**. Both phase
-verifications and the milestone audit passed. Main CI on the final correction commit passed at
-[run 43757444707](https://github.com/szTheory/muhtari/actions/runs/43757444707); Release passed at
-[run 43757444676](https://github.com/szTheory/muhtari/actions/runs/43757444676) and skipped package publication.
-v7.0's phase verification remains archived at
-[22-VERIFICATION.md](milestones/v7.0-phases/22-complete-souper-homebrew-mapper/22-VERIFICATION.md), while its
-post-closeout package/shipping status is tracked separately in [v7.0-SHIP.md](milestones/v7.0-SHIP.md).
-**Per-Plan Metrics:**
-
-| Plan | Duration | Tasks | Files |
-|------|----------|-------|-------|
-| Phase 22 P01 | 108 | 2 tasks | 24 files |
-| Phase 22 P02 | 77min | 2 tasks | 24 files |
-| Phase 22 P03 | 94min | 2 tasks | 32 files |
-| Phase 22 P04 | not recorded | 2 tasks | 3 files |
-| Phase 23 P01 | 23min | 2 tasks | 2 files |
-| Phase 24 P01 | 30min | 2 tasks | 2 files |
+## Performance Metrics
+No v10.0 execution plans completed; duration and trend are not yet measured.
+| Phase | Plans | Total | Avg/Plan |
+|-------|-------|-------|----------|
+| 26 | 0/TBD | — | — |
+| 27 | 0/TBD | — | — |
+Prior milestone metrics and exact-source receipts remain in the [v9.0 archive](milestones/v9.0-ROADMAP.md), [audit](milestones/v9.0-MILESTONE-AUDIT.md) and earlier milestone records. Stable v0.16.0 is published; failed v0.15.0 remains unchanged and unpublished.
 
 ## Accumulated Context
-
-- v3.0 closed with deferred scope: only Phase 13 verified; nine requirements remain unchecked in the [archive](milestones/v3.0-MILESTONE-AUDIT.md). v4.0 promotes no old host acceptance claim.
-- Root remains canonical; stale dirty worktrees stay preserved and require content/ancestry reconciliation before import. See [workspace reconciliation](debug/workspace-reconciliation-2026-11-10.md).
-- The owner selected v7.0 Souper mapper-only support after recommendation-first research. One published 512 KiB ROM/32 KiB EXRAM software model, independent generated CPU/MARIA expectations and complete existing-consumer/state acceptance belong together in Phase 22. BupChip/BupBoop, Rikki & Vikki compatibility, flash variants and physical cartridge accuracy are excluded.
-- v8.0 closes with GameDrive implementation readiness NO-GO. Firmware 26.01.2266 notes a potential playback-glitch fix and save/load support, but stream framing/timing, an independent exact-profile PCM oracle and finite resource facts remain unproven. Keep all unlicensed sample/encoder source out of the repository.
-- Phase 22 recorded the exact reset/EXRAM model policy and snapshot format/version consequences under DEC.26/DEC.36 before implementation. No new API/ABI, dependency or host was selected; follow the settled compatibility policy for future changes.
-- Owner-selected v6.0 keeps one source-qualified XM/YM2151 profile, public mono PCM and C17 integer-only instance ownership. Profile, finite resource bounds and concrete API/behavior/native-format compatibility consequences are qualified before implementation; materially new consequences remain owner decisions.
-- Required chip/bus/audio/state, library/runner/libretro/Wasm/package acceptance, tests, docs and cost stay together in Phase 20. All seven plans, required local gates, goal verification and milestone integration are complete. YM state now uses format 2/behavior 7 while no-YM snapshots retain format 1/behavior 6; independent genuine old/new continuation remains in Plan 20-06. Reuse saved research, current mechanisms and [fan-out guidance](research/fan-out/prompt.txt); do not add a validation-tail phase or repeat upstream research.
-
-Inherited todos and optional seeds retain their dispositions except the selected Souper and recurring tune-up contributions. Atari 2600 belongs to twentysixhundo; LibFuturo owns its existing host/browser routes and reports no demonstrated Muhtari-side need. [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md) carries future horizons.
-
+### Decisions
+- Owner selected one bounded, opt-in `muhtari-run` instruction/bus trace, with frame/address filters, tick/beam/CPU context, finite output and generated/owned numeric acceptance.
+- Keep public API 8, ABI 1 and existing state formats unchanged: legacy 1/6, YM 2/7 and Souper 3/8 (format/behavior). Trace callbacks/buffers remain outside machine state; observation must preserve frame/state hashes and the existing hooks-off cost gate. A necessary public observer API is an explicit compatibility decision boundary.
+- Phase 26 maps TUNE-14; Phase 27 maps TRACE-01–07. Keep implementation, deterministic acceptance, docs and review together; add no validation-tail phase. Use current project/review facts over the historical API 7 research SUMMARY.
+- Selected milestone work follows the owner's autonomous local follow-through preference. Normal Git publication, PR merge and required CI/release automation are authorized at natural delivery points; original host/remote stops remain intact.
+### Pending Todos
+Inherited todos and optional seeds retain their dispositions; no unrelated work is promoted. Root remains canonical and older dirty worktrees require content/ancestry reconciliation before import. See [workspace reconciliation](debug/workspace-reconciliation-2026-11-10.md).
 ### Blockers/Concerns
-
-- v8.0's five requirements are covered by the passing milestone audit, and both phase verification reports retain passing verdicts. The Phase 23 fingerprint predates the merged timeout follow-up; its stale status is accepted under GSD-HANDOFF §3 because the audit covers the phase and exact-main CI passed. GameDrive implementation remains NO-GO pending a complete authoritative profile, independent legal PCM oracle and finite resource facts. PRs #67 and #68 are merged; exact-main CI passed in [run 43757444707](https://github.com/szTheory/muhtari/actions/runs/43757444707), and Release passed while skipping package publication in [run 43757444676](https://github.com/szTheory/muhtari/actions/runs/43757444676). The v0.15.0 tag/draft remains on the earlier exact source that failed its Wasm32 gate and is unpublished; no tag was moved. See the [v8.0 audit](milestones/v8.0-MILESTONE-AUDIT.md) and [v7.0-SHIP.md](milestones/v7.0-SHIP.md).
-- The Phase 21 spec-less probe classification remains unresolved and explicitly nonblocking; no probe pass or resolution is claimed. Phase 22 follows the selected software model; it does not establish retail compatibility or physical-cartridge accuracy. The original Phase 12/14 host and remote stops remain binding; normal milestone PR publication, merge and required CI/release automation are authorized at natural delivery points.
-- Phase 12's exact diagnostic-app request was denied before preflight/content and must not be retried. Original Phase 12 host/remote stops, Phase 14's spent host scope, expired windows and specific no-retry limits remain binding. No v6.0 action renews them or accepts the nine deferred v3.0 requirements.
-- v6.0 publication and PR #61 merge are complete. Future publication, merge, remote dispatch and host/device/identity-bound actions remain separate boundaries. Browser/player, Playstead, physical audibility, calibrated hardware accuracy, public stereo and full XM are excluded. Earlier combined-source/failed release evidence remains source-specific in archived receipts.
+- No blocker to Phase 26 local planning. Nine deferred v3.0 requirements remain open: TUNE-06/07, PLAY-01–04 and FRONT-02–04. The denied Phase 12 diagnostic-app request must not be retried; original Phase 12/14 host/remote stops, spent allowances, expired windows and no-retry limits remain binding.
+- GameDrive implementation remains NO-GO pending authoritative timing/framing, a lawful independent exact-profile PCM oracle and finite resource facts. Preserve the [v8.0 qualification](milestones/v8.0-phases/24-qualify-the-gamedrive-audio-contract/24-QUALIFICATION.md); no unlicensed sample/encoder source is permitted.
+- Phase 21's spec-less probe remains unresolved and nonblocking. No retail, physical hardware or owner-device acceptance is inferred. LibFuturo owns browser/host routes; Playstead owns player integration; twentysixhundo owns Atari 2600.
 
 ## Deferred Items
-
 At v9.0 close, no new items were acknowledged; 50 items acknowledged at earlier closes remain suppressed with their original verdicts. At v8.0 close, no new items were acknowledged; at v7.0 close, one debug-session item was newly acknowledged and 49 were carried forward. Its `unknown` verdict is preserved; suppression expires if the artifact changes. Earlier disclosures from v3.0 and prior closes remain below.
 
 | Category | Item | Status | Deferred At | Milestone |
@@ -116,47 +92,7 @@ At v9.0 close, no new items were acknowledged; 50 items acknowledged at earlier 
 | deferred_items | 11/deferred-items.md: Found in plan 04  - `diag.bankset_tracer` and `diag.bankset` both write `build/ci/tests/diag/bankset/32n/` and carry no resource lock, so under `ctest -j` one can read the other's `pixels.png` half written (`bankset --bankset-png ... png: chunk longer than the file`). Seen once in `cmake --workflow --preset ci`; passes alone and on rerun. Not caused by plan 04; a fix is a `RESOURCE_LOCK` or a separate output directory in `tests/diag/tests.cmake`.  Resolved in the gap round: `diag.bankset` now writes `build/<preset>/tests/diag/bankset-matrix/` and `diag.bankset_tracer` keeps `build/<preset>/tests/diag/bankset/`, so the two tests share no output file. | acknowledged; historical disposition retained | 2026-10-29 | v2.0 |
 
 ## Session Continuity
-
-Last session: 2026-11-16T12:22:49Z
-Stopped at: v9.0 is shipped, audited, archived and merged; final main CI and Release passed. Successor scope is unselected.
-Resume file: .planning/PRODUCT-ROADMAP.md
-
-Next action: Owner selects the successor scope from the recommendation and strongest alternative in PRODUCT-ROADMAP.md; then run `$gsd-new-milestone`. No GameDrive implementation, public compatibility change or hardware acceptance is authorized.
-
-## Operator Next Steps
-
-
-
-
-- Select the successor milestone scope using the recommendation and strongest alternative in PRODUCT-ROADMAP.md; then start `$gsd-new-milestone`.
-
-
-## Decisions
-
-- [Phase 19]: Reused the fef5691 v0.13.1 record correction; current records need no second edit.
-- [Phase 19]: Retain CI deadlines, caches, topology, quality floors and required/advisory membership; the few exact-source samples do not support a safe pipeline change.
-- [Phase 19]: Preserve the hygiene tree timeout and same-source outside-sandbox passes; qualify execution context without claiming a specific root cause or changing the deadline.
-- [Phase 20]: YM2151 production busy follows Yamaha's 68 phiM specification; the exact seed's 64-clock convention is separately reported as a four-clock parity difference.
-- [Phase 20]: Timer IRQ flags remain latched when carry-enable bits are cleared; reset bits clear them, and mode-write/carry ordering is covered against the exact seed.
-- [Phase 20]: Phase 20 Plan 20-02: The public API remains at 48 kHz; integrated YM PCM checks cover NTSC and PAL at that supported rate.
-- [Phase 20]: Phase 20 Plan 20-02: Power-cycle clears clocked YM state and derived caches to a deterministic fresh-instance baseline.
-- [Phase 20]: Phase 20 Plan 20-03: YM snapshots use format 2/behavior 7; no-YM snapshots retain format 1/behavior 6, and global latest reporting is API 8/ABI 1/behavior 7/format 2.
-- [Phase 21]: The accepted release sample and different-source local measurements support a bounded no-change disposition; required coverage and workload limits remain intact.
-- [Phase 21]: Performance is the weakest evidence dimension because no comparable release-source timing series is available; this does not establish regression.
-- [Phase 21]: Historical run-head hashes absent from saved lessons remain unavailable; the report does not infer source identity or resolve the spec-less probe.
-- [Phase 20]: Phase 20 Plan 20-03: YM clock history is validated from its existing last-tick, clock-count and remainder tuple; no extra runtime epoch field is needed.
-- [Phase 22]: Require exact Souper profile geometry and refuse an effective invalid v4 mapper 4 declaration without v3 fallback.
-- [Phase 22]: Keep Souper snapshots unavailable until plan 22-03 adds complete state support.
-- [Phase 22]: Plan 22-02: keep CPU and MARIA mapper controls independent and publish only fixed Souper CPU windows.
-- [Phase 22]: Souper snapshots use additive format 3 / behavior 8; legacy 1/6 and YM 2/7 bytes and identities remain unchanged, with API 8 / ABI 1 fixed.
-- [Phase 22]: Consumer continuation is judged independently; cross-consumer byte equality is not assumed, while source-qualified compatibility still checks exact bytes within a profile.
-- [Phase 22]: Resource measurements remain descriptive and source-qualified; no unrelated quota, timeout, cache, or CI structure was changed.
-- [Phase 23]: Keep CI topology, deadlines, quality policy, Windows serial baseline and required/report-only membership unchanged on two completed observations.
-- [Phase 23]: Keep hosted timing, Release state, local workflow checks and exact-source failures attached to their own sources.
-- [Phase 23]: Replace only three research Markdown hard-break markers after the committed-range whitespace check reproduced the fault.
-- [Phase 23 follow-up]: Calibrate only the macOS x64 PAL BIOS predicate timeout to twelve seconds from twelve completed matching-suite samples; preserve every assertion, other lane and failure receipt.
-- [Phase 24]: GameDrive implementation remains NO-GO until the authoritative profile, independent exact-profile PCM oracle and finite resource facts are available; public API/state consequences need a separate decision.
-
-## Next action
-
-v9.0 shipped existing Souper support as v0.16.0; the failed v0.15.0 tag and draft remain unchanged. The successor scope is unselected. The current recommendation is one narrowly scoped fix for a named, lawful, reproducible title-blocking 7800 defect; the strongest alternative is GameDrive contract qualification only after an authoritative profile, independent legal PCM oracle and finite resource facts are available. Preserve all original Phase 12/14 host and remote stops and the nine deferred v3 requirements.
+Last session: 2026-11-16
+Stopped at: v10.0 requirements and two-phase roadmap written; Phase 26 is ready for context and planning. No implementation, builds or tests were run by the roadmapper.
+Resume file: None
+Next action: Continue the selected milestone with `$gsd-discuss-phase 26`, reusing current research and adopting ordinary in-scope recommendations under the owner's autonomous direction. The orchestrator acts next; no routine owner approval is needed.

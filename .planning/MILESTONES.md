@@ -14,7 +14,7 @@
 
 **Archives:** [roadmap](milestones/v9.0-ROADMAP.md), [requirements](milestones/v9.0-REQUIREMENTS.md), [product roadmap snapshot](milestones/v9.0-PRODUCT-ROADMAP.md), [audit](milestones/v9.0-MILESTONE-AUDIT.md) and [phase records](milestones/v9.0-phases/).
 
-**Next:** The successor scope remains unselected. See the recommendation and strongest alternative in [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md); select scope before running `$gsd-new-milestone`.
+**Next:** v10.0 Headless developer trace is selected and active; Phases 26–27 are recorded in [ROADMAP.md](ROADMAP.md). The durable comparison, strongest alternative and revisit triggers remain in [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md) and the [2026-11-16 successor review](research/next-milestone/2026-11-16-future-roadmap-review.md).
 
 ---
 

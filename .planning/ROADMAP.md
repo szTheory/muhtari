@@ -2,6 +2,8 @@
 
 ## Milestones
 
+- [ ] **v10.0 — Headless developer trace** — phases 26–27; selected 2026-11-16.
+
 - [x] **v9.0 — Publish the corrected Souper mapper package** — shipped as v0.16.0 and archived 2026-11-16. [Audit](milestones/v9.0-MILESTONE-AUDIT.md) · [Archive](milestones/v9.0-ROADMAP.md) · [Requirements](milestones/v9.0-REQUIREMENTS.md) · [Product roadmap snapshot](milestones/v9.0-PRODUCT-ROADMAP.md)
 
 - [x] **v1.0 — 7800 games play with sound in RetroArch** — phases 1–4; shipped 2026-10-21. [Archive](milestones/v1.0-ROADMAP.md)
@@ -44,6 +46,58 @@ The milestone audit and both phase reports passed. The Phase 23 verification fin
 
 </details>
 
-## Successor scope
+## v10.0 — Headless developer trace
 
-No successor milestone is selected. The recommendation, strongest alternative, evidence threshold, sibling ownership and deferred host scope are in the [rolling product roadmap](PRODUCT-ROADMAP.md). Select scope at the next milestone boundary before creating new requirements or implementation work.
+**Milestone goal:** Homebrew authors and Muhtari maintainers can diagnose Atari 7800 instruction and bus timing with a bounded, reproducible headless trace from `muhtari-run`.
+
+The owner selected this scope on 2026-11-16. The [current requirements](REQUIREMENTS.md) and [successor review](research/next-milestone/2026-11-16-future-roadmap-review.md) govern this milestone; the older research SUMMARY is historical and its API 7 baseline is superseded by public API 8.
+
+## Phases
+
+- [ ] **Phase 26: Measured milestone tune-up** - Preserve trustworthy release and CI evidence while making only measured, low-risk efficiency corrections.
+- [ ] **Phase 27: Headless developer trace** - Deliver one filtered, bounded instruction and bus-access trace with numeric acceptance and unchanged emulation results.
+
+## Phase Details
+
+### Phase 26: Measured milestone tune-up
+
+**Goal**: Maintainers can begin trace work from a current, source-qualified release and CI baseline, with avoidable workflow friction corrected where the evidence supports it.
+**Depends on**: Phase 25 (v9.0 shipped and archived)
+**Requirements**: TUNE-14
+**Success Criteria** (what must be TRUE):
+  1. Maintainers can identify the current release and CI sources and see their queue time, critical path, job durations and cancellations, with failed or incomplete runs retaining their original limits.
+  2. Maintainers can see which reproduced lessons and applicable cheap consistency checks were considered before longer work, including fixture identity, changed-file formatting and shared inventories where relevant.
+  3. Maintainers receive an evidence-backed low-risk correction or a bounded no-change disposition; required coverage, fault detection and existing safety stops remain intact, and structural, cache or timeout changes require comparable multi-run evidence.
+**Plans**: TBD
+
+### Phase 27: Headless developer trace
+
+**Goal**: Developers can inspect deterministic Atari 7800 instruction and bus-access events through the existing headless runner without changing emulated results or public compatibility.
+**Depends on**: Phase 26
+**Requirements**: TRACE-01, TRACE-02, TRACE-03, TRACE-04, TRACE-05, TRACE-06, TRACE-07
+**Success Criteria** (what must be TRUE):
+  1. A developer can opt in to a trace for a selected invocation frame and inclusive address range and receive only matching instruction and bus-access events in deterministic order. Records expose event kind, master tick, beam position and CPU context; bus records also expose address, direction and value.
+  2. A developer can set a finite record limit and distinguish complete output from explicit truncation or a file-output failure. Invalid frame, range and limit arguments are refused before execution.
+  3. A developer can reproduce a generated or owned diagnostic's exact numeric records and event order, and tracing enabled or disabled produces identical frame and canonical state hashes.
+  4. Existing consumers retain public API 8, ABI 1 and all current state formats. Trace callbacks and output buffers remain outside emulated machine state, instrumentation is selected only for calls with tracing installed, and tracing disabled still passes the existing hooks-off instruction-cost gate.
+  5. A developer can follow runner documentation covering invocation, instruction versus bus address filtering, record fields, bounds, truncation and known limits. Committed fixtures and trace evidence contain no ROM, BIOS or save bytes beyond the manifest.
+**Plans**: TBD
+
+## Acceptance and boundaries
+
+Phase 27 includes the complete runner workflow, generated/owned numeric acceptance, deterministic no-change proof, the existing hooks-off cost gate, accurate documentation and required review. There is no separate implementation-tail, UAT or release phase. Acceptance uses existing C17, CMake/CTest and CI mechanisms; no GUI, device code, new dependency or real-host validation is selected.
+
+Keep instrumentation runner-private. If a public observer API or compatibility change proves necessary, stop for an explicit compatibility decision before expanding scope. Existing state formats remain unchanged, including legacy format 1 / behavior 6, YM format 2 / behavior 7 and Souper format 3 / behavior 8.
+
+The nine deferred v3.0 requirements and all original Phase 12/14 host/remote stops, denied requests, spent allowances, expired windows and no-retry limits remain binding. This milestone renews none of them. GameDrive implementation remains NO-GO pending its authoritative stream profile, lawful independent PCM oracle and finite resource facts. LibFuturo owns browser/host work, Playstead owns its player integration, and twentysixhundo owns Atari 2600. Broader SEED-004 tools and title/gameplay expansion remain deferred.
+
+## Progress
+
+**Execution order:** Phase 26 → Phase 27. Plan counts are assigned during phase planning; no implementation or verification is claimed at roadmap creation.
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 26. Measured milestone tune-up | 0/TBD | Not started | - |
+| 27. Headless developer trace | 0/TBD | Not started | - |
+
+**Coverage:** All 8 v1 requirements map to exactly one phase: TUNE-14 to Phase 26 and TRACE-01–07 to Phase 27. No orphaned or duplicated requirements.

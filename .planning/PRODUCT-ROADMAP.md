@@ -91,7 +91,7 @@ The v0.15.0 tag/draft still targets the earlier source that failed its exact
 Wasm32 gate; it remains unpublished and was not retargeted. The original
 Phase 12/14 host and remote stops are unchanged.
 
-### Selected next milestone — v10.0 headless developer trace
+### Immediate — v10.0 headless developer trace
 
 The owner selected this direction on 2026-11-16. Keep v10.0 to one deliberately
 small **headless developer trace**: an opt-in `muhtari-run` trace of instruction

@@ -45,20 +45,21 @@ Deferred pending demonstrated users and a separate scope decision.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TUNE-14 | Pending | Pending |
-| TRACE-01 | Pending | Pending |
-| TRACE-02 | Pending | Pending |
-| TRACE-03 | Pending | Pending |
-| TRACE-04 | Pending | Pending |
-| TRACE-05 | Pending | Pending |
-| TRACE-06 | Pending | Pending |
-| TRACE-07 | Pending | Pending |
+| TUNE-14 | Phase 26 | Pending |
+| TRACE-01 | Phase 27 | Pending |
+| TRACE-02 | Phase 27 | Pending |
+| TRACE-03 | Phase 27 | Pending |
+| TRACE-04 | Phase 27 | Pending |
+| TRACE-05 | Phase 27 | Pending |
+| TRACE-06 | Phase 27 | Pending |
+| TRACE-07 | Phase 27 | Pending |
 
 **Coverage:**
 - v1 requirements: 8 total
-- Mapped to phases: 0
-- Unmapped: 8
+- Mapped to phases: 8
+- Unmapped: 0
+- Duplicate mappings: 0
 
 ---
 *Requirements defined: 2026-11-16*
-*Last updated: 2026-11-16 after v10.0 scope selection*
+*Last updated: 2026-11-16 after v10.0 roadmap creation and complete phase mapping*
