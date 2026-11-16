@@ -68,11 +68,12 @@ The owner selected this scope on 2026-11-16. The [current requirements](REQUIREM
   1. Maintainers can identify the current release and CI sources and see their queue time, critical path, job durations and cancellations, with failed or incomplete runs retaining their original limits.
   2. Maintainers can see which reproduced lessons and applicable cheap consistency checks were considered before longer work, including fixture identity, changed-file formatting and shared inventories where relevant.
   3. Maintainers receive an evidence-backed low-risk correction or a bounded no-change disposition; required coverage, fault detection and existing safety stops remain intact, and structural, cache or timeout changes require comparable multi-run evidence.
-**Plans**: 2 plans
+**Plans**: 3 plans
 
 Plans:
 - [x] 26-01-PLAN.md — Reconcile release and CI receipts and record the bounded tune-up disposition.
 - [x] 26-02-PLAN.md — Reconcile roadmap execution progress while verification remains pending.
+- [ ] 26-03-PLAN.md — Represent future Phase 27 as explicitly unplanned without debt markers.
 
 ### Phase 27: Headless developer trace
 
@@ -101,7 +102,7 @@ The nine deferred v3.0 requirements and all original Phase 12/14 host/remote sto
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 26. Measured milestone tune-up | 2/2 | Executed; verification pending | - |
+| 26. Measured milestone tune-up | 2/3 | Gap closure ready; verification pending | - |
 | 27. Headless developer trace | 0/TBD | Not started | - |
 
 **Coverage:** All 8 v1 requirements map to exactly one phase: TUNE-14 to Phase 26 and TRACE-01–07 to Phase 27. No orphaned or duplicated requirements.
