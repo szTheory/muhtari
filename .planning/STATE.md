@@ -5,16 +5,16 @@ milestone_name: Headless developer trace
 current_phase: 27
 current_phase_name: Headless developer trace
 status: executing
-stopped_at: Completed 27-01-PLAN.md
-last_updated: "2026-11-16T20:29:10.592Z"
+stopped_at: Completed 27-02-PLAN.md
+last_updated: "2026-11-16T22:08:35.139Z"
 last_activity: 2026-11-16
 last_activity_desc: Phase 27 execution started
-state_head: 99e5b695d4446f9945e1a6e386d53eb31d0076ed
+state_head: 9a3a1b0d47ce3459f4018c6ab7d5d3dc2e0f41a0
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 6
-  completed_plans: 4
+  completed_plans: 5
   percent: 50
 ---
 
@@ -27,7 +27,7 @@ See [PROJECT.md](PROJECT.md) (updated 2026-11-16), [ROADMAP.md](ROADMAP.md), [RE
 
 ## Current Position
 Phase: 27 (Headless developer trace) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-11-16 — Phase 27 execution started
 Progress: [█████░░░░░] 50%
@@ -44,6 +44,7 @@ Prior milestone metrics and exact-source receipts remain in the [v9.0 archive](m
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 27 P01 | 70min | 2 tasks | 11 files |
+| Phase 27-headless-developer-trace P02 | 83min | 3 tasks | 9 files |
 
 ## Accumulated Context
 ### Decisions
@@ -53,6 +54,8 @@ Prior milestone metrics and exact-source receipts remain in the [v9.0 archive](m
 - Selected milestone work follows the owner's autonomous local follow-through preference. Normal Git publication, PR merge and required CI/release automation are authorized at natural delivery points; original host/remote stops remain intact.
 - [Phase 27]: Keep trace callbacks private and per-instance, outside serialized state and public compatibility surfaces.
 - [Phase 27]: Select traced execution at frame entry; reserve the measured hooks-off cost gate for plan 27-03.
+- [Phase 27-headless-developer-trace]: Selected 65,536 default and 131,072 hard trace limits after source-grounded PAL overshoot analysis, actual record sizing and comparable NTSC/PAL captures.
+- [Phase 27-headless-developer-trace]: Kept alias checks trace-specific and reused the existing sibling-temp atomic writer; public API, ABI and state formats remain unchanged.
 
 ### Pending Todos
 Inherited todos and optional seeds retain their dispositions; no unrelated work is promoted. Root remains canonical and older dirty worktrees require content/ancestry reconciliation before import. See [workspace reconciliation](debug/workspace-reconciliation-2026-11-10.md).
@@ -106,8 +109,8 @@ At v9.0 close, no new items were acknowledged; 50 items acknowledged at earlier 
 | deferred_items | 11/deferred-items.md: Found in plan 04  - `diag.bankset_tracer` and `diag.bankset` both write `build/ci/tests/diag/bankset/32n/` and carry no resource lock, so under `ctest -j` one can read the other's `pixels.png` half written (`bankset --bankset-png ... png: chunk longer than the file`). Seen once in `cmake --workflow --preset ci`; passes alone and on rerun. Not caused by plan 04; a fix is a `RESOURCE_LOCK` or a separate output directory in `tests/diag/tests.cmake`.  Resolved in the gap round: `diag.bankset` now writes `build/<preset>/tests/diag/bankset-matrix/` and `diag.bankset_tracer` keeps `build/<preset>/tests/diag/bankset/`, so the two tests share no output file. | acknowledged; historical disposition retained | 2026-10-29 | v2.0 |
 
 ## Session Continuity
-Last session: 2026-11-16T20:29:10.573Z
-Stopped at: Completed 27-01-PLAN.md
+Last session: 2026-11-16T22:08:35.122Z
+Stopped at: Completed 27-02-PLAN.md
 Resume file: None
 
 Next action: Continue the authorized milestone with $gsd-execute-phase 27. No routine owner approval is needed.
