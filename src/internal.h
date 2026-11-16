@@ -35,8 +35,8 @@ struct muhtari__timing {
 static inline struct muhtari__timing muhtari__timing_for_region(uint32_t region)
 {
     if (region == MUHTARI_REGION_PAL) {
-        const struct muhtari__timing pal = {313u, 292u, MUHTARI__TICKS_PER_FRAME_PAL, 139874u,
-                                            4000u, 591149u, 962u};
+        const struct muhtari__timing pal = {
+            313u, 292u, MUHTARI__TICKS_PER_FRAME_PAL, 139874u, 4000u, 591149u, 962u};
         return pal;
     }
     const struct muhtari__timing ntsc = {263u, 242u, 119402u, 117174u, 88u, 13125u, 801u};

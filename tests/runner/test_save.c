@@ -105,8 +105,7 @@ static void *test_malloc(size_t size)
 {
     if (track_runner_allocations && size > largest_runner_allocation)
         largest_runner_allocation = size;
-    if (io_fault == TRACE_ALLOC &&
-        size == 65536u * sizeof(struct muhtari__trace_event)) {
+    if (io_fault == TRACE_ALLOC && size == 65536u * sizeof(struct muhtari__trace_event)) {
         errno = ENOMEM;
         return NULL;
     }
@@ -500,8 +499,8 @@ static void trace_reset_io(void)
     stop_flag = flush_flag = 0;
 }
 
-static int trace_run_cli(char *rom, char *trace, const char *frames,
-                         const char *frame, const char *limit)
+static int trace_run_cli(char *rom, char *trace, const char *frames, const char *frame,
+                         const char *limit)
 {
     char *args[12];
     char frames_copy[16], frame_copy[16], limit_copy[16];
@@ -537,8 +536,8 @@ static int trace_run_cli(char *rom, char *trace, const char *frames,
 static void trace_io(const char *dir)
 {
     static const uint8_t sentinel[] = "previous complete capture";
-    static const int faults[] = {TRACE_ALLOC, SAVE_CREATE, SAVE_FDOPEN, SAVE_PARTIAL,
-                                 SAVE_WRITE, SAVE_FLUSH, SAVE_SYNC, SAVE_CLOSE, SAVE_REPLACE};
+    static const int faults[] = {TRACE_ALLOC, SAVE_CREATE, SAVE_FDOPEN, SAVE_PARTIAL, SAVE_WRITE,
+                                 SAVE_FLUSH,  SAVE_SYNC,   SAVE_CLOSE,  SAVE_REPLACE};
     char rom[1024], destination[1024], candidate[1200];
     (void)snprintf(rom, sizeof rom, "%s/trace-io.a78", dir);
     (void)snprintf(destination, sizeof destination, "%s/trace-io.jsonl", dir);
@@ -553,9 +552,9 @@ static void trace_io(const char *dir)
         CHECK_EQ_U64(frames_run, faults[i] == TRACE_ALLOC ? 0u : 1u);
         CHECK_EQ_U64(create_calls, faults[i] == TRACE_ALLOC ? 0u : 1u);
         CHECK_EQ_U64(temp_opens, faults[i] == TRACE_ALLOC || faults[i] == SAVE_CREATE ||
-                                     faults[i] == SAVE_FDOPEN
-                                 ? 0u
-                                 : 1u);
+                                         faults[i] == SAVE_FDOPEN
+                                     ? 0u
+                                     : 1u);
         CHECK_EQ_U64(replacements, faults[i] == SAVE_REPLACE ? 1u : 0u);
         CHECK_EQ_U64(trace_alloc_reports, faults[i] == TRACE_ALLOC ? 1u : 0u);
         CHECK_EQ_U64(trace_error_reports, faults[i] == TRACE_ALLOC ? 0u : 1u);
@@ -681,83 +680,80 @@ static void trace_arguments(const char *dir)
 #define TRACE_BAD(...)                                                                             \
     do {                                                                                           \
         char *bad_argv[] = {"muhtari-run", __VA_ARGS__};                                           \
-        trace_expect_usage((int)(sizeof bad_argv / sizeof bad_argv[0]), bad_argv, trace);           \
+        trace_expect_usage((int)(sizeof bad_argv / sizeof bad_argv[0]), bad_argv, trace);          \
     } while (0)
     TRACE_BAD("--frames", "1", "--trace-frame", "1", "--trace-range", "0:65535", rom);
     TRACE_BAD("--frames", "1", "--trace", trace, "--trace-range", "0:65535", rom);
     TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", rom);
-    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range",
-              "0:65535", "--trace", trace, rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "0:65535",
+              "--trace", trace, rom);
     TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-frame", "1",
               "--trace-range", "0:65535", rom);
-    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range",
-              "0:65535", "--trace-range", "0:65535", rom);
-    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range",
-              "0:65535", "--trace-limit", "2", "--trace-limit", "3", rom);
-    TRACE_BAD("--frames", "1", "--trace", "", "--trace-frame", "1", "--trace-range",
-              "0:65535", rom);
-    TRACE_BAD("--frames", "1", "--trace", "-", "--trace-frame", "1", "--trace-range",
-              "0:65535", rom);
-    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "0", "--trace-range",
-              "0:65535", rom);
-    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "+1", "--trace-range",
-              "0:65535", rom);
-    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "-1", "--trace-range",
-              "0:65535", rom);
-    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1x", "--trace-range",
-              "0:65535", rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "0:65535",
+              "--trace-range", "0:65535", rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "0:65535",
+              "--trace-limit", "2", "--trace-limit", "3", rom);
+    TRACE_BAD("--frames", "1", "--trace", "", "--trace-frame", "1", "--trace-range", "0:65535",
+              rom);
+    TRACE_BAD("--frames", "1", "--trace", "-", "--trace-frame", "1", "--trace-range", "0:65535",
+              rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "0", "--trace-range", "0:65535",
+              rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "+1", "--trace-range", "0:65535",
+              rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "-1", "--trace-range", "0:65535",
+              rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1x", "--trace-range", "0:65535",
+              rom);
     TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "4294967296", "--trace-range",
               "0:65535", rom);
-    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "2", "--trace-range",
-              "0:65535", rom);
-    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range",
-              ":1", rom);
-    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range",
-              "1:", rom);
-    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range",
-              "1:2:3", rom);
-    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range",
-              "+1:2", rom);
-    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range",
-              "-1:2", rom);
-    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range",
-              "0x:2", rom);
-    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range",
-              "1x:2", rom);
-    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range",
-              "0:65536", rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "2", "--trace-range", "0:65535",
+              rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", ":1", rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "1:", rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "1:2:3",
+              rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "+1:2",
+              rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "-1:2",
+              rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "0x:2",
+              rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "1x:2",
+              rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "0:65536",
+              rom);
     TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range",
               "0x10000:0xFFFF", rom);
-    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range",
-              "2:1", rom);
-    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range",
-              "0:65535", "--trace-limit", "0", rom);
-    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range",
-              "0:65535", "--trace-limit", "+1", rom);
-    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range",
-              "0:65535", "--trace-limit", "-1", rom);
-    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range",
-              "0:65535", "--trace-limit", "1x", rom);
-    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range",
-              "0:65535", "--trace-limit", "131073", rom);
-    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range",
-              "0:65535", "--trace-limit", "4294967296", rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "2:1", rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "0:65535",
+              "--trace-limit", "0", rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "0:65535",
+              "--trace-limit", "+1", rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "0:65535",
+              "--trace-limit", "-1", rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "0:65535",
+              "--trace-limit", "1x", rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "0:65535",
+              "--trace-limit", "131073", rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "0:65535",
+              "--trace-limit", "4294967296", rom);
     TRACE_BAD("--frames", "1", "--trace-limit", "1", rom);
-    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range",
-              "0:65535", "--trace-limit");
-    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range",
-              "0:65535", "--probe", rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "0:65535",
+              "--trace-limit");
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "0:65535",
+              "--probe", rom);
     TRACE_BAD("--frames", "1", "--trace-frame", "1", "--trace-range", "0:65535", "--trace");
-    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range",
-              "0:65535");
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "0:65535");
     {
-        char *bad_argv[] = {"muhtari-run", "--frames0", "--trace", trace, "--trace-frame", "1",
-                            "--trace-range", "0:65535", "--load-state", state, rom};
+        char *bad_argv[] = {
+            "muhtari-run", "--frames0",    "--trace", trace, "--trace-frame", "1", "--trace-range",
+            "0:65535",     "--load-state", state,     rom};
         trace_expect_usage((int)(sizeof bad_argv / sizeof bad_argv[0]), bad_argv, trace);
     }
     {
-        char *bad_argv[] = {"muhtari-run", "--movie", movie, "--trace", trace, "--trace-frame",
-                            "2", "--trace-range", "0:65535", rom};
+        char *bad_argv[] = {"muhtari-run",   "--movie", movie,           "--trace", trace,
+                            "--trace-frame", "2",       "--trace-range", "0:65535", rom};
         trace_expect_usage((int)(sizeof bad_argv / sizeof bad_argv[0]), bad_argv, trace);
     }
     TRACE_BAD("--trace", trace, "--trace-frame", "1", "--trace-range", "0:65535", rom);
@@ -803,21 +799,21 @@ static void trace_paths(const char *dir)
     write_bytes(firmware, image, sizeof image);
     write_bytes(state, image, 128u);
 
-#define TRACE_BAD_PATH(protected_path, ...)                                                       \
+#define TRACE_BAD_PATH(protected_path, ...)                                                        \
     do {                                                                                           \
         char *bad_argv[] = {"muhtari-run", __VA_ARGS__};                                           \
-        trace_expect_usage((int)(sizeof bad_argv / sizeof bad_argv[0]), bad_argv, protected_path);  \
+        trace_expect_usage((int)(sizeof bad_argv / sizeof bad_argv[0]), bad_argv, protected_path); \
     } while (0)
     TRACE_BAD_PATH(rom, "--frames", "1", "--trace", rom, "--trace-frame", "1", "--trace-range",
                    "0:65535", rom);
-    TRACE_BAD_PATH(movie, "--frames", "1", "--trace", movie, "--trace-frame", "1",
-                   "--trace-range", "0:65535", "--movie", movie, rom);
+    TRACE_BAD_PATH(movie, "--frames", "1", "--trace", movie, "--trace-frame", "1", "--trace-range",
+                   "0:65535", "--movie", movie, rom);
     TRACE_BAD_PATH(bios, "--frames", "1", "--boot", "bios", "--bios", bios, "--trace", bios,
                    "--trace-frame", "1", "--trace-range", "0:65535", rom);
-    TRACE_BAD_PATH(firmware, "--frames", "1", "--hsc", "on", "--hsc-rom", firmware,
-                   "--trace", firmware, "--trace-frame", "1", "--trace-range", "0:65535", rom);
-    TRACE_BAD_PATH(state, "--frames", "1", "--load-state", state, "--trace", state,
-                   "--trace-frame", "1", "--trace-range", "0:65535", rom);
+    TRACE_BAD_PATH(firmware, "--frames", "1", "--hsc", "on", "--hsc-rom", firmware, "--trace",
+                   firmware, "--trace-frame", "1", "--trace-range", "0:65535", rom);
+    TRACE_BAD_PATH(state, "--frames", "1", "--load-state", state, "--trace", state, "--trace-frame",
+                   "1", "--trace-range", "0:65535", rom);
 
     (void)snprintf(path, sizeof path, "%s/state-output", dir);
     (void)snprintf(state_point, sizeof state_point, "1:%s", path);
@@ -859,8 +855,8 @@ static void trace_paths(const char *dir)
     }
 #endif
     (void)snprintf(trace, sizeof trace, "%s/subdir/../option.a78", dir);
-    TRACE_BAD_PATH(trace, "--frames", "1", "--trace", trace, "--trace-frame", "1",
-                   "--trace-range", "0:65535", rom);
+    TRACE_BAD_PATH(trace, "--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range",
+                   "0:65535", rom);
 #undef TRACE_BAD_PATH
 }
 
@@ -1486,8 +1482,9 @@ static void trace_bounds(const char *dir)
     snprintf(rom, sizeof rom, "%s/trace-bounds.a78", dir);
     snprintf(trace, sizeof trace, "%s/trace-bounds.jsonl", dir);
     cartridge(rom, 1u, 0);
-    char *args[] = {"muhtari-run", "--frames", "1", "--trace", trace, "--trace-frame", "1",
-                    "--trace-range", "0:65535", "--trace-limit", "131072", rom};
+    char *args[] = {"muhtari-run", "--frames",      "1",      "--trace",
+                    trace,         "--trace-frame", "1",      "--trace-range",
+                    "0:65535",     "--trace-limit", "131072", rom};
     largest_runner_allocation = 0u;
     track_runner_allocations = 1;
     int status = runner_entry((int)(sizeof args / sizeof args[0]), args);
@@ -1524,11 +1521,15 @@ static void trace_measure(char *rom, char *dir, char *region, char *mode)
     CHECK(n > 0 && (size_t)n < sizeof trace);
     if (n <= 0 || (size_t)n >= sizeof trace)
         return;
-    char *plain[] = {"muhtari-run", "--frames", "2", "--region", region, "--trace", trace,
-                     "--trace-frame", "2", "--trace-range", "0:65535", rom};
-    char *maximum[] = {"muhtari-run", "--frames", "2", "--region", region, "--trace", trace,
-                       "--trace-frame", "2", "--trace-range", "0:65535", "--trace-limit",
-                       "131072", rom};
+    char *plain[] = {"muhtari-run", "--frames",      "2", "--region",      region,    "--trace",
+                     trace,         "--trace-frame", "2", "--trace-range", "0:65535", rom};
+    char *maximum[] = {"muhtari-run", "--frames",
+                       "2",           "--region",
+                       region,        "--trace",
+                       trace,         "--trace-frame",
+                       "2",           "--trace-range",
+                       "0:65535",     "--trace-limit",
+                       "131072",      rom};
     trace_write_started_ns = trace_write_finished_ns = 0u;
     time_trace_write = 1;
     int status = strcmp(mode, "maximum") == 0

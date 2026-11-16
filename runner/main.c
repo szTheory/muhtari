@@ -77,7 +77,7 @@ _Static_assert(TRACE_MAX_PAL_ACCESSES * 2u <= TRACE_LIMIT_MAX,
                "hard trace cap covers one PAL frame and its CPU overshoot");
 _Static_assert(TRACE_LIMIT_MAX * sizeof(struct muhtari__trace_event) <= TRACE_CAPTURE_BYTES_MAX,
                "hard trace cap fits the runner capture memory objective");
-_Static_assert(TRACE_LIMIT_MAX * TRACE_RECORD_MAX_BYTES <= TRACE_OUTPUT_BODY_MAX,
+_Static_assert(TRACE_LIMIT_MAX *TRACE_RECORD_MAX_BYTES <= TRACE_OUTPUT_BODY_MAX,
                "hard trace cap fits the runner output objective");
 _Static_assert(TRACE_RECORD_MAX_BYTES <= TRACE_LINE_MAX,
                "trace line capacity covers every fixed-width numeric field");
@@ -103,7 +103,8 @@ static void run_free(void *user, void *ptr, size_t size)
 
 static const char synopsis[] =
     "usage: muhtari-run --frames N [--hash-frame N]... [--dump-frame N:FILE]... [--rom] FILE\n"
-    "       muhtari-run --frames N --trace FILE --trace-frame N --trace-range LO:HI [--trace-limit N] [--rom] FILE\n"
+    "       muhtari-run --frames N --trace FILE --trace-frame N --trace-range LO:HI [--trace-limit "
+    "N] [--rom] FILE\n"
     "       muhtari-run --frames N [--hash-frame N]... [--dump-frame N:FILE]...\n"
     "       muhtari-run --bench N [--hash-frame N]... [--dump-frame N:FILE]... [[--rom] FILE]\n"
     "       muhtari-run --movie FILE [--frames N | --bench N] [--hash-frame N]...\n"
@@ -730,8 +731,7 @@ static char *trace_normalized_path(const char *path)
     size_t base_n = strlen(base);
     int separator = parent_n != 0u && canonical_parent[parent_n - 1u] != '/';
     size_t separator_n = (size_t)separator;
-    if (base_n > SIZE_MAX - separator_n - 1u ||
-        parent_n > SIZE_MAX - base_n - separator_n - 1u) {
+    if (base_n > SIZE_MAX - separator_n - 1u || parent_n > SIZE_MAX - base_n - separator_n - 1u) {
         free(canonical_parent);
         return NULL;
     }
@@ -925,9 +925,8 @@ static int parse_options(int argc, char **argv, options *o)
                 return usage("--trace-frame needs a whole number of 1 or more");
             o->trace_frame_set = 1;
         } else if (strcmp(arg, "--trace-range") == 0) {
-            if (o->trace_range_set ||
-                !parse_trace_range(value, value == NULL ? 0u : strlen(value), &o->trace_lo,
-                                   &o->trace_hi))
+            if (o->trace_range_set || !parse_trace_range(value, value == NULL ? 0u : strlen(value),
+                                                         &o->trace_lo, &o->trace_hi))
                 return usage("--trace-range needs LO:HI from 0 to 65535");
             o->trace_range_set = 1;
         } else if (strcmp(arg, "--trace-limit") == 0) {
@@ -1116,8 +1115,8 @@ static int check_options(options *o, const muhtari__movie_header *h, uint32_t mo
     if (o->frames == 0u && !o->frames0) {
         return usage("--frames N, --bench N or --movie FILE is required");
     }
-    int trace_options = o->trace_file != NULL || o->trace_frame_set || o->trace_range_set ||
-                        o->trace_limit_set;
+    int trace_options =
+        o->trace_file != NULL || o->trace_frame_set || o->trace_range_set || o->trace_limit_set;
     if (trace_options && o->trace_file == NULL)
         return usage("trace selectors need --trace FILE");
     if (o->trace_file != NULL) {
@@ -1134,7 +1133,8 @@ static int check_options(options *o, const muhtari__movie_header *h, uint32_t mo
         if (!o->trace_limit_set)
             o->trace_limit = TRACE_DEFAULT_LIMIT;
         if ((size_t)o->trace_limit > SIZE_MAX / sizeof(struct muhtari__trace_event) ||
-            (size_t)o->trace_limit > TRACE_CAPTURE_BYTES_MAX / sizeof(struct muhtari__trace_event) ||
+            (size_t)o->trace_limit >
+                TRACE_CAPTURE_BYTES_MAX / sizeof(struct muhtari__trace_event) ||
             (size_t)o->trace_limit > TRACE_OUTPUT_BODY_MAX / TRACE_RECORD_MAX_BYTES)
             return usage("--trace-limit cannot be represented by this platform");
 #if !MUHTARI_TRACE_LOOP
@@ -1606,19 +1606,18 @@ static int write_sibling_atomic(const char *destination, const void *bytes, size
     return write_sibling_atomic_stream(destination, write_byte_span, &span);
 }
 
-static int trace_format_line(char *line, size_t capacity,
-                             const struct muhtari__trace_event *event)
+static int trace_format_line(char *line, size_t capacity, const struct muhtari__trace_event *event)
 {
-    int length = snprintf(line, capacity,
-                          "{\"kind\":%u,\"tick\":%" PRIu64 ",\"line\":%u,"
-                          "\"t\":%u,\"pc\":%u,\"a\":%u,\"x\":%u,\"y\":%u,"
-                          "\"s\":%u,\"p\":%u,\"addr\":%u,\"rw\":%u,"
-                          "\"value\":%u}\n",
-                          (unsigned)event->kind, event->tick, (unsigned)event->line,
-                          (unsigned)event->t, (unsigned)event->pc, (unsigned)event->a,
-                          (unsigned)event->x, (unsigned)event->y, (unsigned)event->s,
-                          (unsigned)event->p, (unsigned)event->addr, (unsigned)event->rw,
-                          (unsigned)event->value);
+    int length =
+        snprintf(line, capacity,
+                 "{\"kind\":%u,\"tick\":%" PRIu64 ",\"line\":%u,"
+                 "\"t\":%u,\"pc\":%u,\"a\":%u,\"x\":%u,\"y\":%u,"
+                 "\"s\":%u,\"p\":%u,\"addr\":%u,\"rw\":%u,"
+                 "\"value\":%u}\n",
+                 (unsigned)event->kind, event->tick, (unsigned)event->line, (unsigned)event->t,
+                 (unsigned)event->pc, (unsigned)event->a, (unsigned)event->x, (unsigned)event->y,
+                 (unsigned)event->s, (unsigned)event->p, (unsigned)event->addr, (unsigned)event->rw,
+                 (unsigned)event->value);
     if (length < 0 || (size_t)length > TRACE_RECORD_MAX_BYTES || (size_t)length >= capacity)
         return -1;
     return length;
@@ -2013,7 +2012,8 @@ static int run(const options *opt, replay *mv)
             free(samples);
             return MUHTARI__EXIT_FAILURE;
         }
-        capture.events = (struct muhtari__trace_event *)malloc(capture.limit * sizeof *capture.events);
+        capture.events =
+            (struct muhtari__trace_event *)malloc(capture.limit * sizeof *capture.events);
         if (capture.events == NULL) {
             fprintf(stderr, "muhtari-run: out of memory for trace capture\n");
             free(capture.events);
