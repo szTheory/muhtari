@@ -86,6 +86,35 @@ static int write_fixture(const char *dir)
     return check_failures != 0 ? 1 : 0;
 }
 
+static int write_compat_fixtures(const char *dir)
+{
+    static const struct {
+        const char *name;
+        uint8_t expansion;
+        uint8_t sound;
+    } profiles[] = {{"legacy", 0u, 0u}, {"xm", 1u, 0u}, {"ym", 1u, 8u}};
+    char path[1024];
+    int failed = 0;
+    for (size_t i = 0u; i < sizeof profiles / sizeof profiles[0]; i++) {
+        int n = snprintf(path, sizeof path, "%s/compat-%s.a78", dir, profiles[i].name);
+        CHECK(n > 0 && (size_t)n < sizeof path);
+        if (n <= 0 || (size_t)n >= sizeof path)
+            return 1;
+        make_fixture();
+        fixture[63] = profiles[i].expansion;
+        fixture[67] = profiles[i].sound;
+        FILE *f = fopen(path, "wb");
+        CHECK(f != NULL);
+        if (f == NULL) {
+            failed = 1;
+            continue;
+        }
+        CHECK_EQ_U64(fwrite(fixture, 1u, sizeof fixture, f), sizeof fixture);
+        CHECK_EQ_U64(fclose(f), 0u);
+    }
+    return failed || check_failures != 0 ? 1 : 0;
+}
+
 static int write_cost_fixture(const char *dir)
 {
     char path[1024];
@@ -698,6 +727,8 @@ int main(int argc, char **argv)
 {
     if (argc == 3 && strcmp(argv[1], "fixture") == 0)
         return write_fixture(argv[2]);
+    if (argc == 3 && strcmp(argv[1], "compat-fixtures") == 0)
+        return write_compat_fixtures(argv[2]);
     if (argc == 3 && strcmp(argv[1], "cost_fixture") == 0)
         return write_cost_fixture(argv[2]);
     if (argc == 3 && strcmp(argv[1], "busy_fixture") == 0)

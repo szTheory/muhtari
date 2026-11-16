@@ -701,6 +701,7 @@ runner.state.roundtrip	portable,runner
 runner.stop	portable,runner
 runner.trace.arguments	portable,runner
 runner.trace.bounds	portable,runner
+runner.trace.equality	portable,runner
 runner.trace.filters	portable,runner
 runner.trace.io	portable,runner
 runner.trace.limits	portable,runner

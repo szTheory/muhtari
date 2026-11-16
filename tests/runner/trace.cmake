@@ -52,6 +52,24 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     endif()
   endfunction()
 
+  function(trace_compare_outputs name baseline actual frames states out)
+    set(equal TRUE)
+    if(NOT actual STREQUAL baseline)
+      set(equal FALSE)
+    endif()
+    foreach(frame IN LISTS frames)
+      if(NOT baseline MATCHES "frame ${frame} sha256 [0-9a-f]+\n")
+        set(equal FALSE)
+      endif()
+    endforeach()
+    foreach(point IN LISTS states)
+      if(NOT baseline MATCHES "state ${point} sha256 [0-9a-f]+\n")
+        set(equal FALSE)
+      endif()
+    endforeach()
+    set(${out} "${equal}" PARENT_SCOPE)
+  endfunction()
+
   if(CASE STREQUAL "smoke")
     file(MAKE_DIRECTORY "${DIR}")
     execute_process(COMMAND ${EMULATOR} "${SAVE_TEST}" "${DIR}" roundtrip
@@ -87,6 +105,195 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     string(FIND "${records}" "\"status\":\"complete\"" has_complete)
     if(has_header EQUAL -1 OR has_instruction EQUAL -1 OR has_bus EQUAL -1 OR has_complete EQUAL -1)
       message(FATAL_ERROR "trace JSONL is missing its versioned header, CPU records or complete status")
+    endif()
+  elseif(CASE STREQUAL "equality")
+    file(MAKE_DIRECTORY "${DIR}/compat")
+    execute_process(COMMAND ${EMULATOR} "${TRACE_TEST}" compat-fixtures "${DIR}/compat"
+      RESULT_VARIABLE generated OUTPUT_VARIABLE generated_out ERROR_VARIABLE generated_err TIMEOUT 20)
+    if(NOT generated STREQUAL "0")
+      message(FATAL_ERROR "compatibility fixtures failed: ${generated}\n${generated_out}${generated_err}")
+    endif()
+    execute_process(COMMAND ${EMULATOR} "${DIAG_DRIVER}" --souper-image "${SOUPER_TEMPLATE}"
+        "${DIR}/compat/compat-souper.a78"
+      RESULT_VARIABLE souper_rc OUTPUT_VARIABLE souper_out ERROR_VARIABLE souper_err TIMEOUT 30)
+    if(NOT souper_rc STREQUAL "0")
+      message(FATAL_ERROR "generated Souper compatibility fixture failed: ${souper_rc}\n${souper_out}${souper_err}")
+    endif()
+
+    set(frames 1 2)
+    set(states 0 1 2)
+    foreach(region IN ITEMS ntsc pal)
+      foreach(topology IN ITEMS legacy xm ym souper)
+        if(topology STREQUAL "souper")
+          set(image "${DIR}/compat/compat-souper.a78")
+        else()
+          set(image "${DIR}/compat/compat-${topology}.a78")
+        endif()
+        set(extra_args "")
+        if(topology STREQUAL "xm" OR topology STREQUAL "ym")
+          list(APPEND extra_args --expansion xm)
+        endif()
+        foreach(run_kind IN ITEMS plain traced)
+          set(prefix "${DIR}/compat/${region}-${topology}-${run_kind}")
+          set(command ${EMULATOR} "${RUN}" --frames 2 --region "${region}"
+            --hash-frame 1 --hash-frame 2 --hash-state 0 --hash-state 1 --hash-state 2
+            --state-at-frame "0:${prefix}-state0.bin" --state-at-frame "1:${prefix}-state1.bin"
+            --state-at-frame "2:${prefix}-state2.bin")
+          if(run_kind STREQUAL "traced")
+            list(APPEND command --trace "${prefix}.jsonl" --trace-frame 1 --trace-range 0:65535)
+          endif()
+          list(APPEND command ${extra_args} "${image}")
+          execute_process(COMMAND ${command} RESULT_VARIABLE rc OUTPUT_VARIABLE output
+            ERROR_VARIABLE err TIMEOUT 45)
+          if(NOT rc STREQUAL "0")
+            message(FATAL_ERROR "${region} ${topology} ${run_kind} run failed: ${rc}\n${output}${err}")
+          endif()
+          if(run_kind STREQUAL "plain")
+            set(plain_output "${output}")
+            foreach(point IN LISTS states)
+              set(baseline_${region}_${topology}_${point} "${prefix}-state${point}.bin")
+            endforeach()
+          else()
+            trace_compare_outputs("${region} ${topology}" "${plain_output}" "${output}"
+              "${frames}" "${states}" output_equal)
+            if(NOT output_equal)
+              message(FATAL_ERROR "${region} ${topology} trace changed stdout or omitted requested hashes")
+            endif()
+            foreach(point IN LISTS states)
+              execute_process(COMMAND ${CMAKE_COMMAND} -E compare_files
+                  "${baseline_${region}_${topology}_${point}}" "${prefix}-state${point}.bin"
+                RESULT_VARIABLE bytes_equal OUTPUT_VARIABLE compare_out ERROR_VARIABLE compare_err
+                TIMEOUT 20)
+              if(NOT bytes_equal STREQUAL "0")
+                message(FATAL_ERROR "${region} ${topology} trace changed state bytes at ${point}: ${bytes_equal}\n${compare_out}${compare_err}")
+              endif()
+            endforeach()
+            file(READ "${prefix}.jsonl" trace_header LIMIT 256)
+            if(NOT trace_header MATCHES "\"frame\":1")
+              message(FATAL_ERROR "${region} ${topology} selected invocation frame one was not recorded")
+            endif()
+          endif()
+        endforeach()
+
+        set(loaded_state "${DIR}/compat/${region}-${topology}-plain-state2.bin")
+        set(loaded_trace "${DIR}/compat/${region}-${topology}-restored.jsonl")
+        set(loaded_command ${EMULATOR} "${RUN}" --frames 2 --region "${region}" --load-state "${loaded_state}"
+          --hash-frame 1 --hash-frame 2 --hash-state 0 --hash-state 1 --hash-state 2)
+        list(APPEND loaded_command ${extra_args} "${image}")
+        execute_process(COMMAND ${loaded_command} RESULT_VARIABLE plain_rc OUTPUT_VARIABLE loaded_plain
+          ERROR_VARIABLE plain_err TIMEOUT 45)
+        set(trace_command ${EMULATOR} "${RUN}" --frames 2 --region "${region}" --load-state "${loaded_state}"
+          --hash-frame 1 --hash-frame 2 --hash-state 0 --hash-state 1 --hash-state 2
+          --trace "${loaded_trace}" --trace-frame 1 --trace-range 0:65535)
+        list(APPEND trace_command ${extra_args} "${image}")
+        execute_process(COMMAND ${trace_command} RESULT_VARIABLE traced_rc OUTPUT_VARIABLE loaded_actual
+          ERROR_VARIABLE trace_err TIMEOUT 45)
+        if(NOT plain_rc STREQUAL "0" OR NOT traced_rc STREQUAL "0")
+          message(FATAL_ERROR "${region} ${topology} restored run failed: ${plain_rc}/${traced_rc}\n${plain_err}${trace_err}")
+        endif()
+        trace_compare_outputs("${region} ${topology} restored" "${loaded_plain}" "${loaded_actual}"
+          "${frames}" "${states}" restored_equal)
+        if(NOT restored_equal)
+          message(FATAL_ERROR "${region} ${topology} trace after restore changed stdout or hashes")
+        endif()
+        file(READ "${loaded_trace}" restored_header LIMIT 256)
+        if(NOT restored_header MATCHES "\"frame\":1")
+          message(FATAL_ERROR "${region} ${topology} restore did not reset selected frame to invocation one")
+        endif()
+      endforeach()
+
+      set(movie "${DIR}/compat/${region}-default-count.movie")
+      file(WRITE "${movie}" "muhtari-movie 1\nport1 savekey\nport2 none\n|||...BB|\n|||...BB|\n")
+      foreach(run_kind IN ITEMS plain traced)
+        set(prefix "${DIR}/compat/${region}-movie-${run_kind}")
+        set(command ${EMULATOR} "${RUN}" --region "${region}" --movie "${movie}"
+          --hash-frame 1 --hash-frame 2 --hash-state 0 --hash-state 1 --hash-state 2
+          --state-at-frame "0:${prefix}-state0.bin" --state-at-frame "1:${prefix}-state1.bin"
+          --state-at-frame "2:${prefix}-state2.bin")
+        if(run_kind STREQUAL "traced")
+          list(APPEND command --trace "${prefix}.jsonl" --trace-frame 2 --trace-range 0:65535)
+        endif()
+        list(APPEND command "${DIR}/compat/compat-legacy.a78")
+        execute_process(COMMAND ${command} RESULT_VARIABLE rc OUTPUT_VARIABLE output
+          ERROR_VARIABLE err TIMEOUT 45)
+        if(NOT rc STREQUAL "0")
+          message(FATAL_ERROR "${region} movie-default-count ${run_kind} run failed: ${rc}\n${output}${err}")
+        endif()
+        if(run_kind STREQUAL "plain")
+          set(movie_plain_output "${output}")
+        else()
+          trace_compare_outputs("${region} movie-default-count" "${movie_plain_output}" "${output}"
+            "${frames}" "${states}" movie_equal)
+          if(NOT movie_equal)
+            message(FATAL_ERROR "${region} movie-default-count trace changed output or requested hashes")
+          endif()
+          foreach(point IN LISTS states)
+            execute_process(COMMAND ${CMAKE_COMMAND} -E compare_files
+                "${DIR}/compat/${region}-movie-plain-state${point}.bin"
+                "${prefix}-state${point}.bin"
+              RESULT_VARIABLE bytes_equal OUTPUT_VARIABLE compare_out ERROR_VARIABLE compare_err
+              TIMEOUT 20)
+            if(NOT bytes_equal STREQUAL "0")
+              message(FATAL_ERROR "${region} movie trace changed canonical state bytes at ${point}: ${bytes_equal}\n${compare_out}${compare_err}")
+            endif()
+          endforeach()
+          file(READ "${prefix}.jsonl" movie_header LIMIT 256)
+          if(NOT movie_header MATCHES "\"frame\":2")
+            message(FATAL_ERROR "${region} movie-default-count did not select invocation frame two")
+          endif()
+        endif()
+      endforeach()
+
+      set(plain_prefix "${DIR}/compat/${region}-truncated-plain")
+      set(trace_prefix "${DIR}/compat/${region}-truncated-traced")
+      set(plain_command ${EMULATOR} "${RUN}" --frames 2 --region "${region}"
+        --hash-frame 1 --hash-frame 2 --hash-state 0 --hash-state 1 --hash-state 2
+        --state-at-frame "0:${plain_prefix}-state0.bin" --state-at-frame "1:${plain_prefix}-state1.bin"
+        --state-at-frame "2:${plain_prefix}-state2.bin" "${DIR}/compat/compat-legacy.a78")
+      execute_process(COMMAND ${plain_command} RESULT_VARIABLE plain_rc OUTPUT_VARIABLE plain_output
+        ERROR_VARIABLE plain_err TIMEOUT 45)
+      set(trace_command ${EMULATOR} "${RUN}" --frames 2 --region "${region}"
+        --hash-frame 1 --hash-frame 2 --hash-state 0 --hash-state 1 --hash-state 2
+        --state-at-frame "0:${trace_prefix}-state0.bin" --state-at-frame "1:${trace_prefix}-state1.bin"
+        --state-at-frame "2:${trace_prefix}-state2.bin" --trace "${trace_prefix}.jsonl"
+        --trace-frame 1 --trace-range 0:65535 --trace-limit 1 "${DIR}/compat/compat-legacy.a78")
+      execute_process(COMMAND ${trace_command} RESULT_VARIABLE traced_rc OUTPUT_VARIABLE traced_output
+        ERROR_VARIABLE trace_err TIMEOUT 45)
+      trace_compare_outputs("${region} truncated" "${plain_output}" "${traced_output}"
+        "${frames}" "${states}" truncated_equal)
+      if(NOT plain_rc STREQUAL "0" OR NOT traced_rc STREQUAL "0" OR NOT truncated_equal)
+        message(FATAL_ERROR "${region} truncated trace changed output/state hashes: ${plain_rc}/${traced_rc}\n${plain_err}${trace_err}")
+      endif()
+      file(STRINGS "${trace_prefix}.jsonl" truncated_rows)
+      string(FIND "${truncated_rows}" "\"status\":\"truncated\"" truncated_footer)
+      if(truncated_footer EQUAL -1)
+        message(FATAL_ERROR "${region} one-extra-matching-event capture was not marked truncated")
+      endif()
+    endforeach()
+
+    set(bench_trace "${DIR}/compat/bench.jsonl")
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --bench 2 --trace "${bench_trace}"
+        --trace-frame 1 --trace-range 0:65535 "${DIR}/compat/compat-legacy.a78"
+      RESULT_VARIABLE bench_rc OUTPUT_VARIABLE bench_out ERROR_VARIABLE bench_err TIMEOUT 45)
+    if(NOT bench_rc STREQUAL "0" OR NOT EXISTS "${bench_trace}")
+      message(FATAL_ERROR "--bench trace option compatibility failed: ${bench_rc}\n${bench_out}${bench_err}")
+    endif()
+
+    set(fault_baseline "frame 1 sha256 0123456789abcdef\nstate 1 sha256 fedcba9876543210\n")
+    set(fault_changed "frame 1 sha256 1123456789abcdef\nstate 1 sha256 fedcba9876543210\n")
+    trace_compare_outputs("changed digest" "${fault_baseline}" "${fault_changed}" "1" "1" changed_equal)
+    if(changed_equal)
+      message(FATAL_ERROR "equality comparator accepted a changed frame digest")
+    endif()
+    set(fault_changed_state "frame 1 sha256 0123456789abcdef\nstate 1 sha256 0edcba9876543210\n")
+    trace_compare_outputs("changed state digest" "${fault_baseline}" "${fault_changed_state}" "1" "1" changed_state_equal)
+    if(changed_state_equal)
+      message(FATAL_ERROR "equality comparator accepted a changed state digest")
+    endif()
+    set(fault_missing "frame 1 sha256 0123456789abcdef\n")
+    trace_compare_outputs("missing hash" "${fault_baseline}" "${fault_missing}" "1" "1" missing_equal)
+    if(missing_equal)
+      message(FATAL_ERROR "equality comparator accepted a missing requested state hash")
     endif()
   elseif(CASE STREQUAL "oracle")
     trace_fixture()
@@ -363,12 +570,14 @@ muhtari_add_test(NAME runner.trace.smoke
     "-DSAVE_TEST=$<TARGET_FILE:muhtari-test-save-runner>" "-DRUN=$<TARGET_FILE:muhtari-run>"
     "-DDIR=${PROJECT_BINARY_DIR}/tests/trace-smoke" -DCASE=smoke -P ${CMAKE_CURRENT_LIST_FILE}
   LABELS runner portable TIMEOUT 30)
-foreach(case IN ITEMS arguments bounds filters io limits paths oracle)
+foreach(case IN ITEMS arguments bounds equality filters io limits paths oracle)
   file(MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/tests/trace-${case}")
   muhtari_add_test(NAME runner.trace.${case}
     COMMAND ${CMAKE_COMMAND} "-DEMULATOR=${trace_emulator}"
       "-DTRACE_TEST=$<TARGET_FILE:muhtari-test-trace>" "-DRUN=$<TARGET_FILE:muhtari-run>"
       "-DSAVE_TEST=$<TARGET_FILE:muhtari-test-save-runner>"
+      "-DDIAG_DRIVER=$<TARGET_FILE:muhtari-test-diag>"
+      "-DSOUPER_TEMPLATE=${PROJECT_SOURCE_DIR}/tests/diag/souper.a78"
       "-DDIR=${PROJECT_BINARY_DIR}/tests/trace-${case}" "-DCASE=${case}"
       -P ${CMAKE_CURRENT_LIST_FILE}
     LABELS runner portable TIMEOUT 60)
