@@ -32,7 +32,9 @@ This phase changes planning prose only. It changes no source, ROM fixture, test,
 | Check | Exit | What it establishes |
 |---|---:|---|
 | `git diff --check` after the working-tree corrections | 0 | No whitespace errors in tracked working-tree changes. The one-off validator covers new planning files too. |
-| `git diff --check origin/main...HEAD -- .planning/research/next-milestone/2026-11-16-future-roadmap-review.md` before correction | 2 | Reproduced two trailing-space Markdown hard breaks in the saved successor review. They were replaced with explicit `<br>` markers without changing words or citations. The post-commit rerun is recorded below after it completes. |
+| `git diff --check origin/main...HEAD -- .planning/research/next-milestone/2026-11-16-future-roadmap-review.md` before correction | 2 | Reproduced two trailing-space Markdown hard breaks in the saved successor review. They were replaced with explicit `<br>` markers without changing words or citations. |
+| Same targeted range check after the correction commit | 0 | The corrected successor review passes the committed-range whitespace gate. |
+| `git diff --check origin/main...HEAD -- .planning` after the correction commit | 0 | All planning files changed in this milestone pass the committed-range whitespace gate. |
 | `scripts/hygiene.sh --tree` | 0 | The complete current worktree satisfies the repository's hygiene rules. |
 | `gsd_run query validate.consistency --raw` using `@opengsd/gsd-core` 1.20.0 | 0 | Active roadmap and requirement records are structurally consistent. |
 | `gsd_run query roadmap.analyze --raw` using `@opengsd/gsd-core` 1.20.0 | 0 | Phase order and requirement coverage remain coherent. |
