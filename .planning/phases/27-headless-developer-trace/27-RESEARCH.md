@@ -1,7 +1,7 @@
 # Phase 27: Headless developer trace - Research
 
-**Researched:** 2026-11-16  
-**Domain:** Deterministic C emulator instrumentation and headless runner output  
+**Researched:** 2026-11-16
+**Domain:** Deterministic C emulator instrumentation and headless runner output
 **Confidence:** LOW
 
 <user_constraints>
@@ -169,14 +169,14 @@ Keep trace event definitions in private source headers; keep trace option parsin
 
 ### Pattern: select traced execution at the frame boundary
 
-**What:** Choose the ordinary or traced CPU execution path once before the selected frame's core call. CPU instrumentation must use the trace-enabled bus producer; the ordinary CPU continues calling ordinary bus functions.  
-**When to use:** Only when the private observer is installed for the selected invocation frame.  
+**What:** Choose the ordinary or traced CPU execution path once before the selected frame's core call. CPU instrumentation must use the trace-enabled bus producer; the ordinary CPU continues calling ordinary bus functions.
+**When to use:** Only when the private observer is installed for the selected invocation frame.
 **Source:** [VERIFIED: src/frame.c:15-19] Current execution calls one CPU step per loop; [VERIFIED: src/cpu.c:650-661] CPU step calls the opcode bus path; [VERIFIED: src/internal.h:771-774] every CPU cycle passes through the bus functions.
 
 ### Pattern: capture in memory, commit after the frame
 
-**What:** The callback filters and appends only while within the fixed capacity; after the first additional match it sets a sticky truncation bit and returns immediately, allowing emulation to finish. Serialize after a successful selected frame and atomically replace the destination only after all I/O stages succeed.  
-**When to use:** One invocation frame with a finite record cap.  
+**What:** The callback filters and appends only while within the fixed capacity; after the first additional match it sets a sticky truncation bit and returns immediately, allowing emulation to finish. Serialize after a successful selected frame and atomically replace the destination only after all I/O stages succeed.
+**When to use:** One invocation frame with a finite record cap.
 **Source:** [VERIFIED: runner/main.c:1146-1205] Existing atomic output owns a sibling temp through write, flush, sync, close and replacement.
 
 ### Anti-patterns to avoid
@@ -201,32 +201,32 @@ Keep trace event definitions in private source headers; keep trace option parsin
 
 ### Bus timestamp and beam drift
 
-**What goes wrong:** Records use cycle completion tick or derive beam from stale line origin at a boundary.  
-**Why:** Reads return only after end advances the bus; line 0 updates the mutable MARIA origin.  
+**What goes wrong:** Records use cycle completion tick or derive beam from stale line origin at a boundary.
+**Why:** Reads return only after end advances the bus; line 0 updates the mutable MARIA origin.
 **How to avoid:** Capture at the data edge and test fast/slow access plus line/frame-origin boundaries; specify the exact beam sampling instant.
 
 ### Trace changes state or timing
 
-**What goes wrong:** Trace-on changes canonical state, frame output, observer carry, or ordinary CPU instruction cost.  
-**Why:** Callback fields enter serialization, instrumentation branches run per bus access, or an event callback alters emulated data.  
+**What goes wrong:** Trace-on changes canonical state, frame output, observer carry, or ordinary CPU instruction cost.
+**Why:** Callback fields enter serialization, instrumentation branches run per bus access, or an event callback alters emulated data.
 **How to avoid:** Keep observer host-owned, callbacks read-only, compile separate traced hot producers, compare all hashes and run the existing Ir/frame gate against trace-loop-off.
 
 ### Silent partial output
 
-**What goes wrong:** A prefix appears complete after truncation, frame refusal, or late file failure.  
-**Why:** Record count alone cannot distinguish exact-limit completion from a longer trace; write/close failure can happen after records were emitted.  
+**What goes wrong:** A prefix appears complete after truncation, frame refusal, or late file failure.
+**Why:** Record count alone cannot distinguish exact-limit completion from a longer trace; write/close failure can happen after records were emitted.
 **How to avoid:** Observe one extra matching event before declaring truncation; append explicit terminal status only on successful finalization; use atomic replacement and fault controls.
 
 ### Accidental path overwrite
 
-**What goes wrong:** Trace output replaces an input or another requested output.  
-**Why:** Current comparison checks spelling, not file identity or normalized aliases.  
+**What goes wrong:** Trace output replaces an input or another requested output.
+**Why:** Current comparison checks spelling, not file identity or normalized aliases.
 **How to avoid:** Join trace with every existing path-conflict class and decide whether existing lexical behavior is sufficient; test same-spelling and representative alias cases without deleting user files.
 
 ### Bound underestimation
 
-**What goes wrong:** A valid one-frame trace exceeds allocation or output budget.  
-**Why:** Held CPU cycles, interrupt-entry accesses, JSON formatting overhead or PAL timing were omitted from the derivation.  
+**What goes wrong:** A valid one-frame trace exceeds allocation or output budget.
+**Why:** Held CPU cycles, interrupt-entry accesses, JSON formatting overhead or PAL timing were omitted from the derivation.
 **How to avoid:** Enforce sizeof and serialized-line bounds, recalculate against CPU and scheduler invariants, and measure with a generated busy CPU fixture; any violated premise changes the cap calculation.
 
 ## State of the Art
@@ -274,7 +274,7 @@ Keep trace event definitions in private source headers; keep trace option parsin
 | C compiler | Core and runner | ✓ | Apple clang 21.0.0 | Use CI GCC lane for cross-compiler validation. |
 | Valgrind/Cachegrind | Hooks-off instruction-cost gate | ✗ locally | — | Existing Linux CI job installs valgrind; run the comparison there. |
 
-**Missing dependencies with no fallback:** None for planning or local implementation.  
+**Missing dependencies with no fallback:** None for planning or local implementation.
 **Missing dependencies with fallback:** Local Valgrind; use the existing Linux performance job.
 
 ## Security Domain
@@ -302,5 +302,5 @@ Security enforcement is explicitly disabled in .planning/config.json for this pr
 - Architecture: LOW overall; current call boundaries are directly source-backed, but the documented dual-compiled path is absent from implementation.
 - Pitfalls and bounds: LOW — the event timing is source-backed, while proposed record/cap/output sizes still require implementation-time validation.
 
-**Research date:** 2026-11-16  
+**Research date:** 2026-11-16
 **Valid until:** 2026-12-16 for stable architecture; recheck if the CPU scheduler, frame bounds, file helper or CI performance job changes.
