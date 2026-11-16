@@ -18,10 +18,9 @@ that any host can embed.
 
 Muhtari is not finished as a universal Atari 7800 compatibility project. It has
 three deliverables: a C library, a headless runner and a libretro core. The
-latest published package is v0.14.0 and includes the selected XM/YM2151 profile.
-Souper mapper support is implemented and merged, but unpublished because the
-v0.15.0 tag still identifies the source that failed its Wasm32 test. The corrected
-source passed later main CI.
+latest published package is v0.16.0 and includes the selected XM/YM2151 profile
+and Souper mapper. The unpublished v0.15.0 draft and tag remain unchanged at the
+source that failed its Wasm32 test.
 
 The pinned title list has 204 entries: 201 are untested and 3 are skipped. Nine
 older Playstead/frontend requirements remain unresolved. GameDrive and BupChip
@@ -38,8 +37,48 @@ is complete only against a finite, explicitly selected title set with evidence
 for every promised title. No universal title-compatibility target has been
 selected, so do not claim the whole emulator is done.
 
-The active v9.0 milestone publishes the already-merged Souper support as a fresh
-v0.16.0 release. It preserves the existing v0.15.0 tag and draft.
+v9.0 published the already-merged Souper support through the existing release
+workflow. Its audit, exact-source release evidence and final main CI are recorded
+in [the v9.0 audit](milestones/v9.0-MILESTONE-AUDIT.md), [the archive](milestones/v9.0-ROADMAP.md)
+and [the phase release receipt](milestones/v9.0-phases/25-publish-the-corrected-souper-mapper/25-RELEASE.md).
+
+## Latest Shipped Milestone: v9.0 Souper package publication
+
+**Goal:** Publish the corrected, already-merged Souper mapper without changing
+emulator behavior or moving the failed v0.15.0 tag.
+
+**Outcome:** Stable v0.16.0 was published from release source `a0319a9c`. The
+exact-source release, archive integrity/provenance, publication and latest-install
+checks passed. The v0.15.0 draft and tag remained unchanged. All four milestone
+requirements passed audit; the only review note is an informational README
+repetition deferred until the overview is next revised.
+
+**Delivery:** Release run
+[43801428444](https://github.com/szTheory/muhtari/actions/runs/43801428444)
+passed. Docs PR [#73](https://github.com/szTheory/muhtari/pull/73) and phase
+closeout PR [#74](https://github.com/szTheory/muhtari/pull/74) merged. Main CI
+passed on its merge commit in
+[run 43841380444](https://github.com/szTheory/muhtari/actions/runs/43841380444);
+the Release workflow passed and skipped package work because no new release
+was created.
+
+**Closeout:** `verified_closeout`; no new artifact was acknowledged. Fifty
+items acknowledged by earlier milestone closes remain suppressed with their
+original verdicts. See [STATE.md](STATE.md) and the v9.0 audit.
+
+**Next:** No successor milestone is selected. The current recommendation and
+strongest alternative are in the [rolling product roadmap](PRODUCT-ROADMAP.md).
+
+## Next Milestone Goals
+
+No successor is selected yet. The current recommendation is a narrowly scoped
+fix for a named, lawful and reproducible title-blocking Atari 7800 defect; no
+such defect is established today. The strongest alternative is to resume
+GameDrive contract qualification only when an authoritative profile, lawful
+independent PCM oracle and finite resource facts are available. See the
+[rolling product roadmap](PRODUCT-ROADMAP.md) for the evidence thresholds and
+ownership boundaries. The 201 untested titles, 3 skipped titles, nine deferred
+v3.0 requirements and original Phase 12/14 stops remain open.
 
 v8.0 GameDrive contract qualification is closed locally. The milestone audit covers all five requirements and passed; both phase verification reports retain passing verdicts. `override_closeout` accepts Phase 23's stale verification fingerprint because it predates the merged timeout follow-up, as allowed by GSD-HANDOFF §3 after merged-head CI passed. The qualification result is **NO-GO** for implementation because the authoritative stream profile, independent exact-profile PCM oracle and finite resource facts remain incomplete. PRs [#67](https://github.com/szTheory/muhtari/pull/67) and [#68](https://github.com/szTheory/muhtari/pull/68) are merged. Exact-main CI passed on the timeout-correction merge commit in [run 43757444707](https://github.com/szTheory/muhtari/actions/runs/43757444707); the Release workflow passed in [run 43757444676](https://github.com/szTheory/muhtari/actions/runs/43757444676) and skipped package publication. No GameDrive implementation, public compatibility change or hardware claim was made. The v0.15.0 tag/draft remains unpublished at its earlier failing source.
 
@@ -51,7 +90,7 @@ Phase 21 completed its source-qualified tune-up with a bounded no-change disposi
 
 Nine v3.0 gaps and every original denied/spent Phase12/14 host/remote scope remain unchanged. Older dirty worktrees stay preserved and root remains canonical. [Milestone audit](milestones/v6.0-MILESTONE-AUDIT.md) and [requirements](milestones/v6.0-REQUIREMENTS.md) retain the exact accepted scope.
 
-## Latest Locally Completed Milestone: v8.0 GameDrive streamed-audio contract qualification
+## Prior Locally Completed Milestone: v8.0 GameDrive streamed-audio contract qualification
 
 **Goal:** Decide whether GameDrive streamed ADPCM has a complete, bounded and lawfully testable contract for a future Muhtari implementation, without guessing at public media, audio or state compatibility.
 
@@ -61,15 +100,9 @@ Nine v3.0 gaps and every original denied/spent Phase12/14 host/remote scope rema
 
 **Delivery:** PRs [#67](https://github.com/szTheory/muhtari/pull/67) and [#68](https://github.com/szTheory/muhtari/pull/68) are merged. Exact-main CI passed at [run 43757444707](https://github.com/szTheory/muhtari/actions/runs/43757444707). Release passed its target checks at [run 43757444676](https://github.com/szTheory/muhtari/actions/runs/43757444676), with package publication skipped. No milestone tag or package version was created; the separate v0.15.0 exact-source stop remains.
 
-**Next:** v9.0 publishes the corrected Souper source as v0.16.0; its requirements and acceptance criteria are in [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md). Preserve the original Phase 12/14 stops, nine deferred v3.0 requirements and unaccepted hardware/platform claims.
-
-## Active Milestone Goals
-
-Publish the corrected, merged Souper mapper support under a fresh v0.16.0
-release using the established source-bound release workflow. Preserve the
-unpublished v0.15.0 tag and draft. Do not add emulator behavior, new
-dependencies, host/device claims or a GameDrive implementation. The acceptance
-criteria are in [v9.0 requirements](REQUIREMENTS.md).
+**At v8.0 closeout:** v9.0 published the corrected Souper source as v0.16.0.
+The original Phase 12/14 stops, nine deferred v3.0 requirements and unaccepted
+hardware/platform claims remain unchanged.
 
 ## Prior Locally Completed Milestone: v7.0 Souper homebrew mapper
 
@@ -206,6 +239,8 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 ### Validated
 
+- ✓ TUNE-13, REL-01, REL-02, DOC-01: published corrected Souper support as v0.16.0, preserved the v0.15.0 draft/tag, passed source-bound release and latest-install gates, and updated availability docs — v9.0, Phase 25; [audit](milestones/v9.0-MILESTONE-AUDIT.md).
+
 - ✓ YM-01–08: one qualified XM/YM2151 profile, deterministic C17 mono synthesis, complete lifecycle/state, native/portable/package consumers and measured bounds — v6.0, Phase 20; shipped as v0.14.0.
 
 - ✓ TUNE-09: current v4 publication records and source-specific measured baseline; required checks retained — v5.0, Phase 17.
@@ -339,6 +374,7 @@ No requirements are assigned to a successor milestone; its scope remains unselec
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
+| Publish corrected Souper through the ordinary feature-release path and keep CI coverage unchanged | A pre-1.0 feature release follows the minor-bump rule; release evidence supports no pipeline change | ✓ v9.0 Phase 25: stable v0.16.0 passed exact-source release and latest-install checks; v0.15.0 stayed unchanged; see [audit](milestones/v9.0-MILESTONE-AUDIT.md) |
 | Keep GameDrive implementation at NO-GO until its profile, independent PCM oracle and finite resource facts are qualified | Prevents guessed stream timing/framing or unlicensed fixture reuse from becoming public media/API/state behavior | ✓ v8.0 Phase 24: all four consumer and compatibility consequences recorded; no implementation or public compatibility change selected |
 | Calibrate only the macOS x64 PAL BIOS predicate deadline from completed matching-lane samples | The exact-source timeout and missing quality artifact share one failed matrix result; measured samples justify a bounded correction without reducing coverage | ✓ v8.0 Phase 23 follow-up: 12 complete suite samples, 5.88 s maximum, 12 s registered timeout; exact-main CI green |
 | Keep CI topology, quality policy, Windows serial order and unrelated deadlines unchanged after v8.0's measured review | The new timeout has a bounded sample-based correction; one critical-path observation does not justify structural or cache changes | ✓ Phase 23: original coverage, fault behavior and job structure remain intact; no safe queue/critical-path change was supported by the reviewed runs |
@@ -404,4 +440,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-15 after closing v8.0*
+*Last updated: 2026-11-16 after shipping and archiving v9.0*

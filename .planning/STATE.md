@@ -2,35 +2,35 @@
 gsd_state_version: "1.0"
 milestone: v9.0
 milestone_name: Publish the corrected Souper mapper package
-current_phase: 25
-status: completed
-stopped_at: Phase 25 complete — all phases complete
-last_updated: "2026-11-16T09:32:38.454Z"
+status: Awaiting next milestone
+stopped_at: Milestone v9.0 archived; successor scope unselected
+last_updated: "2026-11-16T10:29:37.553Z"
 last_activity: 2026-11-16
-last_activity_desc: "Phase 25 shipped as PR #74"
-state_head: 4f47a861d4546efd390e8c9a3b313b80546d534c
+last_activity_desc: Milestone v9.0 completed and archived
+state_head: 9b75e6fea7cf10bafc75c3ff6c58a2bede146146
 progress:
   total_phases: 1
   completed_phases: 1
   total_plans: 1
   completed_plans: 1
   percent: 100
+current_phase: null
 ---
 
 # Project State
 
 ## Project Reference
 
-See [PROJECT.md](PROJECT.md) (updated 2026-11-15), [ROADMAP.md](ROADMAP.md), [REQUIREMENTS.md](REQUIREMENTS.md), [public status](../docs/status.md), [rolling product roadmap](PRODUCT-ROADMAP.md), [v8.0 archive](milestones/v8.0-ROADMAP.md), [v8.0 audit](milestones/v8.0-MILESTONE-AUDIT.md), [v7.0 shipping receipt](milestones/v7.0-SHIP.md) and [v8.0 evidence review](research/next-milestone/2026-11-15-game-drive-qualification.md).
+See [PROJECT.md](PROJECT.md) (updated 2026-11-16), [ROADMAP.md](ROADMAP.md), [public status](../docs/status.md), [rolling product roadmap](PRODUCT-ROADMAP.md), [v9.0 archive](milestones/v9.0-ROADMAP.md), [v9.0 requirements](milestones/v9.0-REQUIREMENTS.md), [v9.0 audit](milestones/v9.0-MILESTONE-AUDIT.md), [v8.0 archive](milestones/v8.0-ROADMAP.md), [v8.0 audit](milestones/v8.0-MILESTONE-AUDIT.md), [v7.0 shipping receipt](milestones/v7.0-SHIP.md) and [v8.0 evidence review](research/next-milestone/2026-11-15-game-drive-qualification.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** Phase 25 execution is complete; final phase PR and v9.0 milestone audit are pending.
+**Current focus:** v9.0 is shipped, audited and archived locally; the archive PR and its main CI are pending. The successor scope remains unselected.
 
 ## Current Position
 
-Phase: 25
-Plan: 1 of 1 complete
-Status: All phases complete; closeout PR pending
-Last activity: 2026-11-16 -- Phase 25 shipped as PR #74
+Phase: Milestone v9.0 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-11-16 — Milestone v9.0 completed and archived
 
 ## Previous Milestone Metrics — v8.0
 
@@ -75,7 +75,7 @@ Inherited todos and optional seeds retain their dispositions except the selected
 
 ## Deferred Items
 
-At v8.0 close, no new items were acknowledged; 50 items acknowledged at earlier closes remain suppressed with their original verdicts. At v7.0 close, one debug-session item was newly acknowledged and 49 were carried forward. Its `unknown` verdict is preserved; suppression expires if the artifact changes. Earlier disclosures from v3.0 and prior closes remain below.
+At v9.0 close, no new items were acknowledged; 50 items acknowledged at earlier closes remain suppressed with their original verdicts. At v8.0 close, no new items were acknowledged; at v7.0 close, one debug-session item was newly acknowledged and 49 were carried forward. Its `unknown` verdict is preserved; suppression expires if the artifact changes. Earlier disclosures from v3.0 and prior closes remain below.
 
 | Category | Item | Status | Deferred At | Milestone |
 |----------|------|--------|-------------|-----------|
@@ -120,18 +120,18 @@ At v8.0 close, no new items were acknowledged; 50 items acknowledged at earlier 
 
 ## Session Continuity
 
-Last session: 2026-11-16T09:25:04Z
-Stopped at: Phase 25 verified and tracked; final phase PR pending
-Resume file: .planning/forensics/report-20261115-1934.md
+Last session: 2026-11-16
+Stopped at: v9.0 release, phase closeout and milestone archive are complete locally; archive PR remains pending.
+Resume file: .planning/milestones/v9.0-MILESTONE-AUDIT.md
 
-Next action: Publish the final Phase 25 closeout PR, confirm required main CI on its merge commit, then audit and archive v9.0. No GameDrive implementation, public compatibility change, or hardware acceptance is authorized.
+Next action: Publish the v9.0 archive PR and confirm green main CI. Then present the successor recommendation and strongest alternative in PRODUCT-ROADMAP.md for owner scope selection. No GameDrive implementation, public compatibility change or hardware acceptance is authorized.
 
 ## Operator Next Steps
 
 
 
 
-- Start the next milestone with $gsd-new-milestone
+- Select the successor milestone scope after the v9.0 archive PR merges; then start `$gsd-new-milestone`.
 
 
 ## Decisions
@@ -162,4 +162,4 @@ Next action: Publish the final Phase 25 closeout PR, confirm required main CI on
 
 ## Next action
 
-v9.0 is selected to publish existing Souper support as v0.16.0; v0.15.0 remains unchanged. After shipment, keep GameDrive at NO-GO until its authoritative profile, independent legal PCM oracle and finite resource facts are available; the strongest technical alternative is a narrowly scoped correction for a lawful, reproducible title-blocking defect. Preserve all original Phase 12/14 host and remote stops.
+v9.0 shipped existing Souper support as v0.16.0; the failed v0.15.0 tag and draft remain unchanged. The successor scope is unselected. The current recommendation is one narrowly scoped fix for a named, lawful, reproducible title-blocking 7800 defect; the strongest alternative is GameDrive contract qualification only after an authoritative profile, independent legal PCM oracle and finite resource facts are available. Preserve all original Phase 12/14 host and remote stops and the nine deferred v3 requirements.
