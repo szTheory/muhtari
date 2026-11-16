@@ -15,6 +15,28 @@ At every milestone boundary, reconcile shipped and partial work, keep unresolved
 debt visible, re-rank the horizons, record why the order changed, promote only
 scoped work, and snapshot this file at close.
 
+## Immediate — publish the merged Souper support
+
+The v7.0 Souper mapper is implemented and merged, but the downloadable package
+still stops at v0.14.0. The attempted v0.15.0 source failed its Wasm32 test; the
+test fix is merged and later main CI passed. The current v9.0 milestone closes
+this delivery gap by publishing the corrected source as v0.16.0 through the
+existing release workflow. Keep the failed v0.15.0 tag and draft unchanged.
+This ships existing behavior; it does not add a hardware claim or new emulator
+feature.
+
+The version choice follows the settled pre-1.0 policy: a feature release bumps
+the minor version (DEC.14 in preparation/DECISIONS.md). The v0.13.1 recovery
+was explicitly a one-time, owner-approved CI-only patch exception; its ship
+receipt says it is not standing policy. A v0.15.1 release would repeat that
+exception, so the recommended path is a fresh feature-level v0.16.0 release.
+See the [v0.13.1 ship receipt](milestones/v5.0-SHIP.md#final-publication-and-current-main-closure--reconciled-2026-11-11).
+
+The strongest alternative is a source-qualified fix for a reproducible,
+title-blocking 7800 defect. None is currently established. GameDrive remains
+blocked on an authoritative profile, a lawful independent PCM oracle and finite
+resource facts. Neither alternative justifies inventing compatibility claims.
+
 ## Completed — ship the YM2151 milestone
 
 v6.0 is implemented, verified, archived and shipped: one source-qualified XM/YM2151
@@ -73,18 +95,17 @@ The v0.15.0 tag/draft still targets the earlier source that failed its exact
 Wasm32 gate; it remains unpublished and was not retargeted. The original
 Phase 12/14 host and remote stops are unchanged.
 
-### Recommendation at the next milestone boundary
+### Next feature recommendation
 
-Keep the successor scope open until an authoritative GameDrive profile, a
-lawful independent exact-profile PCM oracle and finite resource facts are
-available. At that point, a narrowly scoped implementation milestone can be
-considered after the owner separately accepts its concrete API/ABI and state
-consequences. The strongest alternative is one source-qualified correction for
-a reproducible, title-blocking 7800 defect, provided a lawful independent
-fixture and expected result exist. No such defect is currently established.
-BupChip is less ready because its command and media profile remain incomplete.
-Do not start host validation, use the unlicensed sample/encoder, or infer an
-owner-hardware result from this evidence.
+After the Souper package ships, keep the next feature scope open until an
+authoritative GameDrive profile, a lawful independent exact-profile PCM oracle
+and finite resource facts are available. A narrowly scoped implementation can
+then be considered after its concrete API/ABI and state consequences are
+accepted. The strongest alternative remains one source-qualified correction for
+a reproducible, title-blocking defect with a lawful independent fixture and
+expected result. No such defect is established. BupChip remains less ready
+because its command and media profile are incomplete. Do not use the unlicensed
+sample or encoder, start host validation, or infer owner-hardware results.
 
 ## Later — implementation only after qualification
 

@@ -2,11 +2,12 @@
 
 An Atari 7800 ProSystem emulator core in C: a small library, a headless runner and a libretro core for RetroArch.
 
-**Status: early.** Includes a declared XM/[YM2151 digital sound profile](docs/hardware/ym2151.md).
-Evidence covers the rows listed; there is no claim of universal title compatibility.
-See the [compatibility page](docs/compatibility.md) for what has evidence and what does not, and
-[controls and bindings](docs/libretro.md#devices) for the devices the core exposes. Releases are published
-automatically.
+Muhtari has a C library, a headless command-line runner and a libretro core for RetroArch. The host supplies
+the window and audio and input devices.
+
+The latest published release is v0.14.0. Souper mapper support is in the source on main, but has not shipped in
+a downloadable release yet. Compatibility is still being measured; see the [project status](docs/status.md)
+and [compatibility evidence](docs/compatibility.md).
 
 ## Install in RetroArch (macOS, Apple Silicon)
 
@@ -54,6 +55,7 @@ frame 1 sha256 9eb011e22feb3f48da2c0abf3dd8d5236d4d0f5c0e67a732eb2172259e0a05c4
 
 ## Documentation
 
+- [docs/status.md](docs/status.md): what is available, what is missing and how completion is judged.
 - [docs/libretro.md](docs/libretro.md): the RetroArch core's controls, devices, options, BIOS files and achievements.
 - [docs/runner.md](docs/runner.md): `muhtari-run` options, output, exit statuses and the test card.
 - [docs/embedding.md](docs/embedding.md): using the C library from CMake or pkg-config.

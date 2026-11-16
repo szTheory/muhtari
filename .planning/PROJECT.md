@@ -16,6 +16,31 @@ that any host can embed.
 
 ## Current State
 
+Muhtari is not finished as a universal Atari 7800 compatibility project. It has
+three deliverables: a C library, a headless runner and a libretro core. The
+latest published package is v0.14.0 and includes the selected XM/YM2151 profile.
+Souper mapper support is implemented and merged, but unpublished because the
+v0.15.0 tag still identifies the source that failed its Wasm32 test. The corrected
+source passed later main CI.
+
+The pinned title list has 204 entries: 201 are untested and 3 are skipped. Nine
+older Playstead/frontend requirements remain unresolved. GameDrive and BupChip
+streamed audio are not implemented. The public [status page](../docs/status.md)
+summarizes these limits.
+
+### Completion standard
+
+A scoped feature is complete when its source-qualified behavior has deterministic,
+bounded tests across the applicable library, runner and libretro paths; unsupported
+cases are clearly refused; documentation is accurate; and the exact release
+artifact passes required CI and installation checks. Project-wide compatibility
+is complete only against a finite, explicitly selected title set with evidence
+for every promised title. No universal title-compatibility target has been
+selected, so do not claim the whole emulator is done.
+
+The active v9.0 milestone publishes the already-merged Souper support as a fresh
+v0.16.0 release. It preserves the existing v0.15.0 tag and draft.
+
 v8.0 GameDrive contract qualification is closed locally. The milestone audit covers all five requirements and passed; both phase verification reports retain passing verdicts. `override_closeout` accepts Phase 23's stale verification fingerprint because it predates the merged timeout follow-up, as allowed by GSD-HANDOFF §3 after merged-head CI passed. The qualification result is **NO-GO** for implementation because the authoritative stream profile, independent exact-profile PCM oracle and finite resource facts remain incomplete. PRs [#67](https://github.com/szTheory/muhtari/pull/67) and [#68](https://github.com/szTheory/muhtari/pull/68) are merged. Exact-main CI passed on the timeout-correction merge commit in [run 43757444707](https://github.com/szTheory/muhtari/actions/runs/43757444707); the Release workflow passed in [run 43757444676](https://github.com/szTheory/muhtari/actions/runs/43757444676) and skipped package publication. No GameDrive implementation, public compatibility change or hardware claim was made. The v0.15.0 tag/draft remains unpublished at its earlier failing source.
 
 v6.0 YM2151 homebrew sound is implemented, verified and shipped as package v0.14.0. Both phases, all nine current requirements, required local gates and independent review/integration pass. The release workflow and latest-install check passed; PR #61 merged and main CI passed. See the [v6.0 ship receipt](milestones/v6.0-SHIP.md).
@@ -36,11 +61,15 @@ Nine v3.0 gaps and every original denied/spent Phase12/14 host/remote scope rema
 
 **Delivery:** PRs [#67](https://github.com/szTheory/muhtari/pull/67) and [#68](https://github.com/szTheory/muhtari/pull/68) are merged. Exact-main CI passed at [run 43757444707](https://github.com/szTheory/muhtari/actions/runs/43757444707). Release passed its target checks at [run 43757444676](https://github.com/szTheory/muhtari/actions/runs/43757444676), with package publication skipped. No milestone tag or package version was created; the separate v0.15.0 exact-source stop remains.
 
-**Next:** No successor milestone is selected. The current recommendation and strongest alternative are in the [rolling product roadmap](PRODUCT-ROADMAP.md). Preserve the original Phase 12/14 stops, nine deferred v3.0 requirements and unaccepted hardware/platform claims.
+**Next:** v9.0 publishes the corrected Souper source as v0.16.0; its requirements and acceptance criteria are in [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md). Preserve the original Phase 12/14 stops, nine deferred v3.0 requirements and unaccepted hardware/platform claims.
 
-## Next Milestone Goals
+## Active Milestone Goals
 
-No successor scope is selected. At the next milestone boundary, use the rolling roadmap's recommendation and strongest alternative: hold scope until GameDrive's authoritative profile, independent lawful PCM oracle and finite resource facts exist; alternatively, promote one lawful, reproducible title-blocking 7800 correction if its independent expected result is established. Start the scope decision with `$gsd-new-milestone`.
+Publish the corrected, merged Souper mapper support under a fresh v0.16.0
+release using the established source-bound release workflow. Preserve the
+unpublished v0.15.0 tag and draft. Do not add emulator behavior, new
+dependencies, host/device claims or a GameDrive implementation. The acceptance
+criteria are in [v9.0 requirements](REQUIREMENTS.md).
 
 ## Prior Locally Completed Milestone: v7.0 Souper homebrew mapper
 

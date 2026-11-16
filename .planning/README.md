@@ -8,6 +8,7 @@ relevant source links instead of scanning every historical plan.
 |---|---|
 | Shared goals, gamer priorities, writing voice, research posture and provenance | [INTENT.md](INTENT.md) |
 | What ships today and binding constraints | [PROJECT.md](PROJECT.md), [../AGENTS.md](../AGENTS.md) |
+| Public summary of what works, what is missing and what completion means | [../docs/status.md](../docs/status.md) |
 | Current position and next allowed step | [STATE.md](STATE.md) |
 | Current execution contract / requirements | [ROADMAP.md](ROADMAP.md), [v8.0 requirements](REQUIREMENTS.md), and [archived v7.0 requirements](milestones/v7.0-REQUIREMENTS.md) |
 | Immediate, next, mid-term and long-term horizons | [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md) |
@@ -35,11 +36,11 @@ Refresh this index, intent links and rolling horizons when a milestone begins or
 closes. Keep useful findings in ordinary project artifacts; no external memory
 service or bulk lesson export is needed. Detailed plans stay in their phase.
 
-Latest completion: [v7.0 audit](milestones/v7.0-MILESTONE-AUDIT.md) records its
-local closeout; [v7.0-SHIP.md](milestones/v7.0-SHIP.md) records the later PR
-merge and exact-source publication status. The v0.15.0 draft remains unpublished
-on the source that failed Wasm32 CI. [STATE](STATE.md), [continue.md](continue.md),
-and [ROADMAP.md](ROADMAP.md) own the current v8.0 position. Atari 2600 emulation belongs to twentysixhundo; LibFuturo owns
+Latest completion: [v8.0 audit](milestones/v8.0-MILESTONE-AUDIT.md) records the
+GameDrive no-go; [v7.0-SHIP.md](milestones/v7.0-SHIP.md) records the unpublished
+v0.15.0 source and its Wasm32 failure. The active v9.0 scope is to publish the
+corrected Souper source as v0.16.0; see [STATE](STATE.md) and [ROADMAP](ROADMAP.md).
+Atari 2600 emulation belongs to twentysixhundo; LibFuturo owns
 the shared interface and native/browser consumer qualification. Keep those
 responsibilities distinct from Muhtari's machine behavior and release artifacts.
 

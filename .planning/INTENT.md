@@ -3,7 +3,7 @@
 **Source:** owner direction in the 2026-10-29 milestone/onboarding conversation,
 combined with the standing contracts linked below. These are product preferences
 and accepted instructions; technical research and observed behavior have separate
-evidence. Updated 2026-11-10.
+evidence. Updated 2026-11-15.
 
 ## Gamer value comes first
 
@@ -49,6 +49,11 @@ ROMs, BIOS, saves, screenshots and personal results outside Git. The owner verif
 nothing by default; voluntary gameplay feedback is welcome, scoped evidence and
 does not become recurring manual UAT. [Onboarding observations](LESSONS.md#local-player-onboarding-2026-10-29)
 record what was actually observed, without universal compatibility claims.
+
+Owner direction, 2026-11-15: write the GitHub README in plain, friendly language
+for people evaluating or using the project. Keep it short and current. Link a
+maintained status page that says what is available, what remains, and what
+evidence would count as completion; refresh both when the project state changes.
 
 ## Retain useful understanding
 
