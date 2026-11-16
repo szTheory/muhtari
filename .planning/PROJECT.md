@@ -304,7 +304,9 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 ### Active
 
-v10.0 requirements are being defined for the selected headless developer trace.
+- [ ] **TUNE-14**: Complete the recurring evidence-based release and engineering tune-up without weakening required checks.
+- [ ] **TRACE-01–07**: Deliver and document one bounded, deterministic, runner-only instruction and bus-access trace while preserving API 8, existing state formats and the hooks-off cost gate.
+
 The nine unmet v3.0 requirements remain deferred with their original evidence
 and stops; see the [v3.0 archive](milestones/v3.0-MILESTONE-AUDIT.md).
 
