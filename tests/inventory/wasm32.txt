@@ -658,6 +658,7 @@ runner.state.files	portable,runner
 runner.state.options	portable,runner
 runner.state.roundtrip	portable,runner
 runner.stop	portable,runner
+runner.trace.smoke	portable,runner
 runner.usage.boot_bios_no_file	portable,runner
 runner.usage.dump_syntax	portable,runner
 runner.usage.frame_range	portable,runner

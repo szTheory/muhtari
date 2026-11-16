@@ -306,6 +306,9 @@ if(MUHTARI_TESTS)
   enable_testing()
   include(cmake/MuhtariTests.cmake)
   include(tests/tests.cmake)
+  if(TARGET muhtari-test-save-runner)
+    include(tests/runner/trace.cmake)
+  endif()
 endif()
 
 # Explicit maintainer tool: floating point and libm stay outside shipped code
