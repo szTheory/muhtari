@@ -73,7 +73,7 @@ The owner selected this scope on 2026-11-16. The [current requirements](REQUIREM
 Plans:
 - [x] 26-01-PLAN.md — Reconcile release and CI receipts and record the bounded tune-up disposition.
 - [x] 26-02-PLAN.md — Reconcile roadmap execution progress while verification remains pending.
-- [ ] 26-03-PLAN.md — Represent future Phase 27 as explicitly unplanned without debt markers.
+- [x] 26-03-PLAN.md — Represent future Phase 27 as explicitly unplanned without debt markers.
 
 ### Phase 27: Headless developer trace
 
@@ -86,7 +86,7 @@ Plans:
   3. A developer can reproduce a generated or owned diagnostic's exact numeric records and event order, and tracing enabled or disabled produces identical frame and canonical state hashes.
   4. Existing consumers retain public API 8, ABI 1 and all current state formats. Trace callbacks and output buffers remain outside emulated machine state, instrumentation is selected only for calls with tracing installed, and tracing disabled still passes the existing hooks-off instruction-cost gate.
   5. A developer can follow runner documentation covering invocation, instruction versus bus address filtering, record fields, bounds, truncation and known limits. Committed fixtures and trace evidence contain no ROM, BIOS or save bytes beyond the manifest.
-**Plans**: TBD
+**Plans**: 0 plans (unplanned)
 
 ## Acceptance and boundaries
 
@@ -102,7 +102,7 @@ The nine deferred v3.0 requirements and all original Phase 12/14 host/remote sto
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 26. Measured milestone tune-up | 2/3 | Gap closure ready; verification pending | - |
-| 27. Headless developer trace | 0/TBD | Not started | - |
+| 26. Measured milestone tune-up | 3/3 | Executed; verification pending | - |
+| 27. Headless developer trace | 0/0 | Unplanned | - |
 
 **Coverage:** All 8 v1 requirements map to exactly one phase: TUNE-14 to Phase 26 and TRACE-01–07 to Phase 27. No orphaned or duplicated requirements.
