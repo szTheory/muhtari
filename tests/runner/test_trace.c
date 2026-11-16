@@ -201,6 +201,18 @@ static void free_trace(trace_file *trace)
     trace->events = NULL;
 }
 
+static void validate_trace(const char *path, const char *expected_status)
+{
+    trace_file trace;
+    int valid = read_trace(path, &trace);
+    CHECK(valid);
+    if (valid && strcmp(expected_status, "complete") == 0)
+        CHECK(!trace.truncated);
+    else if (valid && strcmp(expected_status, "truncated") == 0)
+        CHECK(trace.truncated);
+    free_trace(&trace);
+}
+
 static void expect_record(const record *got, const record *want)
 {
     CHECK_EQ_U64(got->tick, want->tick);
@@ -665,6 +677,10 @@ int main(int argc, char **argv)
         return measure_trace(argv[2]);
     if (argc == 3 && strcmp(argv[1], "oracle") == 0) {
         test_oracle(argv[2]);
+        CHECK_DONE();
+    }
+    if (argc == 4 && strcmp(argv[1], "validate") == 0) {
+        validate_trace(argv[2], argv[3]);
         CHECK_DONE();
     }
     if (argc == 4 && strcmp(argv[1], "filter") == 0) {

@@ -31,7 +31,8 @@ enum {
     SAVE_CLOSE,
     SAVE_REPLACE,
     STATE_READ,
-    STATE_CLOSE
+    STATE_CLOSE,
+    TRACE_ALLOC
 };
 static int io_fault;
 static int output_fault;
@@ -41,6 +42,9 @@ static int time_trace_write;
 static uint64_t trace_write_started_ns, trace_write_finished_ns;
 static unsigned frames_run, temp_opens, replacements;
 static unsigned create_calls;
+static unsigned trace_error_reports, trace_alloc_reports, trace_stderr_reports;
+static unsigned trace_missing_reports, trace_detach_checks;
+static int assert_trace_detached;
 static unsigned change_at, request_at, stop_at, request_during_write;
 static int change_every;
 static unsigned replaced_at[128];
@@ -55,6 +59,8 @@ static DWORD WINAPI concurrent_flush(LPVOID unused)
 }
 #endif
 static int reject_frame;
+static unsigned reject_at;
+static muhtari *trace_instance;
 static FILE *import_stream, *save_stream;
 static int state_fd = -1;
 static FILE *state_stream;
@@ -66,6 +72,21 @@ static const uint8_t *expected_firmware;
 static unsigned notice_stub, notice_unknown, notice_signature, notice_sha1;
 static int test_print(FILE *f, const char *format, ...)
 {
+    if (strstr(format, "cannot serialize or commit trace file") != NULL) {
+        trace_error_reports++;
+        if (f == stderr)
+            trace_stderr_reports++;
+    }
+    if (strstr(format, "out of memory for trace capture") != NULL) {
+        trace_alloc_reports++;
+        if (f == stderr)
+            trace_stderr_reports++;
+    }
+    if (strstr(format, "selected trace frame did not complete") != NULL) {
+        trace_missing_reports++;
+        if (f == stderr)
+            trace_stderr_reports++;
+    }
     if (strstr(format, "signature-only stub") != NULL)
         notice_stub++;
     if (strstr(format, "unknown HSC firmware") != NULL)
@@ -84,6 +105,11 @@ static void *test_malloc(size_t size)
 {
     if (track_runner_allocations && size > largest_runner_allocation)
         largest_runner_allocation = size;
+    if (io_fault == TRACE_ALLOC &&
+        size == 65536u * sizeof(struct muhtari__trace_event)) {
+        errno = ENOMEM;
+        return NULL;
+    }
     return malloc(size);
 }
 
@@ -236,6 +262,8 @@ static BOOL test_move(LPCSTR from, LPCSTR to, DWORD flags)
 #endif
 static muhtari_status test_frame(muhtari *m, muhtari_frame *io)
 {
+    if (assert_trace_detached)
+        trace_instance = m;
     if (expected_firmware != NULL && frames_run == 0u) {
         muhtari_const_span span = {0};
         span.size = (uint32_t)sizeof span;
@@ -262,9 +290,10 @@ static muhtari_status test_frame(muhtari *m, muhtari_frame *io)
     }
     if (frames_run == stop_at)
         request_stop();
-    return reject_frame ? MUHTARI_STATUS_ERR_BIOS_REJECTED_CART : st;
+    return reject_frame || frames_run == reject_at ? MUHTARI_STATUS_ERR_BIOS_REJECTED_CART : st;
 }
 int runner_entry(int argc, char **argv);
+void test_destroy(muhtari *m);
 #define main runner_entry
 #define malloc test_malloc
 #define fprintf test_print
@@ -283,7 +312,9 @@ int runner_entry(int argc, char **argv);
 #define rename test_rename
 #define MoveFileExA test_move
 #define muhtari_run_frame test_frame
+#define muhtari_destroy test_destroy
 #include "../../runner/main.c"
+#undef muhtari_destroy
 #undef muhtari_run_frame
 #undef rename
 #undef MoveFileExA
@@ -303,6 +334,15 @@ int runner_entry(int argc, char **argv);
 #undef malloc
 #undef fprintf
 #include "../../runner/stop.c"
+
+void test_destroy(muhtari *m)
+{
+    if (assert_trace_detached) {
+        CHECK(m->trace_callback == NULL && m->trace_user == NULL);
+        trace_detach_checks++;
+    }
+    muhtari_destroy(m);
+}
 
 static void request_flush(void)
 {
@@ -393,6 +433,215 @@ static int trace_snapshot(const char *path, uint8_t *bytes, size_t capacity, siz
         return -1;
     *length = n;
     return 0;
+}
+
+static unsigned long trace_test_pid(void)
+{
+#ifdef _WIN32
+    return (unsigned long)GetCurrentProcessId();
+#elif defined(__wasi__)
+    return 0UL;
+#else
+    return (unsigned long)getpid();
+#endif
+}
+
+static void trace_temp_path(char *path, size_t capacity, const char *destination, unsigned attempt)
+{
+    int n = snprintf(path, capacity, "%s.tmp.%lu.%u", destination, trace_test_pid(), attempt);
+    CHECK(n > 0 && (size_t)n < capacity);
+}
+
+static void trace_check_temps(const char *destination, int preserved_attempt)
+{
+    char path[1200];
+    for (unsigned attempt = 0u; attempt < 32u; attempt++) {
+        trace_temp_path(path, sizeof path, destination, attempt);
+        CHECK_EQ_U64(trace_file_exists(path), attempt == (unsigned)preserved_attempt);
+    }
+}
+
+static void trace_check_bytes(const char *path, const uint8_t *expected, size_t expected_n)
+{
+    uint8_t actual[8192];
+    size_t actual_n = 0u;
+    CHECK(expected_n <= sizeof actual);
+    CHECK_EQ_U64(trace_snapshot(path, actual, sizeof actual, &actual_n), 0u);
+    CHECK_EQ_U64(actual_n, expected_n);
+    if (actual_n == expected_n)
+        CHECK(memcmp(actual, expected, expected_n) == 0);
+}
+
+static void trace_reset_io(void)
+{
+    io_fault = IO_OK;
+    output_fault = 0;
+    track_runner_allocations = 0;
+    largest_runner_allocation = 0u;
+    time_trace_write = 0;
+    trace_write_started_ns = trace_write_finished_ns = 0u;
+    frames_run = temp_opens = replacements = create_calls = 0u;
+    trace_error_reports = trace_alloc_reports = trace_stderr_reports = 0u;
+    trace_missing_reports = trace_detach_checks = 0u;
+    assert_trace_detached = 1;
+    change_at = request_at = stop_at = request_during_write = 0u;
+    change_every = 0;
+    reject_frame = 0;
+    reject_at = 0u;
+    trace_instance = NULL;
+    import_stream = save_stream = NULL;
+    state_fd = -1;
+    state_stream = NULL;
+    state_read_requested = 0u;
+    state_probe_reads = 0u;
+    expected_import = NULL;
+    expected_bytes = 0u;
+    expected_firmware = NULL;
+    stop_flag = flush_flag = 0;
+}
+
+static int trace_run_cli(char *rom, char *trace, const char *frames,
+                         const char *frame, const char *limit)
+{
+    char *args[12];
+    char frames_copy[16], frame_copy[16], limit_copy[16];
+    int frames_n = snprintf(frames_copy, sizeof frames_copy, "%s", frames);
+    int frame_n = snprintf(frame_copy, sizeof frame_copy, "%s", frame);
+    int limit_n = limit == NULL ? 0 : snprintf(limit_copy, sizeof limit_copy, "%s", limit);
+    CHECK(frames_n > 0 && (size_t)frames_n < sizeof frames_copy);
+    CHECK(frame_n > 0 && (size_t)frame_n < sizeof frame_copy);
+    CHECK(limit == NULL || (limit_n > 0 && (size_t)limit_n < sizeof limit_copy));
+    if (frames_n <= 0 || (size_t)frames_n >= sizeof frames_copy || frame_n <= 0 ||
+        (size_t)frame_n >= sizeof frame_copy ||
+        (limit != NULL && (limit_n <= 0 || (size_t)limit_n >= sizeof limit_copy)))
+        return 2;
+    int count = 0;
+    args[count++] = "muhtari-run";
+    args[count++] = "--frames";
+    args[count++] = frames_copy;
+    args[count++] = "--trace";
+    args[count++] = trace;
+    args[count++] = "--trace-frame";
+    args[count++] = frame_copy;
+    args[count++] = "--trace-range";
+    args[count++] = "0:65535";
+    if (limit != NULL) {
+        args[count++] = "--trace-limit";
+        args[count++] = limit_copy;
+    }
+    args[count++] = rom;
+    CHECK(count <= (int)(sizeof args / sizeof args[0]));
+    return runner_entry(count, args);
+}
+
+static void trace_io(const char *dir)
+{
+    static const uint8_t sentinel[] = "previous complete capture";
+    static const int faults[] = {TRACE_ALLOC, SAVE_CREATE, SAVE_FDOPEN, SAVE_PARTIAL,
+                                 SAVE_WRITE, SAVE_FLUSH, SAVE_SYNC, SAVE_CLOSE, SAVE_REPLACE};
+    char rom[1024], destination[1024], candidate[1200];
+    (void)snprintf(rom, sizeof rom, "%s/trace-io.a78", dir);
+    (void)snprintf(destination, sizeof destination, "%s/trace-io.jsonl", dir);
+    cartridge(rom, 0u, 0);
+
+    for (size_t i = 0u; i < sizeof faults / sizeof faults[0]; i++) {
+        write_bytes(destination, sentinel, sizeof sentinel);
+        trace_reset_io();
+        io_fault = faults[i];
+        unsigned status = (unsigned)trace_run_cli(rom, destination, "1", "1", NULL);
+        CHECK_EQ_U64(status, 1u);
+        CHECK_EQ_U64(frames_run, faults[i] == TRACE_ALLOC ? 0u : 1u);
+        CHECK_EQ_U64(create_calls, faults[i] == TRACE_ALLOC ? 0u : 1u);
+        CHECK_EQ_U64(temp_opens, faults[i] == TRACE_ALLOC || faults[i] == SAVE_CREATE ||
+                                     faults[i] == SAVE_FDOPEN
+                                 ? 0u
+                                 : 1u);
+        CHECK_EQ_U64(replacements, faults[i] == SAVE_REPLACE ? 1u : 0u);
+        CHECK_EQ_U64(trace_alloc_reports, faults[i] == TRACE_ALLOC ? 1u : 0u);
+        CHECK_EQ_U64(trace_error_reports, faults[i] == TRACE_ALLOC ? 0u : 1u);
+        CHECK_EQ_U64(trace_stderr_reports, 1u);
+        CHECK_EQ_U64(trace_detach_checks, faults[i] == TRACE_ALLOC ? 0u : 1u);
+        CHECK(faults[i] != TRACE_ALLOC || trace_instance == NULL);
+        trace_check_bytes(destination, sentinel, sizeof sentinel);
+        trace_check_temps(destination, -1);
+    }
+
+    /* The first sibling candidate is not ours when exclusive creation finds it. */
+    write_bytes(destination, sentinel, sizeof sentinel);
+    trace_temp_path(candidate, sizeof candidate, destination, 0u);
+    static const uint8_t foreign[] = "unowned temporary";
+    write_bytes(candidate, foreign, sizeof foreign);
+    trace_reset_io();
+    io_fault = SAVE_WRITE;
+    CHECK_EQ_U64(trace_run_cli(rom, destination, "1", "1", NULL), 1u);
+    CHECK_EQ_U64(frames_run, 1u);
+    CHECK_EQ_U64(create_calls, 2u);
+    CHECK_EQ_U64(temp_opens, 1u);
+    CHECK_EQ_U64(replacements, 0u);
+    CHECK_EQ_U64(trace_detach_checks, 1u);
+    CHECK_EQ_U64(trace_missing_reports, 0u);
+    trace_check_bytes(destination, sentinel, sizeof sentinel);
+    trace_check_bytes(candidate, foreign, sizeof foreign);
+    trace_check_temps(destination, 0);
+    CHECK(remove(candidate) == 0);
+
+    write_bytes(destination, sentinel, sizeof sentinel);
+    trace_reset_io();
+    CHECK_EQ_U64(trace_run_cli(rom, destination, "1", "1", NULL), 0u);
+    CHECK_EQ_U64(frames_run, 1u);
+    CHECK_EQ_U64(replacements, 1u);
+    CHECK_EQ_U64(trace_error_reports, 0u);
+    CHECK_EQ_U64(trace_detach_checks, 1u);
+    CHECK(trace_file_exists(destination));
+    trace_check_temps(destination, -1);
+
+    (void)snprintf(destination, sizeof destination, "%s/trace-io-truncated.jsonl", dir);
+    write_bytes(destination, sentinel, sizeof sentinel);
+    trace_reset_io();
+    CHECK_EQ_U64(trace_run_cli(rom, destination, "1", "1", "1"), 0u);
+    CHECK_EQ_U64(frames_run, 1u);
+    CHECK_EQ_U64(replacements, 1u);
+    CHECK_EQ_U64(trace_detach_checks, 1u);
+    CHECK(trace_file_exists(destination));
+    trace_check_temps(destination, -1);
+
+    (void)snprintf(destination, sizeof destination, "%s/trace-io-refused.jsonl", dir);
+    write_bytes(destination, sentinel, sizeof sentinel);
+    trace_reset_io();
+    reject_at = 1u;
+    CHECK_EQ_U64(trace_run_cli(rom, destination, "1", "1", NULL), 77u);
+    CHECK_EQ_U64(frames_run, 1u);
+    CHECK_EQ_U64(replacements, 0u);
+    CHECK_EQ_U64(trace_detach_checks, 1u);
+    CHECK_EQ_U64(trace_missing_reports, 0u);
+    trace_check_bytes(destination, sentinel, sizeof sentinel);
+    trace_check_temps(destination, -1);
+
+    (void)snprintf(destination, sizeof destination, "%s/trace-io-stopped.jsonl", dir);
+    write_bytes(destination, sentinel, sizeof sentinel);
+    trace_reset_io();
+    stop_at = 1u;
+    CHECK_EQ_U64(trace_run_cli(rom, destination, "2", "2", NULL), 1u);
+    CHECK_EQ_U64(frames_run, 1u);
+    CHECK_EQ_U64(replacements, 0u);
+    CHECK_EQ_U64(trace_detach_checks, 1u);
+    CHECK_EQ_U64(trace_missing_reports, 1u);
+    CHECK_EQ_U64(trace_stderr_reports, 1u);
+    trace_check_bytes(destination, sentinel, sizeof sentinel);
+    trace_check_temps(destination, -1);
+
+    /* Once frame two has a truthful footer, a later unrelated refusal cannot revoke it. */
+    (void)snprintf(destination, sizeof destination, "%s/trace-io-later-failure.jsonl", dir);
+    write_bytes(destination, sentinel, sizeof sentinel);
+    trace_reset_io();
+    reject_at = 3u;
+    CHECK_EQ_U64(trace_run_cli(rom, destination, "3", "2", NULL), 77u);
+    CHECK_EQ_U64(frames_run, 3u);
+    CHECK_EQ_U64(replacements, 1u);
+    CHECK_EQ_U64(trace_detach_checks, 1u);
+    CHECK_EQ_U64(trace_missing_reports, 0u);
+    CHECK(trace_file_exists(destination));
+    trace_check_temps(destination, -1);
 }
 
 static void trace_expect_usage(int argc, char **argv, const char *protected_path)
@@ -1316,6 +1565,8 @@ int main(int argc, char **argv)
         trace_arguments(argv[1]);
     else if (strcmp(argv[2], "trace_paths") == 0)
         trace_paths(argv[1]);
+    else if (strcmp(argv[2], "trace_io") == 0)
+        trace_io(argv[1]);
     else if (argc == 6 && strcmp(argv[2], "trace_measure") == 0)
         trace_measure(argv[3], argv[1], argv[4], argv[5]);
 #ifndef __wasi__

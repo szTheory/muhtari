@@ -315,6 +315,34 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     if(NOT harness_rc STREQUAL "0" OR NOT harness_out STREQUAL "")
       message(FATAL_ERROR "actual-main trace path ownership matrix failed or wrote stdout: ${harness_rc}\n${harness_out}${harness_err}")
     endif()
+  elseif(CASE STREQUAL "io")
+    file(MAKE_DIRECTORY "${DIR}")
+    execute_process(COMMAND ${EMULATOR} "${SAVE_TEST}" "${DIR}" trace_io
+      RESULT_VARIABLE harness_rc OUTPUT_VARIABLE harness_out ERROR_VARIABLE harness_err TIMEOUT 30)
+    if(NOT harness_rc STREQUAL "0" OR NOT harness_out STREQUAL "")
+      message(FATAL_ERROR "actual-main trace I/O fault matrix failed or wrote stdout: ${harness_rc}\n${harness_out}${harness_err}")
+    endif()
+    foreach(name_status IN ITEMS
+        "trace-io.jsonl;complete"
+        "trace-io-truncated.jsonl;truncated"
+        "trace-io-later-failure.jsonl;complete")
+      list(GET name_status 0 name)
+      list(GET name_status 1 expected_status)
+      execute_process(COMMAND ${EMULATOR} "${TRACE_TEST}" validate "${DIR}/${name}" "${expected_status}"
+        RESULT_VARIABLE valid OUTPUT_VARIABLE valid_out ERROR_VARIABLE valid_err TIMEOUT 20)
+      if(NOT valid STREQUAL "0")
+        message(FATAL_ERROR "trace I/O case ${name} did not have a valid terminal footer: ${valid}\n${valid_out}${valid_err}")
+      endif()
+    endforeach()
+    file(STRINGS "${DIR}/trace-io.jsonl" rows)
+    list(POP_BACK rows)
+    string(JOIN "\n" interrupted ${rows})
+    file(WRITE "${DIR}/trace-interrupted.jsonl" "${interrupted}\n")
+    execute_process(COMMAND ${EMULATOR} "${TRACE_TEST}" validate "${DIR}/trace-interrupted.jsonl" complete
+      RESULT_VARIABLE rejected OUTPUT_VARIABLE rejected_out ERROR_VARIABLE rejected_err TIMEOUT 20)
+    if(rejected STREQUAL "0")
+      message(FATAL_ERROR "trace consumer accepted an interrupted JSONL prefix without a terminal footer:\n${rejected_out}${rejected_err}")
+    endif()
   else()
     message(FATAL_ERROR "unknown trace CASE '${CASE}'")
   endif()
@@ -335,7 +363,7 @@ muhtari_add_test(NAME runner.trace.smoke
     "-DSAVE_TEST=$<TARGET_FILE:muhtari-test-save-runner>" "-DRUN=$<TARGET_FILE:muhtari-run>"
     "-DDIR=${PROJECT_BINARY_DIR}/tests/trace-smoke" -DCASE=smoke -P ${CMAKE_CURRENT_LIST_FILE}
   LABELS runner portable TIMEOUT 30)
-foreach(case IN ITEMS arguments bounds filters limits paths oracle)
+foreach(case IN ITEMS arguments bounds filters io limits paths oracle)
   file(MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/tests/trace-${case}")
   muhtari_add_test(NAME runner.trace.${case}
     COMMAND ${CMAKE_COMMAND} "-DEMULATOR=${trace_emulator}"
