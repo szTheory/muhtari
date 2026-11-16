@@ -14,19 +14,19 @@ Add one opt-in, bounded instruction and CPU bus-access trace to `muhtari-run`. A
 ## Implementation Decisions
 
 ### Trace selection and event meaning
-- Use explicit runner options for a trace file, one invocation frame, and an inclusive 16-bit address range. Number invocation frames from 1, matching `--hash-frame` and `--dump-frame`.
-- Apply the range independently to an instruction's starting PC and to each CPU-issued bus access address. Include matching instruction and bus records in the order the emulator observes them; do not sort records after capture. A bus record includes address, read/write direction, value, tick, beam position and CPU context.
-- Keep this first trace CPU-focused. Do not claim MARIA DMA or other bus-master coverage; those need a separate event-source contract and remain a later observability option.
+- **D-01:** Use explicit runner options for a trace file, one invocation frame, and an inclusive 16-bit address range. Number invocation frames from 1, matching `--hash-frame` and `--dump-frame`.
+- **D-02:** Apply the range independently to an instruction's starting PC and to each CPU-issued bus access address. Include matching instruction and bus records in the order the emulator observes them; do not sort records after capture. A bus record includes address, read/write direction, value, tick, beam position and CPU context.
+- **D-03:** Keep this first trace CPU-focused. Do not claim MARIA DMA or other bus-master coverage; those need a separate event-source contract and remain a later observability option.
 
 ### Output and bounds
-- Write trace records to a separate file so existing stdout reports retain their current format and order. Prefer a small, versioned JSON Lines record format with numeric machine fields and no new dependency.
-- Require explicit frame and range selectors when tracing. Use a finite default record limit and a finite hard maximum; derive the values from the checked memory bound in planning rather than introducing an unlimited mode. Reject malformed, out-of-run frame, reversed/out-of-range address, zero, and over-maximum limit values before emulation.
-- When another matching event arrives after the configured record limit, stop capturing but let emulation finish. Mark the trace explicitly as truncated; exact-limit output with no additional matching event remains complete. Treat trace file open/write/close failure as runner I/O failure (exit 1) and ensure an incomplete file cannot be mistaken for complete output.
+- **D-04:** Write trace records to a separate file so existing stdout reports retain their current format and order. Prefer a small, versioned JSON Lines record format with numeric machine fields and no new dependency.
+- **D-05:** Require explicit frame and range selectors when tracing. Use a finite default record limit and a finite hard maximum; derive the values from the checked memory bound in planning rather than introducing an unlimited mode. Reject malformed, out-of-run frame, reversed/out-of-range address, zero, and over-maximum limit values before emulation.
+- **D-06:** When another matching event arrives after the configured record limit, stop capturing but let emulation finish. Mark the trace explicitly as truncated; exact-limit output with no additional matching event remains complete. Treat trace file open/write/close failure as runner I/O failure (exit 1) and ensure an incomplete file cannot be mistaken for complete output.
 
 ### Compatibility and deterministic behavior
-- Add only a private per-instance observer seam for the runner. Keep callbacks and capture storage outside serialized machine state; do not change the public header, API/ABI, behavior revision, or state formats. If a public observer contract or compatibility version change becomes necessary, stop for an owner decision before expanding scope.
-- Reuse the settled dual-compiled traced-loop design: select instrumentation at run entry only when tracing is installed, and retain the existing hooks-off instructions-per-frame limit.
-- The generated numeric acceptance must pin event fields and same-tick order. Trace on/off runs use identical invocation inputs and compare every applicable frame hash and canonical state hash. Committed evidence contains no ROM, BIOS or save bytes outside the fixture manifest.
+- **D-07:** Add only a private per-instance observer seam for the runner. Keep callbacks and capture storage outside serialized machine state; do not change the public header, API/ABI, behavior revision, or state formats. If a public observer contract or compatibility version change becomes necessary, stop for an owner decision before expanding scope. — **Reversibility:** one-way — A published callback and API version become an embedder contract and require a compatibility transition to remove.
+- **D-08:** Reuse the settled dual-compiled traced-loop design: select instrumentation at run entry only when tracing is installed, and retain the existing hooks-off instructions-per-frame limit.
+- **D-09:** The generated numeric acceptance must pin event fields and same-tick order. Trace on/off runs use identical invocation inputs and compare every applicable frame hash and canonical state hash. Committed evidence contains no ROM, BIOS or save bytes outside the fixture manifest.
 
 ### Reviewed Todos
 - The five keyword matches from `todo.match-phase` were checked and excluded: they concern the required Wasm CI lane, Phase 2 ROM/nightly work, a Phase 2 re-review, Dependabot/release checks, and Phase 11 review notes. None is trace work, so none is folded into this phase.
