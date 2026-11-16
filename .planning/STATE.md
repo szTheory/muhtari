@@ -4,10 +4,10 @@ milestone: v9.0
 milestone_name: Publish the corrected Souper mapper package
 status: Awaiting next milestone
 stopped_at: Milestone v9.0 archived; successor scope unselected
-last_updated: "2026-11-16T10:29:37.553Z"
+last_updated: "2026-11-16T12:22:49Z"
 last_activity: 2026-11-16
-last_activity_desc: Milestone v9.0 completed and archived
-state_head: 9b75e6fea7cf10bafc75c3ff6c58a2bede146146
+last_activity_desc: v9.0 archive PR #75 merged; final main CI and Release passed
+state_head: bac988bea6a4ec070943c11b83298ac1eee5a8c3
 progress:
   total_phases: 1
   completed_phases: 1
@@ -23,14 +23,14 @@ current_phase: null
 
 See [PROJECT.md](PROJECT.md) (updated 2026-11-16), [ROADMAP.md](ROADMAP.md), [public status](../docs/status.md), [rolling product roadmap](PRODUCT-ROADMAP.md), [v9.0 archive](milestones/v9.0-ROADMAP.md), [v9.0 requirements](milestones/v9.0-REQUIREMENTS.md), [v9.0 audit](milestones/v9.0-MILESTONE-AUDIT.md), [v8.0 archive](milestones/v8.0-ROADMAP.md), [v8.0 audit](milestones/v8.0-MILESTONE-AUDIT.md), [v7.0 shipping receipt](milestones/v7.0-SHIP.md) and [v8.0 evidence review](research/next-milestone/2026-11-15-game-drive-qualification.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** v9.0 is shipped, audited and archived locally; the archive PR and its main CI are pending. The successor scope remains unselected.
+**Current focus:** v9.0 is shipped, audited, archived and merged. Archive PR #75 passed exact-head CI; main CI passed on its merge commit in [run 43854355858](https://github.com/szTheory/muhtari/actions/runs/43854355858), and Release passed with package work skipped in [run 43854356086](https://github.com/szTheory/muhtari/actions/runs/43854356086). The successor scope remains unselected.
 
 ## Current Position
 
 Phase: Milestone v9.0 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-11-16 — Milestone v9.0 completed and archived
+Last activity: 2026-11-16 — v9.0 archive PR #75 merged; exact-main CI and Release passed
 
 ## Previous Milestone Metrics — v8.0
 
@@ -120,18 +120,18 @@ At v9.0 close, no new items were acknowledged; 50 items acknowledged at earlier 
 
 ## Session Continuity
 
-Last session: 2026-11-16
-Stopped at: v9.0 release, phase closeout and milestone archive are complete locally; archive PR remains pending.
-Resume file: .planning/milestones/v9.0-MILESTONE-AUDIT.md
+Last session: 2026-11-16T12:22:49Z
+Stopped at: v9.0 is shipped, audited, archived and merged; final main CI and Release passed. Successor scope is unselected.
+Resume file: .planning/PRODUCT-ROADMAP.md
 
-Next action: Publish the v9.0 archive PR and confirm green main CI. Then present the successor recommendation and strongest alternative in PRODUCT-ROADMAP.md for owner scope selection. No GameDrive implementation, public compatibility change or hardware acceptance is authorized.
+Next action: Owner selects the successor scope from the recommendation and strongest alternative in PRODUCT-ROADMAP.md; then run `$gsd-new-milestone`. No GameDrive implementation, public compatibility change or hardware acceptance is authorized.
 
 ## Operator Next Steps
 
 
 
 
-- Select the successor milestone scope after the v9.0 archive PR merges; then start `$gsd-new-milestone`.
+- Select the successor milestone scope using the recommendation and strongest alternative in PRODUCT-ROADMAP.md; then start `$gsd-new-milestone`.
 
 
 ## Decisions
