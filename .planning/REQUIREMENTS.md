@@ -18,7 +18,7 @@
 - [x] **TRACE-04**: A generated or owned diagnostic fixture produces an exact numeric trace oracle, and enabling tracing leaves the fixture's frame and canonical state hashes unchanged.
 - [x] **TRACE-05**: The trace remains runner-only, preserves public API 8, ABI 1 and existing state formats, and keeps callback state and output buffers outside emulated machine state.
 - [ ] **TRACE-06**: With tracing disabled, the core preserves the existing hooks-off instruction-cost gate; instrumentation is selected only for calls that have tracing installed.
-- [ ] **TRACE-07**: Runner documentation describes trace invocation, filtering, record fields, output bounds, truncation and known limits; committed fixtures and logs contain no ROM, BIOS or save bytes beyond the manifest.
+- [x] **TRACE-07**: Runner documentation describes trace invocation, filtering, record fields, output bounds, truncation and known limits; committed fixtures and logs contain no ROM, BIOS or save bytes beyond the manifest.
 
 ## v2 Requirements
 
@@ -52,7 +52,7 @@ Deferred pending demonstrated users and a separate scope decision.
 | TRACE-04 | Phase 27 | Complete |
 | TRACE-05 | Phase 27 | Complete |
 | TRACE-06 | Phase 27 | Pending |
-| TRACE-07 | Phase 27 | Pending |
+| TRACE-07 | Phase 27 | Complete |
 
 **Coverage:**
 - v1 requirements: 8 total
