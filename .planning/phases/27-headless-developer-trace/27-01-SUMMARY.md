@@ -38,7 +38,8 @@ key-files:
 key-decisions:
   - Keep trace callbacks private and per-instance, outside serialized state and public compatibility surfaces.
   - Select traced execution at frame entry; the measured hooks-off instruction-cost gate remains for plan 27-03.
-requirements-completed: [TRACE-01, TRACE-02, TRACE-04, TRACE-05, TRACE-06]
+requirements-completed: [TRACE-01, TRACE-02, TRACE-04, TRACE-05]
+requirements-pending: [TRACE-06]
 coverage:
   - id: D1
     description: The runner captures one selected invocation frame and independently filters instruction PCs and CPU bus addresses.
@@ -73,12 +74,12 @@ coverage:
         status: pass
     human_judgment: false
   - id: D5
-    description: The trace-disabled build omits traced support and refuses trace requests; the measured hooks-off instruction-cost gate remains assigned to plan 27-03.
+    description: The trace-disabled build omits traced support and refuses trace requests; the instruction-cost requirement remains unverified until plan 27-03.
     requirement: TRACE-06
     verification:
       - kind: integration
         ref: "cmake -S . -B build/trace-off -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_COMPILE_WARNING_AS_ERROR=ON -DMUHTARI_TRACE_LOOP=OFF -DMUHTARI_TESTS=OFF -DMUHTARI_BUILD_LIBRETRO=OFF && cmake --build build/trace-off --target muhtari-run (exit 0; run URL: N/A-local); trace request returned 77 with MUHTARI_TRACE_LOOP=OFF refusal (run URL: N/A-local)"
-        status: pass
+        status: unknown
     human_judgment: false
 duration: 79min
 completed: 2026-11-16
@@ -190,4 +191,5 @@ Plan 27-02 can add invalid path, output failure, and truncation fault controls o
 
 - SUMMARY.md exists at the required phase path.
 - The phase deferred-items.md records the existing WINDOWS ledger mismatch.
+- TRACE-06 remains pending for the 27-03 performance measurement; no hooks-off cost claim is made.
 - Task commits ad28080, 9720d79 and 99e5b69 are ancestors of the worktree HEAD.
