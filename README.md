@@ -6,8 +6,9 @@ Muhtari has a C library, a headless command-line runner and a libretro core for 
 the window and audio and input devices.
 
 The latest published release is v0.14.0. Souper mapper support is in the source on main, but has not shipped in
-a downloadable release yet. Compatibility is still being measured; see the [project status](docs/status.md)
-and [compatibility evidence](docs/compatibility.md).
+a downloadable release yet. Compatibility is still being measured.
+Evidence covers the rows listed; there is no claim of universal title compatibility.
+See the [project status](docs/status.md) and [compatibility evidence](docs/compatibility.md).
 
 ## Install in RetroArch (macOS, Apple Silicon)
 
