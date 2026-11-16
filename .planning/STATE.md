@@ -1,18 +1,19 @@
 ---
 gsd_state_version: "1.0"
 milestone: v9.0
-status: v9.0 selected; Phase 25 ready for autonomous discussion and planning
-stopped_at: v9.0 scope recorded; phase discussion not started
-last_updated: "2026-11-16T00:40:00.000Z"
-last_activity: 2026-11-15
-last_activity_desc: "v9.0 Souper release milestone scoped"
-state_head: a252aeb7dfc6a54a884ffc66995d445d75d531fc
 milestone_name: Publish the corrected Souper mapper package
 current_phase: 25
+current_phase_name: Publish the corrected Souper mapper
+status: v9.0 selected; Phase 25 ready for autonomous discussion and planning
+stopped_at: v9.0 scope recorded; phase discussion not started
+last_updated: "2026-11-16T01:47:11.727Z"
+last_activity: 2026-11-15
+last_activity_desc: v9.0 Souper release milestone scoped
+state_head: d0217ad7f2d49d6b28bab99eef254c24f251b1a0
 progress:
   total_phases: 1
   completed_phases: 0
-  total_plans: 0
+  total_plans: 1
   completed_plans: 0
   percent: 0
 ---
@@ -27,7 +28,7 @@ See [PROJECT.md](PROJECT.md) (updated 2026-11-15), [ROADMAP.md](ROADMAP.md), [RE
 
 ## Current Position
 
-Phase: 25 — Publish the corrected Souper mapper; ready for discussion and planning
+Phase: 25 (Publish the corrected Souper mapper) — READY TO EXECUTE
 Plan: Not yet planned
 Status: Milestone selected; autonomous execution not started
 Last activity: 2026-11-15 -- v9.0 scope recorded
