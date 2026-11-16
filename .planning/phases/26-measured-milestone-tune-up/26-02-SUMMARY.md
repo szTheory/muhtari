@@ -38,9 +38,9 @@ coverage:
     description: Phase 26 roadmap progress records both plans executed while acceptance remains pending.
     requirement: TUNE-14
     verification:
-      - kind: other
-        ref: .planning/ROADMAP.md
-        status: pass
+      kind: other
+      ref: .planning/ROADMAP.md
+      status: pass
     human_judgment: false
 duration: 5min
 completed: 2026-11-16
@@ -86,7 +86,7 @@ None — the roadmap edit stayed within the requested scope.
 
 - The sandbox blocked direct writes to `.git` for the worktree sentinel and Git index. I preserved the starting repository root, branch, and HEAD in the permitted temporary area, asserted them before staging, and completed the normal commit with configured hooks.
 
-## Verification
+## Local Checks
 
 All run URLs are **N/A-local**.
 
