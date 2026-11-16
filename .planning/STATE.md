@@ -5,11 +5,11 @@ milestone_name: Headless developer trace
 current_phase: 27
 current_phase_name: Headless developer trace
 status: planning
-stopped_at: Phase 26 complete, ready to plan Phase 27
-last_updated: "2026-11-16T17:52:23.266Z"
+stopped_at: Phase 27 context gathered
+last_updated: "2026-11-16T18:02:50.612Z"
 last_activity: 2026-11-16
 last_activity_desc: Phase 26 complete, transitioned to Phase 27
-state_head: cfebc6a4e2d5aebcd36f5337d4c59e36020d1512
+state_head: 3edd6efcd928e271900e8347b7cff4a239415626
 progress:
   total_phases: 2
   completed_phases: 1
@@ -23,13 +23,13 @@ progress:
 ## Project Reference
 See [PROJECT.md](PROJECT.md) (updated 2026-11-16), [ROADMAP.md](ROADMAP.md), [REQUIREMENTS.md](REQUIREMENTS.md), [product roadmap](PRODUCT-ROADMAP.md) and [successor review](research/next-milestone/2026-11-16-future-roadmap-review.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** v10.0 Headless developer trace; Phase 26 is complete and Phase 27 is ready to discuss and plan.
+**Current focus:** v10.0 Headless developer trace; Phase 27 context is captured and the phase is ready to plan.
 
 ## Current Position
 Phase: 27 — Headless developer trace
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-11-16 — Phase 26 complete, transitioned to Phase 27
+Last activity: 2026-11-16 — Phase 27 context and implementation defaults captured
 Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
@@ -98,7 +98,7 @@ At v9.0 close, no new items were acknowledged; 50 items acknowledged at earlier 
 | deferred_items | 11/deferred-items.md: Found in plan 04  - `diag.bankset_tracer` and `diag.bankset` both write `build/ci/tests/diag/bankset/32n/` and carry no resource lock, so under `ctest -j` one can read the other's `pixels.png` half written (`bankset --bankset-png ... png: chunk longer than the file`). Seen once in `cmake --workflow --preset ci`; passes alone and on rerun. Not caused by plan 04; a fix is a `RESOURCE_LOCK` or a separate output directory in `tests/diag/tests.cmake`.  Resolved in the gap round: `diag.bankset` now writes `build/<preset>/tests/diag/bankset-matrix/` and `diag.bankset_tracer` keeps `build/<preset>/tests/diag/bankset/`, so the two tests share no output file. | acknowledged; historical disposition retained | 2026-10-29 | v2.0 |
 
 ## Session Continuity
-Last session: 2026-11-16
-Stopped at: Phase 26 complete, ready to plan Phase 27
-Resume file: None
-Next action: Continue the selected milestone with `$gsd-discuss-phase 27`, reusing the saved v10.0 requirements and successor review and adopting ordinary in-scope recommendations under the owner's autonomous direction. The orchestrator acts next; no routine owner approval is needed.
+Last session: 2026-11-16T18:02:50.589Z
+Stopped at: Phase 27 context gathered; ready to plan
+Resume file: phases/27-headless-developer-trace/27-CONTEXT.md
+Next action: Continue the selected milestone with `$gsd-plan-phase 27`, using the saved context, v10.0 requirements and successor review under the owner's autonomous direction. No routine owner approval is needed.
