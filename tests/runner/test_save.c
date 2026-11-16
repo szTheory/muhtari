@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <stdarg.h>
 #include <sys/stat.h>
+#include "../../runner/clock.h"
 #ifdef _WIN32
 #include <io.h>
 #include <windows.h>
@@ -34,6 +35,10 @@ enum {
 };
 static int io_fault;
 static int output_fault;
+static int track_runner_allocations;
+static size_t largest_runner_allocation;
+static int time_trace_write;
+static uint64_t trace_write_started_ns, trace_write_finished_ns;
 static unsigned frames_run, temp_opens, replacements;
 static unsigned create_calls;
 static unsigned change_at, request_at, stop_at, request_during_write;
@@ -74,6 +79,12 @@ static int test_print(FILE *f, const char *format, ...)
     int rc = vfprintf(f, format, args);
     va_end(args);
     return rc;
+}
+static void *test_malloc(size_t size)
+{
+    if (track_runner_allocations && size > largest_runner_allocation)
+        largest_runner_allocation = size;
+    return malloc(size);
 }
 
 static FILE *test_fopen(const char *path, const char *mode)
@@ -135,6 +146,14 @@ static size_t test_write(const void *p, size_t n, size_t count, FILE *f)
 #else
         request_flush();
 #endif
+    }
+    if (f == save_stream && time_trace_write) {
+        if (trace_write_started_ns == 0u)
+            trace_write_started_ns = muhtari__clock_ns();
+        size_t written = fwrite(p, n, count, f);
+        if (strncmp((const char *)p, "{\"status\":", 10u) == 0)
+            trace_write_finished_ns = muhtari__clock_ns();
+        return written;
     }
     if (f == save_stream && io_fault == SAVE_PARTIAL)
         return fwrite(p, n, count - 1u, f);
@@ -247,6 +266,7 @@ static muhtari_status test_frame(muhtari *m, muhtari_frame *io)
 }
 int runner_entry(int argc, char **argv);
 #define main runner_entry
+#define malloc test_malloc
 #define fprintf test_print
 #define fopen test_fopen
 #define open test_open
@@ -280,6 +300,7 @@ int runner_entry(int argc, char **argv);
 #undef open
 #undef _open
 #undef main
+#undef malloc
 #undef fprintf
 #include "../../runner/stop.c"
 
@@ -964,9 +985,70 @@ static void cadence(const char *dir)
     CHECK_EQ_U64(runner_entry(4, missing), 2);
 }
 
+static void trace_bounds(const char *dir)
+{
+    char rom[1024], trace[1024];
+    snprintf(rom, sizeof rom, "%s/trace-bounds.a78", dir);
+    snprintf(trace, sizeof trace, "%s/trace-bounds.jsonl", dir);
+    cartridge(rom, 1u, 0);
+    char *args[] = {"muhtari-run", "--frames", "1", "--trace", trace, "--trace-frame", "1",
+                    "--trace-range", "0:65535", "--trace-limit", "131072", rom};
+    largest_runner_allocation = 0u;
+    track_runner_allocations = 1;
+    int status = runner_entry((int)(sizeof args / sizeof args[0]), args);
+    track_runner_allocations = 0;
+    CHECK_EQ_U64(status, 0u);
+    CHECK_EQ_U64(frames_run, 1u);
+    CHECK_EQ_U64(sizeof(struct muhtari__trace_event), 24u);
+    CHECK(largest_runner_allocation <= 131072u * sizeof(struct muhtari__trace_event));
+
+    struct muhtari__trace_event maximum = {0};
+    maximum.tick = UINT64_MAX;
+    maximum.line = UINT16_MAX;
+    maximum.t = UINT16_MAX;
+    maximum.pc = UINT16_MAX;
+    maximum.addr = UINT16_MAX;
+    maximum.kind = UINT8_MAX;
+    maximum.rw = UINT8_MAX;
+    maximum.value = UINT8_MAX;
+    maximum.a = maximum.x = maximum.y = maximum.s = maximum.p = UINT8_MAX;
+    char line[TRACE_LINE_MAX];
+    int line_length = trace_format_line(line, sizeof line, &maximum);
+    CHECK(line_length >= 0);
+    CHECK_EQ_U64((uint64_t)line_length, TRACE_RECORD_MAX_BYTES);
+    if (line_length >= 0)
+        CHECK(line[line_length - 1] == '\n');
+    printf("trace_event_size=%zu maximum_record_line_bytes=%d record_line_ceiling=%u\n",
+           sizeof(struct muhtari__trace_event), line_length, TRACE_RECORD_MAX_BYTES);
+}
+
+static void trace_measure(char *rom, char *dir, char *region, char *mode)
+{
+    char trace[1024];
+    int n = snprintf(trace, sizeof trace, "%s/trace-%s-%s.jsonl", dir, region, mode);
+    CHECK(n > 0 && (size_t)n < sizeof trace);
+    if (n <= 0 || (size_t)n >= sizeof trace)
+        return;
+    char *plain[] = {"muhtari-run", "--frames", "2", "--region", region, "--trace", trace,
+                     "--trace-frame", "2", "--trace-range", "0:65535", rom};
+    char *maximum[] = {"muhtari-run", "--frames", "2", "--region", region, "--trace", trace,
+                       "--trace-frame", "2", "--trace-range", "0:65535", "--trace-limit",
+                       "131072", rom};
+    trace_write_started_ns = trace_write_finished_ns = 0u;
+    time_trace_write = 1;
+    int status = strcmp(mode, "maximum") == 0
+                     ? runner_entry((int)(sizeof maximum / sizeof maximum[0]), maximum)
+                     : runner_entry((int)(sizeof plain / sizeof plain[0]), plain);
+    time_trace_write = 0;
+    CHECK_EQ_U64(status, 0u);
+    CHECK(trace_write_started_ns != 0u && trace_write_finished_ns >= trace_write_started_ns);
+    printf("serialization_write_ns=%llu\n",
+           (unsigned long long)(trace_write_finished_ns - trace_write_started_ns));
+}
+
 int main(int argc, char **argv)
 {
-    if (argc != 3)
+    if (argc < 3)
         return 2;
     if (strcmp(argv[2], "roundtrip") == 0 || strcmp(argv[2], "verify") == 0)
         roundtrip(argv[1], strcmp(argv[2], "verify") == 0);
@@ -982,6 +1064,10 @@ int main(int argc, char **argv)
         expansion_images(argv[1]);
     else if (strcmp(argv[2], "cadence") == 0)
         cadence(argv[1]);
+    else if (strcmp(argv[2], "trace_bounds") == 0)
+        trace_bounds(argv[1]);
+    else if (argc == 6 && strcmp(argv[2], "trace_measure") == 0)
+        trace_measure(argv[3], argv[1], argv[4], argv[5]);
 #ifndef __wasi__
     else if (strcmp(argv[2], "nonregular") == 0)
         nonregular(argv[1]);

@@ -476,7 +476,7 @@ struct muhtari__trace_event {
     uint8_t kind, rw, value, a, x, y, s, p;
 };
 typedef void (*muhtari__trace_callback)(void *user, const struct muhtari__trace_event *event);
-_Static_assert(sizeof(struct muhtari__trace_event) <= 32u, "bounded trace record size");
+_Static_assert(sizeof(struct muhtari__trace_event) <= 24u, "bounded trace record size");
 struct muhtari__observation;
 muhtari_status muhtari__synth_observe(muhtari *m, muhtari__audio_observer callback, void *user);
 void muhtari__synth_observe_reset(muhtari *m);

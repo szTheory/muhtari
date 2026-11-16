@@ -64,15 +64,21 @@
 #define TRACE_DEFAULT_LIMIT 65536u
 #define TRACE_LIMIT_MAX 131072u
 #define TRACE_HEADER_MAX 128u
-#define TRACE_LINE_MAX 192u
 #define TRACE_FOOTER_MAX 64u
 #define TRACE_RECORD_FIXED_BYTES 85u
-#define TRACE_RECORD_NUMBER_BYTES 69u
+#define TRACE_RECORD_NUMBER_BYTES 64u
 #define TRACE_RECORD_MAX_BYTES (TRACE_RECORD_FIXED_BYTES + TRACE_RECORD_NUMBER_BYTES)
+#define TRACE_LINE_MAX (TRACE_RECORD_MAX_BYTES + 1u)
+#define TRACE_CAPTURE_BYTES_MAX (4u * 1024u * 1024u)
+#define TRACE_OUTPUT_BODY_MAX (19u * 1024u * 1024u)
 #define TRACE_MAX_PAL_ACCESSES                                                                     \
     ((MUHTARI__TICKS_PER_FRAME_PAL + MUHTARI__SYNTH_OVERSHOOT_TICKS + 3u) / 4u)
 _Static_assert(TRACE_MAX_PAL_ACCESSES * 2u <= TRACE_LIMIT_MAX,
                "hard trace cap covers one PAL frame and its CPU overshoot");
+_Static_assert(TRACE_LIMIT_MAX * sizeof(struct muhtari__trace_event) <= TRACE_CAPTURE_BYTES_MAX,
+               "hard trace cap fits the runner capture memory objective");
+_Static_assert(TRACE_LIMIT_MAX * TRACE_RECORD_MAX_BYTES <= TRACE_OUTPUT_BODY_MAX,
+               "hard trace cap fits the runner output objective");
 _Static_assert(TRACE_RECORD_MAX_BYTES <= TRACE_LINE_MAX,
                "trace line capacity covers every fixed-width numeric field");
 
@@ -929,8 +935,8 @@ static int check_options(options *o, const muhtari__movie_header *h, uint32_t mo
         if (!o->trace_limit_set)
             o->trace_limit = TRACE_DEFAULT_LIMIT;
         if ((size_t)o->trace_limit > SIZE_MAX / sizeof(struct muhtari__trace_event) ||
-            (size_t)o->trace_limit >
-                (SIZE_MAX - TRACE_HEADER_MAX - TRACE_FOOTER_MAX) / TRACE_LINE_MAX)
+            (size_t)o->trace_limit > TRACE_CAPTURE_BYTES_MAX / sizeof(struct muhtari__trace_event) ||
+            (size_t)o->trace_limit > TRACE_OUTPUT_BODY_MAX / TRACE_RECORD_MAX_BYTES)
             return usage("--trace-limit cannot be represented by this platform");
         if (trace_conflicts_save_path(o))
             return usage("trace file path conflicts with the save file");
@@ -1328,9 +1334,22 @@ static int save_replace(const char *temporary, const char *destination)
 #endif
 }
 
-/* Writes an already-owned byte span through an exclusive sibling temporary.
-   The destination changes only after write, flush, sync and close succeed. */
-static int write_sibling_atomic(const char *destination, const void *bytes, size_t count)
+typedef int (*sibling_writer)(FILE *stream, void *user);
+
+typedef struct byte_span_writer {
+    const void *bytes;
+    size_t count;
+} byte_span_writer;
+
+static int write_byte_span(FILE *stream, void *user)
+{
+    const byte_span_writer *span = (const byte_span_writer *)user;
+    return fwrite(span->bytes, 1u, span->count, stream) == span->count ? 0 : -1;
+}
+
+/* Writes an owned stream through an exclusive sibling temporary. The destination
+   changes only after write, flush, sync and close succeed. */
+static int write_sibling_atomic_stream(const char *destination, sibling_writer writer, void *user)
 {
     size_t len = strlen(destination);
     char *temporary = len <= SIZE_MAX - 48u ? (char *)malloc(len + 48u) : NULL;
@@ -1370,7 +1389,7 @@ static int write_sibling_atomic(const char *destination, const void *bytes, size
     }
     int bad = f == NULL;
     if (f != NULL) {
-        if (fwrite(bytes, 1u, count, f) != count || fflush(f) != 0)
+        if (writer(f, user) != 0 || fflush(f) != 0)
             bad = 1;
         if (!bad) {
 #ifdef _WIN32
@@ -1390,44 +1409,70 @@ static int write_sibling_atomic(const char *destination, const void *bytes, size
     return bad ? -1 : 0;
 }
 
-static int trace_write_file(const options *opt, const trace_capture *capture, char *text,
-                            size_t capacity)
+/* Writes a complete in-memory artifact with the same ownership and replacement rules. */
+static int write_sibling_atomic(const char *destination, const void *bytes, size_t count)
 {
-    int header = snprintf(text, capacity,
-                          "{\"format\":\"muhtari-trace\",\"version\":1,\"frame\":%u,"
-                          "\"lo\":%u,\"hi\":%u,\"limit\":%u}\n",
-                          (unsigned)opt->trace_frame, (unsigned)capture->lo,
-                          (unsigned)capture->hi, (unsigned)capture->limit);
-    if (header < 0 || (size_t)header >= TRACE_HEADER_MAX || (size_t)header >= capacity)
+    byte_span_writer span = {bytes, count};
+    return write_sibling_atomic_stream(destination, write_byte_span, &span);
+}
+
+static int trace_format_line(char *line, size_t capacity,
+                             const struct muhtari__trace_event *event)
+{
+    int length = snprintf(line, capacity,
+                          "{\"kind\":%u,\"tick\":%" PRIu64 ",\"line\":%u,"
+                          "\"t\":%u,\"pc\":%u,\"a\":%u,\"x\":%u,\"y\":%u,"
+                          "\"s\":%u,\"p\":%u,\"addr\":%u,\"rw\":%u,"
+                          "\"value\":%u}\n",
+                          (unsigned)event->kind, event->tick, (unsigned)event->line,
+                          (unsigned)event->t, (unsigned)event->pc, (unsigned)event->a,
+                          (unsigned)event->x, (unsigned)event->y, (unsigned)event->s,
+                          (unsigned)event->p, (unsigned)event->addr, (unsigned)event->rw,
+                          (unsigned)event->value);
+    if (length < 0 || (size_t)length > TRACE_RECORD_MAX_BYTES || (size_t)length >= capacity)
         return -1;
-    size_t used = (size_t)header;
+    return length;
+}
+
+typedef struct trace_write_context {
+    const options *opt;
+    const trace_capture *capture;
+} trace_write_context;
+
+static int trace_write_stream(FILE *stream, void *user)
+{
+    const trace_write_context *context = (const trace_write_context *)user;
+    const options *opt = context->opt;
+    const trace_capture *capture = context->capture;
+    char header[TRACE_HEADER_MAX];
+    int header_length = snprintf(header, sizeof header,
+                                 "{\"format\":\"muhtari-trace\",\"version\":1,\"frame\":%u,"
+                                 "\"lo\":%u,\"hi\":%u,\"limit\":%u}\n",
+                                 (unsigned)opt->trace_frame, (unsigned)capture->lo,
+                                 (unsigned)capture->hi, (unsigned)capture->limit);
+    if (header_length < 0 || (size_t)header_length >= sizeof header ||
+        fwrite(header, 1u, (size_t)header_length, stream) != (size_t)header_length)
+        return -1;
     for (size_t i = 0; i < capture->count; i++) {
         const struct muhtari__trace_event *event = &capture->events[i];
         char line[TRACE_LINE_MAX];
-        int length = snprintf(line, sizeof line,
-                              "{\"kind\":%u,\"tick\":%" PRIu64 ",\"line\":%u,"
-                              "\"t\":%u,\"pc\":%u,\"a\":%u,\"x\":%u,\"y\":%u,"
-                              "\"s\":%u,\"p\":%u,\"addr\":%u,\"rw\":%u,"
-                              "\"value\":%u}\n",
-                              (unsigned)event->kind, event->tick, (unsigned)event->line,
-                              (unsigned)event->t, (unsigned)event->pc, (unsigned)event->a,
-                              (unsigned)event->x, (unsigned)event->y, (unsigned)event->s,
-                              (unsigned)event->p, (unsigned)event->addr, (unsigned)event->rw,
-                              (unsigned)event->value);
-        if (length < 0 || (size_t)length >= sizeof line || (size_t)length > capacity - used)
+        int length = trace_format_line(line, sizeof line, event);
+        if (length < 0 || fwrite(line, 1u, (size_t)length, stream) != (size_t)length)
             return -1;
-        memcpy(text + used, line, (size_t)length);
-        used += (size_t)length;
     }
     char footer[TRACE_FOOTER_MAX];
     int footer_length = snprintf(footer, sizeof footer, "{\"status\":\"%s\",\"count\":%zu}\n",
                                  capture->truncated ? "truncated" : "complete", capture->count);
     if (footer_length < 0 || (size_t)footer_length >= sizeof footer ||
-        (size_t)footer_length > capacity - used)
+        fwrite(footer, 1u, (size_t)footer_length, stream) != (size_t)footer_length)
         return -1;
-    memcpy(text + used, footer, (size_t)footer_length);
-    used += (size_t)footer_length;
-    return write_sibling_atomic(opt->trace_file, text, used);
+    return 0;
+}
+
+static int trace_write_file(const options *opt, const trace_capture *capture)
+{
+    trace_write_context context = {opt, capture};
+    return write_sibling_atomic_stream(opt->trace_file, trace_write_stream, &context);
 }
 
 static int save_flush(save_context *save, muhtari *m)
@@ -1767,25 +1812,21 @@ static int run(const options *opt, replay *mv)
     }
 
     trace_capture capture = {0};
-    char *trace_text = NULL;
-    size_t trace_text_capacity = 0u;
     if (opt->trace_file != NULL) {
         capture.limit = (size_t)opt->trace_limit;
         capture.lo = opt->trace_lo;
         capture.hi = opt->trace_hi;
         if (capture.limit > SIZE_MAX / sizeof *capture.events ||
-            capture.limit > (SIZE_MAX - TRACE_HEADER_MAX - TRACE_FOOTER_MAX) / TRACE_LINE_MAX) {
+            capture.limit > TRACE_CAPTURE_BYTES_MAX / sizeof *capture.events ||
+            capture.limit > TRACE_OUTPUT_BODY_MAX / TRACE_RECORD_MAX_BYTES) {
             fprintf(stderr, "muhtari-run: trace limit cannot be represented\n");
             free(samples);
             return MUHTARI__EXIT_FAILURE;
         }
-        trace_text_capacity = TRACE_HEADER_MAX + TRACE_FOOTER_MAX + capture.limit * TRACE_LINE_MAX;
         capture.events = (struct muhtari__trace_event *)malloc(capture.limit * sizeof *capture.events);
-        trace_text = (char *)malloc(trace_text_capacity);
-        if (capture.events == NULL || trace_text == NULL) {
+        if (capture.events == NULL) {
             fprintf(stderr, "muhtari-run: out of memory for trace capture\n");
             free(capture.events);
-            free(trace_text);
             free(samples);
             return MUHTARI__EXIT_FAILURE;
         }
@@ -1806,7 +1847,6 @@ static int run(const options *opt, replay *mv)
         free(samples);
         free(state_buffer);
         free(capture.events);
-        free(trace_text);
         return MUHTARI__EXIT_FAILURE;
     }
 
@@ -1965,7 +2005,7 @@ static int run(const options *opt, replay *mv)
         }
         save.completed_frames++;
         if (capture_frame) {
-            if (trace_write_file(opt, &capture, trace_text, trace_text_capacity) != 0) {
+            if (trace_write_file(opt, &capture) != 0) {
                 fprintf(stderr, "muhtari-run: %s: cannot serialize or commit trace file\n",
                         opt->trace_file);
                 status = MUHTARI__EXIT_FAILURE;
@@ -2079,7 +2119,6 @@ static int run(const options *opt, replay *mv)
     free(samples);
     free(state_buffer);
     free(capture.events);
-    free(trace_text);
     return status;
 }
 

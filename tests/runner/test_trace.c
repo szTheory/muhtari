@@ -9,7 +9,7 @@
 #include "muhtari.h"
 #include "../check.h"
 
-#define TRACE_EVENT_CAP 65536u
+#define TRACE_EVENT_CAP 131072u
 #define TRACE_IMAGE_BYTES (128u + 4096u)
 #define TRACE_ROM 0xF000u
 
@@ -78,6 +78,67 @@ static int write_fixture(const char *dir)
         return 1;
     CHECK_EQ_U64(fwrite(fixture, 1u, sizeof fixture, f), sizeof fixture);
     CHECK_EQ_U64(fclose(f), 0);
+    return check_failures != 0 ? 1 : 0;
+}
+
+static int write_busy_fixture(const char *dir)
+{
+    char path[1024];
+    int n = snprintf(path, sizeof path, "%s/trace-busy.a78", dir);
+    CHECK(n > 0 && (size_t)n < sizeof path);
+    if (n <= 0 || (size_t)n >= sizeof path)
+        return 1;
+    make_fixture();
+    memset(fixture + 128u, 0xEA, 4096u);
+    fixture[128u + 0xFF0u] = 0x4Cu;
+    fixture[128u + 0xFF1u] = 0x00u;
+    fixture[128u + 0xFF2u] = 0xF0u;
+    fixture[128u + 0xFFCu] = 0x00u;
+    fixture[128u + 0xFFDu] = 0xF0u;
+    FILE *f = fopen(path, "wb");
+    CHECK(f != NULL);
+    if (f == NULL)
+        return 1;
+    CHECK_EQ_U64(fwrite(fixture, 1u, sizeof fixture, f), sizeof fixture);
+    CHECK_EQ_U64(fclose(f), 0u);
+    return check_failures != 0 ? 1 : 0;
+}
+
+static int measure_trace(const char *path)
+{
+    FILE *f = fopen(path, "rb");
+    CHECK(f != NULL);
+    if (f == NULL)
+        return 1;
+    CHECK_EQ_U64(fseek(f, 0L, SEEK_END), 0u);
+    long output_bytes = ftell(f);
+    CHECK(output_bytes >= 0L);
+    rewind(f);
+    char line[192];
+    char status[16] = {0};
+    unsigned limit = 0u;
+    size_t records = 0u, max_line = 0u;
+    CHECK(fgets(line, (int)sizeof line, f) != NULL);
+    CHECK_EQ_U64(sscanf(line,
+                        "{\"format\":\"muhtari-trace\",\"version\":1,\"frame\":%*u,"
+                        "\"lo\":%*u,\"hi\":%*u,\"limit\":%u}",
+                        &limit), 1u);
+    while (fgets(line, (int)sizeof line, f) != NULL) {
+        size_t line_length = strlen(line);
+        CHECK(line_length != 0u && line[line_length - 1u] == '\n');
+        if (line_length != 0u && line[line_length - 1u] == '\n' &&
+            strncmp(line, "{\"kind\":", 8u) == 0) {
+            records++;
+            if (line_length > max_line)
+                max_line = line_length;
+        } else if (strncmp(line, "{\"status\":", 10u) == 0) {
+            CHECK_EQ_U64(sscanf(line, "{\"status\":\"%15[^\"]\"", status), 1u);
+        }
+    }
+    CHECK_EQ_U64(fclose(f), 0u);
+    printf("records=%zu status=%s limit=%u event_size=%zu capture_bytes=%zu max_line=%zu output_bytes=%ld\n",
+           records, status, limit, sizeof(struct muhtari__trace_event),
+           (size_t)limit * sizeof(struct muhtari__trace_event), max_line, output_bytes);
     return check_failures != 0 ? 1 : 0;
 }
 
@@ -286,6 +347,17 @@ static void verify_filter(const char *case_name, const char *path)
     } else if (strcmp(case_name, "truncated") == 0) {
         CHECK_EQ_U64(trace.count, 1u);
         CHECK(trace.truncated);
+    } else if (strcmp(case_name, "exact") == 0) {
+        CHECK_EQ_U64(trace.count, 2731u);
+        CHECK(!trace.truncated);
+        CHECK(strstr(trace.header, "\"limit\":2731") != NULL);
+    } else if (strcmp(case_name, "one_extra") == 0) {
+        CHECK_EQ_U64(trace.count, 2730u);
+        CHECK(trace.truncated);
+        CHECK(strstr(trace.header, "\"limit\":2730") != NULL);
+    } else if (strcmp(case_name, "nonmatching_after_limit") == 0) {
+        CHECK_EQ_U64(trace.count, 2u);
+        CHECK(!trace.truncated);
     } else if (strcmp(case_name, "frame2") == 0) {
         CHECK(strstr(trace.header, "\"frame\":2") != NULL);
         CHECK(trace.count != 0u);
@@ -587,6 +659,10 @@ int main(int argc, char **argv)
 {
     if (argc == 3 && strcmp(argv[1], "fixture") == 0)
         return write_fixture(argv[2]);
+    if (argc == 3 && strcmp(argv[1], "busy_fixture") == 0)
+        return write_busy_fixture(argv[2]);
+    if (argc == 3 && strcmp(argv[1], "measure") == 0)
+        return measure_trace(argv[2]);
     if (argc == 3 && strcmp(argv[1], "oracle") == 0) {
         test_oracle(argv[2]);
         CHECK_DONE();

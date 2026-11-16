@@ -1892,6 +1892,7 @@ add_executable(muhtari-test-save-runner ${CMAKE_CURRENT_LIST_DIR}/test_save.c
 target_include_directories(muhtari-test-save-runner PRIVATE ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(muhtari-test-save-runner PRIVATE muhtari::muhtari muhtari_host)
 target_compile_definitions(muhtari-test-save-runner PRIVATE _POSIX_C_SOURCE=200809L
+  MUHTARI_TRACE_LOOP=$<BOOL:${MUHTARI_TRACE_LOOP}>
   $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
 set_target_properties(muhtari-test-save-runner PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-test-save-runner)
