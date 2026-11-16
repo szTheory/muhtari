@@ -72,7 +72,7 @@ The owner selected this scope on 2026-11-16. The [current requirements](REQUIREM
 
 Plans:
 - [x] 26-01-PLAN.md — Reconcile release and CI receipts and record the bounded tune-up disposition.
-- [ ] 26-02-PLAN.md — Reconcile roadmap execution progress while verification remains pending.
+- [x] 26-02-PLAN.md — Reconcile roadmap execution progress while verification remains pending.
 
 ### Phase 27: Headless developer trace
 
@@ -101,7 +101,7 @@ The nine deferred v3.0 requirements and all original Phase 12/14 host/remote sto
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 26. Measured milestone tune-up | 0/TBD | Not started | - |
+| 26. Measured milestone tune-up | 2/2 | Executed; verification pending | - |
 | 27. Headless developer trace | 0/TBD | Not started | - |
 
 **Coverage:** All 8 v1 requirements map to exactly one phase: TUNE-14 to Phase 26 and TRACE-01–07 to Phase 27. No orphaned or duplicated requirements.
