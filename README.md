@@ -5,10 +5,9 @@ An Atari 7800 ProSystem emulator core in C: a small library, a headless runner a
 Muhtari has a C library, a headless command-line runner and a libretro core for RetroArch. The host supplies
 the window and audio and input devices.
 
-The latest published release is v0.14.0. Souper mapper support is in the source on main, but has not shipped in
-a downloadable release yet. Compatibility is still being measured.
-Evidence covers the rows listed; there is no claim of universal title compatibility.
-See the [project status](docs/status.md) and [compatibility evidence](docs/compatibility.md).
+The latest published package includes the corrected Souper mapper and selected YM2151 digital sound profile.
+Download it from the [latest release](https://github.com/szTheory/muhtari/releases/latest). Souper checks use generated fixtures, not retail games. Evidence covers the rows listed; there is no claim of universal title compatibility.
+See the [project status](docs/status.md), [compatibility evidence](docs/compatibility.md), and [Phase 25 release receipt](.planning/phases/25-publish-the-corrected-souper-mapper/25-RELEASE.md).
 
 ## Install in RetroArch (macOS, Apple Silicon)
 

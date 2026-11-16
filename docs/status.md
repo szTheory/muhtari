@@ -5,13 +5,10 @@ runner and a libretro core. RetroArch or another host provides the window and au
 
 ## Available now
 
-The latest published package is v0.14.0. It includes the selected XM/YM2151 digital sound profile.
-
-Souper mapper support is implemented, tested and merged into the main source, but is not in a published package yet.
-The earlier release draft remains tied to source that failed a Wasm32 test; the corrected source passed main CI. The
-current milestone is to publish the corrected source through a fresh feature release. See the
-[Phase 25 release receipt](../.planning/phases/25-publish-the-corrected-souper-mapper/25-RELEASE.md) for the exact
-source and its release evidence.
+The [latest published package](https://github.com/szTheory/muhtari/releases/latest) includes the corrected Souper
+mapper and selected YM2151 digital sound profile. Souper mapper checks use generated fixtures; they establish the
+tested mapper behavior, not retail-game compatibility. The [Phase 25 release receipt](../.planning/phases/25-publish-the-corrected-souper-mapper/25-RELEASE.md)
+records the exact package source and its release evidence.
 
 ## Compatibility
 
