@@ -19,6 +19,15 @@ static void run_to_deadline(muhtari *m)
     }
 }
 
+#if MUHTARI_TRACE_LOOP
+static void run_to_deadline_traced(muhtari *m)
+{
+    while (m->bus.ticks < m->frame_deadline && m->boot.rejected == 0u) {
+        muhtari__trace_cpu_step(m);
+    }
+}
+#endif
+
 muhtari_status muhtari_run_frame(muhtari *m, muhtari_frame *io)
 {
     if (m == NULL || io == NULL) {
@@ -85,7 +94,15 @@ muhtari_status muhtari_run_frame(muhtari *m, muhtari_frame *io)
         m->maria.rows = io->video;
         m->maria.pitch = io->video_pitch;
         muhtari__observe_begin(m, audio_end);
+#if MUHTARI_TRACE_LOOP
+        if (m->trace_callback != NULL) {
+            run_to_deadline_traced(m);
+        } else {
+            run_to_deadline(m);
+        }
+#else
         run_to_deadline(m);
+#endif
         /* Programming follows actual execution, including completed
            instruction overshoot and BIOS refusal (controllers.md). */
         muhtari__savekey_catch_up(m, m->bus.ticks);

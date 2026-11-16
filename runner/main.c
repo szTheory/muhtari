@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <inttypes.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #ifdef _WIN32
@@ -60,6 +61,20 @@
 #define WIDTH 320u
 #define HEIGHT 242u
 #define AUDIO_CAPACITY 801u
+#define TRACE_DEFAULT_LIMIT 65536u
+#define TRACE_LIMIT_MAX 131072u
+#define TRACE_HEADER_MAX 128u
+#define TRACE_LINE_MAX 192u
+#define TRACE_FOOTER_MAX 64u
+#define TRACE_RECORD_FIXED_BYTES 85u
+#define TRACE_RECORD_NUMBER_BYTES 69u
+#define TRACE_RECORD_MAX_BYTES (TRACE_RECORD_FIXED_BYTES + TRACE_RECORD_NUMBER_BYTES)
+#define TRACE_MAX_PAL_ACCESSES                                                                     \
+    ((MUHTARI__TICKS_PER_FRAME_PAL + MUHTARI__SYNTH_OVERSHOOT_TICKS + 3u) / 4u)
+_Static_assert(TRACE_MAX_PAL_ACCESSES * 2u <= TRACE_LIMIT_MAX,
+               "hard trace cap covers one PAL frame and its CPU overshoot");
+_Static_assert(TRACE_RECORD_MAX_BYTES <= TRACE_LINE_MAX,
+               "trace line capacity covers every fixed-width numeric field");
 
 typedef struct state_output {
     uint32_t frame;
@@ -82,6 +97,7 @@ static void run_free(void *user, void *ptr, size_t size)
 
 static const char synopsis[] =
     "usage: muhtari-run --frames N [--hash-frame N]... [--dump-frame N:FILE]... [--rom] FILE\n"
+    "       muhtari-run --frames N --trace FILE --trace-frame N --trace-range LO:HI [--trace-limit N] [--rom] FILE\n"
     "       muhtari-run --frames N [--hash-frame N]... [--dump-frame N:FILE]...\n"
     "       muhtari-run --bench N [--hash-frame N]... [--dump-frame N:FILE]... [[--rom] FILE]\n"
     "       muhtari-run --movie FILE [--frames N | --bench N] [--hash-frame N]...\n"
@@ -96,6 +112,10 @@ static const char synopsis[] =
     "  --diagnostic         report the fixed 256-byte diagnostic mailbox after --frames\n"
     "  --hash-frame N       print the SHA-256 of frame N (1 <= N <= --frames)\n"
     "  --dump-frame N:FILE  write frame N to FILE as a PNG (1 <= N <= --frames)\n"
+    "  --trace FILE         write one selected frame as versioned CPU JSONL\n"
+    "  --trace-frame N      select an invocation frame (requires --trace)\n"
+    "  --trace-range LO:HI  inclusive instruction-PC / bus-address filter\n"
+    "  --trace-limit N      stored matching events (default 65536, max 131072)\n"
     "  [--rom] FILE         load the cartridge image FILE; without it no content runs\n"
     "  --movie FILE         replay a muhtari-movie 1 or 2 FILE, one line per frame;\n"
     "                       --frames defaults to its frame count\n"
@@ -423,6 +443,49 @@ static int probe(const char *path)
     return status;
 }
 
+static int parse_trace_address(const char *text, size_t len, uint16_t *out)
+{
+    unsigned base = 10u;
+    size_t start = 0u;
+    uint32_t value = 0u;
+    if (text == NULL || len == 0u)
+        return 0;
+    if (len >= 2u && text[0] == '0' && (text[1] == 'x' || text[1] == 'X')) {
+        base = 16u;
+        start = 2u;
+        if (start == len)
+            return 0;
+    }
+    for (size_t i = start; i < len; i++) {
+        unsigned digit;
+        if (text[i] >= '0' && text[i] <= '9')
+            digit = (unsigned)(text[i] - '0');
+        else if (base == 16u && text[i] >= 'a' && text[i] <= 'f')
+            digit = (unsigned)(text[i] - 'a') + 10u;
+        else if (base == 16u && text[i] >= 'A' && text[i] <= 'F')
+            digit = (unsigned)(text[i] - 'A') + 10u;
+        else
+            return 0;
+        if (digit >= base || value > (65535u - digit) / base)
+            return 0;
+        value = value * base + digit;
+    }
+    *out = (uint16_t)value;
+    return 1;
+}
+
+static int parse_trace_range(const char *text, size_t len, uint16_t *lo, uint16_t *hi)
+{
+    if (text == NULL || len == 0u)
+        return 0;
+    const char *colon = memchr(text, ':', len);
+    if (colon == NULL || colon == text || (size_t)(colon - text) + 1u >= len ||
+        memchr(colon + 1, ':', len - (size_t)(colon + 1 - text)) != NULL)
+        return 0;
+    return parse_trace_address(text, (size_t)(colon - text), lo) &&
+           parse_trace_address(colon + 1, len - (size_t)(colon + 1 - text), hi);
+}
+
 /* The runner's options. Each list has room for one entry per argument. */
 typedef struct options {
     uint32_t frames;
@@ -456,8 +519,38 @@ typedef struct options {
     int has_expansion;
     int has_hsc;
     const char *hsc_rom;
+    const char *trace_file;
+    uint32_t trace_frame;
+    uint32_t trace_limit;
+    uint16_t trace_lo, trace_hi;
+    int trace_frame_set;
+    int trace_range_set;
+    int trace_limit_set;
     int printed; /* --help or --version ran; nothing else to do */
 } options;
+
+typedef struct trace_capture {
+    struct muhtari__trace_event *events;
+    size_t count;
+    size_t limit;
+    uint16_t lo, hi;
+    int truncated;
+} trace_capture;
+
+static void trace_capture_event(void *user, const struct muhtari__trace_event *event)
+{
+    trace_capture *capture = (trace_capture *)user;
+    if (capture->truncated)
+        return;
+    uint16_t address = event->kind == MUHTARI__TRACE_INSTRUCTION ? event->pc : event->addr;
+    if (address < capture->lo || address > capture->hi)
+        return;
+    if (capture->count == capture->limit) {
+        capture->truncated = 1;
+        return;
+    }
+    capture->events[capture->count++] = *event;
+}
 
 /* The values --port1 and --port2 take, and the movie's port keys. */
 static const struct {
@@ -511,6 +604,33 @@ static int compare_u32(const void *a, const void *b)
 static int same_lexical_path(const char *left, const char *right)
 {
     return left != NULL && right != NULL && strcmp(left, right) == 0;
+}
+
+/* save_import spells the derived destination as DIR/<ROM stem>.sav. Compare
+   that spelling without allocating or touching a file during validation. */
+static int trace_conflicts_save_path(const options *o)
+{
+    if (o->trace_file == NULL || o->save_dir == NULL || o->rom == NULL)
+        return 0;
+    const char *base = o->rom;
+    for (const char *p = base; *p != '\0'; p++) {
+        if (*p == '/'
+#ifdef _WIN32
+            || *p == '\\'
+#endif
+        )
+            base = p + 1;
+    }
+    const char *dot = strrchr(base, '.');
+    size_t stem = dot != NULL && dot != base ? (size_t)(dot - base) : strlen(base);
+    size_t dir = strlen(o->save_dir);
+    size_t trace_len = strlen(o->trace_file);
+    if (stem > SIZE_MAX - 5u || dir > SIZE_MAX - stem - 5u ||
+        trace_len != dir + stem + 5u)
+        return 0;
+    return memcmp(o->trace_file, o->save_dir, dir) == 0 && o->trace_file[dir] == '/' &&
+           memcmp(o->trace_file + dir + 1u, base, stem) == 0 &&
+           memcmp(o->trace_file + dir + stem + 1u, ".sav", 4u) == 0;
 }
 
 /* Returns 0 when the options are spelled right, 2 after a usage message, 1
@@ -589,6 +709,27 @@ static int parse_options(int argc, char **argv, options *o)
             o->state_outputs[o->state_output_count].frame = n;
             o->state_outputs[o->state_output_count].path = colon + 1;
             o->state_output_count++;
+        } else if (strcmp(arg, "--trace") == 0) {
+            if (o->trace_file != NULL || value == NULL || value[0] == '\0' ||
+                strcmp(value, "-") == 0 || strncmp(value, "--", 2u) == 0)
+                return usage("--trace needs one nonempty FILE");
+            o->trace_file = value;
+        } else if (strcmp(arg, "--trace-frame") == 0) {
+            if (o->trace_frame_set ||
+                !parse_count(value, value == NULL ? 0u : strlen(value), &o->trace_frame))
+                return usage("--trace-frame needs a whole number of 1 or more");
+            o->trace_frame_set = 1;
+        } else if (strcmp(arg, "--trace-range") == 0) {
+            if (o->trace_range_set ||
+                !parse_trace_range(value, value == NULL ? 0u : strlen(value), &o->trace_lo,
+                                   &o->trace_hi))
+                return usage("--trace-range needs LO:HI from 0 to 65535");
+            o->trace_range_set = 1;
+        } else if (strcmp(arg, "--trace-limit") == 0) {
+            if (o->trace_limit_set ||
+                !parse_count(value, value == NULL ? 0u : strlen(value), &o->trace_limit))
+                return usage("--trace-limit needs a whole number of 1 or more");
+            o->trace_limit_set = 1;
         } else if (strcmp(arg, "--diagnostic") == 0) {
             if (o->diagnostic) {
                 return usage("duplicate --diagnostic");
@@ -770,6 +911,34 @@ static int check_options(options *o, const muhtari__movie_header *h, uint32_t mo
     if (o->frames == 0u && !o->frames0) {
         return usage("--frames N, --bench N or --movie FILE is required");
     }
+    int trace_options = o->trace_file != NULL || o->trace_frame_set || o->trace_range_set ||
+                        o->trace_limit_set;
+    if (trace_options && o->trace_file == NULL)
+        return usage("trace selectors need --trace FILE");
+    if (o->trace_file != NULL) {
+        if (!o->trace_frame_set || !o->trace_range_set)
+            return usage("--trace needs explicit --trace-frame and --trace-range selectors");
+        if (o->rom == NULL || o->frames0)
+            return usage("--trace needs a content run with frames");
+        if (o->trace_frame > o->frames)
+            return usage("--trace-frame is beyond --frames");
+        if (o->trace_lo > o->trace_hi)
+            return usage("--trace-range lower address exceeds upper address");
+        if (o->trace_limit_set && o->trace_limit > TRACE_LIMIT_MAX)
+            return usage("--trace-limit exceeds the hard maximum of 131072");
+        if (!o->trace_limit_set)
+            o->trace_limit = TRACE_DEFAULT_LIMIT;
+        if ((size_t)o->trace_limit > SIZE_MAX / sizeof(struct muhtari__trace_event) ||
+            (size_t)o->trace_limit >
+                (SIZE_MAX - TRACE_HEADER_MAX - TRACE_FOOTER_MAX) / TRACE_LINE_MAX)
+            return usage("--trace-limit cannot be represented by this platform");
+        if (trace_conflicts_save_path(o))
+            return usage("trace file path conflicts with the save file");
+#if !MUHTARI_TRACE_LOOP
+        fprintf(stderr, "muhtari-run: trace support unavailable (MUHTARI_TRACE_LOOP=OFF)\n");
+        return MUHTARI__EXIT_REFUSED;
+#endif
+    }
     if (o->boot == MUHTARI__MOVIE_BOOT_BIOS && o->bios == NULL) {
         return usage("--boot bios needs --bios FILE");
     }
@@ -787,6 +956,22 @@ static int check_options(options *o, const muhtari__movie_header *h, uint32_t mo
     for (uint32_t k = 0; k < o->dump_count; k++) {
         if (o->dump_frames[k] > o->frames) {
             return usage("--dump-frame is beyond --frames");
+        }
+    }
+    if (o->trace_file != NULL) {
+        if (same_lexical_path(o->trace_file, o->rom) ||
+            same_lexical_path(o->trace_file, o->movie) ||
+            same_lexical_path(o->trace_file, o->bios) ||
+            same_lexical_path(o->trace_file, o->hsc_rom) ||
+            same_lexical_path(o->trace_file, o->load_state))
+            return usage("trace file path conflicts with an input file");
+        for (uint32_t i = 0; i < o->dump_count; i++) {
+            if (same_lexical_path(o->trace_file, o->dump_paths[i]))
+                return usage("trace file path conflicts with --dump-frame");
+        }
+        for (uint32_t i = 0; i < o->state_output_count; i++) {
+            if (same_lexical_path(o->trace_file, o->state_outputs[i].path))
+                return usage("trace file path conflicts with state output");
         }
     }
     for (uint32_t i = 0; i < o->state_output_count; i++) {
@@ -1205,6 +1390,46 @@ static int write_sibling_atomic(const char *destination, const void *bytes, size
     return bad ? -1 : 0;
 }
 
+static int trace_write_file(const options *opt, const trace_capture *capture, char *text,
+                            size_t capacity)
+{
+    int header = snprintf(text, capacity,
+                          "{\"format\":\"muhtari-trace\",\"version\":1,\"frame\":%u,"
+                          "\"lo\":%u,\"hi\":%u,\"limit\":%u}\n",
+                          (unsigned)opt->trace_frame, (unsigned)capture->lo,
+                          (unsigned)capture->hi, (unsigned)capture->limit);
+    if (header < 0 || (size_t)header >= TRACE_HEADER_MAX || (size_t)header >= capacity)
+        return -1;
+    size_t used = (size_t)header;
+    for (size_t i = 0; i < capture->count; i++) {
+        const struct muhtari__trace_event *event = &capture->events[i];
+        char line[TRACE_LINE_MAX];
+        int length = snprintf(line, sizeof line,
+                              "{\"kind\":%u,\"tick\":%" PRIu64 ",\"line\":%u,"
+                              "\"t\":%u,\"pc\":%u,\"a\":%u,\"x\":%u,\"y\":%u,"
+                              "\"s\":%u,\"p\":%u,\"addr\":%u,\"rw\":%u,"
+                              "\"value\":%u}\n",
+                              (unsigned)event->kind, event->tick, (unsigned)event->line,
+                              (unsigned)event->t, (unsigned)event->pc, (unsigned)event->a,
+                              (unsigned)event->x, (unsigned)event->y, (unsigned)event->s,
+                              (unsigned)event->p, (unsigned)event->addr, (unsigned)event->rw,
+                              (unsigned)event->value);
+        if (length < 0 || (size_t)length >= sizeof line || (size_t)length > capacity - used)
+            return -1;
+        memcpy(text + used, line, (size_t)length);
+        used += (size_t)length;
+    }
+    char footer[TRACE_FOOTER_MAX];
+    int footer_length = snprintf(footer, sizeof footer, "{\"status\":\"%s\",\"count\":%zu}\n",
+                                 capture->truncated ? "truncated" : "complete", capture->count);
+    if (footer_length < 0 || (size_t)footer_length >= sizeof footer ||
+        (size_t)footer_length > capacity - used)
+        return -1;
+    memcpy(text + used, footer, (size_t)footer_length);
+    used += (size_t)footer_length;
+    return write_sibling_atomic(opt->trace_file, text, used);
+}
+
 static int save_flush(save_context *save, muhtari *m)
 {
     if (!save->armed || save->failed)
@@ -1541,6 +1766,31 @@ static int run(const options *opt, replay *mv)
         return MUHTARI__EXIT_FAILURE;
     }
 
+    trace_capture capture = {0};
+    char *trace_text = NULL;
+    size_t trace_text_capacity = 0u;
+    if (opt->trace_file != NULL) {
+        capture.limit = (size_t)opt->trace_limit;
+        capture.lo = opt->trace_lo;
+        capture.hi = opt->trace_hi;
+        if (capture.limit > SIZE_MAX / sizeof *capture.events ||
+            capture.limit > (SIZE_MAX - TRACE_HEADER_MAX - TRACE_FOOTER_MAX) / TRACE_LINE_MAX) {
+            fprintf(stderr, "muhtari-run: trace limit cannot be represented\n");
+            free(samples);
+            return MUHTARI__EXIT_FAILURE;
+        }
+        trace_text_capacity = TRACE_HEADER_MAX + TRACE_FOOTER_MAX + capture.limit * TRACE_LINE_MAX;
+        capture.events = (struct muhtari__trace_event *)malloc(capture.limit * sizeof *capture.events);
+        trace_text = (char *)malloc(trace_text_capacity);
+        if (capture.events == NULL || trace_text == NULL) {
+            fprintf(stderr, "muhtari-run: out of memory for trace capture\n");
+            free(capture.events);
+            free(trace_text);
+            free(samples);
+            return MUHTARI__EXIT_FAILURE;
+        }
+    }
+
     muhtari_config cfg;
     memset(&cfg, 0, sizeof cfg);
     cfg.size = (uint32_t)sizeof cfg;
@@ -1555,12 +1805,15 @@ static int run(const options *opt, replay *mv)
         free(row);
         free(samples);
         free(state_buffer);
+        free(capture.events);
+        free(trace_text);
         return MUHTARI__EXIT_FAILURE;
     }
 
     const muhtari__movie_header *h = mv != NULL ? &mv->header : NULL;
     uint32_t region = h != NULL && h->has_region ? h->region : opt->region;
     int status = MUHTARI__EXIT_DONE;
+    int trace_written = 0;
     save_context save = {0};
     muhtari__sha256 raw_hash, pcm_hash, tentative;
     muhtari__sha256_init(&raw_hash);
@@ -1683,7 +1936,16 @@ static int run(const options *opt, replay *mv)
         }
         uint64_t start_ns = opt->bench ? muhtari__clock_ns() : 0u;
         tentative = raw_hash;
+        int capture_frame = opt->trace_file != NULL && f == opt->trace_frame;
+        if (capture_frame) {
+            m->trace_callback = trace_capture_event;
+            m->trace_user = &capture;
+        }
         st = muhtari_run_frame(m, &io);
+        if (capture_frame) {
+            m->trace_callback = NULL;
+            m->trace_user = NULL;
+        }
         if (opt->bench) {
             uint64_t ns = muhtari__clock_ns() - start_ns;
             samples[timed++] = muhtari__bench_us(ns);
@@ -1702,6 +1964,15 @@ static int run(const options *opt, replay *mv)
             break;
         }
         save.completed_frames++;
+        if (capture_frame) {
+            if (trace_write_file(opt, &capture, trace_text, trace_text_capacity) != 0) {
+                fprintf(stderr, "muhtari-run: %s: cannot serialize or commit trace file\n",
+                        opt->trace_file);
+                status = MUHTARI__EXIT_FAILURE;
+                break;
+            }
+            trace_written = 1;
+        }
         if (state_buffer != NULL && state_capture(opt, m, state_buffer, state_bytes,
                                                   (uint32_t)save.completed_frames) != 0) {
             status = MUHTARI__EXIT_FAILURE;
@@ -1734,6 +2005,11 @@ static int run(const options *opt, replay *mv)
         if (status != 0 || muhtari__stop_requested()) {
             break;
         }
+    }
+
+    if (status == MUHTARI__EXIT_DONE && opt->trace_file != NULL && !trace_written) {
+        fprintf(stderr, "muhtari-run: selected trace frame did not complete\n");
+        status = MUHTARI__EXIT_FAILURE;
     }
 
     /* The hand-off frame is read through an internal call, not the public
@@ -1802,6 +2078,8 @@ static int run(const options *opt, replay *mv)
     free(row);
     free(samples);
     free(state_buffer);
+    free(capture.events);
+    free(trace_text);
     return status;
 }
 

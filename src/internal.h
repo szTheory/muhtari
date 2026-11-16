@@ -7,6 +7,10 @@
 
 #include "muhtari.h"
 
+#ifndef MUHTARI_TRACE_LOOP
+#define MUHTARI_TRACE_LOOP 0
+#endif
+
 /* The NTSC frame the core emits: 320 pixels by 242 rows, frame rows 0-241
    being rasters 16-257 (A7800-MARIA section 6). */
 #define MUHTARI__WIDTH 320u
@@ -16,6 +20,8 @@
    88 samples per 13,125 ticks, 800 or 801 per frame (A7800-AUDIO, timing
    table). */
 #define MUHTARI__TICKS_PER_FRAME_NTSC 119402u
+#define MUHTARI__TICKS_PER_FRAME_PAL 142102u
+#define MUHTARI__MARIA_LINE_TICKS 454u
 #define MUHTARI__SAMPLES_PER_PERIOD 88u
 #define MUHTARI__TICKS_PER_PERIOD 13125u
 #define MUHTARI__MAX_AUDIO_SAMPLES 801u
@@ -29,7 +35,8 @@ struct muhtari__timing {
 static inline struct muhtari__timing muhtari__timing_for_region(uint32_t region)
 {
     if (region == MUHTARI_REGION_PAL) {
-        const struct muhtari__timing pal = {313u, 292u, 142102u, 139874u, 4000u, 591149u, 962u};
+        const struct muhtari__timing pal = {313u, 292u, MUHTARI__TICKS_PER_FRAME_PAL, 139874u,
+                                            4000u, 591149u, 962u};
         return pal;
     }
     const struct muhtari__timing ntsc = {263u, 242u, 119402u, 117174u, 88u, 13125u, 801u};
@@ -462,6 +469,14 @@ struct muhtari__boot {
    hand-off (docs/hardware/bus.md, The run loop). bios holds the bios_size
    bytes muhtari_load copied, 0 for fast boot. */
 typedef void (*muhtari__audio_observer)(void *user, uint64_t tick, uint8_t source, uint16_t raw);
+enum { MUHTARI__TRACE_INSTRUCTION = 0u, MUHTARI__TRACE_BUS = 1u };
+struct muhtari__trace_event {
+    uint64_t tick;
+    uint16_t line, t, pc, addr;
+    uint8_t kind, rw, value, a, x, y, s, p;
+};
+typedef void (*muhtari__trace_callback)(void *user, const struct muhtari__trace_event *event);
+_Static_assert(sizeof(struct muhtari__trace_event) <= 32u, "bounded trace record size");
 struct muhtari__observation;
 muhtari_status muhtari__synth_observe(muhtari *m, muhtari__audio_observer callback, void *user);
 void muhtari__synth_observe_reset(muhtari *m);
@@ -497,6 +512,8 @@ struct muhtari {
     muhtari__audio_observer observer;
     void *observer_user;
     struct muhtari__observation *observation;
+    muhtari__trace_callback trace_callback;
+    void *trace_user;
     muhtari_allocator allocator; /* the caller's, copied at create */
     uint32_t audio_rem;          /* ticks carried into the next frame's sample count */
     uint32_t effective_region;   /* committed with successful content installation */
@@ -859,6 +876,7 @@ uint64_t muhtari__maria_dma_line(muhtari *m, uint64_t t0, uint64_t lrc, uint32_t
    jammed CPU it makes one read of $FFFF instead, and changes nothing else
    (docs/hardware/sally.md, JAM). */
 void muhtari__cpu_step(muhtari *m);
+void muhtari__trace_cpu_step(muhtari *m);
 
 /* Puts the CPU, the bus, RAM and the RIOT in their power-on state under
    m->profile, and arms MARIA's line events from the beam at that tick. */

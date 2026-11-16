@@ -18,7 +18,7 @@
 #define MARIA_TAIL_LAST 7u
 #define MARIA_ABORT_TAIL_OTHER 3u
 #define MARIA_ABORT_TAIL_LAST 9u
-#define MARIA_LINE_TICKS 454u
+#define MARIA_LINE_TICKS MUHTARI__MARIA_LINE_TICKS
 #define MARIA_DMA_REQ_T 28u
 _Static_assert(MARIA_TERMINATOR == 4u * MARIA_DL_BYTE, "a terminator is a full 4-byte read");
 

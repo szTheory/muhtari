@@ -20,6 +20,7 @@ Embedding callers must likewise requery info after every successful content load
 
 ```text
 muhtari-run --frames N [--hash-frame N]... [--dump-frame N:FILE]... [--rom] FILE
+muhtari-run --frames N --trace FILE --trace-frame N --trace-range LO:HI [--trace-limit N] [--rom] FILE
 muhtari-run --frames N [--hash-frame N]... [--dump-frame N:FILE]...
 muhtari-run --frames N [--hash-frame N]... [--dump-frame N:FILE]... [--load-state FILE]
             [--state-at-frame N:FILE]... [--hash-state N]... [[--rom] FILE]
@@ -45,6 +46,10 @@ muhtari-run --help | --version
 | `--hash-frame N` | After frame N, print the SHA-256 of its picture. Repeat the option for more frames. N is from 1 to the frame count. |
 | `--diagnostic` | After the run, report the fixed diagnostic mailbox. Requires content and explicit `--frames N` with the ordinary frame bounds; no `--bench` or implicit movie frame count. |
 | `--dump-frame N:FILE` | After frame N, write its picture to FILE as a PNG. Repeat the option for more frames or files. |
+| `--trace FILE` | Write CPU instruction and bus events for one selected invocation frame as versioned JSON Lines. Requires a cartridge, `--trace-frame N` and inclusive `--trace-range LO:HI`. |
+| `--trace-frame N` | Select a successful one-based frame call in this invocation; restored machine frame counters do not affect the selection. |
+| `--trace-range LO:HI` | Keep events whose instruction-start PC or bus address falls within this inclusive address range. Bounds accept decimal or `0x` hexadecimal from 0 through 65535. |
+| `--trace-limit N` | Maximum matching events stored before the footer reports truncation. Defaults to 65536; values above 131072 are rejected. |
 | `--load-state FILE` | Restore one compatible canonical state before the next input or frame. Requires a cartridge; at most one state file may be loaded. |
 | `--state-at-frame N:FILE` | Atomically write canonical state after invocation frame N. Repeat at distinct points and paths; N is from 0 through the frame count. |
 | `--hash-state N` | Print the canonical state SHA-256 after invocation frame N. Repeat at distinct points; output is sorted by N. |
@@ -209,6 +214,15 @@ signature warnings as applicable. Unknown exact-sized firmware remains accepted.
 [the embedding contract](embedding.md) and [cartridge hardware](hardware/cartridge.md).
 
 ## Output
+
+`--trace` writes a separate JSONL file only after its selected frame succeeds. The first row identifies
+`muhtari-trace` version 1, the invocation frame, filter bounds and effective limit. Instruction rows use
+numeric `kind: 0`; CPU bus rows use `kind: 1`. Both carry the data-edge tick, beam line and line clock,
+sampled CPU registers and numeric address, direction and value fields. An opcode's instruction row precedes
+its opcode-read bus row at the same tick. The footer reports `complete` or `truncated` and the stored event
+count. The file is replaced atomically; an unsuccessful capture leaves an existing destination intact.
+Tracing does not add output to ordinary stdout. Builds configured with `MUHTARI_TRACE_LOOP=OFF` reject
+trace requests with an explicit capability message.
 
 `--info` adds these newline-terminated key/value lines, in this order, after successful
 load, validation and output allocation and before any frames run. For PAL:

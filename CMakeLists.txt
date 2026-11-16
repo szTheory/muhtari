@@ -45,6 +45,7 @@ if(PROJECT_IS_TOP_LEVEL AND MSVC)
 endif()
 
 option(MUHTARI_NOFP "Build the core with general registers only; register only the abi tests" OFF)
+option(MUHTARI_TRACE_LOOP "Build the private dual-compiled CPU trace path" ON)
 
 # The library version reaches the core through a private generated header;
 # the public header carries no version macros.
@@ -96,9 +97,35 @@ add_library(muhtari_objs OBJECT
   src/ports.c)
 add_library(muhtari_cpu OBJECT src/cpu.c)
 add_library(muhtari_cartdb OBJECT src/cartdb.c)
+set(MUHTARI_TRACE_OBJECTS)
+if(MUHTARI_TRACE_LOOP)
+  add_library(muhtari_cpu_trace OBJECT src/cpu.c)
+  add_library(muhtari_bus_trace OBJECT src/bus.c)
+  target_compile_definitions(muhtari_cpu_trace PRIVATE
+    MUHTARI_TRACE_VARIANT=1
+    muhtari__cpu_reset=muhtari__trace_cpu_reset
+    muhtari__cpu_step=muhtari__trace_cpu_step
+    muhtari__bus_read=muhtari__trace_bus_read
+    muhtari__bus_write=muhtari__trace_bus_write)
+  target_compile_definitions(muhtari_bus_trace PRIVATE
+    MUHTARI_TRACE_VARIANT=1
+    muhtari__bus_rearm=muhtari__trace_bus_rearm
+    muhtari__bus_maria_selected=muhtari__trace_bus_maria_selected
+    muhtari__bus_read=muhtari__trace_bus_read
+    muhtari__bus_peek=muhtari__trace_bus_peek
+    muhtari__peek=muhtari__trace_peek
+    muhtari__bus_write=muhtari__trace_bus_write
+    muhtari__bus_request_halt=muhtari__trace_bus_request_halt
+    muhtari__bus_raise_nmi=muhtari__trace_bus_raise_nmi
+    muhtari__bus_phi1_after=muhtari__trace_bus_phi1_after)
+  list(APPEND MUHTARI_TRACE_OBJECTS
+    $<TARGET_OBJECTS:muhtari_cpu_trace>
+    $<TARGET_OBJECTS:muhtari_bus_trace>)
+endif()
 add_library(muhtari STATIC
   $<TARGET_OBJECTS:muhtari_objs>
   $<TARGET_OBJECTS:muhtari_cpu>
+  ${MUHTARI_TRACE_OBJECTS}
   $<TARGET_OBJECTS:muhtari_cartdb>
   runner/crc32.c
   runner/sha256.c)
@@ -114,6 +141,12 @@ set_source_files_properties(src/state.c PROPERTIES
 foreach(core_target IN ITEMS muhtari muhtari_objs muhtari_cpu muhtari_cartdb)
   muhtari_core_options(${core_target})
 endforeach()
+if(MUHTARI_TRACE_LOOP)
+  foreach(core_target IN ITEMS muhtari_cpu_trace muhtari_bus_trace)
+    muhtari_core_options(${core_target})
+  endforeach()
+endif()
+target_compile_definitions(muhtari_objs PRIVATE MUHTARI_TRACE_LOOP=$<BOOL:${MUHTARI_TRACE_LOOP}>)
 
 if(NOT PROJECT_IS_TOP_LEVEL)
   return()
@@ -179,6 +212,7 @@ add_executable(muhtari-run
 target_include_directories(muhtari-run PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(muhtari-run PRIVATE muhtari::muhtari muhtari_host)
 target_compile_definitions(muhtari-run PRIVATE _POSIX_C_SOURCE=200809L)
+target_compile_definitions(muhtari-run PRIVATE MUHTARI_TRACE_LOOP=$<BOOL:${MUHTARI_TRACE_LOOP}>)
 set_target_properties(muhtari-run PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/runner)
 muhtari_warnings(muhtari-run)
