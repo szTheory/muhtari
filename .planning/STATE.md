@@ -5,10 +5,10 @@ milestone_name: Publish the corrected Souper mapper package
 current_phase: 25
 status: completed
 stopped_at: Phase 25 complete — all phases complete
-last_updated: "2026-11-16T09:25:04Z"
+last_updated: "2026-11-16T09:32:38.454Z"
 last_activity: 2026-11-16
-last_activity_desc: Phase 25 complete
-state_head: f3badf06509a5a66a5bc2320b5c8a521a98a6553
+last_activity_desc: "Phase 25 shipped as PR #74"
+state_head: 4f47a861d4546efd390e8c9a3b313b80546d534c
 progress:
   total_phases: 1
   completed_phases: 1
@@ -30,7 +30,7 @@ See [PROJECT.md](PROJECT.md) (updated 2026-11-15), [ROADMAP.md](ROADMAP.md), [RE
 Phase: 25
 Plan: 1 of 1 complete
 Status: All phases complete; closeout PR pending
-Last activity: 2026-11-16 — Phase 25 complete
+Last activity: 2026-11-16 -- Phase 25 shipped as PR #74
 
 ## Previous Milestone Metrics — v8.0
 
