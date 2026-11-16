@@ -123,5 +123,5 @@ All 3 plan must-have truths pass. The stale Plan 26-02 2/2 artifact literal is s
 
 ---
 
-_Verified: 2026-11-16T17:50:36Z_  
-_Verifier: the agent (gsd-verifier)_
+- **Verified:** 2026-11-16T17:50:36Z
+- **Verifier:** the agent (gsd-verifier)
