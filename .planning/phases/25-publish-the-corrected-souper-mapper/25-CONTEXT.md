@@ -14,20 +14,20 @@ Publish the already-merged Souper mapper support from corrected mainline as a fr
 ## Implementation Decisions
 
 ### Release identity and trigger
-- Deliver the newly downloadable Souper capability as the v0.16.0 feature release, following the settled pre-1.0 minor-bump policy.
-- Use a truthful `feat:` title for the phase shipping PR because this phase makes the already-merged capability available in a package. The ordinary release-please workflow should create and merge its release PR; do not hand-create a version tag or use a `Release-As` override.
-- Keep v0.15.0's release ID, tag target, draft status, and asset set unchanged. Snapshot them before release and compare them again after v0.16.0 publication.
+- **D-01:** Deliver the newly downloadable Souper capability as the v0.16.0 feature release, following the settled pre-1.0 minor-bump policy.
+- **D-02:** Use a truthful `feat:` title for the phase shipping PR because this phase makes the already-merged capability available in a package. The ordinary release-please workflow should create and merge its release PR; do not hand-create a version tag or use a `Release-As` override.
+- **D-03:** Keep v0.15.0's release ID, tag target, draft status, and asset set unchanged. Snapshot them before release and compare them again after v0.16.0 publication.
 
 ### Source and release gates
-- Use the existing `.github/workflows/release.yml` and `scripts/publish.sh` path. Bind CI, equality, artifacts, attestations, publication, and install checks to the exact release-please SHA.
-- Preserve all existing required, advisory, integrity, provenance, install, and failure-control checks. Do not change workflow structure, cache policy, or deadlines without repeated evidence.
-- Run applicable cheap consistency checks before long local or hosted work, then record each result as a command, exit status, and run URL where applicable.
-- The released library, runner, and libretro artifacts must come from the same corrected source and retain the existing generated Souper fixture coverage.
+- **D-04:** Use the existing `.github/workflows/release.yml` and `scripts/publish.sh` path. Bind CI, equality, artifacts, attestations, publication, and install checks to the exact release-please SHA.
+- **D-05:** Preserve all existing required, advisory, integrity, provenance, install, and failure-control checks. Do not change workflow structure, cache policy, or deadlines without repeated evidence.
+- **D-06:** Run applicable cheap consistency checks before long local or hosted work, then record each result as a command, exit status, and run URL where applicable.
+- **D-07:** The released library, runner, and libretro artifacts must come from the same corrected source and retain the existing generated Souper fixture coverage.
 
 ### User-facing status
-- Until v0.16.0 is actually published and verified, keep README and status copy clear that v0.14.0 is latest and Souper is merged but unpublished; v0.15.0 remains the failed draft.
-- After publication is verified, update README and `docs/status.md` to identify v0.16.0 as latest and retain the known compatibility limits and project completion standard.
-- Keep the README short and user-facing; keep detailed receipt and CI analysis in planning/maintainer evidence.
+- **D-08:** Until v0.16.0 is actually published and verified, keep README and status copy clear that v0.14.0 is the latest published package and Souper is merged but unpublished. Do not put the current or next package version literals in user docs; keep exact release identities in the linked planning receipt so `release.single_version_source` remains valid.
+- **D-09:** After publication is verified, update README and `docs/status.md` to say that the latest published package includes Souper and link the authoritative latest release. Keep the public wording version-neutral, since `version.txt` is the single product version source. Retain the known compatibility limits and project completion standard.
+- **D-10:** Keep the README short and user-facing; keep detailed receipt and CI analysis in planning/maintainer evidence.
 
 ### the agent's Discretion
 - Choose the smallest documentation and phase-evidence edits needed to meet the acceptance criteria.
