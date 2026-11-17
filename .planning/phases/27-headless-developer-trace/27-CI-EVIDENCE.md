@@ -42,3 +42,14 @@ No CI run was started during this inventory. There are no queue, duration or can
 | `python3 build/phase27-evidence/validate.py inventory` | 0 | Exactly one pending row per required receipt; all source/identity fields satisfy the inventory contract. |
 | `python3 build/phase27-evidence/validate.py sanity` | 0 | One-off judge accepts the valid fixture and rejects missing-row/source, Windows identity/test, sample-drift and unrounded-threshold faults. |
 | Task 1 automated command in `27-04-PLAN.md` | 0 | Scoped committed/index/worktree planning whitespace and untracked evidence checks pass; clean/fault no-index controls distinguish trailing whitespace. |
+
+## Publication authority record
+
+Authority selection: validation-pr
+Authority status: granted
+Authority source: Forwarded owner authorization dated 2026-11-17 in the orchestrator execution dispatch.
+Authority answer: Forwarded owner response, relayed by the orchestrator: one draft validation PR is authorized before Phase 27 verification passes, only to trigger the existing Windows x64, Windows arm64 and Linux Cachegrind CI; keep it unmerged; no manual dispatch or hosted retry.
+Authority branch: milestone/v10.0-headless-trace
+Authority head: 6cf68302d8158a37d7d724420aaa65211073256e
+Authority date: 2026-11-17
+Authority scope: one draft validation PR; initial automatic CI only; no dispatch/rerun/merge/release
