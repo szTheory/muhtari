@@ -79,3 +79,34 @@ Authority scope: one draft validation PR; initial automatic CI only; no dispatch
 - Final Task 2 scoped whitespace/fault-control command followed by `scripts/hygiene.sh --tree` — exit 0.
 - Final Task 2 scoped whitespace/fault-control command followed by `scripts/hygiene.sh --tree` — exit 0.
 - `27-TRACE-ACCEPTANCE.md` was not changed: TRACE-03 and TRACE-06 remain pending. The normal phase verifier and existing `gaps_found` shipping stop remain authoritative. No source fix, longer timeout, hosted retry, second PR, or release action is authorized by this plan.
+
+## Gap source authorization and local baseline
+
+- **Authority date:** 2026-11-16 (America/New_York).
+- **Authority source:** The owner replied in the current conversation to the blocking Task 1 decision: “Okay, yes, I authorize that.” In context, this authorizes only the behavior-preserving trace-limit correction in `runner/main.c`, its planned local build, focused and full local checks, hygiene, review, and local commits. PR publication and hosted work still require the separate Task 3 decision.
+- **Pre-fix commit:** `2027e5e3c83ce0f33c4e30b00d80b91ef5adae91` on `milestone/v10.0-headless-trace`.
+- **Pre-edit reconciliation:** The worktree was clean; `git diff --quiet c60c192b9088b5f21fc199d574de17e89e5b4c94 HEAD -- . ':(exclude).planning'` exited 0, and `runner/main.c` had no diff from the pre-fix commit.
+- **Pre-edit focused controls:** `ctest --test-dir build/ci --output-on-failure --no-tests=error -R '^runner[.]trace[.](arguments|bounds|oracle)$'` — exit 0; all three existing controls passed.
+- **Local compiler qualification:** `/usr/bin/gcc --version` reports Apple Clang 21.0.0 targeting arm64-apple-darwin25.6.0. No GNU GCC executable was found among `gcc-12` through `gcc-15`, `aarch64-linux-gnu-gcc`, or `x86_64-linux-gnu-gcc`. Therefore the hosted GCC failure cannot be reproduced locally; this host's compiler result will not be presented as GCC evidence.
+
+## Gap source correction and local checks
+
+The authorized product change is limited to `parse_options`: after applying the default trace limit, copy it to `const size_t trace_limit` and use that same-type value for the three existing representability comparisons. The hard maximum, diagnostics, capture-memory and output bounds, allocation overflow check, API, serialized state, and trace dispatch remain unchanged. The existing final review disposition for Windows path handling remains unchanged; its deferred extended-path warning is unrelated.
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cmake --preset ci` | 0 | CI build configured. |
+| Pre-edit `ctest --test-dir build/ci --output-on-failure --no-tests=error -R '^runner[.]trace[.](arguments|bounds|oracle)$'` | 0 | All three baseline controls passed before the source edit. |
+| `cmake --build build/ci --target muhtari-run muhtari-test-trace muhtari-test-save-runner` | 0 | Final formatted source and existing runner test targets rebuilt. |
+| Post-edit `ctest --test-dir build/ci --output-on-failure --no-tests=error -R '^runner[.]trace[.](arguments|bounds|oracle)$'` | 0 | All three argument, bounds, and oracle controls passed after rebuilding the final formatted source. |
+| `cmake --workflow --preset ci` | 0 | Full local workflow passed: 736 CI tests, package step, and all 8 release checks. This run preceded the formatter's whitespace-only line-wrap correction; the final formatted source was rebuilt and its focused controls passed afterward. |
+| First `cmake --workflow --preset hygiene` | 8 | The source delta compiled; 29 of 30 checks passed. `hygiene.format` rejected only the wrapped comparison at `runner/main.c:1259`. |
+| `/opt/homebrew/opt/llvm@21/bin/clang-format --version` | 0 | Project-pinned formatter is Homebrew clang-format 21.1.8. |
+| `/opt/homebrew/opt/llvm@21/bin/clang-format -i --lines=1253:1265 runner/main.c` | 0 | Applied only the required line-wrap formatting to the changed comparison. |
+| Final `cmake --workflow --preset hygiene` | 0 | All 30 hygiene and policy checks passed, including format, analyzer, and tree checks. |
+| `scripts/hygiene.sh --tree` | 0 | Repository hygiene passed on the final source and evidence state. |
+| Final `git diff --check -- runner/main.c .planning/phases/27-headless-developer-trace/27-CI-EVIDENCE.md` | 0 | No whitespace errors in the scoped changes. |
+
+**Review:** The scoped source diff is type-correct for the C17 runner. `trace_limit` is a `size_t` on both sides of the portability comparison, which avoids GCC's range-based diagnostic without disabling warnings; 32-bit allocation and output limits remain meaningful. The reviewed source has no behavior, public API, or state-format change. `git hash-object runner/main.c` is `f634cfcc9b2739d44cc9a9d8de9f2a101f3e6d38`; SHA-256 is `0dcf2d4eefcf701b73feeb43a0af9a46aa7abf49601d91c3315764c64010c4d4`.
+
+No local GNU GCC reproduction or Cachegrind measurement is claimed. TRACE-06 remains pending until a separately authorized PR update yields the authentic corrected-source Linux receipt. No publication or hosted action occurred in this scope.

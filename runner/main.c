@@ -1254,10 +1254,10 @@ static int check_options(options *o, const muhtari__movie_header *h, uint32_t mo
             return usage("--trace-limit exceeds the hard maximum of 131072");
         if (!o->trace_limit_set)
             o->trace_limit = TRACE_DEFAULT_LIMIT;
-        if ((size_t)o->trace_limit > SIZE_MAX / sizeof(struct muhtari__trace_event) ||
-            (size_t)o->trace_limit >
-                TRACE_CAPTURE_BYTES_MAX / sizeof(struct muhtari__trace_event) ||
-            (size_t)o->trace_limit > TRACE_OUTPUT_BODY_MAX / TRACE_RECORD_MAX_BYTES)
+        const size_t trace_limit = (size_t)o->trace_limit;
+        if (trace_limit > SIZE_MAX / sizeof(struct muhtari__trace_event) ||
+            trace_limit > TRACE_CAPTURE_BYTES_MAX / sizeof(struct muhtari__trace_event) ||
+            trace_limit > TRACE_OUTPUT_BODY_MAX / TRACE_RECORD_MAX_BYTES)
             return usage("--trace-limit cannot be represented by this platform");
 #if !MUHTARI_TRACE_LOOP
         fprintf(stderr, "muhtari-run: trace support unavailable (MUHTARI_TRACE_LOOP=OFF)\n");
