@@ -657,6 +657,12 @@ jobs:
             echo "perf: base HEAD^1 has no CMakePresets.json; verdict NO_BASE"
             echo no_base=true >> "$GITHUB_OUTPUT"
           fi
+      - name: Fetch wasmtime, 7800basic, OpenBIOS and rcheevos
+        run: |
+          scripts/fetch-pin.sh wasmtime-x86_64-linux build/pins/wasmtime
+          scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
+          scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios
+          scripts/fetch-pin.sh rcheevos build/pins/rcheevos
       - name: Build trace-loop variants and generated CPU workload
         env:
           RUN_ON: ${{ runner.temp }}/perf/trace-on/bin/muhtari-run
