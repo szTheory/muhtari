@@ -86,7 +86,7 @@ Plans:
   3. A developer can reproduce a generated or owned diagnostic's exact numeric records and event order, and tracing enabled or disabled produces identical frame and canonical state hashes.
   4. Existing consumers retain public API 8, ABI 1 and all current state formats. Trace callbacks and output buffers remain outside emulated machine state, instrumentation is selected only for calls with tracing installed, and tracing disabled still passes the existing hooks-off instruction-cost gate.
   5. A developer can follow runner documentation covering invocation, instruction versus bus address filtering, record fields, bounds, truncation and known limits. Committed fixtures and trace evidence contain no ROM, BIOS or save bytes beyond the manifest.
-**Plans**: 3/4 plans executed
+**Plans**: 4/4 plans executed
 **Wave 1**
 - [x] 27-01-PLAN.md — Private end-to-end trace and exact numeric timing oracle.
 
@@ -97,7 +97,7 @@ Plans:
 - [x] 27-03-PLAN.md — CPU-backed hooks-off cost proof, deterministic compatibility and runner documentation.
 
 **Wave 4** *(blocked on Wave 3 completion)*
-- [ ] 27-04-PLAN.md
+- [x] 27-04-PLAN.md
 
 ## Acceptance and boundaries
 
@@ -114,6 +114,6 @@ The nine deferred v3.0 requirements and all original Phase 12/14 host/remote sto
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 26. Measured milestone tune-up | 3/3 | Complete    | 2026-11-16 |
-| 27. Headless developer trace | 3/4 | In Progress | - |
+| 27. Headless developer trace | 4/4 | In Progress | - |
 
 **Coverage:** All 8 v1 requirements map to exactly one phase: TUNE-14 to Phase 26 and TRACE-01–07 to Phase 27. No orphaned or duplicated requirements.

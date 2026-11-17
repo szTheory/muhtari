@@ -4,17 +4,17 @@ milestone: v10.0
 milestone_name: Headless developer trace
 current_phase: 27
 current_phase_name: Headless developer trace
-status: executing
-stopped_at: Completed 27-03-PLAN.md
-last_updated: "2026-11-17T01:31:20.848Z"
+status: verifying
+stopped_at: Completed 27-04-PLAN.md; TRACE-06 remains pending after Linux perf compile failure
+last_updated: "2026-11-17T03:21:37.907Z"
 last_activity: 2026-11-16
 last_activity_desc: Phase 27 execution started
-state_head: 1100c397330805585a2a5c115bc54b26be235fb3
+state_head: 9b4be2efeb72b36707d75839622722865627e17a
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 7
-  completed_plans: 6
+  completed_plans: 7
   percent: 50
 ---
 
@@ -28,7 +28,7 @@ See [PROJECT.md](PROJECT.md) (updated 2026-11-16), [ROADMAP.md](ROADMAP.md), [RE
 ## Current Position
 Phase: 27 (Headless developer trace) — EXECUTING
 Plan: 4 of 4
-Status: Executing Phase 27
+Status: Phase complete — ready for verification
 Last activity: 2026-11-16 — Phase 27 execution started
 Progress: [█████░░░░░] 50%
 
@@ -46,6 +46,7 @@ Prior milestone metrics and exact-source receipts remain in the [v9.0 archive](m
 | Phase 27 P01 | 70min | 2 tasks | 11 files |
 | Phase 27-headless-developer-trace P02 | 83min | 3 tasks | 9 files |
 | Phase 27 P03 | 48min | 2 tasks | 13 files |
+| Phase 27 P04 | 107min | 2 tasks | 1 files |
 
 ## Accumulated Context
 ### Decisions
@@ -59,6 +60,9 @@ Prior milestone metrics and exact-source receipts remain in the [v9.0 archive](m
 - [Phase 27-headless-developer-trace]: Kept alias checks trace-specific and reused the existing sibling-temp atomic writer; public API, ABI and state formats remain unchanged.
 - [Phase 27]: Keep TRACE-06 pending until the normal Linux perf job provides an authentic source-qualified Cachegrind receipt; local controls are not a substitute.
 - [Phase 27]: Preserve public API 8, ABI 1 and state formats 1/6, 2/7 and 3/8 across trace acceptance.
+- [Phase 27]: Exact-source Windows x64 and arm64 path receipts passed; TRACE-03 evidence is established while Linux TRACE-06 remains pending.
+- [Phase 27]: Keep the Phase 27 acceptance matrix unchanged until all required exact-source receipts pass.
+- [Phase 27]: One initial CI run does not support a topology, timeout, or cache change.
 
 ### Pending Todos
 Inherited todos and optional seeds retain their dispositions; no unrelated work is promoted. Root remains canonical and older dirty worktrees require content/ancestry reconciliation before import. See [workspace reconciliation](debug/workspace-reconciliation-2026-11-10.md).
@@ -112,8 +116,8 @@ At v9.0 close, no new items were acknowledged; 50 items acknowledged at earlier 
 | deferred_items | 11/deferred-items.md: Found in plan 04  - `diag.bankset_tracer` and `diag.bankset` both write `build/ci/tests/diag/bankset/32n/` and carry no resource lock, so under `ctest -j` one can read the other's `pixels.png` half written (`bankset --bankset-png ... png: chunk longer than the file`). Seen once in `cmake --workflow --preset ci`; passes alone and on rerun. Not caused by plan 04; a fix is a `RESOURCE_LOCK` or a separate output directory in `tests/diag/tests.cmake`.  Resolved in the gap round: `diag.bankset` now writes `build/<preset>/tests/diag/bankset-matrix/` and `diag.bankset_tracer` keeps `build/<preset>/tests/diag/bankset/`, so the two tests share no output file. | acknowledged; historical disposition retained | 2026-10-29 | v2.0 |
 
 ## Session Continuity
-Last session: 2026-11-16T23:12:05.811Z
-Stopped at: Completed 27-03-PLAN.md
+Last session: 2026-11-17T03:21:37.885Z
+Stopped at: Completed 27-04-PLAN.md; TRACE-06 remains pending after Linux perf compile failure
 Resume file: None
 
 Next action: Continue the authorized milestone with $gsd-execute-phase 27. No routine owner approval is needed.
