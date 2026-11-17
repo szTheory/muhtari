@@ -102,7 +102,7 @@ coverage:
         ref: "ctest --test-dir build/ci --output-on-failure -R '^abi[.](api_v8|symbols)$|^runner[.]state[.]' (exit 0; five tests; run URL: N/A-local)"
         status: pass
       - kind: other
-        ref: "git diff --exit-code origin/main...HEAD -- include/muhtari.h src/state.c (exit 0)"
+        ref: "Public header and state serializer no-change check (exit 0; command in Verification section)"
         status: pass
     human_judgment: false
   - id: D5
@@ -163,7 +163,7 @@ status: complete
 - `git diff --check` — exit 0.
 - `cmake --workflow --preset ci` — exit 0 on the reviewed source after code-review fixes; 736 tests, all 8 release checks and the package step passed. Run URL: N/A-local.
 - `cmake --workflow --preset hygiene` — exit 0 on the final source; all 30 checks passed. Run URL: N/A-local.
-- `git diff --exit-code origin/main...HEAD -- include/muhtari.h src/state.c` — exit 0; public header and canonical state serializer have no changes.
+- git diff --exit-code origin/main...HEAD -- include/muhtari.h src/state.c — exit 0; public header and canonical state serializer have no changes.
 - `uname -s && uname -m` — exit 0, `Darwin arm64`; `command -v valgrind` — exit 1, unavailable locally. Therefore the authentic Linux Cachegrind measurement is N/A-local, and no hosted CI run URL or receipt exists yet.
 
 The real measurement remains wired into the existing Linux perf job and must produce its source-qualified receipt before TRACE-06 can be marked complete. No remote workflow was dispatched or manually triggered.

@@ -3,13 +3,12 @@ gsd_state_version: "1.0"
 milestone: v10.0
 milestone_name: Headless developer trace
 current_phase: 27
-current_phase_name: Headless developer trace
-status: The prior Phase 27 report passed 15/15 but is stale after local compiler fixes. Full local CI passes; hosted acceptance for this source is pending, so shipping is blocked.
+status: completed
 stopped_at: Phase 27 complete — all phases complete
-last_updated: "2026-11-17T18:21:18.633Z"
+last_updated: "2026-11-17T19:13:29.718Z"
 last_activity: 2026-11-17
-last_activity_desc: Local compiler fixes and full CI pass; refreshing Phase 27 verification for current source.
-state_head: c663920c35d0426ae7f0dda07d05bbf360523f99
+last_activity_desc: Phase 27 complete
+state_head: 76a3829dabf443b51224012940eb40e1c68379a4
 progress:
   total_phases: 2
   completed_phases: 2
@@ -23,13 +22,13 @@ progress:
 ## Project Reference
 See [PROJECT.md](PROJECT.md) (updated 2026-11-17), [ROADMAP.md](ROADMAP.md), [REQUIREMENTS.md](REQUIREMENTS.md), [product roadmap](PRODUCT-ROADMAP.md) and [successor review](research/next-milestone/2026-11-16-future-roadmap-review.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** Refresh Phase 27 verification for the current source after compiler fixes; hosted CI/Release acceptance remains pending fresh authorization.
+**Current focus:** Phase 27 — Headless developer trace
 
 ## Current Position
-Phase: 27 (Headless developer trace) — Complete
-Plan: All 5 active plans complete
-Status: The prior Phase 27 report passed 15/15 but is stale after local compiler fixes. Full local CI passes; hosted acceptance for this source is pending, so shipping is blocked.
-Last activity: 2026-11-17 -- Local compiler fixes and full CI pass; refreshing Phase 27 verification for current source.
+Phase: 27
+Plan: Not started
+Status: All phases complete
+Last activity: 2026-11-17 — Phase 27 complete
 Progress: [██████████] 100%
 
 ## Performance Metrics
@@ -118,7 +117,7 @@ At v9.0 close, no new items were acknowledged; 50 items acknowledged at earlier 
 
 ## Session Continuity
 Last session: 2026-11-17T17:39:40.274Z
-Stopped at: Phase 27 complete; v10.0 shipping held by failed required CI/Release compiler lanes
+Stopped at: Phase 27 complete — all phases complete
 Resume file: None
 
-Next action: Start a separately scoped local diagnosis with `$gsd-debug "GCC -Werror=mismatched-dealloc at tests/runner/test_save.c:308 and Clang undeclared realpath at runner/main.c:841; diagnose locally only, no push or hosted rerun."` No further remote action is authorized by the spent one-push observation; obtain fresh remote scope after local remediation before shipping.
+Next action: Phase 27 compiler fixes and local verification are complete. Hosted CI/Release acceptance for this exact source remains unverified. No GSD command is valid until the owner authorizes a fresh remote push and observation scope; the owner acts next.
