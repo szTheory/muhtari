@@ -121,12 +121,12 @@ No local GNU GCC reproduction or Cachegrind measurement is claimed. TRACE-06 rem
 ## Gap recovery execution ledger
 
 Historical source grant status: UNVERIFIED
-Source acceptance status: pending
+Source acceptance status: accepted
 Remote authorization status: unverified
 Recovery push count: 1
 Plan-entry baseline: local correction and local gates were recorded; source acceptance was pending; separate remote authorization was absent; recovery push count was 0; the earlier hosted allowance was spent. The original Linux failure and Windows results remain unchanged.
 
-Current disposition (2026-11-17): the owner directed us to keep the exact source blocked. The shared-worktree ledger below contains claims of source acceptance, remote authorization, a push, and CI observations, but the owner responses are not attributable from this conversation and the remote claims were not independently checked in this execution. No remote query, push, workflow action, cancellation, or observation was performed here. Treat those later entries as unverified history; preserve the reported one-push count and do not attempt another push. TRACE-06 remains pending.
+Current disposition (2026-11-17): the owner explicitly accepted the exact source commit `2160cfd4bde9040c93e9addb914a3733972a8934` in this conversation. The separate remote authorization and remote outcomes in the later shared-worktree ledger remain unverified in this execution. That ledger reports one push at `2026-11-17T13:26:47Z` and a 75-minute observation cap ending at `2026-11-17T14:41:47Z`; the one-push allowance is treated as spent, and no second push is authorized. No remote query, push, workflow action, cancellation, or observation was performed here. Leave any already-triggered runs untouched unless the owner separately authorizes read-only observation within the existing cap. TRACE-06 remains pending.
 
 The one-off helper `build/phase27-evidence/validate-trace-cost.py` is ignored. It reads the recorded command/exit table and current source identity; it does not run product checks. Its offline `sanity` and `local` modes also exercise receipt-journal faults. Task 2 and Task 3 grants must be recorded separately. TRACE-06 remains pending until the Linux receipt passes.
 
@@ -150,19 +150,19 @@ Task 1 offline helper checks:
 
 ## Task 2 — exact-source acceptance
 
-Source acceptance decision: unverified claim; current status pending
+Source acceptance decision: accepted
 Source accepted commit: 2160cfd4bde9040c93e9addb914a3733972a8934
 Source acceptance date: 2026-11-17
-Source acceptance source: a prior shared-worktree ledger attributes a response to the owner, but that response is not visible in this conversation.
-Source acceptance answer: recorded in the prior ledger as `yes i authorize that`; not attributable here
+Source acceptance source: current owner response in this conversation, replying to the direct request to accept this exact commit.
+Source acceptance answer: yes i accept it
 Source acceptance scope: accept only the already-committed and locally reviewed correction for the separate proposed PR update; no source edit, test replay, or retroactive authorization of the historical source change.
 
-This recorded response is not relied on for the source gate. The current owner direction is to keep the source blocked; a direct, attributable acceptance of this exact commit is still required before resuming.
+This response satisfies the source acceptance gate for the existing correction only. It does not grant separate remote authority or retroactively authorize the historical source change.
 
 
 | Task 2 check | Exit | Result |
 |---|---:|---|
-| `python3 build/phase27-evidence/validate-trace-cost.py local` | 0 | The exact-source acceptance record is attributable to the current owner reply and agrees with the partial checkpoint; the reviewed source and recorded local gates still reconcile. N/A-local. |
+| `python3 build/phase27-evidence/validate-trace-cost.py local` | 0 | The exact-source acceptance record matches the direct owner response and partial checkpoint; the reviewed source and recorded local gates still reconcile. N/A-local. |
 
 
 ## Task 3 — one-use remote authorization
@@ -198,7 +198,7 @@ Pre-push evidence commit: `961254179f9d9989d53dd5413a6b9a47f4ef27f0` (`docs(27-0
 
 ## Task 4 — reported push and automatic observation (unverified here)
 
-The following details were present in the shared-worktree ledger when this execution resumed. I did not perform or independently verify any of these remote actions or observations. The current owner direction keeps the source blocked, so no further remote observation or action is authorized here; leave any already-triggered workflows untouched.
+The following details were present in the shared-worktree ledger when this execution resumed. I did not perform or independently verify any of these remote actions or observations. Source acceptance is now explicit, but the separate remote grant remains unverified. Leave any already-triggered workflows untouched unless the owner separately authorizes read-only observation within the recorded cap; no further push is authorized.
 
 - Push command: `git push origin HEAD:refs/heads/milestone/v10.0-headless-trace` — exit 0; start `2026-11-17T13:26:47Z`; accepted by GitHub at `2026-11-17T13:27:09Z`; pushed head `961254179f9d9989d53dd5413a6b9a47f4ef27f0`. This consumed the one recovery push.
 - The enabled pre-push hook ran `scripts/hygiene.sh --history --branches --not --remotes` and allowed the push (exit 0, N/A-local).
