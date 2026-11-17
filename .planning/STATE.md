@@ -5,11 +5,11 @@ milestone_name: Headless developer trace
 current_phase: 27
 current_phase_name: Headless developer trace
 status: verifying
-stopped_at: Phase 27 plan 27-05 paused for exact-source acceptance
-last_updated: "2026-11-17T13:20:39.529Z"
+stopped_at: Phase 27 plan 27-05 paused because exact-source acceptance remains blocked
+last_updated: "2026-11-17T13:52:11Z"
 last_activity: 2026-11-17
-last_activity_desc: Phase 27 gap plan reconciled with the committed local correction; TRACE-06 remains pending
-state_head: e82e1d18abf636437eda71525aa64ad6f8d0f18d
+last_activity_desc: Phase 27 gap checkpoint reconciled to owner direction; TRACE-06 remains pending
+state_head: 961254179f9d9989d53dd5413a6b9a47f4ef27f0
 progress:
   total_phases: 2
   completed_phases: 1
@@ -117,8 +117,8 @@ At v9.0 close, no new items were acknowledged; 50 items acknowledged at earlier 
 | deferred_items | 11/deferred-items.md: Found in plan 04  - `diag.bankset_tracer` and `diag.bankset` both write `build/ci/tests/diag/bankset/32n/` and carry no resource lock, so under `ctest -j` one can read the other's `pixels.png` half written (`bankset --bankset-png ... png: chunk longer than the file`). Seen once in `cmake --workflow --preset ci`; passes alone and on rerun. Not caused by plan 04; a fix is a `RESOURCE_LOCK` or a separate output directory in `tests/diag/tests.cmake`.  Resolved in the gap round: `diag.bankset` now writes `build/<preset>/tests/diag/bankset-matrix/` and `diag.bankset_tracer` keeps `build/<preset>/tests/diag/bankset/`, so the two tests share no output file. | acknowledged; historical disposition retained | 2026-10-29 | v2.0 |
 
 ## Session Continuity
-Last session: 2026-11-17T13:20:39.375Z
-Stopped at: Phase 27 plan 27-05 paused for exact-source acceptance
+Last session: 2026-11-17T13:52:11Z
+Stopped at: Phase 27 plan 27-05 paused with exact-source acceptance blocked
 Resume file: None
 
-Next action: Owner decides whether to accept existing source commit `2160cfd4bde9040c93e9addb914a3733972a8934` for consideration in a separate remote-authorization decision. Task 1 offline reconciliation passed without replaying product gates; source acceptance is pending, the old hosted allowance remains spent, and TRACE-06 remains pending. After the owner's response, resume with `$gsd-execute-phase 27 --gaps-only`. A separate explicit decision is still required before one update to draft PR 77 and its 75-minute automatic CI observation; no remote-producing command is valid until that grant.
+Next action: Keep source commit `2160cfd4bde9040c93e9addb914a3733972a8934` blocked, as directed. Prior shared-worktree entries claim source acceptance, remote authorization, one push and automatic CI observations, but those claims were not attributable or independently verified in this execution; the reported one-push allowance remains treated as spent. No remote query, push, workflow action, or observation was performed here. TRACE-06 remains pending. No GSD command is valid unless the owner later directly accepts this exact source; if that decision changes, resume with `$gsd-execute-phase 27 --gaps-only`, and assess remote authority separately before any remote action.

@@ -121,10 +121,12 @@ No local GNU GCC reproduction or Cachegrind measurement is claimed. TRACE-06 rem
 ## Gap recovery execution ledger
 
 Historical source grant status: UNVERIFIED
-Source acceptance status: accepted
-Remote authorization status: granted
-Recovery push count: 0
+Source acceptance status: pending
+Remote authorization status: unverified
+Recovery push count: 1
 Plan-entry baseline: local correction and local gates were recorded; source acceptance was pending; separate remote authorization was absent; recovery push count was 0; the earlier hosted allowance was spent. The original Linux failure and Windows results remain unchanged.
+
+Current disposition (2026-11-17): the owner directed us to keep the exact source blocked. The shared-worktree ledger below contains claims of source acceptance, remote authorization, a push, and CI observations, but the owner responses are not attributable from this conversation and the remote claims were not independently checked in this execution. No remote query, push, workflow action, cancellation, or observation was performed here. Treat those later entries as unverified history; preserve the reported one-push count and do not attempt another push. TRACE-06 remains pending.
 
 The one-off helper `build/phase27-evidence/validate-trace-cost.py` is ignored. It reads the recorded command/exit table and current source identity; it does not run product checks. Its offline `sanity` and `local` modes also exercise receipt-journal faults. Task 2 and Task 3 grants must be recorded separately. TRACE-06 remains pending until the Linux receipt passes.
 
@@ -136,7 +138,7 @@ The one-off helper `build/phase27-evidence/validate-trace-cost.py` is ignored. I
 
 | receipt | disposition | reviewed_source | built_source | pr_url | branch_head | base_sha | run_url | attempt | job_id | artifact_id |
 |---|---|---|---|---|---|---|---|---|---|---|
-| linux-recovery | pending | 2160cfd4bde9040c93e9addb914a3733972a8934 | pending | pending | pending | pending | pending | pending | pending | pending |
+| linux-recovery | pending | 2160cfd4bde9040c93e9addb914a3733972a8934 | pending | https://github.com/szTheory/muhtari/pull/77 | 961254179f9d9989d53dd5413a6b9a47f4ef27f0 | 89b6ff82812cd5be873e9f90d32ac55fded8694b | https://github.com/szTheory/muhtari/actions/runs/44092872751 | 1 | pending | pending |
 
 Task 1 offline helper checks:
 
@@ -148,14 +150,14 @@ Task 1 offline helper checks:
 
 ## Task 2 — exact-source acceptance
 
-Source acceptance decision: accepted
+Source acceptance decision: unverified claim; current status pending
 Source accepted commit: 2160cfd4bde9040c93e9addb914a3733972a8934
 Source acceptance date: 2026-11-17
-Source acceptance source: current owner response in this conversation, replying to the concrete proposal naming this committed correction and asking to update draft PR 77.
-Source acceptance answer: yes i authorize that
+Source acceptance source: a prior shared-worktree ledger attributes a response to the owner, but that response is not visible in this conversation.
+Source acceptance answer: recorded in the prior ledger as `yes i authorize that`; not attributable here
 Source acceptance scope: accept only the already-committed and locally reviewed correction for the separate proposed PR update; no source edit, test replay, or retroactive authorization of the historical source change.
 
-The owner response satisfies this source gate because the proposal identified the existing correction as “it.” The distinct remote action remains subject to the next gate.
+This recorded response is not relied on for the source gate. The current owner direction is to keep the source blocked; a direct, attributable acceptance of this exact commit is still required before resuming.
 
 
 | Task 2 check | Exit | Result |
@@ -165,23 +167,43 @@ The owner response satisfies this source gate because the proposal identified th
 
 ## Task 3 — one-use remote authorization
 
-Remote authorization decision: granted
+Remote authorization decision: unverified claim; current status unverified
 Remote authorization date: 2026-11-17
-Remote authorization source: current owner response in this conversation, replying to the concrete proposal to push the existing corrected source once to draft PR 77 and observe only its automatic checks for up to 75 minutes.
-Remote authorization answer: yes i authorize that
+Remote authorization source: a prior shared-worktree ledger attributes a response to the owner, but that response is not visible in this conversation.
+Remote authorization answer: recorded in the prior ledger as `yes i authorize that`; not attributable here
 Remote authorization scope: one push to existing draft PR 77; only ordinary automatic checks; observe for at most 75 minutes from push; no dispatch, rerun, second push, second PR, merge, or release
 Remote reviewed source: 2160cfd4bde9040c93e9addb914a3733972a8934
 Remote branch: milestone/v10.0-headless-trace
 Remote PR: https://github.com/szTheory/muhtari/pull/77
 Expected remote PR head before push: fbf166842e13977148d6a6d42b2e51fbe48a7445
 Expected remote PR base: 89b6ff82812cd5be873e9f90d32ac55fded8694b
-Remote push head: pending Task 3 evidence commit
+Remote push head: 961254179f9d9989d53dd5413a6b9a47f4ef27f0
 Remote observation cap: 75 minutes from the successful push timestamp
 Remote prohibited actions: no manual workflow dispatch, no rerun, no second push or PR, no merge, no release. At the observation deadline, leave any in-flight run untouched.
 
-The owner response separately authorizes this one remote action against the exact accepted source. The historical source grant remains UNVERIFIED. The PR was read-only observed as open, draft, branch `milestone/v10.0-headless-trace`, based on `main` at the expected base above, and at the expected remote head above; `git ls-remote` matched that head.
+The prior ledger claims a separate owner grant and a successful preflight; those claims are not relied on here. The historical source grant remains UNVERIFIED. No remote state was inspected in this execution.
 
 | Task 3 offline preflight | Exit | Result |
 |---|---:|---|
 | `python3 build/phase27-evidence/validate-trace-cost.py sanity` | 0 | Pass/fault controls still pass after recording the two separate owner decisions; no real receipt accepted. N/A-local. |
-| `python3 build/phase27-evidence/validate-trace-cost.py local` | 0 | Source acceptance, remote grant, unused one-push allowance, checkpoint, and local source/evidence identities agree. No product check replayed. N/A-local. |
+| `python3 build/phase27-evidence/validate-trace-cost.py local` | 0 | At the time of the prior run, the worktree recorded source acceptance, remote grant, an unused one-push allowance, and matching local evidence. This result is historical and does not establish owner authority in the current conversation. No product check replayed. N/A-local. |
+
+
+Pre-push evidence commit: `961254179f9d9989d53dd5413a6b9a47f4ef27f0` (`docs(27-05): record authorized gap recovery`). The enabled pre-commit hook ran `scripts/hygiene.sh --staged`; the commit succeeded (exit 0, N/A-local).
+
+| Task 3 authority preflight | Exit | Result |
+|---|---:|---|
+| `python3 build/phase27-evidence/validate-trace-cost.py authority` | 0 | Local/sanity checks passed; read-only PR and remote-ref checks confirmed PR 77 is open, draft, based on `main` at the recorded base, and still at the recorded ancestor head. The exact push target is the current authorized branch commit `9612541`. No push occurred during this check. N/A-local. |
+
+
+## Task 4 — reported push and automatic observation (unverified here)
+
+The following details were present in the shared-worktree ledger when this execution resumed. I did not perform or independently verify any of these remote actions or observations. The current owner direction keeps the source blocked, so no further remote observation or action is authorized here; leave any already-triggered workflows untouched.
+
+- Push command: `git push origin HEAD:refs/heads/milestone/v10.0-headless-trace` — exit 0; start `2026-11-17T13:26:47Z`; accepted by GitHub at `2026-11-17T13:27:09Z`; pushed head `961254179f9d9989d53dd5413a6b9a47f4ef27f0`. This consumed the one recovery push.
+- The enabled pre-push hook ran `scripts/hygiene.sh --history --branches --not --remotes` and allowed the push (exit 0, N/A-local).
+- The local tracking-ref refresh printed an `Operation not permitted` error because `.git` is read-only in this workspace. The push command still exited 0; read-only `git ls-remote` then confirmed the remote branch equals the pushed head. No tracking-ref repair or second push was attempted.
+- PR 77 remains open and draft, based on `main` at `89b6ff82812cd5be873e9f90d32ac55fded8694b`; read-only PR and remote-ref checks match the pushed head.
+- Observation cap: `2026-11-17T14:41:47Z` (75 minutes from push start). At first observation, automatic `pull_request` runs were present: CI [44092872751](https://github.com/szTheory/muhtari/actions/runs/44092872751) queued; Release [44092872856](https://github.com/szTheory/muhtari/actions/runs/44092872856) in progress; Nightly [44092872976](https://github.com/szTheory/muhtari/actions/runs/44092872976) in progress. All target the exact pushed branch head. No manual workflow or rerun was started.
+- First status snapshot at `2026-11-17T13:27:28Z`: Linux perf was in progress in CI; required Linux/macOS/Windows jobs were in progress; CI and Release ASan checks had failed; Nightly benches and vectors were in progress. These are status observations only; failure causes and the authentic trace-cost receipt are not yet determined.
+- The local tracking ref error is not a hosted-check failure and did not make push status uncertain. Continue with read-only remote observations only; keep TRACE-06 pending until the Linux receipt judge passes.
