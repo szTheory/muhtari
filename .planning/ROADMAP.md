@@ -86,7 +86,7 @@ Plans:
   3. A developer can reproduce a generated or owned diagnostic's exact numeric records and event order, and tracing enabled or disabled produces identical frame and canonical state hashes.
   4. Existing consumers retain public API 8, ABI 1 and all current state formats. Trace callbacks and output buffers remain outside emulated machine state, instrumentation is selected only for calls with tracing installed, and tracing disabled still passes the existing hooks-off instruction-cost gate.
   5. A developer can follow runner documentation covering invocation, instruction versus bus address filtering, record fields, bounds, truncation and known limits. Committed fixtures and trace evidence contain no ROM, BIOS or save bytes beyond the manifest.
-**Plans**: 4/5 plans executed
+**Plans**: 4/5 active plans executed
 **Wave 1**
 - [x] 27-01-PLAN.md — Private end-to-end trace and exact numeric timing oracle.
 
@@ -100,7 +100,9 @@ Plans:
 - [x] 27-04-PLAN.md
 
 **Wave 5** *(blocked on Wave 4 completion)*
-- [ ] 27-05-PLAN.md
+- [ ] 27-06-PLAN.md — Provision the Linux perf fixture's existing pinned inputs and validate local reachability.
+
+Superseded partial plan (not in the active execution set): 27-05-PLAN.md. Its one-use observation ended without a Linux receipt; retain its checkpoint and history, but do not resume it.
 
 ## Acceptance and boundaries
 

@@ -5,11 +5,11 @@ milestone_name: Headless developer trace
 current_phase: 27
 current_phase_name: Headless developer trace
 status: verifying
-stopped_at: Phase 27 plan 27-05 paused after spent observation; TRACE-06 remains pending
-last_updated: "2026-11-17T14:34:07Z"
+stopped_at: Phase 27 plan 27-06 is ready for local gap execution; 27-05 remains terminal and TRACE-06 pending
+last_updated: "2026-11-17T15:20:59.328Z"
 last_activity: 2026-11-17
-last_activity_desc: Phase 27 source accepted; read-only run observation completed with no Cachegrind receipt
-state_head: 961254179f9d9989d53dd5413a6b9a47f4ef27f0
+last_activity_desc: Phase 27 gap plan 27-06 passed review; terminal 27-05 is excluded from gap execution
+state_head: 3a4d53c62ec1dd61aec182d2fab8fd7f90e0d130
 progress:
   total_phases: 2
   completed_phases: 1
@@ -26,10 +26,10 @@ See [PROJECT.md](PROJECT.md) (updated 2026-11-16), [ROADMAP.md](ROADMAP.md), [RE
 **Current focus:** Phase 27 — Headless developer trace
 
 ## Current Position
-Phase: 27 (Headless developer trace) — PARTIAL; OWNER DECISIONS REQUIRED
-Plan: 5 of 5
-Status: Plan 27-05 passes with no blockers. It reconciles the committed trace-limit correction and recorded local gates without replay; the historical source grant is unverified. Explicit owner acceptance of this exact source and a separate grant for one PR update/automatic CI observation remain required.
-Last activity: 2026-11-17 — revised Phase 27 gap plan passed review
+Phase: 27 (Headless developer trace) — READY TO EXECUTE
+Plan: 5 of 5 active plans
+Status: Plan 27-06 passed planning review and is the only runnable gap plan. Plan 27-05 remains partial and superseded after its one-use observation ended without a Linux receipt; it has no success SUMMARY and must not be resumed. TRACE-06 remains pending. The new plan is local-only through its checks and stops before any new push or hosted run for fresh owner authority.
+Last activity: 2026-11-17 — planned and reviewed the four-pin Linux perf fixture gap
 Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
@@ -118,7 +118,7 @@ At v9.0 close, no new items were acknowledged; 50 items acknowledged at earlier 
 
 ## Session Continuity
 Last session: 2026-11-17T14:34:07Z
-Stopped at: Phase 27 plan 27-05 ended after the authorized read-only observation; TRACE-06 remains pending
+Stopped at: Phase 27 plan 27-06 is ready; 27-05 is retained as terminal partial history and TRACE-06 remains pending
 Resume file: None
 
-Next action: The owner accepted exact source commit `2160cfd4bde9040c93e9addb914a3733972a8934`. The owner then authorized read-only inspection of the three reported automatic runs and Linux perf evidence until `2026-11-17T14:41:47Z`; that observation is complete. GitHub confirmed CI, Release and Nightly all failed, and the CI perf job failed before measurement with no `quality-perf` artifact. The prior one-push authorization claim remains unverified, but the reported push allowance is treated as spent; no further push, dispatch, rerun, merge, or release is valid under this plan. TRACE-06 remains pending. The next useful step is to plan a new gap for the missing pinned CI fixtures and other verified CI failures: `$gsd-plan-phase 27`. Fresh scope is required before any source fix or hosted attempt.
+Next action: Execute `$gsd-execute-phase 27 --gaps-only`. The phase-plan index selects only 27-06; 27-05 is marked superseded with its partial checkpoint, one-use attempt and failed receipt history preserved. Plan 27-06 provisions the four existing pins locally, verifies the fixture path and stops at a fresh hosted-authority checkpoint. No new push, dispatch, rerun, merge or release is authorized by the planning grant. TRACE-06 remains pending until an authentic same-source Linux Cachegrind receipt is accepted.
