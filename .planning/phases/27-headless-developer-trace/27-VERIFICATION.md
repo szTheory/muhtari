@@ -1,6 +1,6 @@
 ---
 phase: 27-headless-developer-trace
-verified: 2026-11-17T19:05:11Z
+verified: 2026-11-17T20:16:28Z
 status: passed
 score: 15/15 must-haves verified
 covered_files:
@@ -80,9 +80,15 @@ decision_coverage:
 | 12 | An unobserved frame uses the ordinary CPU/bus path without a per-access trace conditional; trace objects can be omitted in a product-only build. | ✓ VERIFIED | The ordinary and trace variants are separately compiled, dispatch is at frame entry, and trace-disabled configuration and runner-refusal controls passed. |
 | 13 | Runner documentation accurately explains invocation, filtering, record fields, bounds, truncation, error behavior, and CPU-only limits. | ✓ VERIFIED | `docs/runner.md` and `docs/testing.md` match the tested CLI/schema; documentation budget checks passed. |
 | 14 | Required local product, hygiene, compatibility, and fixture-cleanliness checks pass without public/state-format changes or committed runtime media. | ✓ VERIFIED | Current `cmake --workflow --preset ci` passed all 736 tests, generated all three packages, and passed all 8 release checks. The prior native fixture preflight and hygiene results remain recorded; current source diff adds no public/state-format changes or media. |
-| 15 | A real generated CPU workload proves the trace-disabled instruction-cost delta is at most 32 Ir/frame. | ✓ VERIFIED | The accepted Linux Cachegrind receipt is tied to PR head `4630288…` and merge checkout `fa72f56…`: stable repeated samples, `delta_raw=900`, threshold `9600`, and `delta_ir_frame=3`. The current local compiler/harness corrections do not modify the measured CPU, bus, frame, runner, perf workflow, or perf producer files. This is evidence for the recorded measured source, not a claim of hosted CI acceptance for current HEAD. |
+| 15 | A real generated CPU workload proves the trace-disabled instruction-cost delta is at most 32 Ir/frame. | ✓ VERIFIED | The accepted Linux Cachegrind receipt is tied to PR head `4630288…` and merge checkout `fa72f56…`: stable repeated samples, `delta_raw=900`, threshold `9600`, and `delta_ir_frame=3`. The later compiler/harness corrections do not modify the measured CPU, bus, frame, runner, perf workflow, or perf producer files. Exact-head hosted CI, Release, and Nightly acceptance is recorded below. |
 
 **Score:** 15/15 observable truths verified (0 present, behavior-unverified).
+
+## Current-head hosted verification
+
+The exact current source `4dba7cfd982108e291736bc5e34c01f90edf025a` passed all automatic hosted checks after the compiler fixes. [CI run 44157601581](https://github.com/szTheory/muhtari/actions/runs/44157601581) passed the affected GCC and Clang build lanes and all required Linux, BE32, library, ASan, macOS, Windows, hash-equality, RetroArch, wasm32, and quality checks. [Release run 44157601747](https://github.com/szTheory/muhtari/actions/runs/44157601747) passed equality, nested CI, the temporary release rehearsal, install-line check, and cleanup. The [Nightly run 44157601814](https://github.com/szTheory/muhtari/actions/runs/44157601814) also passed. All three runs report the same exact head SHA.
+
+The Release rehearsal briefly published a non-latest temporary prerelease as designed. Its cleanup job succeeded; the release lookup then returned HTTP 404 and the tag lookup returned an empty list. The normal stable-release jobs were skipped. PR 77 remains open and draft, and this verification does not merge it.
 
 ## Required Artifacts
 
@@ -90,10 +96,10 @@ decision_coverage:
 |---|---|---|---|
 | `runner/main.c`, `src/internal.h`, `src/frame.c`, `src/cpu.c`, `src/bus.c` | Private trace capture, filtering, observer lifetime, and ordinary-path dispatch | ✓ VERIFIED | The previous report's implementation and wiring checks remain valid; the trace-specific tests passed and no product source changed in the final pin-fetch plan. |
 | `tests/runner/test_trace.c`, `tests/runner/trace.cmake`, `tests/runner/test_save.c` | Numeric oracle, bounds, equality, and output-failure controls | ✓ VERIFIED | Registered tests and prior full local CI results cover these controls. |
-| `CMakeLists.txt`, `tests/runner/tests.cmake`, `tests/runner/test_save.c`, `docs/maintaining.md` | GCC stream-wrapper ownership annotations and X/Open declaration visibility for runner consumers | ✓ VERIFIED | GCC 15.3 optimized warning-control compile, Clang 21 Linux/glibc declaration control, focused runner tests, formatting, and current full local CI pass; review report is clean. Exact hosted toolchain acceptance for current HEAD remains unverified. |
+| `CMakeLists.txt`, `tests/runner/tests.cmake`, `tests/runner/test_save.c`, `docs/maintaining.md` | GCC stream-wrapper ownership annotations and X/Open declaration visibility for runner consumers | ✓ VERIFIED | GCC 15.3 optimized warning-control compile, Clang 21 Linux/glibc declaration control, focused runner tests, formatting, full local CI, and exact-head hosted GCC/Clang CI lanes pass; review report is clean. |
 | `tests/perf/trace.cmake`, `.github/workflows/ci.yml` | Same-source CPU Cachegrind comparison and source-qualified receipt | ✓ VERIFIED | The perf job now fetches the four existing pinned inputs before its tests-on configure, retains the five-minute cap, and produced the accepted receipt. |
 | `docs/runner.md`, `docs/testing.md` | User-facing trace contract and test instructions | ✓ VERIFIED | Documentation budget checks passed and the recorded docs match the runner contract. |
-| `27-CI-EVIDENCE.md`, `27-TRACE-ACCEPTANCE.md`, `27-06-CHECKPOINT.md` | Exact-source receipts, acceptance, and owner boundary history | ✓ VERIFIED | The earlier failed attempt remains terminal; the separate authorized continuation and its limited result are recorded. |
+| `27-CI-EVIDENCE.md`, `27-TRACE-ACCEPTANCE.md`, `27-06-CHECKPOINT.md` | Exact-source receipts, acceptance, and owner boundary history | ✓ VERIFIED | The earlier failed attempts remain terminal; the separate authorized continuations, current exact-head green runs, and remaining PR boundary are recorded. |
 
 ## Key Link Verification
 
@@ -123,11 +129,12 @@ The generic structural link query checks literal target references and misses se
 | Fresh fixture prerequisite path | Native CI Release configure, build `muhtari-run` and `muhtari-test-trace`, generate/run `trace-cost.a78` | All commands exit 0; runner stdout contains `diagnostic a5` | ✓ PASS; local fixture reachability only |
 | Current full local CI | `cmake --workflow --preset ci` | Exit 0; all 736 tests passed, three native packages were generated, and all 8 release checks passed | ✓ PASS |
 | Cheap checks before the full workflow | `git diff --check`; Clang-format on `tests/runner/test_save.c`; focused harness build and CTest | All exited 0 before the long workflow started | ✓ PASS |
-| GCC and Clang portability controls | Commands and isolated revert controls in `.planning/debug/resolved/ci-gcc-clang-build.md` | GCC 15.3.0 optimized full-warning compilation passed; isolated annotation removal reproduced the original warning. Clang 21 targeting Linux/glibc passed with `_XOPEN_SOURCE=700`; removing it reproduced undeclared `realpath`. | ✓ PASS locally; exact hosted compilers remain unverified |
+| GCC and Clang portability controls | Commands and isolated revert controls in `.planning/debug/resolved/ci-gcc-clang-build.md` | GCC 15.3.0 optimized full-warning compilation passed; isolated annotation removal reproduced the original warning. Clang 21 targeting Linux/glibc passed with `_XOPEN_SOURCE=700`; removing it reproduced undeclared `realpath`. Exact-head hosted GCC and Clang lanes passed. | ✓ PASS locally and hosted |
 | Hooks-off instruction cost | [PR CI run 44123425194](https://github.com/szTheory/muhtari/actions/runs/44123425194), Linux perf job `134180732604`; artifact `14347390138` | Exit 0; two stable repetitions per series; raw delta 900 ≤ 9,600 over 300 frames (3 Ir/frame). The exact `jq -e` source/provenance/arithmetic check also exited 0. | ✓ PASS for the recorded source |
-| Hosted CI and Release on the receipt source | [CI run 44123425194](https://github.com/szTheory/muhtari/actions/runs/44123425194); [Release run 44123425418](https://github.com/szTheory/muhtari/actions/runs/44123425418) | Both failed overall. Linux `perf` passed on its recorded source; other required lanes failed on the GCC/Clang issues now fixed locally. No hosted run was performed for current HEAD. | ⚠️ Current-source hosted acceptance remains unverified; shipping remains blocked |
+| Historical CI and Release on the earlier source | [CI run 44123425194](https://github.com/szTheory/muhtari/actions/runs/44123425194); [Release run 44123425418](https://github.com/szTheory/muhtari/actions/runs/44123425418) | Both failed on the GCC and Clang diagnostics later fixed. The Linux `perf` receipt from that source remains valid for TRACE-06. | Historical failure retained; superseded for current-source acceptance |
+| Current-head CI, Release, and Nightly | [CI run 44157601581](https://github.com/szTheory/muhtari/actions/runs/44157601581); [Release run 44157601747](https://github.com/szTheory/muhtari/actions/runs/44157601747); [Nightly run 44157601814](https://github.com/szTheory/muhtari/actions/runs/44157601814) | All three runs passed on exact source `4dba7cfd982108e291736bc5e34c01f90edf025a`. Release rehearsal, install-line, and cleanup passed; its temporary prerelease and tag are absent. PR 77 remains draft and unmerged. | ✓ PASS for current source; merge remains stopped by the PR instruction |
 
-The historical full CI and Release failures are distinct from the passing trace-cost producer and were caused by compiler diagnostics fixed in this local work. Current local CI is green. This verdict does not claim hosted CI/Release acceptance for current HEAD or authorize a further push, dispatch, rerun, merge, or release.
+The historical full CI and Release failures are retained as evidence for the earlier source; the current exact head passed local CI and all three hosted workflows. The recorded trace-cost receipt remains source-qualified to its measured source. This verdict does not claim the PR has merged or authorize another push, dispatch, rerun, or stable release.
 
 ## Regression Gate
 
@@ -169,13 +176,13 @@ The current compiler-portability review found no issues after the mode-specific 
 
 ## Human Verification Required
 
-None. The phase's acceptance criteria are deterministic and were exercised locally. Hosted CI/Release for current HEAD remains unverified and is a separate shipping boundary; this report makes no hosted-green claim.
+None. The phase's acceptance criteria were exercised locally and the exact current head passed hosted CI, Release, and Nightly. The PR remains draft and unmerged under its existing instruction; that separate delivery boundary is not an acceptance gap for the verified code.
 
 ## Gaps Summary
 
-The trace feature, fixed-value oracle, deterministic compatibility checks, path and I/O controls, documentation, and local compiler fixes are verified. The accepted Linux Cachegrind result is preserved for its recorded source and proves the hooks-off cost bound; the current CPU/bus/frame and perf producer files are unchanged from that measurement. Current local CI is green. Hosted CI/Release acceptance for current HEAD remains unverified, so this report does not establish shipping readiness.
+The trace feature, fixed-value oracle, deterministic compatibility checks, path and I/O controls, documentation, and compiler fixes are verified. The accepted Linux Cachegrind result is preserved for its recorded source and proves the hooks-off cost bound; the current CPU/bus/frame and perf producer files are unchanged from that measurement. Local CI and exact-head hosted CI, Release, and Nightly pass. PR 77 remains open and draft; no merge or stable release is claimed.
 
 ---
 
-_Verified: 2026-11-17T19:05:11Z_
+_Verified: 2026-11-17T20:16:28Z_
 _Verifier: the agent (gsd-verifier)_

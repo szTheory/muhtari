@@ -5,10 +5,10 @@ milestone_name: Headless developer trace
 current_phase: 27
 status: completed
 stopped_at: Phase 27 complete — all phases complete
-last_updated: "2026-11-17T19:13:29.718Z"
+last_updated: "2026-11-17T20:16:28Z"
 last_activity: 2026-11-17
-last_activity_desc: Phase 27 complete
-state_head: 76a3829dabf443b51224012940eb40e1c68379a4
+last_activity_desc: Phase 27 compiler fixes passed exact-head hosted CI, Release, and Nightly
+state_head: 4dba7cfd982108e291736bc5e34c01f90edf025a
 progress:
   total_phases: 2
   completed_phases: 2
@@ -60,14 +60,14 @@ Prior milestone metrics and exact-source receipts remain in the [v9.0 archive](m
 - [Phase 27]: Keep TRACE-06 pending until the normal Linux perf job provides an authentic source-qualified Cachegrind receipt; local controls are not a substitute. This condition was satisfied by the accepted PR 77 receipt in run 44123425194.
 - [Phase 27]: Preserve public API 8, ABI 1 and state formats 1/6, 2/7 and 3/8 across trace acceptance.
 - [Phase 27]: Exact-source Windows x64 and arm64 path receipts established TRACE-03; the Linux receipt later established TRACE-06.
-- [Phase 27]: Keep the Phase 27 acceptance matrix unchanged until all required exact-source receipts pass; the phase receipts now pass, while separate required CI/Release build failures remain.
+- [Phase 27]: Keep the Phase 27 acceptance matrix unchanged until all required exact-source receipts pass; the receipts now pass, including hosted CI, Release, and Nightly on current head `4dba7cfd`.
 - [Phase 27]: One initial CI run does not support a topology, timeout, or cache change.
 - [Phase 27 gap closure]: Commit `2160cfd` contains the local trace-limit comparison correction; its earlier source-authorization claim remains unverified. The owner later authorized one push of reviewed descendant `4630288` to draft PR 77 and a bounded observation, which produced the accepted TRACE-06 receipt. That one-use remote scope is spent and authorizes no further push or run.
 
 ### Pending Todos
 Inherited todos and optional seeds retain their dispositions; no unrelated work is promoted. Root remains canonical and older dirty worktrees require content/ancestry reconciliation before import. See [workspace reconciliation](debug/workspace-reconciliation-2026-11-10.md).
 ### Blockers/Concerns
-- Phase 26 is complete. Phase 27 is verified 15/15, and TRACE-06 is complete from the accepted Linux perf receipt. Draft PR 77 remains open; its CI and Release workflows failed in separate required build lanes: GCC `-Werror=mismatched-dealloc` at `tests/runner/test_save.c:308` and Clang's missing `realpath` declaration at `runner/main.c:841`. Release publish/install steps were skipped. Plan 27-05 remains terminal after its one-use observation ended without a receipt; the later 27-06 authorization covered only one push and one bounded automatic-check observation, and is now spent. A new local diagnosis/remediation scope is needed before shipping; no further push, dispatch, rerun, merge or release is authorized. Nine deferred v3.0 requirements remain open: TUNE-06/07, PLAY-01–04 and FRONT-02–04. The denied Phase 12 diagnostic-app request must not be retried; original Phase 12/14 host/remote stops, spent allowances, expired windows and no-retry limits remain binding.
+- Phase 26 is complete. Phase 27 is verified 15/15, and TRACE-06 is complete from the accepted Linux perf receipt. The GCC `-Werror=mismatched-dealloc` and Clang undeclared `realpath` failures were fixed and the exact current head `4dba7cfd` passed hosted CI, Release, and Nightly. Release's temporary rehearsal prerelease and tag were cleaned up; no stable release was published. Draft PR 77 remains open and must stay unmerged under its explicit instruction. The single-push observation scope is spent; no further push, dispatch, rerun, merge, or stable release is authorized. Plan 27-05's earlier failed observation remains terminal. Nine deferred v3.0 requirements remain open: TUNE-06/07, PLAY-01–04 and FRONT-02–04. The denied Phase 12 diagnostic-app request must not be retried; original Phase 12/14 host/remote stops, spent allowances, expired windows and no-retry limits remain binding.
 - GameDrive implementation remains NO-GO pending authoritative timing/framing, a lawful independent exact-profile PCM oracle and finite resource facts. Preserve the [v8.0 qualification](milestones/v8.0-phases/24-qualify-the-gamedrive-audio-contract/24-QUALIFICATION.md); no unlicensed sample/encoder source is permitted.
 - Phase 21's spec-less probe remains unresolved and nonblocking. No retail, physical hardware or owner-device acceptance is inferred. LibFuturo owns browser/host routes; Playstead owns player integration; twentysixhundo owns Atari 2600.
 
@@ -116,8 +116,8 @@ At v9.0 close, no new items were acknowledged; 50 items acknowledged at earlier 
 | deferred_items | 11/deferred-items.md: Found in plan 04  - `diag.bankset_tracer` and `diag.bankset` both write `build/ci/tests/diag/bankset/32n/` and carry no resource lock, so under `ctest -j` one can read the other's `pixels.png` half written (`bankset --bankset-png ... png: chunk longer than the file`). Seen once in `cmake --workflow --preset ci`; passes alone and on rerun. Not caused by plan 04; a fix is a `RESOURCE_LOCK` or a separate output directory in `tests/diag/tests.cmake`.  Resolved in the gap round: `diag.bankset` now writes `build/<preset>/tests/diag/bankset-matrix/` and `diag.bankset_tracer` keeps `build/<preset>/tests/diag/bankset/`, so the two tests share no output file. | acknowledged; historical disposition retained | 2026-10-29 | v2.0 |
 
 ## Session Continuity
-Last session: 2026-11-17T17:39:40.274Z
-Stopped at: Phase 27 complete — all phases complete
+Last session: 2026-11-17T20:16:28Z
+Stopped at: Phase 27 compiler recovery verified on exact hosted head; PR 77 remains explicitly unmerged
 Resume file: None
 
-Next action: Phase 27 compiler fixes and local verification are complete. Hosted CI/Release acceptance for this exact source remains unverified. No GSD command is valid until the owner authorizes a fresh remote push and observation scope; the owner acts next.
+Next action: Phase 27 compiler fixes and local/hosted verification are complete. PR 77 remains open and draft under its explicit unmerged instruction. The bounded push/observation scope is spent; no further push or rerun is authorized in this work, and no merge or stable release is authorized while the PR instruction remains. No GSD command is currently valid; the owner acts next only to grant a new scope or change that boundary.

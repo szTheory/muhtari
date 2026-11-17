@@ -16,12 +16,12 @@ updated: 2026-11-17
 ## Current Focus
 
 focus_2026_11_17:
-  status: "Local compiler-debug scope resolved; exact hosted acceptance remains outside this scope."
+  status: "Local compiler-debug scope resolved; subsequent exact-head hosted acceptance passed under separate authorization."
   hypothesis: "Confirmed independent GCC wrapper-ownership and glibc X/Open declaration-visibility causes, corrected locally."
   evidence: "Phase 27 CI evidence records GCC -Werror=mismatched-dealloc at tests/runner/test_save.c:308 and Clang's undeclared realpath at runner/main.c:841 across CI, Release, and Nightly."
   test: "Read the exact source, compile commands, toolchain definitions, and CI lane setup; use cheap syntax/configuration checks before any full build or suite."
   expecting: "Each failure is reduced to a minimal source/toolchain cause, fixed without weakening warnings or platform coverage, and verified with focused compiler checks before broader local acceptance."
-  next_action: "Parent reconciles Phase 27 source-qualified verification and preserves the closed remote scope. No owner-run test is needed for these compiler-only changes."
+  next_action: "Phase 27 verification and state now record the exact-head hosted results. Preserve PR 77's explicit unmerged stop; no further remote attempt is authorized by the spent one-push scope. No owner-run test is needed for these compiler-only changes."
   bug_class: "Bohrbug: deterministic compile-time failures"
   candidate_causes:
     - "code: a libc allocation declaration is macro-renamed by the test fixture before its matching release annotation is consumed"
@@ -48,6 +48,11 @@ focus_2026_11_17:
   checked: "Final source complete native CI workflow"
   found: "cmake --workflow --preset ci exits 0: all 736 ordinary tests, native ZIP package creation, and all 8 release tests pass. Final full-warning GCC 15.3 -O3 fixture compile exits 0. Final docs.budgets and diff whitespace checks pass."
   implication: "Authorized local fix is verified. This does not replace exact-source hosted GCC/Clang acceptance or reopen prior spent remote attempts. Parent owns terminal commits."
+
+- timestamp: 2026-11-17
+  checked: "Current-head hosted compiler acceptance after separate owner authorization"
+  found: "Exact source 4dba7cfd982108e291736bc5e34c01f90edf025a passed CI run 44157601581, Release run 44157601747, and Nightly run 44157601814. The affected GCC and Clang lanes passed; Release rehearsal, install-line, and cleanup passed. The temporary non-latest rehearsal prerelease and tag are absent."
+  implication: "Both compiler fixes are accepted by the hosted workflows on current source. The earlier failed runs remain terminal historical evidence; PR 77 remains draft and unmerged, and the authorized one-push scope is spent."
 
 - timestamp: 2026-11-17
   checked: "Focused runner tests, compiler controls, hygiene and complete native CI workflow"
@@ -135,7 +140,7 @@ branching_whys:
 
 ## Closeout boundary
 
-The session manager owns terminal commits for `CMakeLists.txt`, `tests/runner/tests.cmake`, `tests/runner/test_save.c`, `docs/maintaining.md`, `.planning/LESSONS.md`, and this debug file. No other files are part of this fix. Local compiler-debug resolution does not claim hosted CI is green: exact hosted acceptance stays unverified, and the remote scope remains closed. No human workflow test is needed; the parent acts next on delivery-scope reconciliation.
+At original local-scope close, the session manager owned terminal commits for `CMakeLists.txt`, `tests/runner/tests.cmake`, `tests/runner/test_save.c`, `docs/maintaining.md`, `.planning/LESSONS.md`, and this debug file. No other files were part of the compiler fix. A separate owner-authorized push later triggered exact-head CI, Release, and Nightly; all passed, and the source-qualified receipts are recorded in `27-CI-EVIDENCE.md`. The Release rehearsal's temporary prerelease and tag were removed. PR 77 remains open and draft under its explicit instruction to keep it unmerged; the single-push observation scope is spent. No human workflow test is needed, and this debug session is resolved.
 
 ## Specialist Review
 
@@ -151,4 +156,4 @@ fix: 1
 - [GCC paired allocation attributes](https://gcc.gnu.org/onlinedocs/gcc-15.1.0/gcc/Common-Function-Attributes.html): paired attributes retain allocator/deallocator identity and prevent partial inlining; applied to test wrappers only.
 - [Linux realpath declarations](https://man7.org/linux/man-pages/man3/realpath.3.html): X/Open feature selection exposes the declaration in glibc.
 - Existing required GCC/Clang build consumers detect the two compiler regressions; existing runner fault tests cover actual close/error behavior. No redundant new runtime test was added for a compiler-only defect.
-- Exact hosted GCC 15.2/upstream Clang 21 and Windows/WASI lanes remain unexecuted in this local scope. Older failed hosted results remain terminal. No publication, remote rerun, dispatch, merge, release, RetroArch or owner-host action occurred.
+- The local investigation itself did not run hosted jobs. A separate authorized exact-head run later passed CI, Release, and Nightly on `4dba7cfd`; the older failed runs remain terminal historical evidence. The Release rehearsal briefly published only a temporary non-latest prerelease and its cleanup removed both release and tag. No stable release, merge, dispatch, or rerun occurred; the open draft PR's unmerged instruction remains in force.
