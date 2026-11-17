@@ -5,15 +5,15 @@ milestone_name: Headless developer trace
 current_phase: 27
 current_phase_name: Headless developer trace
 status: verifying
-stopped_at: Phase 27 verification found one gap: Linux Cachegrind compilation failed before measurement; Windows path receipts passed
-last_updated: "2026-11-17T03:43:10Z"
+stopped_at: "Phase 27 gap plan 27-05 is ready; fresh owner authority is still required before source edits and hosted CI"
+last_updated: "2026-11-17T04:19:43.623Z"
 last_activity: 2026-11-16
-last_activity_desc: Phase 27 CI evidence reconciled; TRACE-06 remains pending
-state_head: 9b4be2efeb72b36707d75839622722865627e17a
+last_activity_desc: Phase 27 gap plan 27-05 created; TRACE-06 remains pending behind source and hosted approvals
+state_head: 4cd1984ad1858ef585e37f30d242f511d2fe9c57
 progress:
   total_phases: 2
   completed_phases: 1
-  total_plans: 7
+  total_plans: 8
   completed_plans: 7
   percent: 50
 ---
@@ -26,10 +26,10 @@ See [PROJECT.md](PROJECT.md) (updated 2026-11-16), [ROADMAP.md](ROADMAP.md), [RE
 **Current focus:** Phase 27 — Headless developer trace
 
 ## Current Position
-Phase: 27 (Headless developer trace) — EXECUTING
-Plan: 4 of 4
-Status: Verification gaps found — TRACE-06 still requires a source fix and authorized Linux measurement
-Last activity: 2026-11-16 — Phase 27 execution started
+Phase: 27 (Headless developer trace) — READY TO EXECUTE
+Plan: 5 of 5
+Status: TRACE-06 gap plan ready; source correction and hosted validation still require separate fresh owner approvals
+Last activity: 2026-11-16 — Phase 27 gap plan 27-05 created
 Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
@@ -120,4 +120,4 @@ Last session: 2026-11-17T03:43:10Z
 Stopped at: Phase 27 re-verification; Windows path receipts pass and TRACE-06 remains pending after Linux compile failure
 Resume file: None
 
-Next action: A source fix and another hosted validation are outside the one-run authorization. The owner must authorize that scope before work resumes; the GSD route after authorization is $gsd-plan-phase 27 --gaps.
+Next action: The owner approved this second planning round because the initial CI run produced new GCC failure evidence. This approval is limited to planning. Run $gsd-execute-phase 27 --gaps-only to reach Task 1's source-correction approval checkpoint; the command itself authorizes no edit. Task 3 separately requires fresh approval before one update push to draft PR 77 and its proposed 75-minute hosted observation. TRACE-06 stays pending until an authentic corrected-source Cachegrind receipt passes.
