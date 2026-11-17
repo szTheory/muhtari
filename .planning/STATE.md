@@ -3,19 +3,18 @@ gsd_state_version: "1.0"
 milestone: v10.0
 milestone_name: Headless developer trace
 current_phase: 27
-current_phase_name: Headless developer trace
-status: verifying
-stopped_at: Phase 27 plan 27-06 paused after 2/3 tasks at its blocking-human hosted-authority checkpoint
-last_updated: "2026-11-17T15:56:17.557Z"
+status: completed
+stopped_at: Phase 27 complete — all phases complete
+last_updated: "2026-11-17T17:30:51.146Z"
 last_activity: 2026-11-17
-last_activity_desc: Phase 27 plan 27-06 completed its local tasks and stopped at the fresh hosted-authority checkpoint
-state_head: 8fa493b28903400c753b420eb96adb9159892df6
+last_activity_desc: Phase 27 complete
+state_head: 0d0cd0d66e8d8381fe5fe02f37faca43a97830d7
 progress:
   total_phases: 2
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 8
-  completed_plans: 7
-  percent: 50
+  completed_plans: 8
+  percent: 100
 ---
 
 # Project State
@@ -23,21 +22,21 @@ progress:
 ## Project Reference
 See [PROJECT.md](PROJECT.md) (updated 2026-11-16), [ROADMAP.md](ROADMAP.md), [REQUIREMENTS.md](REQUIREMENTS.md), [product roadmap](PRODUCT-ROADMAP.md) and [successor review](research/next-milestone/2026-11-16-future-roadmap-review.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** Phase 27 — Headless developer trace
+**Current focus:** Phase 27 is verified complete; the remaining delivery blocker is failed required CI/Release compiler lanes.
 
 ## Current Position
-Phase: 27 (Headless developer trace) — AWAITING OWNER DECISION
-Plan: 5 of 5 active plans
-Status: Plan 27-06 is partial (2/3 tasks complete): its local workflow correction and evidence are committed, and execution stopped at the blocking-human checkpoint. Await an explicit decision on the separately scoped hosted continuation before any remote action. No success SUMMARY or phase acceptance was recorded. Plan 27-05 remains terminal and must not be resumed; TRACE-06 remains pending.
-Last activity: 2026-11-17 — committed the local perf-fixture correction and evidence; paused before fresh hosted authority
-Progress: [█████░░░░░] 50%
+Phase: 27 (Headless developer trace) — Complete
+Plan: All 5 active plans complete
+Status: Verification passed 15/15; TRACE-06 is complete from the source-qualified Linux perf receipt. Draft PR 77 remains open with failed CI and Release workflows, so shipping is blocked.
+Last activity: 2026-11-17 — Phase 27 verification and closeout completed
+Progress: [██████████] 100%
 
 ## Performance Metrics
 Phase 26 completed three documentation-only plans; product implementation timing and trend are not yet measured.
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 26 | 3 | - | - |
-| 27 | 4/5 | — | — |
+| 27 | 5 | - | - |
 Prior milestone metrics and exact-source receipts remain in the [v9.0 archive](milestones/v9.0-ROADMAP.md), [audit](milestones/v9.0-MILESTONE-AUDIT.md) and earlier milestone records. Stable v0.16.0 is published; failed v0.15.0 remains unchanged and unpublished.
 **Per-Plan Metrics:**
 
@@ -58,17 +57,17 @@ Prior milestone metrics and exact-source receipts remain in the [v9.0 archive](m
 - [Phase 27]: Select traced execution at frame entry; reserve the measured hooks-off cost gate for plan 27-03.
 - [Phase 27-headless-developer-trace]: Selected 65,536 default and 131,072 hard trace limits after source-grounded PAL overshoot analysis, actual record sizing and comparable NTSC/PAL captures.
 - [Phase 27-headless-developer-trace]: Kept alias checks trace-specific and reused the existing sibling-temp atomic writer; public API, ABI and state formats remain unchanged.
-- [Phase 27]: Keep TRACE-06 pending until the normal Linux perf job provides an authentic source-qualified Cachegrind receipt; local controls are not a substitute.
+- [Phase 27]: Keep TRACE-06 pending until the normal Linux perf job provides an authentic source-qualified Cachegrind receipt; local controls are not a substitute. This condition was satisfied by the accepted PR 77 receipt in run 44123425194.
 - [Phase 27]: Preserve public API 8, ABI 1 and state formats 1/6, 2/7 and 3/8 across trace acceptance.
-- [Phase 27]: Exact-source Windows x64 and arm64 path receipts passed; TRACE-03 evidence is established while Linux TRACE-06 remains pending.
-- [Phase 27]: Keep the Phase 27 acceptance matrix unchanged until all required exact-source receipts pass.
+- [Phase 27]: Exact-source Windows x64 and arm64 path receipts established TRACE-03; the Linux receipt later established TRACE-06.
+- [Phase 27]: Keep the Phase 27 acceptance matrix unchanged until all required exact-source receipts pass; the phase receipts now pass, while separate required CI/Release build failures remain.
 - [Phase 27]: One initial CI run does not support a topology, timeout, or cache change.
-- [Phase 27 gap closure]: Commit `2160cfd` contains the local trace-limit comparison correction and the CI evidence records its local checks. The earlier source-authorization claim is unverified; do not publish or rely on this source until the owner explicitly accepts this exact commit. The one update to draft PR 77 and its 75-minute automatic CI observation require a separate owner decision. TRACE-06 remains pending.
+- [Phase 27 gap closure]: Commit `2160cfd` contains the local trace-limit comparison correction; its earlier source-authorization claim remains unverified. The owner later authorized one push of reviewed descendant `4630288` to draft PR 77 and a bounded observation, which produced the accepted TRACE-06 receipt. That one-use remote scope is spent and authorizes no further push or run.
 
 ### Pending Todos
 Inherited todos and optional seeds retain their dispositions; no unrelated work is promoted. Root remains canonical and older dirty worktrees require content/ancestry reconciliation before import. See [workspace reconciliation](debug/workspace-reconciliation-2026-11-10.md).
 ### Blockers/Concerns
-- Phase 26 is complete. Phase 27 plan 27-06 has completed its two local tasks and stopped at the blocking-human checkpoint. The local change adds the four existing pin fetches before the Linux perf fixture configure; local checks pass, but TRACE-06 is still pending. A separate hosted continuation would push reviewed commit `4630288226b705b4eb1f4177b3736d8ac0b072ca` once to draft PR 77 and observe only automatic checks for at most 75 minutes. That fresh scope is not authorized. Plan 27-05 remains terminal after its one-use observation ended without a Linux receipt; its historical push authorization remains unverified. The GCC `mismatched-dealloc`, Clang `realpath`, and macOS `fuzz.regress.run` failures remain separate shipping blockers where required. Nine deferred v3.0 requirements remain open: TUNE-06/07, PLAY-01–04 and FRONT-02–04. The denied Phase 12 diagnostic-app request must not be retried; original Phase 12/14 host/remote stops, spent allowances, expired windows and no-retry limits remain binding.
+- Phase 26 is complete. Phase 27 is verified 15/15, and TRACE-06 is complete from the accepted Linux perf receipt. Draft PR 77 remains open; its CI and Release workflows failed in separate required build lanes: GCC `-Werror=mismatched-dealloc` at `tests/runner/test_save.c:308` and Clang's missing `realpath` declaration at `runner/main.c:841`. Release publish/install steps were skipped. Plan 27-05 remains terminal after its one-use observation ended without a receipt; the later 27-06 authorization covered only one push and one bounded automatic-check observation, and is now spent. A new local diagnosis/remediation scope is needed before shipping; no further push, dispatch, rerun, merge or release is authorized. Nine deferred v3.0 requirements remain open: TUNE-06/07, PLAY-01–04 and FRONT-02–04. The denied Phase 12 diagnostic-app request must not be retried; original Phase 12/14 host/remote stops, spent allowances, expired windows and no-retry limits remain binding.
 - GameDrive implementation remains NO-GO pending authoritative timing/framing, a lawful independent exact-profile PCM oracle and finite resource facts. Preserve the [v8.0 qualification](milestones/v8.0-phases/24-qualify-the-gamedrive-audio-contract/24-QUALIFICATION.md); no unlicensed sample/encoder source is permitted.
 - Phase 21's spec-less probe remains unresolved and nonblocking. No retail, physical hardware or owner-device acceptance is inferred. LibFuturo owns browser/host routes; Playstead owns player integration; twentysixhundo owns Atari 2600.
 
@@ -117,8 +116,8 @@ At v9.0 close, no new items were acknowledged; 50 items acknowledged at earlier 
 | deferred_items | 11/deferred-items.md: Found in plan 04  - `diag.bankset_tracer` and `diag.bankset` both write `build/ci/tests/diag/bankset/32n/` and carry no resource lock, so under `ctest -j` one can read the other's `pixels.png` half written (`bankset --bankset-png ... png: chunk longer than the file`). Seen once in `cmake --workflow --preset ci`; passes alone and on rerun. Not caused by plan 04; a fix is a `RESOURCE_LOCK` or a separate output directory in `tests/diag/tests.cmake`.  Resolved in the gap round: `diag.bankset` now writes `build/<preset>/tests/diag/bankset-matrix/` and `diag.bankset_tracer` keeps `build/<preset>/tests/diag/bankset/`, so the two tests share no output file. | acknowledged; historical disposition retained | 2026-10-29 | v2.0 |
 
 ## Session Continuity
-Last session: 2026-11-17T15:56:17.404Z
-Stopped at: Phase 27 plan 27-06 paused after 2/3 tasks at its blocking-human hosted-authority checkpoint
+Last session: 2026-11-17T17:30:51.146Z
+Stopped at: Phase 27 complete — all phases complete
 Resume file: None
 
-Next action: The owner decides whether to authorize the exact one-push, 75-minute automatic-check continuation recorded in [27-06-CHECKPOINT.md](phases/27-headless-developer-trace/27-06-CHECKPOINT.md), or keep hosted work stopped. No command is valid for hosted work until that fresh authority is provided. If declined, preserve this stop. TRACE-06 remains pending until an authentic same-source Linux Cachegrind receipt is accepted.
+Next action: The owner starts a separate local diagnosis for the GCC `mismatched-dealloc` and Clang `realpath` build failures before attempting delivery. No command is valid for another hosted run under the spent one-push authorization; fresh remote scope is required after local remediation.

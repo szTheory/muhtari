@@ -1,8 +1,8 @@
 ---
 phase: 27-headless-developer-trace
-verified: 2026-11-17T03:39:38Z
-status: gaps_found
-score: 14/15 must-haves verified
+verified: 2026-11-17T17:27:20Z
+status: passed
+score: 15/15 must-haves verified
 covered_files:
   - .github/workflows/ci.yml
   - .planning/phases/27-headless-developer-trace/27-01-PLAN.md
@@ -13,12 +13,16 @@ covered_files:
   - .planning/phases/27-headless-developer-trace/27-03-SUMMARY.md
   - .planning/phases/27-headless-developer-trace/27-04-PLAN.md
   - .planning/phases/27-headless-developer-trace/27-04-SUMMARY.md
+  - .planning/phases/27-headless-developer-trace/27-05-PLAN.md
+  - .planning/phases/27-headless-developer-trace/27-06-CHECKPOINT.md
+  - .planning/phases/27-headless-developer-trace/27-06-PLAN.md
+  - .planning/phases/27-headless-developer-trace/27-06-SUMMARY.md
   - .planning/phases/27-headless-developer-trace/27-BOUNDS.md
+  - .planning/phases/27-headless-developer-trace/27-CI-EVIDENCE.md
   - .planning/phases/27-headless-developer-trace/27-REVIEW-DISPOSITION.md
   - .planning/phases/27-headless-developer-trace/27-REVIEW-FIX.md
   - .planning/phases/27-headless-developer-trace/27-REVIEW.md
   - .planning/phases/27-headless-developer-trace/27-TRACE-ACCEPTANCE.md
-  - .planning/phases/27-headless-developer-trace/27-CI-EVIDENCE.md
   - .planning/phases/27-headless-developer-trace/deferred-items.md
   - .planning/todos/pending/2026-11-17-define-extended-windows-output-path-support.md
   - CMakeLists.txt
@@ -40,41 +44,30 @@ covered_files:
   - tests/runner/test_trace.c
   - tests/runner/tests.cmake
   - tests/runner/trace.cmake
-covered_digest: "v4:sha256:adc2e8c98491e3c51558c98303f338636eaea6bc18e9467e670a816d9bcdab25"
+covered_digest: "v4:sha256:3a91f0b5f7e11b0d5d9c9cbf2eb2200a7fa6c17e06b5af6d0adc78a65532cbc4"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
   previous_status: gaps_found
-  previous_score: 13/15
+  previous_score: 14/15
   gaps_closed:
-    - "Windows-specific trace output path collision controls pass on the supported Windows runners."
-  gaps_remaining:
-    - "A real CPU workload measures no-observer instruction cost at no more than 32 Ir/frame on this source."
+    - "A generated CPU workload proves the hooks-off instruction-cost delta is at most 32 Ir/frame on the measured source."
+  gaps_remaining: []
   regressions: []
+advisory: []
 decision_coverage:
   honored: 9
   total: 9
   not_honored: []
-gaps:
-  - truth: "A real CPU workload measures no-observer instruction cost at no more than 32 Ir/frame on this source."
-    status: partial
-    reason: "The authorized Linux perf job failed while compiling the runner at runner/main.c:1257:36 with GCC -Werror=type-limits, before the ON/OFF builds and Cachegrind measurement. No authentic trace-cost receipt exists for this revision; local comparator controls are not measurement evidence."
-    artifacts:
-      - path: tests/perf/trace.cmake
-        issue: "The real measurement mode has not produced its source-qualified trace-cost receipt."
-      - path: .github/workflows/ci.yml
-        issue: "The existing Linux PR perf job ran but failed before measurement; no quality-perf artifact was produced."
-    missing:
-      - "A passing source-qualified Cachegrind trace_cost receipt from the existing Linux PR perf job."
 ---
 
-# Phase 27: Headless developer trace verification
+# Phase 27: Headless developer trace Verification Report
 
 **Phase Goal:** Developers can inspect deterministic Atari 7800 instruction and bus-access events through the existing headless runner without changing emulated results or public compatibility.
 
-**Verified:** 2026-11-17T03:39:38Z
-**Status:** gaps_found  
-**Re-verification:** Yes — Windows CI gap closed; Linux Cachegrind gap remains
+**Verified:** 2026-11-17T17:27:20Z
+**Status:** passed
+**Re-verification:** Yes — after gap closure
 
 ## Goal Achievement
 
@@ -82,119 +75,113 @@ gaps:
 
 | # | Truth | Status | Evidence |
 |---|---|---|---|
-| 1 | A developer can select one invocation frame and inclusive address range and receive a separate versioned JSONL trace with event kind, master tick, beam position, and CPU context; bus records include address, direction, and value. | VERIFIED | `runner/main.c` validates `--trace`, `--trace-frame`, and `--trace-range`, captures only the selected frame, and serializes the fields. `tests/runner/trace.cmake` drives the actual runner; the oracle and smoke CTests passed. |
-| 2 | Instruction-start-PC and CPU bus-address filters are independent, inclusive, and retain observation order, including instruction-before-opcode-bus ties. | VERIFIED | `trace_capture_event` filters by PC for instructions and address for bus events without sorting. `tests/runner/test_trace.c` pins same-tick ordering and exact filter results; `runner.trace.oracle` passed. |
-| 3 | Event timestamps use the CPU bus data edge and records contain the documented beam coordinates and sampled registers. | VERIFIED | Trace producers in `src/bus.c` derive the event tick from the data edge and frame origin; fixed numeric prefix/tail records and register checks in `test_oracle` passed through the actual runner. |
-| 4 | The runner attaches and detaches the private observer only around the selected invocation frame, and the frame loop chooses the traced path once at its entry. | VERIFIED | `runner/main.c` sets and clears the instance callback around `muhtari_run_frame`; `src/frame.c` dispatches to `muhtari__trace_cpu_step` only when the callback is non-null. The instance/detach edge tests are registered in `core.trace.edges`. |
-| 5 | The event cap distinguishes exactly-full output from one-extra-match truncation and lets emulation finish. | VERIFIED | `trace_capture_event` sets a sticky truncated flag only when another matching event arrives at the limit. `runner.trace.limits` checks exact/full and one-extra cases and compares later frame hashes; it passed in the recorded full CI workflow. |
-| 6 | Capture memory and serialized output have checked finite bounds grounded in source invariants. | VERIFIED | `runner/main.c` bounds event count, event allocation, maximum line and output size with checked arithmetic/static assertions; `27-BOUNDS.md` derives the limit. `runner.trace.bounds` is registered in CI and the recorded full CI run passed. |
-| 7 | Invalid or conflicting trace options fail before emulation and cannot overwrite inputs or other outputs. | VERIFIED | The Darwin/POSIX actual-main path matrix and option tests pass. Both exact-source Windows CI jobs ran `runner.trace.paths` successfully, exercising the junction and trailing-suffix controls on `windows-2025` and `windows-11-arm`; see `27-CI-EVIDENCE.md`. |
-| 8 | Trace open/write/flush/sync/close/replace failures return failure, preserve an old destination, and do not publish a fresh complete-looking trace. | VERIFIED | `write_sibling_atomic_stream` commits only after successful write, flush, sync, close, and replace. The injected actual-main fault matrix is wired by `runner.trace.io`; the recorded full CI passed. |
-| 9 | A generated diagnostic produces an exact numeric trace oracle independent of runtime output generation. | VERIFIED | `test_trace.c` writes the build-tree cartridge as input and compares runner JSONL against fixed record values, counts, ticks, registers and order. It also rejects corrupted tick, tie order and register values. The oracle CTest passed. |
-| 10 | Tracing leaves deterministic stdout, frame hashes, canonical state hashes/bytes, and supported legacy/YM/Souper behavior unchanged. | VERIFIED | `runner.trace.equality` compares traced and untraced runs across NTSC/PAL and the listed cartridge/state cases. It checks frame/hash output and saved-state bytes; the test passed. |
-| 11 | The feature stays private and preserves public API 8, ABI 1, behavior revision, and state formats; observer pointers are excluded from canonical state. | VERIFIED | `include/muhtari.h` and `src/state.c` are unchanged against `origin/main`; versions remain API 8 and ABI 1. The five API/ABI/state regression tests passed, and the equality matrix compares canonical state bytes. |
-| 12 | An unobserved frame uses the ordinary CPU/bus path without a per-access trace conditional; trace objects can be omitted in a product-only build. | VERIFIED | The ordinary `src/cpu.c`/`src/bus.c` objects remain separate from compile-time-renamed trace variants. `src/frame.c` dispatches once per frame. The trace-disabled configuration test passed, and a product-only OFF runner rejected a trace request with exit 77 without creating a file. |
-| 13 | Runner documentation accurately explains invocation, filtering, record fields, bounds, truncation, error behavior, and CPU-only limits. | VERIFIED | `docs/runner.md` contains the tested option/schema contract and limits; `docs/testing.md` lists the recurring checks. The full CI workflow's documentation budget checks passed. |
-| 14 | Required local product, hygiene, compatibility, and fixture-cleanliness checks pass without public/state-format changes or committed runtime media. | VERIFIED | The recorded final-source `cmake --workflow --preset ci` run passed 736 tests, 8 release checks and packaging; hygiene passed all 30 checks. `git diff` confirms no public-header/state-serializer changes or ROM/BIOS/save/trace artifacts. |
-| 15 | A real generated CPU workload proves the trace-disabled instruction-cost delta is at most 32 Ir/frame. | UNCERTAIN | The local comparator-control CTest passed, but controls are not a Cachegrind measurement. The authorized Linux perf job failed at `runner/main.c:1257:36` before measurement and produced no `quality-perf.json`/trace-cost receipt; see the remaining gap. |
+| 1 | A developer can select one invocation frame and inclusive address range and receive a separate versioned JSONL trace with event kind, master tick, beam position, and CPU context; bus records include address, direction, and value. | ✓ VERIFIED | `runner/main.c` provides the CLI and serializer; the actual-runner smoke and fixed-value oracle passed in the prior full local CI run. |
+| 2 | Instruction-start-PC and CPU bus-address filters are independent, inclusive, and retain observation order, including instruction-before-opcode-bus ties. | ✓ VERIFIED | `trace_capture_event` uses the event-specific filter without sorting; the generated numeric oracle and filter controls passed. |
+| 3 | Event timestamps use the CPU bus data edge and records contain the documented beam coordinates and sampled registers. | ✓ VERIFIED | The bus producers and fixed numeric oracle verify event ticks, beam coordinates, register values, and ordering. |
+| 4 | The runner attaches and detaches the private observer only around the selected invocation frame, and the frame loop chooses the traced path once at its entry. | ✓ VERIFIED | `runner/main.c` brackets the call with the instance callback; `src/frame.c` chooses the traced entry once per frame. The instance/detach tests are registered and passed. |
+| 5 | The event cap distinguishes exactly-full output from one-extra-match truncation and lets emulation finish. | ✓ VERIFIED | `runner.trace.limits` checks the exact-limit and one-extra cases and the later frame hashes; it passed in the recorded local CI run. |
+| 6 | Capture memory and serialized output have checked finite bounds grounded in source invariants. | ✓ VERIFIED | Checked arithmetic and source-derived bounds are documented in `27-BOUNDS.md`; the registered bounds test passed. |
+| 7 | Invalid or conflicting trace options fail before emulation and cannot overwrite inputs or other outputs. | ✓ VERIFIED | The runner path checks and POSIX tests passed locally; exact-source Windows x64 and arm64 path-control jobs passed. The hosted Clang build failure recorded below is not a path-control result and is not treated as a green build. |
+| 8 | Trace open/write/flush/sync/close/replace failures return failure, preserve an old destination, and do not publish a fresh complete-looking trace. | ✓ VERIFIED | The injected actual-main I/O fault matrix is registered and passed in the recorded local CI run. |
+| 9 | A generated diagnostic produces an exact numeric trace oracle independent of runtime output generation. | ✓ VERIFIED | `tests/runner/test_trace.c` compares the real runner output with fixed expected records and rejects corrupted values and order; its oracle passed. |
+| 10 | Tracing leaves deterministic stdout, frame hashes, canonical state hashes/bytes, and supported legacy/YM/Souper behavior unchanged. | ✓ VERIFIED | The trace-on/off equality matrix passed for the recorded NTSC/PAL, cartridge, and state cases. |
+| 11 | The feature stays private and preserves public API 8, ABI 1, behavior revision, and state formats; observer pointers are excluded from canonical state. | ✓ VERIFIED | The public header and serializer are unchanged; API/ABI/state tests and byte/hash equality checks passed. |
+| 12 | An unobserved frame uses the ordinary CPU/bus path without a per-access trace conditional; trace objects can be omitted in a product-only build. | ✓ VERIFIED | The ordinary and trace variants are separately compiled, dispatch is at frame entry, and trace-disabled configuration and runner-refusal controls passed. |
+| 13 | Runner documentation accurately explains invocation, filtering, record fields, bounds, truncation, error behavior, and CPU-only limits. | ✓ VERIFIED | `docs/runner.md` and `docs/testing.md` match the tested CLI/schema; documentation budget checks passed. |
+| 14 | Required local product, hygiene, compatibility, and fixture-cleanliness checks pass without public/state-format changes or committed runtime media. | ✓ VERIFIED | The recorded final-source local CI workflow passed 736 tests and 8 release checks; the latest hygiene run passed all 30 checks. The new native preflight built the runner and fixture generator, executed the generated CPU diagnostic, and confirmed `diagnostic a5`; generated files remain ignored. |
+| 15 | A real generated CPU workload proves the trace-disabled instruction-cost delta is at most 32 Ir/frame. | ✓ VERIFIED | The authorized Linux perf job produced `quality-perf` from the PR merge checkout. Independent validation of its downloaded JSON passed: exact run/source/producer identity, stable repeated samples, `delta_raw=900`, threshold `9600`, and `delta_ir_frame=3`. |
 
-**Score:** 14/15 observable truths verified. The supported Windows runners confirmed the platform-specific path controls. The authentic Linux Cachegrind measurement remains the only unverified truth; the CI compile failure is recorded in `27-CI-EVIDENCE.md`.
+**Score:** 15/15 observable truths verified (0 present, behavior-unverified).
 
 ## Required Artifacts
 
 | Artifact | Expected | Status | Details |
 |---|---|---|---|
-| `runner/main.c` | Trace option validation, capture, filtering, serialization and atomic output | VERIFIED | Substantive CLI implementation; actual-runner smoke, oracle, limits, paths and I/O cases are registered. |
-| `src/internal.h`, `src/frame.c`, `src/cpu.c`, `src/bus.c` | Private event seam and dual-compiled dispatch/producers | VERIFIED | Event structure is fixed-width and bounded; the callback is per-instance; traced symbols are renamed at compile time. |
-| `tests/runner/test_trace.c`, `tests/runner/trace.cmake`, `tests/runner/test_save.c` | Generated numeric, compatibility, boundary and I/O/path acceptance | VERIFIED | CTest drives actual `muhtari-run`; independent expected records, exit codes, files and fault outcomes are asserted. |
-| `tests/perf/trace.cmake`, `.github/workflows/ci.yml` | CPU-backed Cachegrind measurement and same-run receipt | PRESENT, WIRED | Existing Ubuntu perf job is wired to build both variants and run the generated workload before the normal PR artifact step. Its authorized run failed during runner compilation before measurement; no receipt exists. |
-| `docs/runner.md`, `docs/testing.md` | User-facing trace contract and recurring test instructions | VERIFIED | The examples and limitations match the CLI and output schema. |
-| `cmake/TraceLoopConfig.cmake`, `tests/cmake/trace_loop_config.cmake` | Clear product-only OFF configuration and rejection of incompatible tests-on build | VERIFIED | Both option combinations are controlled; the dedicated CTest passed. |
+| `runner/main.c`, `src/internal.h`, `src/frame.c`, `src/cpu.c`, `src/bus.c` | Private trace capture, filtering, observer lifetime, and ordinary-path dispatch | ✓ VERIFIED | The previous report's implementation and wiring checks remain valid; the trace-specific tests passed and no product source changed in the final pin-fetch plan. |
+| `tests/runner/test_trace.c`, `tests/runner/trace.cmake`, `tests/runner/test_save.c` | Numeric oracle, bounds, equality, and output-failure controls | ✓ VERIFIED | Registered tests and prior full local CI results cover these controls. |
+| `tests/perf/trace.cmake`, `.github/workflows/ci.yml` | Same-source CPU Cachegrind comparison and source-qualified receipt | ✓ VERIFIED | The perf job now fetches the four existing pinned inputs before its tests-on configure, retains the five-minute cap, and produced the accepted receipt. |
+| `docs/runner.md`, `docs/testing.md` | User-facing trace contract and test instructions | ✓ VERIFIED | Documentation budget checks passed and the recorded docs match the runner contract. |
+| `27-CI-EVIDENCE.md`, `27-TRACE-ACCEPTANCE.md`, `27-06-CHECKPOINT.md` | Exact-source receipts, acceptance, and owner boundary history | ✓ VERIFIED | The earlier failed attempt remains terminal; the separate authorized continuation and its limited result are recorded. |
 
 ## Key Link Verification
 
 | From | To | Via | Status | Details |
 |---|---|---|---|---|
-| `runner/main.c` | `src/frame.c` | callback set around selected `muhtari_run_frame` and cleared on return | WIRED | Manual call-path trace: `runner/main.c` → public frame call → `src/frame.c` checks the private callback and chooses the traced CPU entry point. |
-| `src/cpu.c` | `src/bus.c` | trace variant calls renamed trace bus functions | WIRED | `CMakeLists.txt` gives trace objects symbol-renaming definitions; traced bus producers live in the separately compiled trace object. |
-| `src/bus.c` | `tests/runner/trace.cmake` | actual runner JSONL compared to numeric/order expectations | WIRED | CMake registers the script; it invokes the generated fixture, real runner, and fixed-value `muhtari-test-trace` oracle. |
-| `runner/main.c` | `src/internal.h` | private event allocation and callback fields | WIRED | `runner/main.c` consumes `muhtari__trace_event` and the instance callback declared in the private header. |
-| `tests/runner/test_save.c` | `runner/main.c` | injected wrappers exercise real runner entry on I/O faults | WIRED | The test-save target uses the existing actual-main harness to count frames, writes and replacement operations. |
-| `.github/workflows/ci.yml` | `tests/perf/trace.cmake` | same-source Linux Cachegrind gate and receipt | WIRED | The `perf` job calls measure mode and embeds its output in the existing PR `quality-perf.json`; the authorized run failed before measurement and produced no artifact. |
-| `docs/runner.md` | `runner/main.c` | documented CLI/schema behavior | WIRED | Documentation matches option validation, output fields, bounds and exit statuses; the docs budget and runner CTests pass. |
+| `runner/main.c` | `src/frame.c` | Callback is installed around the selected `muhtari_run_frame` call and cleared after it | WIRED | Manual call-path trace confirmed instance ownership and selected-frame dispatch. |
+| `src/cpu.c` | `src/bus.c` | Traced CPU calls the separately compiled trace bus producers | WIRED | CMake symbol-renaming and object definitions preserve separate ordinary and trace paths. |
+| `.github/workflows/ci.yml` | `scripts/fetch-pin.sh` | Four existing pins are fetched before tests-on configure | WIRED | The new step fetches `wasmtime-x86_64-linux`, `7800basic-wasm`, `7800openbios-asm`, and `rcheevos` into the existing ignored destinations. |
+| `.github/workflows/ci.yml` | `tests/perf/trace.cmake` | Same-source CPU workload and Cachegrind measurement write the receipt | WIRED | The receipt's inner producer is `tests/perf/trace.cmake`; the outer quality artifact preserves its source identity and samples. |
+| `docs/runner.md` | `runner/main.c` | Documented command, fields, limits, and errors match the implemented CLI | WIRED | The earlier actual-runner and documentation checks remain source-qualified. |
 
-The generic key-link query missed several links because they are CMake/runtime connections rather than literal path references. Each was traced manually through the target definitions and test invocations above.
+The generic structural link query checks literal target references and misses several CMake/runtime links. Those links were traced manually through the actual CMake target definitions, runner call paths, and workflow commands.
 
 ## Data-Flow Trace
 
 | Artifact | Data | Source | Produces real data | Status |
 |---|---|---|---|---|
-| `muhtari-run` JSONL | CPU instruction and bus event records | Generated/owned cartridge bytes executed by the real core | Yes | FLOWING; fixed numeric oracle passes. |
-| `trace-cost.json` and `quality-perf.json` | Instruction counts, delta, tool/source/fixture identity | Cachegrind over same-source ON/OFF runners and generated CPU workload | No receipt for current source | NOT YET PRODUCED; local controls are synthetic boundary cases only. |
+| Runner JSONL trace | CPU instruction and bus events | Diagnostic cartridge executed by the real core and runner | Yes | ✓ FLOWING; the fixed-value numeric oracle passed. |
+| `quality-perf.json.trace_cost` | ON/OFF instruction counts and delta | Cachegrind over the same generated CPU workload and source | Yes | ✓ FLOWING; downloaded receipt validation passed. Merge source `fa72f560…` joins authorized head `4630288…` and base `89b6ff8…`. |
 
 ## Behavioral Spot-Checks
 
-| Behavior | Command | Result | Status |
+| Behavior | Command or run | Result | Status |
 |---|---|---|---|
-| Exact numeric trace, trace-on/off compatibility, POSIX paths, and OFF config guard | `ctest --test-dir build/ci --output-on-failure -R '^(runner[.]trace[.](oracle|equality|paths|disabled_config))$'` | exit 0, 4/4 passed | PASS |
-| Perf threshold controls | `ctest --test-dir build/ci --output-on-failure -R '^perf[.]trace[.]controls$'` | exit 0, 1/1 passed | PASS (controls only) |
-| Public API/ABI and state regressions | `ctest --test-dir build/ci --output-on-failure -R '^abi[.](api_v8|symbols)$|^runner[.]state[.]'` | exit 0, 5/5 passed | PASS |
-| Product-only trace-loop OFF refusal | `build/trace-off-local/runner/muhtari-run --frames 1 --trace /tmp/muhtari-verifier-trace-off.jsonl --trace-frame 1 --trace-range 0:65535 tests/diag/souper.a78` | exit 77; diagnostic says trace support is unavailable; no output file created | PASS |
-| Full local CI and hygiene | `cmake --workflow --preset ci`; `cmake --workflow --preset hygiene` | exit 0, 736 CI tests plus 8 release checks; exit 0, 30 hygiene/policy checks; both N/A-local | PASS (recorded final-source runs) |
-| Windows-specific path collisions | PR CI `runner.trace.paths` on x64 and arm64 | both jobs passed on built source `070f65f10d1cc2f62aba63ad3e2f931d2e5987c7`, whose non-planning tree matches reviewed source `c60c192b9088b5f21fc199d574de17e89e5b4c94` | PASS; see [27-CI-EVIDENCE.md](27-CI-EVIDENCE.md) |
-| Authentic Cachegrind measurement | PR CI Linux `perf` job; [run 44001040567](https://github.com/szTheory/muhtari/actions/runs/44001040567) | failed at `runner/main.c:1257:36` with GCC `-Werror=type-limits`; ON/OFF builds and measurement did not run, and no `quality-perf` artifact exists | FAILED BEFORE MEASUREMENT; TRACE-06 remains pending |
+| Trace oracle, equality, POSIX paths, and trace-disabled configuration | Prior local `ctest`/full CI evidence in `27-TRACE-ACCEPTANCE.md` | Exit 0; exact trace, compatibility, and refusal checks passed | ✓ PASS |
+| API, ABI, and state compatibility | Prior local `ctest` evidence in `27-TRACE-ACCEPTANCE.md` | Exit 0; five compatibility tests passed | ✓ PASS |
+| Fresh fixture prerequisite path | Native CI Release configure, build `muhtari-run` and `muhtari-test-trace`, generate/run `trace-cost.a78` | All commands exit 0; runner stdout contains `diagnostic a5` | ✓ PASS; local fixture reachability only |
+| Hygiene and repository policy | `cmake --workflow --preset hygiene` | Exit 0; all 30 checks passed | ✓ PASS |
+| Hooks-off instruction cost | [PR CI run 44123425194](https://github.com/szTheory/muhtari/actions/runs/44123425194), Linux perf job `134180732604`; artifact `14347390138` | Exit 0; two stable repetitions per series; raw delta 900 ≤ 9,600 over 300 frames (3 Ir/frame). The exact `jq -e` source/provenance/arithmetic check also exited 0. | ✓ PASS |
+| Full hosted CI and Release | [CI run 44123425194](https://github.com/szTheory/muhtari/actions/runs/44123425194); [Release run 44123425418](https://github.com/szTheory/muhtari/actions/runs/44123425418) | Both failed overall. Linux `perf` passed, but other required lanes failed on GCC `-Werror=mismatched-dealloc` and Clang's missing `realpath` declaration; quality roll-ups lacked required artifacts. Release publication/install steps were skipped. | ✗ NOT GREEN; shipping remains blocked |
 
-The POSIX `runner.trace.paths` branch passed locally. The Windows-only junction and trailing-suffix branch also passed in both supported Windows jobs on the exact built source; the separate Linux Cachegrind evidence is still absent because compilation failed before measurement.
+The full CI and Release failures are distinct from the passing trace-cost producer. This verdict does not claim a green full-CI run or authorize a further push, dispatch, rerun, merge, or release.
+
+## Regression Gate
+
+The prior phase is documentation-only. Its verification and summaries identify no prior-phase automated test files, so no regression suite was selected or run.
 
 ## Probe Execution
 
-No phase-declared `probe-*.sh` or repository `scripts/*/tests/probe-*.sh` was found. Not applicable.
+No phase-declared probe script or repository `scripts/*/tests/probe-*.sh` was found.
 
 ## Requirements Coverage
 
 | Requirement | Source Plan | Description | Status | Evidence |
 |---|---|---|---|---|
-| TRACE-01 | 27-01 | Opt-in deterministic instruction and bus trace for selected frame/range | SATISFIED | Actual-runner smoke, oracle and filter controls pass. |
-| TRACE-02 | 27-01 | Record event/timing/beam/CPU fields and document filter semantics | SATISFIED | Fixed numeric oracle checks fields/order; runner docs cover schema. |
-| TRACE-03 | 27-01, 27-02 | Finite capture, truncation, early argument refusal and truthful file failures | SATISFIED | Current-host controls pass, and both exact-source Windows CI jobs passed `runner.trace.paths` and the full test suite. Detailed source binding and receipts are in `27-CI-EVIDENCE.md`. |
-| TRACE-04 | 27-01, 27-03 | Exact fixture oracle and unchanged frame/canonical state hashes | SATISFIED | `runner.trace.oracle` and `runner.trace.equality` pass. |
-| TRACE-05 | 27-01, 27-02, 27-03 | Runner-only private seam with API/ABI/state compatibility | SATISFIED | Public header/state serializer unchanged; API/ABI/state tests pass. |
-| TRACE-06 | 27-01, 27-03 | Hooks-off instruction-cost gate and observer-selected instrumentation | PARTIAL | Selection/wiring and control tests pass; authentic ≤32 Ir/frame receipt is missing. |
-| TRACE-07 | 27-03 | User docs and no committed ROM/BIOS/save/log bytes | SATISFIED | Docs budget checks pass; no such changed files or runtime artifacts are tracked. |
+| TRACE-01 | 27-01 | Opt-in deterministic instruction and bus trace for a selected frame and range | ✓ SATISFIED | Actual-runner smoke, filter controls, and numeric oracle passed. |
+| TRACE-02 | 27-01 | Record event/timing/beam/CPU fields and document filter semantics | ✓ SATISFIED | Fixed-value records and ordering passed; runner documentation matches. |
+| TRACE-03 | 27-01, 27-02, 27-04 | Finite capture, truncation, early refusal, truthful I/O failures, and Windows paths | ✓ SATISFIED | Local controls and source-matched Windows x64/arm64 path jobs passed. |
+| TRACE-04 | 27-01, 27-02, 27-03 | Exact diagnostic oracle and unchanged frame/canonical-state results | ✓ SATISFIED | Numeric oracle and trace-on/off equality matrix passed. |
+| TRACE-05 | 27-01, 27-02, 27-03 | Runner-only seam with public API/ABI/state compatibility | ✓ SATISFIED | Public header and serializer are unchanged; API/ABI/state tests passed. |
+| TRACE-06 | 27-01, 27-03, 27-04, 27-05, 27-06 | Hooks-off instruction-cost gate with observer-selected instrumentation | ✓ SATISFIED | Exact-source Linux Cachegrind receipt reports 3 Ir/frame against a 32 Ir/frame ceiling. The failed pre-measurement attempts remain separately recorded. |
+| TRACE-07 | 27-03 | Runner documentation and fixture cleanliness | ✓ SATISFIED | Documentation budget, hygiene, and tracked-tree checks passed. |
 
-**Orphaned requirements:** None. The three plans declare TRACE-01 through TRACE-07; all map to this phase.
+**Orphaned requirements:** None. Every PLAN requirement ID maps to TRACE-01 through TRACE-07 in `.planning/REQUIREMENTS.md`; the superseded 27-05 plan is historical and not resumed.
 
 ## Test Quality Audit
 
-| Test File | Linked Requirements | Active | Skipped | Circular | Assertion Level | Verdict |
-|---|---|---:|---:|---:|---|---|
-| `tests/runner/test_trace.c` | TRACE-01, 02, 04, 05 | Yes | 0 | No | Exact numeric values, event order, fields, hashes and bytes | PASS; fixture bytes are generated as input, expected trace rows are fixed independently. |
-| `tests/runner/trace.cmake` | TRACE-01, 02, 03, 04 | Yes | 0 | No | Actual-runner behavior, exit codes, file contents and corruption rejection | PASS; registered in CMake and both CI/WASI inventories. |
-| `tests/runner/test_save.c` | TRACE-03 | Yes | 0 | No | Actual-main fault injection and filesystem side effects | PASS on Darwin/POSIX; Win32 cases are present but not executed here. |
-| `tests/perf/trace.cmake` | TRACE-06 | Yes | 0 | No | Exact threshold boundary/fault controls; measured samples in real mode | PASS for controls; real measurement awaits Linux CI. |
-| `tests/cmake/trace_loop_config.cmake` | TRACE-06 | Yes | 0 | No | Configure failure/success and diagnostic | PASS; dedicated CTest passed. |
-
-Disabled-test scan found no skip markers in the linked C/CMake tests. The exact trace oracle does not compute expected events by calling Muhtari; the parity matrix intentionally compares the same source with trace off/on and is not used as cost evidence. The misleading local performance signal is `perf.trace.controls`: it tests the comparator with synthetic samples and does not measure instruction cost. Both Windows-specific path jobs passed; authentic instruction-cost evidence remains uncovered because Linux compilation failed before measurement.
-
-**Disabled tests on requirements:** 0. **Circular patterns detected:** 0. **Insufficient assertions:** 0.
+The prior verification found no disabled requirement-linked tests, circular expected-value generation, or insufficient assertions. The final report carries that result forward; the new workflow-only plan adds no test and does not weaken the existing oracle or CI inventory.
 
 ## Decision Coverage
 
-All trackable CONTEXT.md decisions are honored by shipped artifacts. The decision-coverage query returned 9 total, 9 honored, and no unhonored decisions.
+All 9 trackable CONTEXT decisions are honored. No new decision override was needed.
 
 ## Anti-Patterns Found
 
-No unresolved `TBD`, `FIXME`, or `XXX` markers were found in phase-modified implementation or test files. The textual “not implemented” occurrences in documentation describe unsupported devices and system errors; they are not stubs in the trace path.
+| File | Line | Pattern | Severity | Impact |
+|---|---:|---|---|---|
+| — | — | No unresolved `TBD`, `FIXME`, or `XXX` marker was found in the modified implementation/workflow scope. | — | — |
+
+The standard code review of `.github/workflows/ci.yml` found no issues. Its full report and reconciled prior-finding dispositions are recorded in `27-REVIEW.md` and `27-REVIEW-DISPOSITION.md`.
 
 ## Human Verification Required
 
-None. This phase has no subjective UAT requirement. The Windows CI evidence is complete; only the Linux Cachegrind measurement remains, and it requires a new authorized hosted validation after fixing the compile failure.
+None. The phase has no subjective acceptance item; the source-qualified Linux receipt is machine-verifiable. The separate failed CI and Release gates remain a shipping stop.
 
 ## Gaps Summary
 
-The implementation, numeric oracle, parity matrix, resource bounds, local compatibility checks, docs, and local hygiene are present and pass. Exact-source Windows x64 and arm64 jobs passed the platform-specific path controls. One gap remains: Linux must produce an authentic Cachegrind receipt proving the 32 Ir/frame ceiling, but its authorized job failed at compile time before measurement. The local performance comparator controls are not a substitute. No later phase in this milestone addresses the remaining gap. The single authorized draft PR remains open and unmerged; no retry or dispatch occurred.
+The prior verifier's only gap is closed by the accepted Linux Cachegrind receipt: the measured raw delta is 900 against the 9,600-instruction limit, with stable repeated samples tied to the authorized PR head, base, and merge checkout. The workflow fetch fix and local generated-fixture path are also verified. All Phase 27 success criteria and requirements pass. The automatic CI and Release workflows remain failed in separate build lanes, so this report does not establish shipping readiness or a green full-CI result.
 
 ---
 
-_Verified: 2026-11-17T03:39:38Z_
+_Verified: 2026-11-17T17:27:20Z_
 _Verifier: the agent (gsd-verifier)_

@@ -55,7 +55,7 @@ The owner selected this scope on 2026-11-16. The [current requirements](REQUIREM
 ## Phases
 
 - [x] **Phase 26: Measured milestone tune-up** - Preserve trustworthy release and CI evidence while making only measured, low-risk efficiency corrections. (completed 2026-11-16)
-- [ ] **Phase 27: Headless developer trace** - Deliver one filtered, bounded instruction and bus-access trace with numeric acceptance and unchanged emulation results.
+- [x] **Phase 27: Headless developer trace** - Deliver one filtered, bounded instruction and bus-access trace with numeric acceptance and unchanged emulation results. (completed 2026-11-17)
 
 ## Phase Details
 
@@ -100,7 +100,7 @@ Plans:
 - [x] 27-04-PLAN.md
 
 **Wave 5** *(blocked on Wave 4 completion)*
-- [ ] 27-06-PLAN.md — Provision the Linux perf fixture's existing pinned inputs and validate local reachability.
+- [x] 27-06-PLAN.md — Provision the Linux perf fixture's existing pinned inputs and validate local reachability.
 
 Superseded partial plan (not in the active execution set): 27-05-PLAN.md. Its one-use observation ended without a Linux receipt; retain its checkpoint and history, but do not resume it.
 
@@ -119,6 +119,6 @@ The nine deferred v3.0 requirements and all original Phase 12/14 host/remote sto
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 26. Measured milestone tune-up | 3/3 | Complete    | 2026-11-16 |
-| 27. Headless developer trace | 4/5 | In Progress | - |
+| 27. Headless developer trace | 5/5 | Complete    | 2026-11-17 |
 
 **Coverage:** All 8 v1 requirements map to exactly one phase: TUNE-14 to Phase 26 and TRACE-01–07 to Phase 27. No orphaned or duplicated requirements.
