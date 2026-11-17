@@ -199,7 +199,7 @@ set_target_properties(muhtari_host PROPERTIES
   POSITION_INDEPENDENT_CODE ON)
 muhtari_warnings(muhtari_host)
 
-# The headless runner, built as ISO C17 with POSIX 2008 and no GNU extensions.
+# The headless runner uses ISO C17 and POSIX 2008/XSI (realpath), without GNU extensions.
 # It hashes images with the core's own SHA-1 through src/sha1.h, so the
 # repository holds one SHA-1.
 add_executable(muhtari-run
@@ -214,7 +214,7 @@ add_executable(muhtari-run
   runner/stop.c)
 target_include_directories(muhtari-run PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(muhtari-run PRIVATE muhtari::muhtari muhtari_host)
-target_compile_definitions(muhtari-run PRIVATE _POSIX_C_SOURCE=200809L)
+target_compile_definitions(muhtari-run PRIVATE _POSIX_C_SOURCE=200809L _XOPEN_SOURCE=700)
 target_compile_definitions(muhtari-run PRIVATE MUHTARI_TRACE_LOOP=$<BOOL:${MUHTARI_TRACE_LOOP}>)
 set_target_properties(muhtari-run PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/runner)

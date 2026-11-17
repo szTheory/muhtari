@@ -112,6 +112,14 @@ static void *test_malloc(size_t size)
     return malloc(size);
 }
 
+static int test_close(FILE *f);
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ >= 11
+/* Keep the wrapper pair intact: partial inlining otherwise exposes libc's
+   fclose ownership annotation to calls of test_close. */
+static FILE *test_fopen(const char *path, const char *mode) __attribute__((malloc(test_close, 1)));
+static FILE *test_fdopen(int fd, const char *mode) __attribute__((malloc(test_close, 1)));
+#endif
+
 static FILE *test_fopen(const char *path, const char *mode)
 {
     FILE *f = fopen(path, mode);
