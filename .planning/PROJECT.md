@@ -27,15 +27,18 @@ older Playstead/frontend requirements remain unresolved. GameDrive and BupChip
 streamed audio are not implemented. The public [status page](../docs/status.md)
 summarizes these limits.
 
-Phase 27's v10.0 trace scope is locally verified at 15/15, including the
-source-qualified Linux instruction-cost receipt. v10.0 has not shipped: draft
-PR 77's CI and Release workflows failed in separate GCC `mismatched-dealloc`
-and Clang `realpath` build lanes, so release steps were skipped. The exact
-receipts and remaining delivery blocker are recorded in the
-[Phase 27 verification](phases/27-headless-developer-trace/27-VERIFICATION.md)
-and [CI evidence](phases/27-headless-developer-trace/27-CI-EVIDENCE.md). The
-one-push observation authority is spent; no further remote action is authorized
-by that scope.
+Phase 27's original v10.0 trace verification passed 15/15, including the
+source-qualified Linux instruction-cost receipt. Its report is stale for the
+current source after the compiler portability follow-up. Draft PR 77's existing
+CI and Release workflows failed in GCC `mismatched-dealloc` and Clang
+`realpath` build lanes. The causes are fixed locally, and the full local CI
+workflow passes; the current commits have no hosted acceptance yet. The
+historical receipts remain in the [Phase 27 verification](phases/27-headless-developer-trace/27-VERIFICATION.md)
+and [CI evidence](phases/27-headless-developer-trace/27-CI-EVIDENCE.md); the
+local diagnosis and commands are in the [compiler debug record](debug/resolved/ci-gcc-clang-build.md).
+v10.0 remains unshipped until current-source verification and authorized hosted
+CI/Release gates pass. The one-push observation scope is spent and does not
+authorize another remote action.
 
 ### Completion standard
 
@@ -117,9 +120,9 @@ AI/TAS work is selected. The milestone review and evidence are in
 TRACE requirements passed phase verification at 15/15. The Linux cost receipt
 from [CI run 44123425194](https://github.com/szTheory/muhtari/actions/runs/44123425194)
 reports stable repeated samples and a raw delta of 900 against the 9,600 limit.
-The workflow's unrelated required build lanes failed, so v10.0 remains locally
-complete but unshipped until those failures are repaired and a new delivery
-scope is authorized.
+Required hosted build lanes failed on the previous PR head. The compiler fixes
+and full local CI pass on this branch; v10.0 remains unshipped until the updated
+head receives authorized hosted CI and Release acceptance.
 
 The 201 unevaluated titles and 3 skipped titles are not known failures. The
 nine deferred v3.0 requirements and original Phase 12/14 stops remain open.

@@ -3,12 +3,13 @@ gsd_state_version: "1.0"
 milestone: v10.0
 milestone_name: Headless developer trace
 current_phase: 27
-status: completed
+current_phase_name: Headless developer trace
+status: The prior Phase 27 report passed 15/15 but is stale after local compiler fixes. Full local CI passes; hosted acceptance for this source is pending, so shipping is blocked.
 stopped_at: Phase 27 complete — all phases complete
-last_updated: "2026-11-17T17:30:51.146Z"
+last_updated: "2026-11-17T18:21:18.633Z"
 last_activity: 2026-11-17
-last_activity_desc: Phase 27 complete
-state_head: 0d0cd0d66e8d8381fe5fe02f37faca43a97830d7
+last_activity_desc: Local compiler fixes and full CI pass; refreshing Phase 27 verification for current source.
+state_head: c663920c35d0426ae7f0dda07d05bbf360523f99
 progress:
   total_phases: 2
   completed_phases: 2
@@ -22,13 +23,13 @@ progress:
 ## Project Reference
 See [PROJECT.md](PROJECT.md) (updated 2026-11-17), [ROADMAP.md](ROADMAP.md), [REQUIREMENTS.md](REQUIREMENTS.md), [product roadmap](PRODUCT-ROADMAP.md) and [successor review](research/next-milestone/2026-11-16-future-roadmap-review.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** Phase 27 is verified complete; the remaining delivery blocker is failed required CI/Release compiler lanes.
+**Current focus:** Refresh Phase 27 verification for the current source after compiler fixes; hosted CI/Release acceptance remains pending fresh authorization.
 
 ## Current Position
 Phase: 27 (Headless developer trace) — Complete
 Plan: All 5 active plans complete
-Status: Verification passed 15/15; TRACE-06 is complete from the source-qualified Linux perf receipt. Draft PR 77 remains open with failed CI and Release workflows, so shipping is blocked.
-Last activity: 2026-11-17 — Phase 27 verification and closeout completed
+Status: The prior Phase 27 report passed 15/15 but is stale after local compiler fixes. Full local CI passes; hosted acceptance for this source is pending, so shipping is blocked.
+Last activity: 2026-11-17 -- Local compiler fixes and full CI pass; refreshing Phase 27 verification for current source.
 Progress: [██████████] 100%
 
 ## Performance Metrics
