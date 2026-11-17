@@ -246,3 +246,40 @@ The repository guidance's `scripts/ci_monitor.cjs` is absent from this checkout.
 | Run job statuses | `github_fetch_workflow_run_jobs(run_id=44092872751/44092872856/44092872976)` | All three job lists were complete. CI perf job 134072368332 failed at `Build trace-loop variants and generated CPU workload`; cost and instruction-measurement steps were skipped. |
 | Linux perf artifact | `github_fetch_workflow_run_artifacts(run_id=44092872751, name="quality-perf")` | Empty artifact list; no Cachegrind receipt. |
 | Linux perf log | `github_fetch_workflow_job_logs(job_id=134072368332)` | Confirms fixture setup stopped because pinned Wasmtime, 7800basic and OpenBIOS inputs were missing. The hooks-off cost measurement did not run. |
+
+## Plan 27-06 — local fixture prerequisite remedy
+
+The reviewed local source is commit `4630288226b705b4eb1f4177b3736d8ac0b072ca` (`ci(27-06): provision perf fixture pins`). Its `.github/workflows/ci.yml` blob is `95163d421b8ae3ac244bd2ecb52402d41ec143c3`. The only workflow delta is the four prescribed sequential fetch commands in the existing Linux `perf` job, after the head/base runner build and immediately before the tests-on fixture configure. The step uses `wasmtime-x86_64-linux`, `7800basic-wasm`, `7800openbios-asm` and `rcheevos` at their existing `build/pins/*` destinations. No product source, pin row/digest, measurement producer, raw threshold, artifact contract, test inventory, job condition, timeout or other lane changed.
+
+### Host, tools and pin identities
+
+The local host is Darwin arm64, with CMake 4.4.3, AppleClang 21.0.0.21000101 and Ninja 1.13.2. The fresh configure reused the existing ignored native `build/pins` links; no Linux executable was installed over the host Wasmtime. `build/pins/wasmtime/wasmtime` is a Mach-O arm64 executable reporting Wasmtime 48.0.6 (`72bc45bd1`, 2026-10-14). The existing `7800basic/7800basic.wasm`, `openbios/7800openbios.asm` and `rcheevos/src/rc_libretro.c` prerequisite paths were present. The workflow's Linux x64 Wasmtime and all four unchanged upstream pin identities are:
+
+| Pin | Version/source | SHA-256 |
+|---|---|---|
+| `wasmtime-x86_64-linux` | 48.0.6 | `a04bbb203271301e923ccc54ebe834145b1595af1ffb457c8e5dbf1baadd7248` |
+| `7800basic-wasm` | 0.41 | `62ef0a562541bff3f813c038a4609abc89ab125ebda3a371f57de2821e7a7fe7` |
+| `7800openbios-asm` | source `b8bc745a8744` | `ff04da42db52480cf4cd5e11d415a6c55a54b72ab24af9b461cd4dff4e422109` |
+| `rcheevos` | 12.1.0, commit `6755915f2bdf6c11c83b3e0e68c4623a39c0dabe` | `c8bb9f66239f1b6c1f66417d26b341ce284ef2475acdc4f6fce0d04ac1678c55` |
+
+The host-native Wasmtime pin row is `wasmtime-aarch64-macos` 48.0.6 with SHA-256 `0b24079ba8c8a23df9cd9a11e40f0b5edc95398a70a7cdec9286133f18701c69`. Existing ignored inputs were reused, not downloaded or overwritten during this check.
+
+### Local command and exit evidence
+
+All URLs are `N/A-local`. The initial `build/phase27-perf-preflight` directory did not exist, so its first configure was fresh. That native Release configure registered the existing exact CI inventory; only `muhtari-run` and `muhtari-test-trace` were built. The generated `trace-cost.a78` ran through the runner and produced the required `diagnostic a5` CPU-execution marker. This proves local configure prerequisites and fixture generation on Darwin arm64 only; it is not Linux execution, Cachegrind measurement or TRACE-06 acceptance.
+
+| Command | Exit | Result |
+|---|---:|---|
+| `git diff --check 3a4d53c -- .github/workflows/ci.yml` | 0 | Workflow insertion has no whitespace errors. |
+| `cmake --preset ci -B build/phase27-perf-preflight -DMUHTARI_TESTS=ON -DMUHTARI_TRACE_LOOP=ON` | 0 | Fresh native CI Release configure succeeded with the existing built and libretro prerequisites. |
+| `cmake --build build/phase27-perf-preflight --target muhtari-run muhtari-test-trace` | 0 | Only the requested runner and trace fixture generator targets were built. |
+| `cmake -E make_directory build/phase27-perf-preflight/workload && build/phase27-perf-preflight/tests/muhtari-test-trace cost_fixture build/phase27-perf-preflight/workload && build/phase27-perf-preflight/runner/muhtari-run --frames 1 --diagnostic build/phase27-perf-preflight/workload/trace-cost.a78 > build/phase27-perf-preflight/workload/runner-stdout.txt && LC_ALL=C grep -q '^diagnostic a5' build/phase27-perf-preflight/workload/runner-stdout.txt` | 0 | Generated build-owned cartridge executed the expected CPU marker. |
+| `cmake --workflow --preset hygiene` | 0 | Existing hygiene workflow passed all 30 checks, including pin integrity and fault control, CI required roll-up controls, timeout comments, formatting, analyzer, tree and firmware checks. |
+| `git diff --check 3a4d53c -- .github/workflows/ci.yml` (post-commit tracer gate) | 0 | Committed workflow remains whitespace-clean. |
+| `cmake --preset ci -B build/phase27-perf-preflight -DMUHTARI_TESTS=ON -DMUHTARI_TRACE_LOOP=ON` (post-commit tracer gate) | 0 | Reconfigure of the established preflight tree succeeded; this second invocation was not counted as a fresh configure. |
+| `cmake --build build/phase27-perf-preflight --target muhtari-run muhtari-test-trace` (post-commit tracer gate) | 0 | Both requested targets remained available; Ninja reported no work. |
+| `cmake -E make_directory build/phase27-perf-preflight/workload && build/phase27-perf-preflight/tests/muhtari-test-trace cost_fixture build/phase27-perf-preflight/workload && build/phase27-perf-preflight/runner/muhtari-run --frames 1 --diagnostic build/phase27-perf-preflight/workload/trace-cost.a78 > build/phase27-perf-preflight/workload/runner-stdout.txt && LC_ALL=C grep -q '^diagnostic a5' build/phase27-perf-preflight/workload/runner-stdout.txt` (post-commit tracer gate) | 0 | Fixture regeneration and diagnostic marker check passed again. |
+| `git check-ignore build/phase27-perf-preflight/workload/trace-cost.a78 build/phase27-perf-preflight/workload/runner-stdout.txt` | 0 | Generated cartridge and output remain ignored; no ROM, BIOS, state, trace, pin payload or log was added to the tracked tree. |
+| `git diff --check 3a4d53c -- .github/workflows/ci.yml .planning/phases/27-headless-developer-trace/27-CI-EVIDENCE.md .planning/phases/27-headless-developer-trace/27-06-CHECKPOINT.md` | 0 | Final workflow/evidence/checkpoint diff has no whitespace errors. |
+
+No Linux Cachegrind receipt, `quality-perf` artifact or completed TRACE-06 result was produced. The previously recorded Linux perf run `44092872751`, attempt 1, job `134072368332`, remains a terminal pre-measurement failure with no receipt. The earlier reported push count remains spent; its historical authorization remains unverified. This plan performed no push, publication, hosted run or remote query. The unrelated recorded GCC `-Werror=mismatched-dealloc` in `tests/runner/test_save.c:308`, Clang `realpath` declaration failure in `runner/main.c:841`, and macOS `fuzz.regress.run` timeout after 735/736 tests remain separate shipping blockers where required. No timeout, workflow topology, threshold, artifact rule or test inventory changed.
