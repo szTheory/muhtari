@@ -117,3 +117,47 @@ No local GNU GCC reproduction or Cachegrind measurement is claimed. TRACE-06 rem
 - **Local result status:** The build, focused controls, full CI, final hygiene, tree hygiene, scoped whitespace and review results above are recorded local evidence. Reconcile their command/exit/source coverage before any remote checkpoint; do not rerun them, reapply the correction, amend the commit, or perform another source fix under this plan. Full CI preceded only the documented line-wrap formatting; the final formatted source was rebuilt, focused controls and final hygiene passed, and review covers the final blob. This is reuse of recorded evidence, not a fresh CI or GCC result.
 - **Plan execution status:** No `27-05-SUMMARY.md` exists. The revised plan first prepares a read-only evidence checker and an accurate `27-05-CHECKPOINT.md` partial record. That checkpoint must retain `requirements-completed: []`, `TRACE-06` pending, the unverified historical grant, both outstanding decisions and all spent-attempt limits. It is not a completion summary and must not cause this plan to disappear from the runnable index.
 - **Next boundary:** The owner decides whether to accept the exact existing correction for possible publication. Only after that attributable acceptance and a passing local evidence reconciliation may the executor present the separate decision for one push to draft PR 77 and at most 75 minutes of hosted observation. Neither decision is currently granted by this record. No retry, merge, release, or follow-up source fix is authorized.
+
+## Gap recovery execution ledger
+
+Historical source grant status: UNVERIFIED
+Source acceptance status: accepted
+Remote authorization status: absent
+Recovery push count: 0
+Plan-entry baseline: local correction and local gates were recorded; source acceptance was pending; separate remote authorization was absent; recovery push count was 0; the earlier hosted allowance was spent. The original Linux failure and Windows results remain unchanged.
+
+The one-off helper `build/phase27-evidence/validate-trace-cost.py` is ignored. It reads the recorded command/exit table and current source identity; it does not run product checks. Its offline `sanity` and `local` modes also exercise receipt-journal faults. Task 2 and Task 3 grants must be recorded separately. TRACE-06 remains pending until the Linux receipt passes.
+
+| Task 1 command | Exit | Result |
+|---|---:|---|
+| `python3 build/phase27-evidence/validate-trace-cost.py sanity` | 0 | Offline pass/fault controls accepted the valid recorded state and rejected the required evidence, authority-ledger and Linux receipt faults. |
+| `python3 build/phase27-evidence/validate-trace-cost.py local` | 0 | Recorded local results and reviewed source reconciled without replaying any product command; recovery push count remains 0. |
+| In-memory Python syntax compilation of `validate-trace-cost.py` | 0 | Helper syntax checked without writing bytecode outside the worktree. |
+
+| receipt | disposition | reviewed_source | built_source | pr_url | branch_head | base_sha | run_url | attempt | job_id | artifact_id |
+|---|---|---|---|---|---|---|---|---|---|---|
+| linux-recovery | pending | 2160cfd4bde9040c93e9addb914a3733972a8934 | pending | pending | pending | pending | pending | pending | pending | pending |
+
+Task 1 offline helper checks:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `python3 build/phase27-evidence/validate-trace-cost.py sanity` | 0 | Synthetic metadata controls reject each required local-evidence deletion/exit mutation, source/review/format/GCC faults, checkpoint and historical-grant faults, and Linux receipt source/run/attempt/job/artifact/sample/producer/path/fixture/preflight/raw-threshold faults. No real receipt was accepted. N/A-local. |
+| `python3 build/phase27-evidence/validate-trace-cost.py local` | 0 | Recorded local commands/exits, final runner blob/SHA-256, partial checkpoint, pending TRACE-06, and unchanged non-planning source reconcile without replaying product checks. N/A-local. |
+
+
+## Task 2 — exact-source acceptance
+
+Source acceptance decision: accepted
+Source accepted commit: 2160cfd4bde9040c93e9addb914a3733972a8934
+Source acceptance date: 2026-11-17
+Source acceptance source: current owner response in this conversation, replying to the concrete proposal naming this committed correction and asking to update draft PR 77.
+Source acceptance answer: yes i authorize that
+Source acceptance scope: accept only the already-committed and locally reviewed correction for the separate proposed PR update; no source edit, test replay, or retroactive authorization of the historical source change.
+
+The owner response satisfies this source gate because the proposal identified the existing correction as “it.” The distinct remote action remains subject to the next gate.
+
+
+| Task 2 check | Exit | Result |
+|---|---:|---|
+| `python3 build/phase27-evidence/validate-trace-cost.py local` | 0 | The exact-source acceptance record is attributable to the current owner reply and agrees with the partial checkpoint; the reviewed source and recorded local gates still reconcile. N/A-local. |
