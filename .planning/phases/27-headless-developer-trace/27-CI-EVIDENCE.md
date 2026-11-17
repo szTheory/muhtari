@@ -122,7 +122,7 @@ No local GNU GCC reproduction or Cachegrind measurement is claimed. TRACE-06 rem
 
 Historical source grant status: UNVERIFIED
 Source acceptance status: accepted
-Remote authorization status: absent
+Remote authorization status: granted
 Recovery push count: 0
 Plan-entry baseline: local correction and local gates were recorded; source acceptance was pending; separate remote authorization was absent; recovery push count was 0; the earlier hosted allowance was spent. The original Linux failure and Windows results remain unchanged.
 
@@ -161,3 +161,27 @@ The owner response satisfies this source gate because the proposal identified th
 | Task 2 check | Exit | Result |
 |---|---:|---|
 | `python3 build/phase27-evidence/validate-trace-cost.py local` | 0 | The exact-source acceptance record is attributable to the current owner reply and agrees with the partial checkpoint; the reviewed source and recorded local gates still reconcile. N/A-local. |
+
+
+## Task 3 — one-use remote authorization
+
+Remote authorization decision: granted
+Remote authorization date: 2026-11-17
+Remote authorization source: current owner response in this conversation, replying to the concrete proposal to push the existing corrected source once to draft PR 77 and observe only its automatic checks for up to 75 minutes.
+Remote authorization answer: yes i authorize that
+Remote authorization scope: one push to existing draft PR 77; only ordinary automatic checks; observe for at most 75 minutes from push; no dispatch, rerun, second push, second PR, merge, or release
+Remote reviewed source: 2160cfd4bde9040c93e9addb914a3733972a8934
+Remote branch: milestone/v10.0-headless-trace
+Remote PR: https://github.com/szTheory/muhtari/pull/77
+Expected remote PR head before push: fbf166842e13977148d6a6d42b2e51fbe48a7445
+Expected remote PR base: 89b6ff82812cd5be873e9f90d32ac55fded8694b
+Remote push head: pending Task 3 evidence commit
+Remote observation cap: 75 minutes from the successful push timestamp
+Remote prohibited actions: no manual workflow dispatch, no rerun, no second push or PR, no merge, no release. At the observation deadline, leave any in-flight run untouched.
+
+The owner response separately authorizes this one remote action against the exact accepted source. The historical source grant remains UNVERIFIED. The PR was read-only observed as open, draft, branch `milestone/v10.0-headless-trace`, based on `main` at the expected base above, and at the expected remote head above; `git ls-remote` matched that head.
+
+| Task 3 offline preflight | Exit | Result |
+|---|---:|---|
+| `python3 build/phase27-evidence/validate-trace-cost.py sanity` | 0 | Pass/fault controls still pass after recording the two separate owner decisions; no real receipt accepted. N/A-local. |
+| `python3 build/phase27-evidence/validate-trace-cost.py local` | 0 | Source acceptance, remote grant, unused one-push allowance, checkpoint, and local source/evidence identities agree. No product check replayed. N/A-local. |
