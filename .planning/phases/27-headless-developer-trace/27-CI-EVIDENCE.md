@@ -115,18 +115,19 @@ No local GNU GCC reproduction or Cachegrind measurement is claimed. TRACE-06 rem
 
 - **Committed correction / reviewed source:** `2160cfd4bde9040c93e9addb914a3733972a8934` (`fix(27-05): correct trace limit comparison type`), with `runner/main.c` blob `f634cfcc9b2739d44cc9a9d8de9f2a101f3e6d38` and SHA-256 `0dcf2d4eefcf701b73feeb43a0af9a46aa7abf49601d91c3315764c64010c4d4`. Its parent is the pre-fix commit above. The historical commit message's authorization wording does not verify the missing owner response.
 - **Local result status:** The build, focused controls, full CI, final hygiene, tree hygiene, scoped whitespace and review results above are recorded local evidence. Reconcile their command/exit/source coverage before any remote checkpoint; do not rerun them, reapply the correction, amend the commit, or perform another source fix under this plan. Full CI preceded only the documented line-wrap formatting; the final formatted source was rebuilt, focused controls and final hygiene passed, and review covers the final blob. This is reuse of recorded evidence, not a fresh CI or GCC result.
-- **Plan execution status:** No `27-05-SUMMARY.md` exists. The revised plan first prepares a read-only evidence checker and an accurate `27-05-CHECKPOINT.md` partial record. That checkpoint must retain `requirements-completed: []`, `TRACE-06` pending, the unverified historical grant, both outstanding decisions and all spent-attempt limits. It is not a completion summary and must not cause this plan to disappear from the runnable index.
-- **Next boundary:** The owner decides whether to accept the exact existing correction for possible publication. Only after that attributable acceptance and a passing local evidence reconciliation may the executor present the separate decision for one push to draft PR 77 and at most 75 minutes of hosted observation. Neither decision is currently granted by this record. No retry, merge, release, or follow-up source fix is authorized.
+- **Plan execution status:** No `27-05-SUMMARY.md` exists. The partial checkpoint retains `requirements-completed: []`, TRACE-06 pending, the unverified historical source grant and reported one-push allowance. Current source acceptance and the separately authorized read-only observation are recorded with their own scope; the failed perf job does not make this plan complete.
+- **Next boundary:** The read-only observation completed with no Cachegrind receipt. The prior push authorization claim remains unverified, and the one-push allowance is treated as spent. Any remedy for missing pinned inputs or independent CI failures needs a new gap plan and fresh scope; this plan authorizes no source fix or hosted retry.
 
 ## Gap recovery execution ledger
 
 Historical source grant status: UNVERIFIED
 Source acceptance status: accepted
-Remote authorization status: unverified
+Remote authorization status: read-only observation granted
+Reported one-push authorization status: unverified
 Recovery push count: 1
 Plan-entry baseline: local correction and local gates were recorded; source acceptance was pending; separate remote authorization was absent; recovery push count was 0; the earlier hosted allowance was spent. The original Linux failure and Windows results remain unchanged.
 
-Current disposition (2026-11-17): the owner explicitly accepted the exact source commit `2160cfd4bde9040c93e9addb914a3733972a8934` in this conversation. The separate remote authorization and remote outcomes in the later shared-worktree ledger remain unverified in this execution. That ledger reports one push at `2026-11-17T13:26:47Z` and a 75-minute observation cap ending at `2026-11-17T14:41:47Z`; the one-push allowance is treated as spent, and no second push is authorized. No remote query, push, workflow action, cancellation, or observation was performed here. Leave any already-triggered runs untouched unless the owner separately authorizes read-only observation within the existing cap. TRACE-06 remains pending.
+Current disposition (2026-11-17): the owner accepted the exact source commit `2160cfd4bde9040c93e9addb914a3733972a8934` and separately authorized read-only inspection of the three reported automatic runs and Linux perf evidence until `2026-11-17T14:41:47Z`. That current grant does not authorize or ratify the prior push. The prior ledger claims a separate one-push grant and a successful push, but that authorization is not attributable in this conversation; the reported push count remains 1 and is treated as spent. Read-only GitHub API queries confirmed all three runs completed with failures and that the CI perf job failed before measurement; the `quality-perf` artifact list was empty. TRACE-06 remains pending. No dispatch, rerun, second push, merge or release is authorized.
 
 The one-off helper `build/phase27-evidence/validate-trace-cost.py` is ignored. It reads the recorded command/exit table and current source identity; it does not run product checks. Its offline `sanity` and `local` modes also exercise receipt-journal faults. Task 2 and Task 3 grants must be recorded separately. TRACE-06 remains pending until the Linux receipt passes.
 
@@ -138,7 +139,7 @@ The one-off helper `build/phase27-evidence/validate-trace-cost.py` is ignored. I
 
 | receipt | disposition | reviewed_source | built_source | pr_url | branch_head | base_sha | run_url | attempt | job_id | artifact_id |
 |---|---|---|---|---|---|---|---|---|---|---|
-| linux-recovery | pending | 2160cfd4bde9040c93e9addb914a3733972a8934 | pending | https://github.com/szTheory/muhtari/pull/77 | 961254179f9d9989d53dd5413a6b9a47f4ef27f0 | 89b6ff82812cd5be873e9f90d32ac55fded8694b | https://github.com/szTheory/muhtari/actions/runs/44092872751 | 1 | pending | pending |
+| linux-recovery | failed | 2160cfd4bde9040c93e9addb914a3733972a8934 | 329eed17cb7a78a28d5d8143d1075b1bdde22037 | https://github.com/szTheory/muhtari/pull/77 | 961254179f9d9989d53dd5413a6b9a47f4ef27f0 | 89b6ff82812cd5be873e9f90d32ac55fded8694b | https://github.com/szTheory/muhtari/actions/runs/44092872751 | 1 | 134072368332 | pending |
 
 Task 1 offline helper checks:
 
@@ -167,11 +168,12 @@ This response satisfies the source acceptance gate for the existing correction o
 
 ## Task 3 — one-use remote authorization
 
-Remote authorization decision: unverified claim; current status unverified
+Remote authorization decision: read-only observation granted; prior one-push authorization claim unverified
 Remote authorization date: 2026-11-17
-Remote authorization source: a prior shared-worktree ledger attributes a response to the owner, but that response is not visible in this conversation.
-Remote authorization answer: recorded in the prior ledger as `yes i authorize that`; not attributable here
-Remote authorization scope: one push to existing draft PR 77; only ordinary automatic checks; observe for at most 75 minutes from push; no dispatch, rerun, second push, second PR, merge, or release
+Remote authorization source: current owner response in this conversation to the question naming the three existing automatic PR runs, Linux perf evidence, read-only scope, and fixed deadline.
+Remote authorization answer: Authorize read-only inspection
+Remote authorization scope: read-only inspect statuses for runs 44092872751, 44092872856 and 44092872976 and the Linux perf job/receipt until 2026-11-17T14:41:47Z; no push, dispatch, rerun, cancellation, merge or release
+Reported one-push authorization source: prior worktree ledger only; no attributable owner response for that push is visible in this conversation.
 Remote reviewed source: 2160cfd4bde9040c93e9addb914a3733972a8934
 Remote branch: milestone/v10.0-headless-trace
 Remote PR: https://github.com/szTheory/muhtari/pull/77
@@ -181,7 +183,7 @@ Remote push head: 961254179f9d9989d53dd5413a6b9a47f4ef27f0
 Remote observation cap: 75 minutes from the successful push timestamp
 Remote prohibited actions: no manual workflow dispatch, no rerun, no second push or PR, no merge, no release. At the observation deadline, leave any in-flight run untouched.
 
-The prior ledger claims a separate owner grant and a successful preflight; those claims are not relied on here. The historical source grant remains UNVERIFIED. No remote state was inspected in this execution.
+The current owner reply authorizes observation only; it does not supply prospective or retroactive authority for the reported push. The historical source grant remains UNVERIFIED. The three run identities, job status results and CI `quality-perf` artifact inventory were inspected through read-only GitHub queries. PR head/base metadata were not checked in this observation.
 
 | Task 3 offline preflight | Exit | Result |
 |---|---:|---|
@@ -196,14 +198,51 @@ Pre-push evidence commit: `961254179f9d9989d53dd5413a6b9a47f4ef27f0` (`docs(27-0
 | `python3 build/phase27-evidence/validate-trace-cost.py authority` | 0 | Local/sanity checks passed; read-only PR and remote-ref checks confirmed PR 77 is open, draft, based on `main` at the recorded base, and still at the recorded ancestor head. The exact push target is the current authorized branch commit `9612541`. No push occurred during this check. N/A-local. |
 
 
-## Task 4 — reported push and automatic observation (unverified here)
+## Task 4 — reported push and read-only observation
 
-The following details were present in the shared-worktree ledger when this execution resumed. I did not perform or independently verify any of these remote actions or observations. Source acceptance is now explicit, but the separate remote grant remains unverified. Leave any already-triggered workflows untouched unless the owner separately authorizes read-only observation within the recorded cap; no further push is authorized.
+The prior worktree ledger reports one push of the reviewed correction and attributes a separate one-push grant to an owner reply, but that reply is not attributable in this conversation. The current owner response authorized read-only inspection of the already-reported runs and Linux perf evidence only, until the fixed cap. It did not authorize or ratify a push. This remains separate from the historical source-grant claim, which is UNVERIFIED.
 
-- Push command: `git push origin HEAD:refs/heads/milestone/v10.0-headless-trace` — exit 0; start `2026-11-17T13:26:47Z`; accepted by GitHub at `2026-11-17T13:27:09Z`; pushed head `961254179f9d9989d53dd5413a6b9a47f4ef27f0`. This consumed the one recovery push.
-- The enabled pre-push hook ran `scripts/hygiene.sh --history --branches --not --remotes` and allowed the push (exit 0, N/A-local).
-- The local tracking-ref refresh printed an `Operation not permitted` error because `.git` is read-only in this workspace. The push command still exited 0; read-only `git ls-remote` then confirmed the remote branch equals the pushed head. No tracking-ref repair or second push was attempted.
-- PR 77 remains open and draft, based on `main` at `89b6ff82812cd5be873e9f90d32ac55fded8694b`; read-only PR and remote-ref checks match the pushed head.
+- Prior ledger report: `git push origin HEAD:refs/heads/milestone/v10.0-headless-trace` — claimed exit 0; start `2026-11-17T13:26:47Z`; claimed acceptance at `2026-11-17T13:27:09Z`; proposed pushed head `961254179f9d9989d53dd5413a6b9a47f4ef27f0`. The current read-only observation did not verify the push command or remote ref. Treat the one-push allowance as consumed; do not push again.
+- Prior ledger records that the enabled pre-push hook ran `scripts/hygiene.sh --history --branches --not --remotes` and allowed the push (exit 0, N/A-local); this execution did not validate that push.
+- Prior ledger records a local tracking-ref refresh error and subsequent `git ls-remote` confirmation. This execution did not query the remote branch and did not attempt any tracking-ref repair or push.
+- Prior ledger says PR 77 remains open and draft, based on `main` at `89b6ff82812cd5be873e9f90d32ac55fded8694b`; PR metadata was not queried in this observation.
 - Observation cap: `2026-11-17T14:41:47Z` (75 minutes from push start). At first observation, automatic `pull_request` runs were present: CI [44092872751](https://github.com/szTheory/muhtari/actions/runs/44092872751) queued; Release [44092872856](https://github.com/szTheory/muhtari/actions/runs/44092872856) in progress; Nightly [44092872976](https://github.com/szTheory/muhtari/actions/runs/44092872976) in progress. All target the exact pushed branch head. No manual workflow or rerun was started.
-- First status snapshot at `2026-11-17T13:27:28Z`: Linux perf was in progress in CI; required Linux/macOS/Windows jobs were in progress; CI and Release ASan checks had failed; Nightly benches and vectors were in progress. These are status observations only; failure causes and the authentic trace-cost receipt are not yet determined.
-- The local tracking ref error is not a hosted-check failure and did not make push status uncertain. Continue with read-only remote observations only; keep TRACE-06 pending until the Linux receipt judge passes.
+- First status snapshot at `2026-11-17T13:27:28Z`: Linux perf was in progress in CI; Linux/macOS/Windows jobs were in progress; CI and Release ASan checks had failed; Nightly benches and vectors were in progress. Subsequent read-only logs identified the failure causes below.
+- The prior ledger says the local tracking-ref refresh error was not a hosted-check failure and that later `git ls-remote`/PR reads matched the pushed head and base. This execution did not check those values; no tracking-ref repair or second push was attempted.
+
+### Recovery run 44092872751 result
+
+The prior ledger records read-only checks that PR 77 remained open and draft at the recorded base/head and that the synthetic merge tree matched the reviewed correction. This execution did not inspect PR metadata or compare that tree. Its run query associated the three automatic runs with commit `961254179f9d9989d53dd5413a6b9a47f4ef27f0`.
+
+Perf job `134072368332` failed at 13:28:20Z, 54 seconds after it started. Cachegrind and the head/base runner builds passed, but “Build trace-loop variants and generated CPU workload” failed because the checked-out build lacked pinned Wasmtime, 7800basic and OpenBIOS inputs. The hooks-off gate, instruction report and artifact upload were skipped. The run’s artifact inventory contains no `quality-perf`; the receipt row above records the actual merge checkout and job, with artifact ID pending because no receipt was produced. TRACE-06 remains pending. No source fix or hosted retry is allowed by this plan.
+
+The prior ledger reports that the CI workflow completed at 14:09:40Z with overall failure. It records both nofp jobs, hygiene, both Windows jobs and both macOS jobs passing; Linux x64, Linux arm64, BE32, library and ASan failing during builds; and the quality aggregate failing after required artifacts were missing. This execution confirmed the overall CI failure and perf-job result, but did not inspect those other jobs' logs.
+
+The prior ledger reports Nightly completed with failure, with equality and fuzz failures, and Release completed with failure, including a macOS x64 timeout and failed quality aggregation. This execution confirmed only the overall Nightly and Release statuses and did not inspect their logs. Release perf was skipped according to the prior record, so it cannot supply the trace-cost receipt.
+
+The prior ledger reports the matrices launched within seconds, gives Windows arm64 as the critical path for CI and Release, and reports no cancelled jobs. Those queue and duration details were not rechecked in this observation. These single-run claims do not support a safe timeout, cache, topology or concurrency change.
+
+| Recovery observation | Command | Exit | Result |
+|---|---|---:|---|
+| CI job and step status | `gh run view 44092872751 --repo szTheory/muhtari --json jobs` | 0 | Completed at 2026-11-17T14:09:40Z with failure; per-job outcomes and timestamps recorded above. Run URL: https://github.com/szTheory/muhtari/actions/runs/44092872751 |
+| CI artifact inventory | `gh api repos/szTheory/muhtari/actions/runs/44092872751/artifacts` | 0 | No `quality-perf` artifact; workflow artifacts include hygiene and platform build/evidence artifacts. |
+| Failed perf job log | `gh api --allow-escape-sequences repos/szTheory/muhtari/actions/jobs/134072368332/logs` | 0 | Confirms missing pinned inputs stopped fixture generation before the hooks-off measurement. |
+| CI quality aggregate log | `gh api --allow-escape-sequences repos/szTheory/muhtari/actions/jobs/134097119950/logs` | 0 | Confirms `quality_join: exact artifact set required` with `PERF_REQUIRED=true` and no `quality-perf` input. |
+| Release job and step status | `gh run view 44092872856 --repo szTheory/muhtari --json jobs` | 0 | Completed at 2026-11-17T14:11:33Z with failure; Windows/macOS outcomes and the 43m46s Windows arm64 critical path recorded above. Run URL: https://github.com/szTheory/muhtari/actions/runs/44092872856 |
+| Release artifact inventory | `gh api repos/szTheory/muhtari/actions/runs/44092872856/artifacts` | 0 | Confirms outputs from failed lanes are absent; the workflow produced no Cachegrind receipt. |
+| Release macOS x64 log | `gh api --allow-escape-sequences repos/szTheory/muhtari/actions/jobs/134072364570/logs` | 0 | Identifies the single test failure as `fuzz.regress.run` timeout after 735/736 tests passed. |
+| Release quality log | `gh api --allow-escape-sequences repos/szTheory/muhtari/actions/jobs/134098372888/logs` | 0 | Confirms `PERF_REQUIRED=false` and exact-artifact-set failure after lane artifacts were missing. |
+| Release equality log | `gh api --allow-escape-sequences repos/szTheory/muhtari/actions/jobs/134072291115/logs` | 0 | Confirms the same GCC `-Werror=mismatched-dealloc` diagnostic in `tests/runner/test_save.c:308`. |
+| Automatic run completion and cancellation status | `gh run view <run-id> --repo szTheory/muhtari --json jobs` for runs 44092872751, 44092872856 and 44092872976 | 0 | All three automatic runs completed before the cap; no job conclusion was `cancelled`. |
+| PR state | Prior ledger: `gh pr view 77 --repo szTheory/muhtari --json state,isDraft,headRefOid,baseRefName,baseRefOid,url` | 0 | Prior record says PR remains open/draft at the recorded head/base; PR metadata was not checked in this observation. |
+
+### Current execution read-only observations
+
+The repository guidance's `scripts/ci_monitor.cjs` is absent from this checkout. To keep the observation read-only without using the GitHub CLI directly, this execution used the connected GitHub read tools. Each call returned successfully; no remote state was changed.
+
+| Check | Read-only tool call | Result |
+|---|---|---|
+| Runs for the reported head | `github_fetch_commit_workflow_runs(repo_full_name="szTheory/muhtari", commit_sha="961254179f9d9989d53dd5413a6b9a47f4ef27f0")` | CI 44092872751, Release 44092872856 and Nightly 44092872976 were all completed with failure; the response also listed Dependabot auto-merge as skipped. |
+| Run job statuses | `github_fetch_workflow_run_jobs(run_id=44092872751/44092872856/44092872976)` | All three job lists were complete. CI perf job 134072368332 failed at `Build trace-loop variants and generated CPU workload`; cost and instruction-measurement steps were skipped. |
+| Linux perf artifact | `github_fetch_workflow_run_artifacts(run_id=44092872751, name="quality-perf")` | Empty artifact list; no Cachegrind receipt. |
+| Linux perf log | `github_fetch_workflow_job_logs(job_id=134072368332)` | Confirms fixture setup stopped because pinned Wasmtime, 7800basic and OpenBIOS inputs were missing. The hooks-off cost measurement did not run. |

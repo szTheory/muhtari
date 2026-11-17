@@ -5,10 +5,10 @@ milestone_name: Headless developer trace
 current_phase: 27
 current_phase_name: Headless developer trace
 status: verifying
-stopped_at: Phase 27 plan 27-05 paused at separate remote-authorization checkpoint
-last_updated: "2026-11-17T14:08:04Z"
+stopped_at: Phase 27 plan 27-05 paused after spent observation; TRACE-06 remains pending
+last_updated: "2026-11-17T14:34:07Z"
 last_activity: 2026-11-17
-last_activity_desc: Phase 27 exact source accepted; separate remote authorization remains unverified and TRACE-06 pending
+last_activity_desc: Phase 27 source accepted; read-only run observation completed with no Cachegrind receipt
 state_head: 961254179f9d9989d53dd5413a6b9a47f4ef27f0
 progress:
   total_phases: 2
@@ -117,8 +117,8 @@ At v9.0 close, no new items were acknowledged; 50 items acknowledged at earlier 
 | deferred_items | 11/deferred-items.md: Found in plan 04  - `diag.bankset_tracer` and `diag.bankset` both write `build/ci/tests/diag/bankset/32n/` and carry no resource lock, so under `ctest -j` one can read the other's `pixels.png` half written (`bankset --bankset-png ... png: chunk longer than the file`). Seen once in `cmake --workflow --preset ci`; passes alone and on rerun. Not caused by plan 04; a fix is a `RESOURCE_LOCK` or a separate output directory in `tests/diag/tests.cmake`.  Resolved in the gap round: `diag.bankset` now writes `build/<preset>/tests/diag/bankset-matrix/` and `diag.bankset_tracer` keeps `build/<preset>/tests/diag/bankset/`, so the two tests share no output file. | acknowledged; historical disposition retained | 2026-10-29 | v2.0 |
 
 ## Session Continuity
-Last session: 2026-11-17T14:08:04Z
-Stopped at: Phase 27 plan 27-05 paused at separate remote-authorization checkpoint
+Last session: 2026-11-17T14:34:07Z
+Stopped at: Phase 27 plan 27-05 ended after the authorized read-only observation; TRACE-06 remains pending
 Resume file: None
 
-Next action: The owner accepted source commit `2160cfd4bde9040c93e9addb914a3733972a8934`; the source gate is satisfied. Remote authorization and the reported push/run results remain unverified. The worktree ledger reports one push already used and an observation cap ending 2026-11-17T14:41:47Z, so no second push, dispatch, rerun, merge, or release is valid. No remote query or observation was performed here. TRACE-06 remains pending. Await separate owner authorization before read-only inspection of already-triggered runs within the existing cap; then resume with `$gsd-execute-phase 27 --gaps-only`.
+Next action: The owner accepted exact source commit `2160cfd4bde9040c93e9addb914a3733972a8934`. The owner then authorized read-only inspection of the three reported automatic runs and Linux perf evidence until `2026-11-17T14:41:47Z`; that observation is complete. GitHub confirmed CI, Release and Nightly all failed, and the CI perf job failed before measurement with no `quality-perf` artifact. The prior one-push authorization claim remains unverified, but the reported push allowance is treated as spent; no further push, dispatch, rerun, merge, or release is valid under this plan. TRACE-06 remains pending. The next useful step is to plan a new gap for the missing pinned CI fixtures and other verified CI failures: `$gsd-plan-phase 27`. Fresh scope is required before any source fix or hosted attempt.
