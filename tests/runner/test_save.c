@@ -1585,10 +1585,37 @@ static void trace_measure(char *rom, char *dir, char *region, char *mode)
            (unsigned long long)(trace_write_finished_ns - trace_write_started_ns));
 }
 
-int main(int argc, char **argv)
+static int test_save_argument_count_valid(int argc, const char *mode)
 {
     if (argc < 3)
+        return 0;
+    if (strcmp(mode, "trace_paths") == 0)
+        return argc == 3 || argc == 5;
+    if (strcmp(mode, "trace_measure") == 0)
+        return argc == 6;
+    return argc == 3;
+}
+
+static void test_save_argument_count(void)
+{
+    CHECK(!test_save_argument_count_valid(2, "faults"));
+    CHECK(test_save_argument_count_valid(3, "faults"));
+    CHECK(!test_save_argument_count_valid(4, "faults"));
+    CHECK(test_save_argument_count_valid(3, "trace_paths"));
+    CHECK(!test_save_argument_count_valid(4, "trace_paths"));
+    CHECK(test_save_argument_count_valid(5, "trace_paths"));
+    CHECK(!test_save_argument_count_valid(6, "trace_paths"));
+    CHECK(!test_save_argument_count_valid(5, "trace_measure"));
+    CHECK(test_save_argument_count_valid(6, "trace_measure"));
+    CHECK(!test_save_argument_count_valid(7, "trace_measure"));
+    CHECK(test_save_argument_count_valid(3, "unknown"));
+}
+
+int main(int argc, char **argv)
+{
+    if (argc < 3 || !test_save_argument_count_valid(argc, argv[2]))
         return 2;
+    test_save_argument_count();
     if (strcmp(argv[2], "roundtrip") == 0 || strcmp(argv[2], "verify") == 0)
         roundtrip(argv[1], strcmp(argv[2], "verify") == 0);
     else if (strcmp(argv[2], "import") == 0)
