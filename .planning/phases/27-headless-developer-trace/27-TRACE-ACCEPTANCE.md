@@ -1,6 +1,6 @@
 # Phase 27 trace acceptance
 
-**Source reviewed:** `1b56832` (trace equality acceptance; includes the formatted trace implementation and tests). The CPU cost gate wiring is in `6342616`.
+**Source reviewed:** `c60c192` (review fixes for trace output path conflicts and trace-disabled build configuration). The trace equality acceptance is in `1b56832`; CPU cost gate wiring is in `6342616`.
 
 **Acceptance state:** TRACE-01–05 and TRACE-07 have passing local evidence. TRACE-06 remains **pending** until the existing Linux `perf` job produces a source-qualified Cachegrind receipt. Local controls are not that receipt.
 
@@ -20,7 +20,7 @@
 
 | Command | Exit | What it establishes |
 |---|---:|---|
-| `cmake --workflow --preset ci` | 0 | Full local CI workflow passed: build, 735 tests, package step and all 8 release checks. Includes the equality matrix, public API/ABI/state consumers, perf comparator controls and docs budget checks. Run URL: N/A-local. |
+| `cmake --workflow --preset ci` | 0 | Full local CI workflow passed on the reviewed source: build, 736 tests, package step and all 8 release checks. Includes the equality matrix, public API/ABI/state consumers, perf comparator controls, docs budget checks and the new trace-disabled configuration control. Run URL: N/A-local. |
 | `cmake --workflow --preset hygiene` | 0 | All 30 hygiene and policy checks passed, including formatting, repository tree, analyzer and firmware scan. Run URL: N/A-local. |
 | `ctest --test-dir build/ci --output-on-failure -R '^abi[.](api_v8|symbols)$|^runner[.]state[.]'` | 0 | Five API, ABI and state compatibility tests passed. Run URL: N/A-local. |
 | `ctest --test-dir build/ci --output-on-failure -R '^docs[.]budgets$|^docs[.]budgets[.]controls$'` | 0 | Both documentation budget checks passed. Run URL: N/A-local. |
@@ -40,5 +40,7 @@ The existing Linux `perf` job builds same-source Release runners with the trace 
 | File lifecycle | Pass: the selected frame must complete before sibling-temp serialization and atomic replacement. Existing files survive failures; no fresh trace is published for a refused/failed frame. Path, I/O and incomplete-footer cases are in the local CI suite. |
 | Ordinary execution path | Pass: with no observer the ordinary frame loop remains selected; the extra CPU/bus objects are compile-time excluded when `MUHTARI_TRACE_LOOP=OFF`. Local builds and compatibility tests pass. Authentic hooks-off instruction cost remains pending TRACE-06 evidence. |
 | CI and scope | Pass: the CPU cost check is wired into the existing perf job before its workflow-dispatch early return. The test-card ratchet, artifact identity and job topology remain intact; no remote workflow, device, RetroArch or external-host check was run. |
+
+The code review fixed the junction alias, trace-off test configuration, and ordinary Win32 trailing-dot/space collision findings. The final review has one deferred compatibility warning: the comparator can conservatively reject distinct destinations when one uses the explicit `\\?\` namespace. This namespace is not documented as part of the runner contract; the collision guard fails closed, so the warning describes a rejected path pair rather than an overwrite risk. See [27-REVIEW-DISPOSITION.md](27-REVIEW-DISPOSITION.md) and the [follow-up seed](../../todos/pending/2026-11-17-define-extended-windows-output-path-support.md). Windows-specific code and tests were not executed on this Darwin arm64 host.
 
 No public header, state serializer, ROM/BIOS/save fixture or runtime trace artifact was added. Generated cartridges, states, traces and Cachegrind files remain in ignored build or runner-temporary directories. The Souper source fixture is an existing owned image in the ROM manifest.

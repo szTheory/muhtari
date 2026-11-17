@@ -161,7 +161,7 @@ status: complete
 - `ctest --test-dir build/ci --output-on-failure -R '^docs[.]budgets$|^docs[.]budgets[.]controls$'` — exit 0; both documentation budget checks passed.
 - `/opt/homebrew/opt/llvm@21/bin/clang-format --style=file --dry-run --Werror runner/main.c src/internal.h tests/runner/test_save.c tests/runner/test_trace.c` — exit 0.
 - `git diff --check` — exit 0.
-- `cmake --workflow --preset ci` — exit 0 on the final source; 735 tests, all 8 release checks and the package step passed. Run URL: N/A-local.
+- `cmake --workflow --preset ci` — exit 0 on the reviewed source after code-review fixes; 736 tests, all 8 release checks and the package step passed. Run URL: N/A-local.
 - `cmake --workflow --preset hygiene` — exit 0 on the final source; all 30 checks passed. Run URL: N/A-local.
 - `git diff --exit-code origin/main...HEAD -- include/muhtari.h src/state.c` — exit 0; public header and canonical state serializer have no changes.
 - `uname -s && uname -m` — exit 0, `Darwin arm64`; `command -v valgrind` — exit 1, unavailable locally. Therefore the authentic Linux Cachegrind measurement is N/A-local, and no hosted CI run URL or receipt exists yet.
@@ -208,6 +208,10 @@ None for local use or verification. TRACE-06 still needs the normal authorized L
 ## Next Phase Readiness
 
 The local implementation, compatibility matrix, documentation and required local checks are complete. Preserve TRACE-06 as pending until the ordinary delivery pipeline produces a source-qualified passing receipt. The acceptance evidence records the exact source revision and local environment limits.
+
+## Post-review closeout
+
+Code review fixes are recorded in [`27-REVIEW-FIX.md`](27-REVIEW-FIX.md), with per-finding dispositions in [`27-REVIEW-DISPOSITION.md`](27-REVIEW-DISPOSITION.md). The final local CI run passed 736 tests and the final hygiene run passed all 30 checks. A Windows extended-path false-positive warning is deferred as a compatibility follow-up; Windows-specific tests still require the ordinary Windows CI lane. TRACE-06 remains pending the authentic Linux Cachegrind receipt.
 
 ## Self-Check: PASSED
 
