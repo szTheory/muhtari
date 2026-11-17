@@ -517,8 +517,30 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     endif()
   elseif(CASE STREQUAL "paths")
     file(MAKE_DIRECTORY "${DIR}")
-    execute_process(COMMAND ${EMULATOR} "${SAVE_TEST}" "${DIR}" trace_paths
-      RESULT_VARIABLE harness_rc OUTPUT_VARIABLE harness_out ERROR_VARIABLE harness_err TIMEOUT 30)
+    if(CMAKE_HOST_WIN32)
+      set(junction_target "${DIR}/trace-junction-target")
+      set(junction_alias "${DIR}/trace-junction-alias")
+      file(REMOVE_RECURSE "${junction_alias}" "${junction_target}")
+      file(MAKE_DIRECTORY "${junction_target}")
+      string(REPLACE "'" "''" junction_target_ps "${junction_target}")
+      string(REPLACE "'" "''" junction_alias_ps "${junction_alias}")
+      execute_process(
+        COMMAND powershell.exe -NoProfile -NonInteractive -Command
+          "$ErrorActionPreference = 'Stop'; New-Item -ItemType Junction -Path '${junction_alias_ps}' -Target '${junction_target_ps}' | Out-Null"
+        RESULT_VARIABLE junction_rc OUTPUT_VARIABLE junction_out ERROR_VARIABLE junction_err
+        TIMEOUT 20)
+      if(NOT junction_rc STREQUAL "0")
+        file(REMOVE_RECURSE "${junction_alias}" "${junction_target}")
+        message(FATAL_ERROR "could not create path-alias junction for trace conflict test: ${junction_rc}\n${junction_out}${junction_err}")
+      endif()
+      execute_process(COMMAND ${EMULATOR} "${SAVE_TEST}" "${DIR}" trace_paths
+          "${junction_alias}" "${junction_target}"
+        RESULT_VARIABLE harness_rc OUTPUT_VARIABLE harness_out ERROR_VARIABLE harness_err TIMEOUT 30)
+      file(REMOVE_RECURSE "${junction_alias}" "${junction_target}")
+    else()
+      execute_process(COMMAND ${EMULATOR} "${SAVE_TEST}" "${DIR}" trace_paths
+        RESULT_VARIABLE harness_rc OUTPUT_VARIABLE harness_out ERROR_VARIABLE harness_err TIMEOUT 30)
+    endif()
     if(NOT harness_rc STREQUAL "0" OR NOT harness_out STREQUAL "")
       message(FATAL_ERROR "actual-main trace path ownership matrix failed or wrote stdout: ${harness_rc}\n${harness_out}${harness_err}")
     endif()
@@ -582,6 +604,10 @@ foreach(case IN ITEMS arguments bounds equality filters io limits paths oracle)
       -P ${CMAKE_CURRENT_LIST_FILE}
     LABELS runner portable TIMEOUT 60)
 endforeach()
+muhtari_add_test(NAME runner.trace.disabled_config COMMAND ${CMAKE_COMMAND}
+  "-DCMAKE_COMMAND=${CMAKE_COMMAND}" "-DCHECK=${PROJECT_SOURCE_DIR}/cmake/TraceLoopConfig.cmake"
+  -P ${PROJECT_SOURCE_DIR}/tests/cmake/trace_loop_config.cmake
+  LABELS runner portable TIMEOUT 10)
 muhtari_add_test(NAME core.trace.edges COMMAND muhtari-test-trace edges
   LABELS core portable TIMEOUT 20)
 file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/tests/trace-memory)

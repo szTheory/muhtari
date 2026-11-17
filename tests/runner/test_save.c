@@ -760,7 +760,7 @@ static void trace_arguments(const char *dir)
 #undef TRACE_BAD
 }
 
-static void trace_paths(const char *dir)
+static void trace_paths(const char *dir, const char *junction_alias, const char *junction_target)
 {
     char rom[1024], trace[1024], movie[1024], bios[1024], firmware[1024], state[1024];
     char subdir[1024], path[1024], alias[1024], save_dir[1024], state_point[1100];
@@ -789,6 +789,14 @@ static void trace_paths(const char *dir)
     (void)snprintf(path, sizeof path, "%s/option-hardlink", dir);
     (void)remove(path);
     (void)snprintf(path, sizeof path, "%s/option-symlink", dir);
+    (void)remove(path);
+    (void)snprintf(path, sizeof path, "%s/trace-windows-dot.jsonl", dir);
+    (void)remove(path);
+    (void)snprintf(path, sizeof path, "%s/trace-windows-space.jsonl", dir);
+    (void)remove(path);
+    (void)snprintf(path, sizeof path, "%s/trace-windows-dot.jsonl", dir);
+    (void)remove(path);
+    (void)snprintf(path, sizeof path, "%s/trace-windows-space.jsonl", dir);
     (void)remove(path);
     cartridge(rom, 1u, 0);
     static const char movie_text[] = "muhtari-movie 1\nport1 savekey\nport2 none\n|||...BB|\n";
@@ -837,6 +845,33 @@ static void trace_paths(const char *dir)
     (void)snprintf(alias, sizeof alias, "%s/subdir/../option.sav", dir);
     TRACE_BAD_PATH(alias, "--frames", "1", "--save-dir", save_dir, "--trace", alias,
                    "--trace-frame", "1", "--trace-range", "0:65535", rom);
+
+#ifdef _WIN32
+    if (junction_alias != NULL && junction_target != NULL) {
+        char junction_trace[1024], junction_output[1024], junction_point[1100];
+        (void)snprintf(junction_trace, sizeof junction_trace, "%s/trace-junction-output.jsonl",
+                       junction_alias);
+        (void)snprintf(junction_output, sizeof junction_output, "%s/trace-junction-output.jsonl",
+                       junction_target);
+        (void)snprintf(junction_point, sizeof junction_point, "1:%s", junction_output);
+        TRACE_BAD_PATH(junction_trace, "--frames", "1", "--dump-frame", junction_point, "--trace",
+                       junction_trace, "--trace-frame", "1", "--trace-range", "0:65535", rom);
+    }
+    (void)snprintf(trace, sizeof trace, "%s/trace-windows-dot.jsonl.", dir);
+    (void)snprintf(path, sizeof path, "%s/trace-windows-dot.jsonl", dir);
+    (void)snprintf(state_point, sizeof state_point, "1:%s", path);
+    TRACE_BAD_PATH(trace, "--frames", "1", "--state-at-frame", state_point, "--trace", trace,
+                   "--trace-frame", "1", "--trace-range", "0:65535", rom);
+
+    (void)snprintf(trace, sizeof trace, "%s/trace-windows-space.jsonl ", dir);
+    (void)snprintf(path, sizeof path, "%s/trace-windows-space.jsonl", dir);
+    (void)snprintf(state_point, sizeof state_point, "1:%s", path);
+    TRACE_BAD_PATH(trace, "--frames", "1", "--state-at-frame", state_point, "--trace", trace,
+                   "--trace-frame", "1", "--trace-range", "0:65535", rom);
+#else
+    (void)junction_alias;
+    (void)junction_target;
+#endif
 
 #if !defined(_WIN32) && !defined(__wasi__)
     (void)snprintf(alias, sizeof alias, "%s/option-hardlink", dir);
@@ -1565,7 +1600,7 @@ int main(int argc, char **argv)
     else if (strcmp(argv[2], "trace_arguments") == 0)
         trace_arguments(argv[1]);
     else if (strcmp(argv[2], "trace_paths") == 0)
-        trace_paths(argv[1]);
+        trace_paths(argv[1], argc == 5 ? argv[3] : NULL, argc == 5 ? argv[4] : NULL);
     else if (strcmp(argv[2], "trace_io") == 0)
         trace_io(argv[1]);
     else if (argc == 6 && strcmp(argv[2], "trace_measure") == 0)

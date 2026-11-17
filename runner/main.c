@@ -34,6 +34,7 @@
 #include <errno.h>
 #include <inttypes.h>
 #include <fcntl.h>
+#include <wchar.h>
 #include <sys/stat.h>
 #ifdef _WIN32
 #include <direct.h>
@@ -689,12 +690,127 @@ static char *trace_normalize_wasi_parent(const char *path)
 #endif
 
 /* Normalize the final parent and basename. POSIX realpath resolves symlinked
-   parents even when the destination itself does not exist. Windows _fullpath
-   and the WASI lexical fallback normalize dot/parent components. */
-static char *trace_normalized_path(const char *path)
+   parents even when the destination itself does not exist. Windows resolves
+   the parent through a directory handle so junction aliases also compare
+   equal; the WASI fallback normalizes dot/parent components. */
+#ifdef _WIN32
+typedef wchar_t trace_path_char;
+
+static wchar_t *trace_windows_final_path(const char *path)
+{
+    HANDLE directory = CreateFileA(path, FILE_READ_ATTRIBUTES,
+                                   FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
+                                   OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    if (directory == INVALID_HANDLE_VALUE)
+        return NULL;
+
+    const DWORD path_capacity = 32768u;
+    wchar_t *resolved = (wchar_t *)malloc((size_t)path_capacity * sizeof *resolved);
+    if (resolved == NULL) {
+        (void)CloseHandle(directory);
+        return NULL;
+    }
+    DWORD resolved_len = GetFinalPathNameByHandleW(directory, resolved, path_capacity,
+                                                   FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
+    (void)CloseHandle(directory);
+    if (resolved_len == 0u || resolved_len >= path_capacity) {
+        free(resolved);
+        return NULL;
+    }
+    return resolved;
+}
+#else
+typedef char trace_path_char;
+#endif
+
+static trace_path_char *trace_normalized_path(const char *path)
 {
 #ifdef _WIN32
-    return _fullpath(NULL, path, 0u);
+    char *full = _fullpath(NULL, path, 0u);
+    if (full == NULL)
+        return NULL;
+    const char *base = full;
+    const char *last_separator = NULL;
+    for (const char *p = full; *p != '\0'; p++) {
+        if (*p == '/' || *p == '\\') {
+            last_separator = p;
+            base = p + 1;
+        }
+    }
+    if (last_separator == NULL) {
+        free(full);
+        return NULL;
+    }
+    size_t parent_len = (size_t)(last_separator - full) + 1u;
+    if (parent_len == SIZE_MAX) {
+        free(full);
+        return NULL;
+    }
+    char *parent = (char *)malloc(parent_len + 1u);
+    if (parent == NULL) {
+        free(full);
+        return NULL;
+    }
+    memcpy(parent, full, parent_len);
+    parent[parent_len] = '\0';
+    wchar_t *canonical_parent = trace_windows_final_path(parent);
+    free(parent);
+    if (canonical_parent == NULL) {
+        free(full);
+        return NULL;
+    }
+
+    const DWORD path_capacity = 32768u;
+    size_t canonical_len = wcslen(canonical_parent);
+
+    int base_capacity = MultiByteToWideChar(CP_ACP, 0, base, -1, NULL, 0);
+    if (base_capacity <= 0) {
+        free(canonical_parent);
+        free(full);
+        return NULL;
+    }
+    size_t parent_wide_len = canonical_len;
+    wchar_t *wide_base = (wchar_t *)malloc((size_t)base_capacity * sizeof *wide_base);
+    if (wide_base == NULL ||
+        MultiByteToWideChar(CP_ACP, 0, base, -1, wide_base, base_capacity) == 0) {
+        free(wide_base);
+        free(canonical_parent);
+        free(full);
+        return NULL;
+    }
+    size_t base_wide_len = (size_t)base_capacity - 1u;
+    /* Ordinary Win32 file calls discard trailing ASCII dots and spaces. */
+    while (base_wide_len != 0u &&
+           (wide_base[base_wide_len - 1u] == L'.' || wide_base[base_wide_len - 1u] == L' '))
+        base_wide_len--;
+    int separator = parent_wide_len != 0u && canonical_parent[parent_wide_len - 1u] != L'\\' &&
+                    canonical_parent[parent_wide_len - 1u] != L'/';
+    size_t separator_len = (size_t)separator;
+    if (parent_wide_len > SIZE_MAX - separator_len - base_wide_len - 1u ||
+        parent_wide_len + separator_len + base_wide_len >= path_capacity) {
+        free(wide_base);
+        free(canonical_parent);
+        free(full);
+        return NULL;
+    }
+    size_t normalized_len = parent_wide_len + separator_len + base_wide_len;
+    wchar_t *normalized = (wchar_t *)malloc((normalized_len + 1u) * sizeof *normalized);
+    if (normalized == NULL) {
+        free(wide_base);
+        free(canonical_parent);
+        free(full);
+        return NULL;
+    }
+    memcpy(normalized, canonical_parent, parent_wide_len * sizeof *normalized);
+    if (separator != 0)
+        normalized[parent_wide_len] = L'\\';
+    memcpy(normalized + parent_wide_len + separator_len, wide_base,
+           base_wide_len * sizeof *normalized);
+    normalized[normalized_len] = L'\0';
+    free(wide_base);
+    free(canonical_parent);
+    free(full);
+    return normalized;
 #else
     const char *base = path;
     const char *last_separator = NULL;
@@ -769,15 +885,21 @@ static int trace_paths_equal(const char *left, const char *right)
     if (left_exists && right_exists && left_info.st_ino != 0 &&
         left_info.st_dev == right_info.st_dev && left_info.st_ino == right_info.st_ino)
         return 1;
-    char *normalized_left = trace_normalized_path(left);
-    char *normalized_right = trace_normalized_path(right);
+    trace_path_char *normalized_left = trace_normalized_path(left);
+    trace_path_char *normalized_right = trace_normalized_path(right);
     if (normalized_left == NULL || normalized_right == NULL) {
         free(normalized_left);
         free(normalized_right);
         return -1;
     }
 #ifdef _WIN32
-    int equal = _stricmp(normalized_left, normalized_right) == 0;
+    int comparison = CompareStringOrdinal(normalized_left, -1, normalized_right, -1, TRUE);
+    if (comparison == 0) {
+        free(normalized_left);
+        free(normalized_right);
+        return -1;
+    }
+    int equal = comparison == CSTR_EQUAL;
 #else
     int equal = strcmp(normalized_left, normalized_right) == 0;
 #endif

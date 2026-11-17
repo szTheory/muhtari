@@ -45,7 +45,10 @@ if(PROJECT_IS_TOP_LEVEL AND MSVC)
 endif()
 
 option(MUHTARI_NOFP "Build the core with general registers only; register only the abi tests" OFF)
-option(MUHTARI_TRACE_LOOP "Build the private dual-compiled CPU trace path" ON)
+option(MUHTARI_TRACE_LOOP "Build the private dual-compiled CPU trace path; OFF requires tests off" ON)
+# OFF builds the products only and registers no tests.
+option(MUHTARI_TESTS "Register the tests; OFF builds the products only" ON)
+include(cmake/TraceLoopConfig.cmake)
 
 # The library version reaches the core through a private generated header;
 # the public header carries no version macros.
@@ -330,12 +333,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "WASI")
       "  scripts/fetch-pin.sh wasmtime-<arch>-linux build/pins/wasmtime")
   endif()
 endif()
-# MUHTARI_TESTS OFF builds the products only and registers no test at all.
-# Fault prevented: a job that only builds the runner (the perf gate, the
-# nightly bench) failing at configure for test tools it never runs. No listed
-# test is ever skipped: a test lane that set it would have no JUnit file and
-# fail its "Every test ran" step.
-option(MUHTARI_TESTS "Register the tests; OFF builds the products only" ON)
 if(MUHTARI_TESTS)
   enable_testing()
   include(cmake/MuhtariTests.cmake)
