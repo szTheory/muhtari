@@ -5,11 +5,11 @@ milestone_name: Headless developer trace
 current_phase: 27
 current_phase_name: Headless developer trace
 status: verifying
-stopped_at: "Phase 27 gap plan 27-05 is ready; fresh owner authority is still required before source edits and hosted CI"
-last_updated: "2026-11-17T04:19:43.623Z"
-last_activity: 2026-11-16
-last_activity_desc: Phase 27 gap plan 27-05 created; TRACE-06 remains pending behind source and hosted approvals
-state_head: 4cd1984ad1858ef585e37f30d242f511d2fe9c57
+stopped_at: "Phase 27 plan 27-05 passes planning review; acceptance of the existing source and separate hosted authority remain pending"
+last_updated: "2026-11-17T05:07:08Z"
+last_activity: 2026-11-17
+last_activity_desc: Phase 27 gap plan reconciled with the committed local correction; TRACE-06 remains pending
+state_head: 2160cfd
 progress:
   total_phases: 2
   completed_phases: 1
@@ -26,10 +26,10 @@ See [PROJECT.md](PROJECT.md) (updated 2026-11-16), [ROADMAP.md](ROADMAP.md), [RE
 **Current focus:** Phase 27 — Headless developer trace
 
 ## Current Position
-Phase: 27 (Headless developer trace) — READY TO EXECUTE
+Phase: 27 (Headless developer trace) — PARTIAL; OWNER DECISIONS REQUIRED
 Plan: 5 of 5
-Status: TRACE-06 gap plan ready; source correction and hosted validation still require separate fresh owner approvals
-Last activity: 2026-11-16 — Phase 27 gap plan 27-05 created
+Status: Plan 27-05 passes with no blockers. It reconciles the committed trace-limit correction and recorded local gates without replay; the historical source grant is unverified. Explicit owner acceptance of this exact source and a separate grant for one PR update/automatic CI observation remain required.
+Last activity: 2026-11-17 — revised Phase 27 gap plan passed review
 Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
@@ -37,7 +37,7 @@ Phase 26 completed three documentation-only plans; product implementation timing
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 26 | 3 | - | - |
-| 27 | 0/3 | — | — |
+| 27 | 4/5 | — | — |
 Prior milestone metrics and exact-source receipts remain in the [v9.0 archive](milestones/v9.0-ROADMAP.md), [audit](milestones/v9.0-MILESTONE-AUDIT.md) and earlier milestone records. Stable v0.16.0 is published; failed v0.15.0 remains unchanged and unpublished.
 **Per-Plan Metrics:**
 
@@ -63,11 +63,12 @@ Prior milestone metrics and exact-source receipts remain in the [v9.0 archive](m
 - [Phase 27]: Exact-source Windows x64 and arm64 path receipts passed; TRACE-03 evidence is established while Linux TRACE-06 remains pending.
 - [Phase 27]: Keep the Phase 27 acceptance matrix unchanged until all required exact-source receipts pass.
 - [Phase 27]: One initial CI run does not support a topology, timeout, or cache change.
+- [Phase 27 gap closure]: Commit `2160cfd` contains the local trace-limit comparison correction and the CI evidence records its local checks. The earlier source-authorization claim is unverified; do not publish or rely on this source until the owner explicitly accepts this exact commit. The one update to draft PR 77 and its 75-minute automatic CI observation require a separate owner decision. TRACE-06 remains pending.
 
 ### Pending Todos
 Inherited todos and optional seeds retain their dispositions; no unrelated work is promoted. Root remains canonical and older dirty worktrees require content/ancestry reconciliation before import. See [workspace reconciliation](debug/workspace-reconciliation-2026-11-10.md).
 ### Blockers/Concerns
-- Phase 26 is complete; Phase 27 has three executable plans and passed the plan checker. Nine deferred v3.0 requirements remain open: TUNE-06/07, PLAY-01–04 and FRONT-02–04. The denied Phase 12 diagnostic-app request must not be retried; original Phase 12/14 host/remote stops, spent allowances, expired windows and no-retry limits remain binding.
+- Phase 26 is complete. Phase 27 has five plans; 27-05 has passed planning review with one scope warning and no blockers. Its local source correction and recorded checks are already present, but the historic owner grant is unverified. Run the plan's offline evidence reconciliation first; do not replay builds/tests or publish until the owner accepts the exact source and separately authorizes one update to draft PR 77 with its capped automatic CI observation. Nine deferred v3.0 requirements remain open: TUNE-06/07, PLAY-01–04 and FRONT-02–04. The denied Phase 12 diagnostic-app request must not be retried; original Phase 12/14 host/remote stops, spent allowances, expired windows and no-retry limits remain binding.
 - GameDrive implementation remains NO-GO pending authoritative timing/framing, a lawful independent exact-profile PCM oracle and finite resource facts. Preserve the [v8.0 qualification](milestones/v8.0-phases/24-qualify-the-gamedrive-audio-contract/24-QUALIFICATION.md); no unlicensed sample/encoder source is permitted.
 - Phase 21's spec-less probe remains unresolved and nonblocking. No retail, physical hardware or owner-device acceptance is inferred. LibFuturo owns browser/host routes; Playstead owns player integration; twentysixhundo owns Atari 2600.
 
@@ -116,8 +117,8 @@ At v9.0 close, no new items were acknowledged; 50 items acknowledged at earlier 
 | deferred_items | 11/deferred-items.md: Found in plan 04  - `diag.bankset_tracer` and `diag.bankset` both write `build/ci/tests/diag/bankset/32n/` and carry no resource lock, so under `ctest -j` one can read the other's `pixels.png` half written (`bankset --bankset-png ... png: chunk longer than the file`). Seen once in `cmake --workflow --preset ci`; passes alone and on rerun. Not caused by plan 04; a fix is a `RESOURCE_LOCK` or a separate output directory in `tests/diag/tests.cmake`.  Resolved in the gap round: `diag.bankset` now writes `build/<preset>/tests/diag/bankset-matrix/` and `diag.bankset_tracer` keeps `build/<preset>/tests/diag/bankset/`, so the two tests share no output file. | acknowledged; historical disposition retained | 2026-10-29 | v2.0 |
 
 ## Session Continuity
-Last session: 2026-11-17T03:43:10Z
-Stopped at: Phase 27 re-verification; Windows path receipts pass and TRACE-06 remains pending after Linux compile failure
+Last session: 2026-11-17T05:07:08Z
+Stopped at: Phase 27 gap plan 27-05 passed planning review; committed local correction is reconciled, its historical authority claim is unverified, and TRACE-06 remains pending
 Resume file: None
 
-Next action: The owner approved this second planning round because the initial CI run produced new GCC failure evidence. This approval is limited to planning. Run $gsd-execute-phase 27 --gaps-only to reach Task 1's source-correction approval checkpoint; the command itself authorizes no edit. Task 3 separately requires fresh approval before one update push to draft PR 77 and its proposed 75-minute hosted observation. TRACE-06 stays pending until an authentic corrected-source Cachegrind receipt passes.
+Next action: Run `$gsd-execute-phase 27 --gaps-only`. Task 1 performs offline reconciliation of commit `2160cfd` and the recorded local gates without rerunning them, then reaches the blocking owner decision to accept this exact source for possible publication. A separate blocking decision is required for one update to draft PR 77 and its 75-minute automatic CI observation. The command authorizes neither decision or any remote action. TRACE-06 stays pending until an authentic corrected-source Cachegrind receipt passes.

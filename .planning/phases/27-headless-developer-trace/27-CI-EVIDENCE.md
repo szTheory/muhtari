@@ -82,8 +82,8 @@ Authority scope: one draft validation PR; initial automatic CI only; no dispatch
 
 ## Gap source authorization and local baseline
 
-- **Authority date:** 2026-11-16 (America/New_York).
-- **Authority source:** The owner replied in the current conversation to the blocking Task 1 decision: “Okay, yes, I authorize that.” In context, this authorizes only the behavior-preserving trace-limit correction in `runner/main.c`, its planned local build, focused and full local checks, hygiene, review, and local commits. PR publication and hosted work still require the separate Task 3 decision.
+- **Historical authority claim — UNVERIFIED:** An earlier executor attributed “Okay, yes, I authorize that” to an owner response dated 2026-11-16 (America/New_York). No directly attributable underlying response is available in the visible owner/session record. This artifact is the only provenance for that claim; it is not proof of authorization and must not authorize any action or be copied into a granted-authority field.
+- **Current authority status:** Source acceptance is blocked. The correction already exists locally, but the owner must explicitly accept that exact committed correction for possible publication before the separate remote authorization decision. Such acceptance does not retroactively establish the historical grant, authorize further source edits, or authorize publication/hosted work. Preserve the existing local commit and results without replaying them.
 - **Pre-fix commit:** `2027e5e3c83ce0f33c4e30b00d80b91ef5adae91` on `milestone/v10.0-headless-trace`.
 - **Pre-edit reconciliation:** The worktree was clean; `git diff --quiet c60c192b9088b5f21fc199d574de17e89e5b4c94 HEAD -- . ':(exclude).planning'` exited 0, and `runner/main.c` had no diff from the pre-fix commit.
 - **Pre-edit focused controls:** `ctest --test-dir build/ci --output-on-failure --no-tests=error -R '^runner[.]trace[.](arguments|bounds|oracle)$'` — exit 0; all three existing controls passed.
@@ -91,7 +91,7 @@ Authority scope: one draft validation PR; initial automatic CI only; no dispatch
 
 ## Gap source correction and local checks
 
-The authorized product change is limited to `parse_options`: after applying the default trace limit, copy it to `const size_t trace_limit` and use that same-type value for the three existing representability comparisons. The hard maximum, diagnostics, capture-memory and output bounds, allocation overflow check, API, serialized state, and trace dispatch remain unchanged. The existing final review disposition for Windows path handling remains unchanged; its deferred extended-path warning is unrelated.
+The recorded local product change is limited to `check_options`: after applying the default trace limit, copy it to `const size_t trace_limit` and use that same-type value for the three existing representability comparisons. The hard maximum, diagnostics, capture-memory and output bounds, allocation overflow check, API, serialized state, and trace dispatch remain unchanged. The existing final review disposition for Windows path handling remains unchanged; its deferred extended-path warning is unrelated. The results below record work already performed, not an assertion of verified historical authority or permission to repeat it.
 
 | Command | Exit | Result |
 |---|---:|---|
@@ -110,3 +110,10 @@ The authorized product change is limited to `parse_options`: after applying the 
 **Review:** The scoped source diff is type-correct for the C17 runner. `trace_limit` is a `size_t` on both sides of the portability comparison, which avoids GCC's range-based diagnostic without disabling warnings; 32-bit allocation and output limits remain meaningful. The reviewed source has no behavior, public API, or state-format change. `git hash-object runner/main.c` is `f634cfcc9b2739d44cc9a9d8de9f2a101f3e6d38`; SHA-256 is `0dcf2d4eefcf701b73feeb43a0af9a46aa7abf49601d91c3315764c64010c4d4`.
 
 No local GNU GCC reproduction or Cachegrind measurement is claimed. TRACE-06 remains pending until a separately authorized PR update yields the authentic corrected-source Linux receipt. No publication or hosted action occurred in this scope.
+
+## Gap resume baseline and remaining decisions
+
+- **Committed correction / reviewed source:** `2160cfd4bde9040c93e9addb914a3733972a8934` (`fix(27-05): correct trace limit comparison type`), with `runner/main.c` blob `f634cfcc9b2739d44cc9a9d8de9f2a101f3e6d38` and SHA-256 `0dcf2d4eefcf701b73feeb43a0af9a46aa7abf49601d91c3315764c64010c4d4`. Its parent is the pre-fix commit above. The historical commit message's authorization wording does not verify the missing owner response.
+- **Local result status:** The build, focused controls, full CI, final hygiene, tree hygiene, scoped whitespace and review results above are recorded local evidence. Reconcile their command/exit/source coverage before any remote checkpoint; do not rerun them, reapply the correction, amend the commit, or perform another source fix under this plan. Full CI preceded only the documented line-wrap formatting; the final formatted source was rebuilt, focused controls and final hygiene passed, and review covers the final blob. This is reuse of recorded evidence, not a fresh CI or GCC result.
+- **Plan execution status:** No `27-05-SUMMARY.md` exists. The revised plan first prepares a read-only evidence checker and an accurate `27-05-CHECKPOINT.md` partial record. That checkpoint must retain `requirements-completed: []`, `TRACE-06` pending, the unverified historical grant, both outstanding decisions and all spent-attempt limits. It is not a completion summary and must not cause this plan to disappear from the runnable index.
+- **Next boundary:** The owner decides whether to accept the exact existing correction for possible publication. Only after that attributable acceptance and a passing local evidence reconciliation may the executor present the separate decision for one push to draft PR 77 and at most 75 minutes of hosted observation. Neither decision is currently granted by this record. No retry, merge, release, or follow-up source fix is authorized.
