@@ -5,10 +5,10 @@ milestone_name: Headless developer trace
 current_phase: 27
 current_phase_name: Headless developer trace
 status: verifying
-stopped_at: Completed 27-04-PLAN.md; TRACE-06 remains pending after Linux perf compile failure
-last_updated: "2026-11-17T03:21:37.907Z"
+stopped_at: Phase 27 verification found one gap: Linux Cachegrind compilation failed before measurement; Windows path receipts passed
+last_updated: "2026-11-17T03:43:10Z"
 last_activity: 2026-11-16
-last_activity_desc: Phase 27 execution started
+last_activity_desc: Phase 27 CI evidence reconciled; TRACE-06 remains pending
 state_head: 9b4be2efeb72b36707d75839622722865627e17a
 progress:
   total_phases: 2
@@ -28,7 +28,7 @@ See [PROJECT.md](PROJECT.md) (updated 2026-11-16), [ROADMAP.md](ROADMAP.md), [RE
 ## Current Position
 Phase: 27 (Headless developer trace) — EXECUTING
 Plan: 4 of 4
-Status: Phase complete — ready for verification
+Status: Verification gaps found — TRACE-06 still requires a source fix and authorized Linux measurement
 Last activity: 2026-11-16 — Phase 27 execution started
 Progress: [█████░░░░░] 50%
 
@@ -116,8 +116,8 @@ At v9.0 close, no new items were acknowledged; 50 items acknowledged at earlier 
 | deferred_items | 11/deferred-items.md: Found in plan 04  - `diag.bankset_tracer` and `diag.bankset` both write `build/ci/tests/diag/bankset/32n/` and carry no resource lock, so under `ctest -j` one can read the other's `pixels.png` half written (`bankset --bankset-png ... png: chunk longer than the file`). Seen once in `cmake --workflow --preset ci`; passes alone and on rerun. Not caused by plan 04; a fix is a `RESOURCE_LOCK` or a separate output directory in `tests/diag/tests.cmake`.  Resolved in the gap round: `diag.bankset` now writes `build/<preset>/tests/diag/bankset-matrix/` and `diag.bankset_tracer` keeps `build/<preset>/tests/diag/bankset/`, so the two tests share no output file. | acknowledged; historical disposition retained | 2026-10-29 | v2.0 |
 
 ## Session Continuity
-Last session: 2026-11-17T03:21:37.885Z
-Stopped at: Completed 27-04-PLAN.md; TRACE-06 remains pending after Linux perf compile failure
+Last session: 2026-11-17T03:43:10Z
+Stopped at: Phase 27 re-verification; Windows path receipts pass and TRACE-06 remains pending after Linux compile failure
 Resume file: None
 
-Next action: Continue the authorized milestone with $gsd-execute-phase 27. No routine owner approval is needed.
+Next action: A source fix and another hosted validation are outside the one-run authorization. The owner must authorize that scope before work resumes; the GSD route after authorization is $gsd-plan-phase 27 --gaps.
