@@ -27,6 +27,16 @@ older Playstead/frontend requirements remain unresolved. GameDrive and BupChip
 streamed audio are not implemented. The public [status page](../docs/status.md)
 summarizes these limits.
 
+Phase 27's v10.0 trace scope is locally verified at 15/15, including the
+source-qualified Linux instruction-cost receipt. v10.0 has not shipped: draft
+PR 77's CI and Release workflows failed in separate GCC `mismatched-dealloc`
+and Clang `realpath` build lanes, so release steps were skipped. The exact
+receipts and remaining delivery blocker are recorded in the
+[Phase 27 verification](phases/27-headless-developer-trace/27-VERIFICATION.md)
+and [CI evidence](phases/27-headless-developer-trace/27-CI-EVIDENCE.md). The
+one-push observation authority is spent; no further remote action is authorized
+by that scope.
+
 ### Completion standard
 
 A scoped feature is complete when its source-qualified behavior has deterministic,
@@ -102,6 +112,14 @@ compatibility decision before expanding the scope. No GUI, host/device code,
 interactive debugger, symbols, patching, scripting, Python/Gymnasium, BK2 or
 AI/TAS work is selected. The milestone review and evidence are in
 [the v9.0 successor review](research/next-milestone/2026-11-16-future-roadmap-review.md).
+
+**Phase result and delivery status:** The trace implementation and all seven
+TRACE requirements passed phase verification at 15/15. The Linux cost receipt
+from [CI run 44123425194](https://github.com/szTheory/muhtari/actions/runs/44123425194)
+reports stable repeated samples and a raw delta of 900 against the 9,600 limit.
+The workflow's unrelated required build lanes failed, so v10.0 remains locally
+complete but unshipped until those failures are repaired and a new delivery
+scope is authorized.
 
 The 201 unevaluated titles and 3 skipped titles are not known failures. The
 nine deferred v3.0 requirements and original Phase 12/14 stops remain open.
@@ -265,6 +283,9 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 ### Validated
 
+- ✓ TUNE-14: source-qualified release/CI evidence review, cheap preflights and a bounded no-change efficiency disposition — Phase 26; [tune-up report](phases/26-measured-milestone-tune-up/26-TUNEUP.md).
+- ✓ TRACE-01–07: deterministic bounded runner trace, compatibility and documentation, including the accepted Linux hooks-off cost receipt — Phase 27; [verification](phases/27-headless-developer-trace/27-VERIFICATION.md). The verified milestone scope is not yet shipped.
+
 - ✓ TUNE-13, REL-01, REL-02, DOC-01: published corrected Souper support as v0.16.0, preserved the v0.15.0 draft/tag, passed source-bound release and latest-install gates, and updated availability docs — v9.0, Phase 25; [audit](milestones/v9.0-MILESTONE-AUDIT.md).
 
 - ✓ YM-01–08: one qualified XM/YM2151 profile, deterministic C17 mono synthesis, complete lifecycle/state, native/portable/package consumers and measured bounds — v6.0, Phase 20; shipped as v0.14.0.
@@ -315,8 +336,7 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 ### Active
 
-- [ ] **TUNE-14**: Complete the recurring evidence-based release and engineering tune-up without weakening required checks.
-- [ ] **TRACE-01–07**: Deliver and document one bounded, deterministic, runner-only instruction and bus-access trace while preserving API 8, existing state formats and the hooks-off cost gate.
+No additional product requirements are selected. v10.0's phase acceptance is complete, but delivery remains held by the failed required CI/Release lanes above.
 
 The nine unmet v3.0 requirements remain deferred with their original evidence
 and stops; see the [v3.0 archive](milestones/v3.0-MILESTONE-AUDIT.md).
@@ -404,6 +424,7 @@ and stops; see the [v3.0 archive](milestones/v3.0-MILESTONE-AUDIT.md).
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
+| Keep the headless trace runner-only and accept its cost claim only from an exact-source Linux receipt | Preserves API 8/state compatibility and prevents local comparator controls from standing in for Cachegrind evidence | ✓ Phase 27: all TRACE-01–07 passed verification; receipt delta 900/9,600 on run 44123425194; separate CI/Release build failures still block shipping |
 | Publish corrected Souper through the ordinary feature-release path and keep CI coverage unchanged | A pre-1.0 feature release follows the minor-bump rule; release evidence supports no pipeline change | ✓ v9.0 Phase 25: stable v0.16.0 passed exact-source release and latest-install checks; v0.15.0 stayed unchanged; see [audit](milestones/v9.0-MILESTONE-AUDIT.md) |
 | Keep GameDrive implementation at NO-GO until its profile, independent PCM oracle and finite resource facts are qualified | Prevents guessed stream timing/framing or unlicensed fixture reuse from becoming public media/API/state behavior | ✓ v8.0 Phase 24: all four consumer and compatibility consequences recorded; no implementation or public compatibility change selected |
 | Calibrate only the macOS x64 PAL BIOS predicate deadline from completed matching-lane samples | The exact-source timeout and missing quality artifact share one failed matrix result; measured samples justify a bounded correction without reducing coverage | ✓ v8.0 Phase 23 follow-up: 12 complete suite samples, 5.88 s maximum, 12 s registered timeout; exact-main CI green |
@@ -470,4 +491,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-16 as v10.0 milestone planning began*
+*Last updated: 2026-11-17 after Phase 27 verification*

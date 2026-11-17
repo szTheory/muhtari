@@ -20,7 +20,7 @@ progress:
 # Project State
 
 ## Project Reference
-See [PROJECT.md](PROJECT.md) (updated 2026-11-16), [ROADMAP.md](ROADMAP.md), [REQUIREMENTS.md](REQUIREMENTS.md), [product roadmap](PRODUCT-ROADMAP.md) and [successor review](research/next-milestone/2026-11-16-future-roadmap-review.md).
+See [PROJECT.md](PROJECT.md) (updated 2026-11-17), [ROADMAP.md](ROADMAP.md), [REQUIREMENTS.md](REQUIREMENTS.md), [product roadmap](PRODUCT-ROADMAP.md) and [successor review](research/next-milestone/2026-11-16-future-roadmap-review.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
 **Current focus:** Phase 27 is verified complete; the remaining delivery blocker is failed required CI/Release compiler lanes.
 
@@ -116,8 +116,8 @@ At v9.0 close, no new items were acknowledged; 50 items acknowledged at earlier 
 | deferred_items | 11/deferred-items.md: Found in plan 04  - `diag.bankset_tracer` and `diag.bankset` both write `build/ci/tests/diag/bankset/32n/` and carry no resource lock, so under `ctest -j` one can read the other's `pixels.png` half written (`bankset --bankset-png ... png: chunk longer than the file`). Seen once in `cmake --workflow --preset ci`; passes alone and on rerun. Not caused by plan 04; a fix is a `RESOURCE_LOCK` or a separate output directory in `tests/diag/tests.cmake`.  Resolved in the gap round: `diag.bankset` now writes `build/<preset>/tests/diag/bankset-matrix/` and `diag.bankset_tracer` keeps `build/<preset>/tests/diag/bankset/`, so the two tests share no output file. | acknowledged; historical disposition retained | 2026-10-29 | v2.0 |
 
 ## Session Continuity
-Last session: 2026-11-17T17:30:51.146Z
-Stopped at: Phase 27 complete — all phases complete
+Last session: 2026-11-17T17:39:40.274Z
+Stopped at: Phase 27 complete; v10.0 shipping held by failed required CI/Release compiler lanes
 Resume file: None
 
-Next action: The owner starts a separate local diagnosis for the GCC `mismatched-dealloc` and Clang `realpath` build failures before attempting delivery. No command is valid for another hosted run under the spent one-push authorization; fresh remote scope is required after local remediation.
+Next action: Start a separately scoped local diagnosis with `$gsd-debug "GCC -Werror=mismatched-dealloc at tests/runner/test_save.c:308 and Clang undeclared realpath at runner/main.c:841; diagnose locally only, no push or hosted rerun."` No further remote action is authorized by the spent one-push observation; obtain fresh remote scope after local remediation before shipping.
