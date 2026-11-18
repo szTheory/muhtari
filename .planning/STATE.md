@@ -3,18 +3,17 @@ gsd_state_version: "1.0"
 milestone: v11.0
 current_phase: 29
 current_phase_name: Windows extended-path runner support
-status: planning
-stopped_at: Phase 28 complete, ready to plan Phase 29
-last_updated: "2026-11-18T17:15:57.752Z"
+status: executing
+stopped_at: Completed 29-01-PLAN.md
+last_updated: "2026-11-18T19:24:51.692Z"
 last_activity: 2026-11-18
-last_activity_desc: Phase 28 complete, transitioned to Phase 29
-state_head: 699c3ecd377ad902fec83324d6901813ad3a037a
+last_activity_desc: Phase 29 execution started
+state_head: d2ddb60de8b6457cceec56658dedbab0ab00dcf4
 progress:
   total_phases: 2
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
-  percent: 50
+  total_plans: 5
+  completed_plans: 3
 milestone_name: Windows extended-path support
 ---
 
@@ -23,14 +22,14 @@ milestone_name: Windows extended-path support
 ## Project Reference
 See [PROJECT.md](PROJECT.md) (updated 2026-11-18), [ROADMAP.md](ROADMAP.md), [REQUIREMENTS.md](REQUIREMENTS.md), [product roadmap](PRODUCT-ROADMAP.md) and [selected scope review](research/next-milestone/2026-11-18-future-roadmap-review.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** Phase 28 — Measured milestone tune-up
+**Current focus:** Phase 29 — Windows extended-path runner support
 
 ## Current Position
 
-Phase: 29 — Windows extended-path runner support
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-11-18 — Phase 28 complete, transitioned to Phase 29
+Phase: 29 (Windows extended-path runner support) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-11-18 — Phase 29 execution started
 
 Progress: [█████░░░░░] 50%
 
@@ -47,6 +46,7 @@ Prior metrics and source-qualified receipts remain in the [v10.0 archive](milest
 |------|----------|-------|-------|
 | Phase 28 P01 | 39 min | 2 tasks | 5 files |
 | Phase 28 P02 | 18 min | 2 tasks | 2 files |
+| Phase 29 P01 | 44m | 2 tasks | 5 files |
 
 ## Accumulated Context
 ### Decisions
@@ -58,6 +58,8 @@ Prior metrics and source-qualified receipts remain in the [v10.0 archive](milest
 - [Phase 28]: Preserve five hosted receipts as source-specific historical evidence.
 - [Phase 28]: Make no CI topology, timeout, cache, resource, or membership change without comparable completed measurements.
 - [Phase 28]: Leave TUNE-15 and TUNE-16 pending phase verification.
+- [Phase 29]: Keep Windows path conversion and file operations on existing C and Win32 APIs; no dependency or public interface change.
+- [Phase 29]: Leave Windows and UNC acceptance pending until the actual Windows runner and SMB test run in Phase 29-03.
 
 ### Pending Todos
 The [Windows path follow-up](todos/pending/2026-11-17-define-extended-windows-output-path-support.md) is selected for Phase 29; its acknowledgment is retained below until verified closure. Other todos/seeds retain their dispositions. Root remains canonical and older dirty worktrees require content/ancestry reconciliation before import. See [workspace reconciliation](debug/workspace-reconciliation-2026-11-10.md).
@@ -115,12 +117,12 @@ At v10.0 close, two items were newly acknowledged; 50 items acknowledged at earl
 | deferred_items | 11/deferred-items.md: Found in plan 04  - `diag.bankset_tracer` and `diag.bankset` both write `build/ci/tests/diag/bankset/32n/` and carry no resource lock, so under `ctest -j` one can read the other's `pixels.png` half written (`bankset --bankset-png ... png: chunk longer than the file`). Seen once in `cmake --workflow --preset ci`; passes alone and on rerun. Not caused by plan 04; a fix is a `RESOURCE_LOCK` or a separate output directory in `tests/diag/tests.cmake`.  Resolved in the gap round: `diag.bankset` now writes `build/<preset>/tests/diag/bankset-matrix/` and `diag.bankset_tracer` keeps `build/<preset>/tests/diag/bankset/`, so the two tests share no output file. | acknowledged; historical disposition retained | 2026-10-29 | v2.0 |
 
 ## Session Continuity
-Last session: 2026-11-18T16:57:49.199Z
-Stopped at: Phase 28 complete, ready to plan Phase 29
+Last session: 2026-11-18T19:24:51.674Z
+Stopped at: Completed 29-01-PLAN.md
 Resume file: None
 
-Next action: `$gsd-verify-work 28`. Phase 29 remains dependent on Phase 28; both TUNE requirements await verifier disposition. No routine owner approval is pending.
+Next action: `$gsd-execute-phase 29`. Phase 29 is executing; Wave 1 plan 29-01 is in progress. Windows UNC acceptance remains pending actual CI evidence.
 
 ## Operator Next Steps
 
-- No user action is needed for roadmap approval. After clearing context, the next OpenGSD command is `$gsd-plan-phase 28`; the agent owns source/receipt reconciliation and dependent authorized work.
+- No user action is needed. After clearing context, resume with `$gsd-execute-phase 29`; the agent owns local implementation, verification and review while preserving the Windows evidence gate.

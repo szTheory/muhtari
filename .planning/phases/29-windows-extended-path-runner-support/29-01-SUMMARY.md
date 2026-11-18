@@ -16,7 +16,7 @@ actuals:
   commits: 4
 commits: 4
 plan_head_before: 6c7e9c45d648aaeb054bd615d0402b4b80f32b5c
-plan_head_after: 6136db1c5d8ac84fd9ab9e1be9117a6e59ab5980
+plan_head_after: 6136db1bda3df783d8fc842c9e2be7bf5fd50303
 tech-stack:
   added: []
   patterns:
@@ -141,3 +141,8 @@ Plan 29-02 can proceed with alias and output-safety work. Plan 29-03 must run th
 ---
 *Phase: 29-windows-extended-path-runner-support*
 *Completed: 2026-11-18*
+
+## Self-Check: PASSED
+
+- Summary file exists at the planned phase path.
+- Task commits `fe25dda`, `b78694c`, `ecbe607` and `6136db1`, plus summary commit `d2ddb60`, are present in the current branch ancestry.
