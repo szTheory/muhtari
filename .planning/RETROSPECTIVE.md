@@ -307,6 +307,38 @@ Publish existing behavior first, then update version-neutral public availability
 
 Release run 43801428444 took 52m23s; final phase-closeout main CI 43841380444 took 48m08s with a one-second first-job delay. Eighteen CI jobs passed; only the expected push-event title and perf jobs were skipped. Session count, model mix and monetary cost are not recorded.
 
+## Milestone: v10.0 — Headless developer trace
+
+**Shipped:** 2026-11-17 | **Phases:** 2 | **Plans:** 8 | **Recorded tasks:** 16
+
+### What Was Built
+
+- Published stable v0.17.0 with bounded, deterministic runner-only instruction and bus tracing.
+- Preserved API 8, ABI 1 and state formats; fixed the GCC and Clang build failures without reducing coverage.
+- Archived the phase evidence, source-qualified cost receipt and two acknowledged follow-ups.
+
+### What Worked
+
+The fixed-value trace oracle, output fault controls and trace-on/off state comparisons exercised the real runner path. Cheap compiler and formatting checks caught portability problems before another long matrix. Exact-main CI and Release receipts tied shipping to a single source.
+
+### What Was Inefficient
+
+The active plan count and delivery status in planning state lagged the accepted evidence. The archive scan also found two open records whose verdicts needed explicit preservation. Reconcile the live roadmap, phase summaries, state, and release receipts before writing the final archive.
+
+### Patterns Established
+
+Keep superseded partial plans as history, but derive completion counts from the active plan set. Keep a non-blocking limitation visible in the audit and defer it without changing its underlying finding. A single timing pair can confirm the main wait, but does not justify changing CI structure.
+
+### Key Lessons
+
+1. Run cheap source-specific consistency checks before a long CI matrix; they can isolate a compiler or formatting fault quickly.
+2. When a gap-closure plan supersedes a partial plan, update the active plan count and re-run the roadmap analyzer before archival (MU-GSD-029).
+3. Keep CI queue, job duration and cancellation evidence tied to the exact source; one run pair is not a basis for a timeout, cache or topology change.
+
+### Cost Observations
+
+Main CI and Release each began about one second after creation. Windows ARM64 was longest at 43.2 and 41.7 minutes respectively; neither run had failures or cancellations. Local session, model and monetary costs are not reliably recorded.
+
 ## Cross-Milestone Trends
 
 | Milestone | Phases | Plans | Requirements | Test evidence | Closeout |
@@ -327,3 +359,4 @@ output paths and measured calibration; aggregate record counts never prove accep
 | v7.0 | 2 | 5 | 8/8 scoped | Native 722/722 ordinary + 8/8 release; focused Release/ASan and hygiene passed | Closed locally with override; 1 newly acknowledged, 49 carried; no publication/merge/tag |
 | v8.0 | 2 | 2 plans, 4 tasks | 5/5 scoped | Local 723/723 CI + 8/8 release; final exact-main CI and Release passed; audit passed | Closed locally with override for stale Phase 23 fingerprint; 0 new acknowledgments, 50 carried; GameDrive implementation NO-GO |
 | v9.0 | 1 | 1 plan, 2 tasks | 4/4 scoped | Exact-source release/install passed; final main CI and audit passed | Shipped v0.16.0; 0 new acknowledgments, 50 carried; v0.15.0 unchanged |
+| v10.0 | 2 | 8 plans, 16 tasks | 8/8 scoped | Source-qualified trace, compatibility, CI and Release passed; integration audit has one non-blocking warning | Shipped v0.17.0; override closeout with 2 new acknowledgments and 50 carried |
