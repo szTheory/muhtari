@@ -34,10 +34,10 @@ Last activity: 2026-11-18 — Configured local CI passed; automated phase verifi
 Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
-No v11.0 plans have run; execution duration and trend are not yet measured.
+Phase 28 P01 completed in 39 min. This single-plan sample does not establish an execution trend.
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 28 | 0/TBD | - | - |
+| 28 | 1/2 | 39 min | 39 min |
 | 29 | 0/TBD | - | - |
 Prior metrics and source-qualified receipts remain in the [v10.0 archive](milestones/v10.0-ROADMAP.md), [audit](milestones/v10.0-MILESTONE-AUDIT.md) and phase summaries. Stable v0.17.0 is published; the failed v0.15.0 tag and draft remain unchanged and unpublished.
 **Per-Plan Metrics:**
