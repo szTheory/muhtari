@@ -4,16 +4,16 @@ milestone: v11.0
 current_phase: 28
 current_phase_name: Measured milestone tune-up
 status: executing
-stopped_at: 28-01 execution complete; summary and phase verification pending
-last_updated: "2026-11-18T15:30:27Z"
+stopped_at: Completed 28-01-PLAN.md
+last_updated: "2026-11-18T15:42:10.932Z"
 last_activity: 2026-11-18
 last_activity_desc: Phase 28 configured local CI passed; execution closeout in progress
-state_head: "0be908edfb4c6bc582b382affb4293bc6064502e"
+state_head: 1eb4bbae0bfd4c3f83fba0a6407023f8404480c0
 progress:
   total_phases: 2
   completed_phases: 0
   total_plans: 1
-  completed_plans: 0
+  completed_plans: 1
 milestone_name: Windows extended-path support
 ---
 
@@ -40,6 +40,11 @@ No v11.0 plans have run; execution duration and trend are not yet measured.
 | 28 | 0/TBD | - | - |
 | 29 | 0/TBD | - | - |
 Prior metrics and source-qualified receipts remain in the [v10.0 archive](milestones/v10.0-ROADMAP.md), [audit](milestones/v10.0-MILESTONE-AUDIT.md) and phase summaries. Stable v0.17.0 is published; the failed v0.15.0 tag and draft remain unchanged and unpublished.
+**Per-Plan Metrics:**
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 28 P01 | 39 min | 2 tasks | 5 files |
 
 ## Accumulated Context
 ### Decisions
@@ -48,6 +53,9 @@ Prior metrics and source-qualified receipts remain in the [v10.0 archive](milest
 - Phase 28 maps TUNE-15/16: SEED-007/009's source-qualified measured tune-up plus count-only reconciliation to 52 total, 16 open, 0 waived, 36 fixed. Preserve every register entry and verdict. Phase 29 maps WINPATH-01–04; implementation, Windows CI acceptance, documentation and review stay together.
 - Selected milestone work follows the owner's autonomous local follow-through preference. Normal Git publication, PR merge and required CI/release automation are authorized at natural delivery points; original host/remote stops remain intact.
 - Run cheap source-specific consistency checks before long suites. Preserve required fault detection and measured-evidence rules; no unsupported timeout, cache, topology or quota changes. Ship the final phase before archiving its active roadmap rows.
+- [Phase 28]: Preserve five hosted receipts as source-specific historical evidence.
+- [Phase 28]: Make no CI topology, timeout, cache, resource, or membership change without comparable completed measurements.
+- [Phase 28]: Leave TUNE-15 and TUNE-16 pending phase verification.
 
 ### Pending Todos
 The [Windows path follow-up](todos/pending/2026-11-17-define-extended-windows-output-path-support.md) is selected for Phase 29; its acknowledgment is retained below until verified closure. Other todos/seeds retain their dispositions. Root remains canonical and older dirty worktrees require content/ancestry reconciliation before import. See [workspace reconciliation](debug/workspace-reconciliation-2026-11-10.md).
@@ -105,11 +113,11 @@ At v10.0 close, two items were newly acknowledged; 50 items acknowledged at earl
 | deferred_items | 11/deferred-items.md: Found in plan 04  - `diag.bankset_tracer` and `diag.bankset` both write `build/ci/tests/diag/bankset/32n/` and carry no resource lock, so under `ctest -j` one can read the other's `pixels.png` half written (`bankset --bankset-png ... png: chunk longer than the file`). Seen once in `cmake --workflow --preset ci`; passes alone and on rerun. Not caused by plan 04; a fix is a `RESOURCE_LOCK` or a separate output directory in `tests/diag/tests.cmake`.  Resolved in the gap round: `diag.bankset` now writes `build/<preset>/tests/diag/bankset-matrix/` and `diag.bankset_tracer` keeps `build/<preset>/tests/diag/bankset/`, so the two tests share no output file. | acknowledged; historical disposition retained | 2026-10-29 | v2.0 |
 
 ## Session Continuity
-Last session: 2026-11-18
-Stopped at: v11.0 roadmap created; Phase 28 ready to plan
+Last session: 2026-11-18T15:42:10.920Z
+Stopped at: Completed 28-01-PLAN.md
 Resume file: None
 
-Next action: `$gsd-plan-phase 28`. The orchestrator continues the selected autonomous scope; no routine owner approval is pending.
+Next action: `$gsd-verify-work 28`. Phase 29 remains dependent on Phase 28; both TUNE requirements await verifier disposition. No routine owner approval is pending.
 
 ## Operator Next Steps
 
