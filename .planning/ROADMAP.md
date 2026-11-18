@@ -2,6 +2,8 @@
 
 ## Milestones
 
+- [ ] **v10.0 — Headless developer trace** — phases 26–27; selected 2026-11-16.
+
 - [x] **v9.0 — Publish the corrected Souper mapper package** — shipped as v0.16.0 and archived 2026-11-16. [Audit](milestones/v9.0-MILESTONE-AUDIT.md) · [Archive](milestones/v9.0-ROADMAP.md) · [Requirements](milestones/v9.0-REQUIREMENTS.md) · [Product roadmap snapshot](milestones/v9.0-PRODUCT-ROADMAP.md)
 
 - [x] **v1.0 — 7800 games play with sound in RetroArch** — phases 1–4; shipped 2026-10-21. [Archive](milestones/v1.0-ROADMAP.md)
@@ -20,7 +22,7 @@
 
 - [x] Phase 25: Publish the corrected Souper mapper (1/1 plan) — all four requirements verified.
 
-Stable v0.16.0 was published from corrected source `a0319a9`; the failed v0.15.0 tag and draft were preserved. README/status PR #73 and phase closeout PR #74 merged. The milestone audit passed, and exact-main CI on the closeout merge passed in [run 43841380444](https://github.com/szTheory/muhtari/actions/runs/43841380444). See the [audit](milestones/v9.0-MILESTONE-AUDIT.md) and [release receipt](milestones/v9.0-phases/25-publish-the-corrected-souper-mapper/25-RELEASE.md).
+Stable v0.16.0 was published from exact source `a0319a9c29886d776e37b818d38d36fe810f486d`; the failed v0.15.0 tag and draft were preserved. Exact-source CI [43801428495](https://github.com/szTheory/muhtari/actions/runs/43801428495) and Release [43801428444](https://github.com/szTheory/muhtari/actions/runs/43801428444) passed. README/status PR #73 and phase closeout PR #74 merged; their earlier main CI [43841380444](https://github.com/szTheory/muhtari/actions/runs/43841380444) and Release [43841380334](https://github.com/szTheory/muhtari/actions/runs/43841380334) receipts remain historical. Archive PR #75 merged source `bac988bea6a4ec070943c11b83298ac1eee5a8c3`, with passing CI [43854355858](https://github.com/szTheory/muhtari/actions/runs/43854355858) and Release [43854356086](https://github.com/szTheory/muhtari/actions/runs/43854356086). Post-archive state PR #76 established current source `89b6ff82812cd5be873e9f90d32ac55fded8694b`, with passing CI [43866551295](https://github.com/szTheory/muhtari/actions/runs/43866551295) and Release [43866551368](https://github.com/szTheory/muhtari/actions/runs/43866551368); package work was skipped because no new release was created. See the [Phase 26 tune-up report](phases/26-measured-milestone-tune-up/26-TUNEUP.md), [audit](milestones/v9.0-MILESTONE-AUDIT.md) and [release receipt](milestones/v9.0-phases/25-publish-the-corrected-souper-mapper/25-RELEASE.md).
 
 </details>
 
@@ -44,6 +46,79 @@ The milestone audit and both phase reports passed. The Phase 23 verification fin
 
 </details>
 
-## Successor scope
+## v10.0 — Headless developer trace
 
-No successor milestone is selected. The recommendation, strongest alternative, evidence threshold, sibling ownership and deferred host scope are in the [rolling product roadmap](PRODUCT-ROADMAP.md). Select scope at the next milestone boundary before creating new requirements or implementation work.
+**Milestone goal:** Homebrew authors and Muhtari maintainers can diagnose Atari 7800 instruction and bus timing with a bounded, reproducible headless trace from `muhtari-run`.
+
+The owner selected this scope on 2026-11-16. The [current requirements](REQUIREMENTS.md) and [successor review](research/next-milestone/2026-11-16-future-roadmap-review.md) govern this milestone; the older research SUMMARY is historical and its API 7 baseline is superseded by public API 8.
+
+## Phases
+
+- [x] **Phase 26: Measured milestone tune-up** - Preserve trustworthy release and CI evidence while making only measured, low-risk efficiency corrections. (completed 2026-11-16)
+- [x] **Phase 27: Headless developer trace** - Deliver one filtered, bounded instruction and bus-access trace with numeric acceptance and unchanged emulation results. (completed 2026-11-17)
+
+## Phase Details
+
+### Phase 26: Measured milestone tune-up
+
+**Goal**: Maintainers can begin trace work from a current, source-qualified release and CI baseline, with avoidable workflow friction corrected where the evidence supports it.
+**Depends on**: Phase 25 (v9.0 shipped and archived)
+**Requirements**: TUNE-14
+**Success Criteria** (what must be TRUE):
+  1. Maintainers can identify the current release and CI sources and see their queue time, critical path, job durations and cancellations, with failed or incomplete runs retaining their original limits.
+  2. Maintainers can see which reproduced lessons and applicable cheap consistency checks were considered before longer work, including fixture identity, changed-file formatting and shared inventories where relevant.
+  3. Maintainers receive an evidence-backed low-risk correction or a bounded no-change disposition; required coverage, fault detection and existing safety stops remain intact, and structural, cache or timeout changes require comparable multi-run evidence.
+**Plans**: 3/3 plans complete
+
+Plans:
+- [x] 26-01-PLAN.md — Reconcile release and CI receipts and record the bounded tune-up disposition.
+- [x] 26-02-PLAN.md — Reconcile roadmap execution progress while verification remains pending.
+- [x] 26-03-PLAN.md — Represent future Phase 27 as explicitly unplanned without debt markers.
+
+### Phase 27: Headless developer trace
+
+**Goal**: Developers can inspect deterministic Atari 7800 instruction and bus-access events through the existing headless runner without changing emulated results or public compatibility.
+**Depends on**: Phase 26
+**Requirements**: TRACE-01, TRACE-02, TRACE-03, TRACE-04, TRACE-05, TRACE-06, TRACE-07
+**Success Criteria** (what must be TRUE):
+  1. A developer can opt in to a trace for a selected invocation frame and inclusive address range and receive only matching instruction and bus-access events in deterministic order. Records expose event kind, master tick, beam position and CPU context; bus records also expose address, direction and value.
+  2. A developer can set a finite record limit and distinguish complete output from explicit truncation or a file-output failure. Invalid frame, range and limit arguments are refused before execution.
+  3. A developer can reproduce a generated or owned diagnostic's exact numeric records and event order, and tracing enabled or disabled produces identical frame and canonical state hashes.
+  4. Existing consumers retain public API 8, ABI 1 and all current state formats. Trace callbacks and output buffers remain outside emulated machine state, instrumentation is selected only for calls with tracing installed, and tracing disabled still passes the existing hooks-off instruction-cost gate.
+  5. A developer can follow runner documentation covering invocation, instruction versus bus address filtering, record fields, bounds, truncation and known limits. Committed fixtures and trace evidence contain no ROM, BIOS or save bytes beyond the manifest.
+**Plans**: 4/5 active plans executed
+**Wave 1**
+- [x] 27-01-PLAN.md — Private end-to-end trace and exact numeric timing oracle.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [x] 27-02-PLAN.md — Checked capture bounds, argument/path validation and atomic I/O failure controls.
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [x] 27-03-PLAN.md — CPU-backed hooks-off cost proof, deterministic compatibility and runner documentation.
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [x] 27-04-PLAN.md
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [x] 27-06-PLAN.md — Provision the Linux perf fixture's existing pinned inputs and validate local reachability.
+
+Superseded partial plan (not in the active execution set): 27-05-PLAN.md. Its one-use observation ended without a Linux receipt; retain its checkpoint and history, but do not resume it.
+
+## Acceptance and boundaries
+
+Phase 27 includes the complete runner workflow, generated/owned numeric acceptance, deterministic no-change proof, the existing hooks-off cost gate, accurate documentation and required review. There is no separate implementation-tail, UAT or release phase. Acceptance uses existing C17, CMake/CTest and CI mechanisms; no GUI, device code, new dependency or real-host validation is selected.
+
+Keep instrumentation runner-private. If a public observer API or compatibility change proves necessary, stop for an explicit compatibility decision before expanding scope. Existing state formats remain unchanged, including legacy format 1 / behavior 6, YM format 2 / behavior 7 and Souper format 3 / behavior 8.
+
+The nine deferred v3.0 requirements and all original Phase 12/14 host/remote stops, denied requests, spent allowances, expired windows and no-retry limits remain binding. This milestone renews none of them. GameDrive implementation remains NO-GO pending its authoritative stream profile, lawful independent PCM oracle and finite resource facts. LibFuturo owns browser/host work, Playstead owns its player integration, and twentysixhundo owns Atari 2600. Broader SEED-004 tools and title/gameplay expansion remain deferred.
+
+## Progress
+
+**Execution order:** Phase 26 → Phase 27. Plan counts are assigned during phase planning; no implementation or verification is claimed at roadmap creation.
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 26. Measured milestone tune-up | 3/3 | Complete    | 2026-11-16 |
+| 27. Headless developer trace | 5/5 | Complete    | 2026-11-17 |
+
+**Coverage:** All 8 v1 requirements map to exactly one phase: TUNE-14 to Phase 26 and TRACE-01–07 to Phase 27. No orphaned or duplicated requirements.

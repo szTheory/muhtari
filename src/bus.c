@@ -3,6 +3,30 @@
    (docs/hardware/bus.md). */
 #include "internal.h"
 
+#if defined(MUHTARI_TRACE_VARIANT)
+static void trace_emit(muhtari *m, uint8_t kind, uint16_t pc, uint16_t addr, uint8_t rw,
+                       uint8_t value, uint64_t tick, uint64_t origin, uint8_t a, uint8_t x,
+                       uint8_t y, uint8_t s, uint8_t p)
+{
+    uint64_t beam = tick - origin;
+    struct muhtari__trace_event event = {0};
+    event.tick = tick;
+    event.line = (uint16_t)(beam / MUHTARI__MARIA_LINE_TICKS);
+    event.t = (uint16_t)(beam % MUHTARI__MARIA_LINE_TICKS);
+    event.pc = pc;
+    event.addr = addr;
+    event.kind = kind;
+    event.rw = rw;
+    event.value = value;
+    event.a = a;
+    event.x = x;
+    event.y = y;
+    event.s = s;
+    event.p = p;
+    m->trace_callback(m->trace_user, &event);
+}
+#endif
+
 /* What answers an address (docs/hardware/bus.md, Memory map). DEV_OPEN is
    every address nothing drives: the unused windows in pages 2 and 3, and
    with MEN = 0 everything outside the TIA and the RIOT. DEV_CART is
@@ -406,8 +430,17 @@ static void note_handoff(muhtari *m, enum bus_device dev)
 
 uint8_t muhtari__bus_read(muhtari *m, uint16_t addr)
 {
+#if defined(MUHTARI_TRACE_VARIANT)
+    const uint16_t pc = m->cpu.pc;
+    const uint8_t a = m->cpu.a, x = m->cpu.x, y = m->cpu.y, s = m->cpu.s, p = m->cpu.p;
+    const int instruction = m->bus.sync != 0u;
+#endif
     enum bus_device dev = decode(m, addr);
     uint32_t len = begin(m, dev, 1);
+#if defined(MUHTARI_TRACE_VARIANT)
+    const uint64_t tick = m->bus.ticks + data_at(len);
+    const uint64_t origin = m->maria.origin;
+#endif
     uint8_t v = m->bus.open_bus;
     if (m->bus.sync != 0u) {
         m->bus.sync = 0u;
@@ -432,6 +465,12 @@ uint8_t muhtari__bus_read(muhtari *m, uint16_t addr)
         v = muhtari__boot_bios_byte(m, addr);
     }
     m->bus.open_bus = v;
+#if defined(MUHTARI_TRACE_VARIANT)
+    if (instruction) {
+        trace_emit(m, MUHTARI__TRACE_INSTRUCTION, pc, pc, 0u, v, tick, origin, a, x, y, s, p);
+    }
+    trace_emit(m, MUHTARI__TRACE_BUS, pc, addr, 0u, v, tick, origin, a, x, y, s, p);
+#endif
     end(m, len);
     return v;
 }
@@ -502,8 +541,16 @@ static void inptctrl_write(muhtari *m, uint8_t v)
 
 void muhtari__bus_write(muhtari *m, uint16_t addr, uint8_t v)
 {
+#if defined(MUHTARI_TRACE_VARIANT)
+    const uint16_t pc = m->cpu.pc;
+    const uint8_t a = m->cpu.a, x = m->cpu.x, y = m->cpu.y, s = m->cpu.s, p = m->cpu.p;
+#endif
     enum bus_device dev = decode(m, addr);
     uint32_t len = begin(m, dev, 0);
+#if defined(MUHTARI_TRACE_VARIANT)
+    const uint64_t tick = m->bus.ticks + data_at(len);
+    const uint64_t origin = m->maria.origin;
+#endif
     if (dev == DEV_RAM) {
         m->ram[ram_index(addr)] = v;
     } else if (dev == DEV_TIA) {
@@ -519,6 +566,9 @@ void muhtari__bus_write(muhtari *m, uint16_t addr, uint8_t v)
         muhtari__cart_write_at(m, addr, v, m->bus.ticks + data_at(len));
     }
     m->bus.open_bus = v;
+#if defined(MUHTARI_TRACE_VARIANT)
+    trace_emit(m, MUHTARI__TRACE_BUS, pc, addr, 1u, v, tick, origin, a, x, y, s, p);
+#endif
     end(m, len);
 }
 

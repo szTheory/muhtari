@@ -1056,3 +1056,18 @@ Reproduced after v7.0 archival on 2026-11-14: `query roadmap.analyze` also exits
 0% progress. The v7.0 phase records and passed verification reports remain in the
 milestone archive. This is the same index limitation; do not duplicate archived
 phases or use that projection as the completion verdict. Run URL: N/A-local.
+
+## Preserve libc feature visibility and wrapper ownership (2026-11-17)
+
+GCC can inline a test's `fopen`/`fdopen` wrapper while retaining its larger close
+wrapper, exposing libc's `fclose` ownership association across the substituted
+close call. GCC 15.3 at `-O3` reproduced `-Wmismatched-dealloc`; associating both
+test allocators with `test_close` using GCC 11+'s paired `malloc` attribute
+prevents that mismatch without disabling diagnostics. Independently, strict C17
+plus `_POSIX_C_SOURCE=200809L` does not expose glibc `realpath`; all runner
+consumers need `_XOPEN_SOURCE=700`. Native macOS compilation cannot establish
+glibc declaration visibility. Isolated removal of either correction restores its
+compiler failure; reapplying removes it. GCC 15.3 and Apple Clang 21 targeting
+Linux/glibc establish local compiler evidence, not an exact hosted-toolchain pass.
+Commands, exits and limits: [compiler debug session](debug/ci-gcc-clang-build.md).
+Run URL: N/A-local.

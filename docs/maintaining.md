@@ -144,6 +144,13 @@ each CTest test retains its enforced deadline. The outer watch-mode detector is
 redundant here and can otherwise preempt valid tests; no replacement cap is inferred
 from another timeout.
 
+Runner targets select POSIX 2008 and X/Open 700 so strict C17 builds expose
+glibc's `realpath`; keep the feature definitions aligned in tests that include
+the runner. The save fault fixture pairs its stream allocators with its close
+wrapper on GCC 11+ to prevent partial-inlining deallocation mismatches. Keep
+compiler warnings fatal and exercise the existing save/state/trace fault cases
+after changing these wrappers.
+
 Focused CTest runs need a separate report, for example
 `ctest --preset ci -R '^input[.]' --output-junit input-focused.xml`.
 Keep `junit.xml` and `junit-release.xml` for complete inventory checks.

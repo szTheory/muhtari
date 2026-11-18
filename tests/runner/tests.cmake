@@ -1729,7 +1729,7 @@ add_executable(muhtari-run-testdb
   $<TARGET_OBJECTS:muhtari_cpu>)
 target_include_directories(muhtari-run-testdb PRIVATE ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(muhtari-run-testdb PRIVATE muhtari_host muhtari::muhtari)
-target_compile_definitions(muhtari-run-testdb PRIVATE _POSIX_C_SOURCE=200809L)
+target_compile_definitions(muhtari-run-testdb PRIVATE _POSIX_C_SOURCE=200809L _XOPEN_SOURCE=700)
 set_target_properties(muhtari-run-testdb PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-run-testdb)
@@ -1813,7 +1813,7 @@ add_executable(muhtari-test-runner
   ${PROJECT_SOURCE_DIR}/runner/sha256.c)
 target_include_directories(muhtari-test-runner PRIVATE ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(muhtari-test-runner PRIVATE muhtari::muhtari muhtari_host)
-target_compile_definitions(muhtari-test-runner PRIVATE _POSIX_C_SOURCE=200809L
+target_compile_definitions(muhtari-test-runner PRIVATE _POSIX_C_SOURCE=200809L _XOPEN_SOURCE=700
   $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
 set_target_properties(muhtari-test-runner PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
@@ -1877,7 +1877,7 @@ add_executable(muhtari-test-audio-runner ${CMAKE_CURRENT_LIST_DIR}/test_audio.c
   ${PROJECT_SOURCE_DIR}/runner/sha256.c)
 target_include_directories(muhtari-test-audio-runner PRIVATE ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(muhtari-test-audio-runner PRIVATE muhtari::muhtari muhtari_host)
-target_compile_definitions(muhtari-test-audio-runner PRIVATE _POSIX_C_SOURCE=200809L
+target_compile_definitions(muhtari-test-audio-runner PRIVATE _POSIX_C_SOURCE=200809L _XOPEN_SOURCE=700
   $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
 set_target_properties(muhtari-test-audio-runner PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-test-audio-runner)
@@ -1891,7 +1891,8 @@ add_executable(muhtari-test-save-runner ${CMAKE_CURRENT_LIST_DIR}/test_save.c
   ${PROJECT_SOURCE_DIR}/runner/sha256.c)
 target_include_directories(muhtari-test-save-runner PRIVATE ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(muhtari-test-save-runner PRIVATE muhtari::muhtari muhtari_host)
-target_compile_definitions(muhtari-test-save-runner PRIVATE _POSIX_C_SOURCE=200809L
+target_compile_definitions(muhtari-test-save-runner PRIVATE _POSIX_C_SOURCE=200809L _XOPEN_SOURCE=700
+  MUHTARI_TRACE_LOOP=$<BOOL:${MUHTARI_TRACE_LOOP}>
   $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
 set_target_properties(muhtari-test-save-runner PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-test-save-runner)

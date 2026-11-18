@@ -60,6 +60,7 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
 endif()
 
 set(perf_dir ${CMAKE_BINARY_DIR}/perf)
+file(MAKE_DIRECTORY ${perf_dir})
 file(WRITE ${perf_dir}/empty.txt "# no exceptions\n")
 file(WRITE ${perf_dir}/current.txt "testcard 300 2026-02-01 a reviewed slowdown\n")
 file(WRITE ${perf_dir}/expired.txt "testcard 300 2026-01-01 a reviewed slowdown\n")
@@ -71,3 +72,7 @@ foreach(case allowed identical missing no_base plus_1_00 plus_1_01 unstable)
       -DDIR=${perf_dir} -DCASE=${case} -P ${CMAKE_CURRENT_LIST_FILE}
     LABELS perf TIMEOUT 10)
 endforeach()
+
+muhtari_add_test(NAME perf.trace.controls
+  COMMAND ${CMAKE_COMMAND} -DMODE=controls -P ${CMAKE_CURRENT_LIST_DIR}/trace.cmake
+  LABELS perf TIMEOUT 30)

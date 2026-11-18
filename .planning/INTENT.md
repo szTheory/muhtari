@@ -195,3 +195,13 @@ milestone with `main` CI green. Before a long suite or process, run applicable
 cheap consistency checks first. Review reproduced lessons and recent bottlenecks
 for low-effort sanity checks or fixes; investigate a failed check before retrying
 it. Keep CI/runtime evidence and any measured efficiency finding with the run.
+
+## Feature returns and compatibility evidence — 2026-11-16
+
+The owner asked whether Muhtari is reaching diminishing returns from adding
+features. At the next `$gsd-new-milestone`, answer from the current shipped state
+and evidence: distinguish diminishing returns from project completion, inspect
+the compatibility and consumer gaps, and recommend a concrete successor with
+its strongest alternative. Reconcile and refresh the [rolling roadmap](PRODUCT-ROADMAP.md)
+before presenting the scope choice. Reuse its current evidence and recommendation
+as the starting point; update them only where new evidence changes the ranking.

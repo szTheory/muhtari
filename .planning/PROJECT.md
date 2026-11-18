@@ -27,6 +27,19 @@ older Playstead/frontend requirements remain unresolved. GameDrive and BupChip
 streamed audio are not implemented. The public [status page](../docs/status.md)
 summarizes these limits.
 
+Phase 27's original v10.0 trace verification passed 15/15, including the
+source-qualified Linux instruction-cost receipt. Its report is stale for the
+current source after the compiler portability follow-up. Draft PR 77's existing
+CI and Release workflows failed in GCC `mismatched-dealloc` and Clang
+`realpath` build lanes. The causes are fixed locally, and the full local CI
+workflow passes; the current commits have no hosted acceptance yet. The
+historical receipts remain in the [Phase 27 verification](phases/27-headless-developer-trace/27-VERIFICATION.md)
+and [CI evidence](phases/27-headless-developer-trace/27-CI-EVIDENCE.md); the
+local diagnosis and commands are in the [compiler debug record](debug/resolved/ci-gcc-clang-build.md).
+v10.0 remains unshipped until current-source verification and authorized hosted
+CI/Release gates pass. The one-push observation scope is spent and does not
+authorize another remote action.
+
 ### Completion standard
 
 A scoped feature is complete when its source-qualified behavior has deterministic,
@@ -53,32 +66,66 @@ checks passed. The v0.15.0 draft and tag remained unchanged. All four milestone
 requirements passed audit; the only review note is an informational README
 repetition deferred until the overview is next revised.
 
-**Delivery:** Release run
-[43801428444](https://github.com/szTheory/muhtari/actions/runs/43801428444)
-passed. Docs PR [#73](https://github.com/szTheory/muhtari/pull/73) and phase
-closeout PR [#74](https://github.com/szTheory/muhtari/pull/74) merged. Main CI
-passed on its merge commit in
-[run 43841380444](https://github.com/szTheory/muhtari/actions/runs/43841380444);
-the Release workflow passed and skipped package work because no new release
-was created.
+**Delivery:** Stable v0.16.0 source
+`a0319a9c29886d776e37b818d38d36fe810f486d` passed exact-source CI
+[43801428495](https://github.com/szTheory/muhtari/actions/runs/43801428495)
+and Release [43801428444](https://github.com/szTheory/muhtari/actions/runs/43801428444),
+including publication and latest-install checks. Docs PR
+[#73](https://github.com/szTheory/muhtari/pull/73) and phase closeout PR
+[#74](https://github.com/szTheory/muhtari/pull/74) merged; their earlier main
+receipts were CI [43841380444](https://github.com/szTheory/muhtari/actions/runs/43841380444)
+and Release [43841380334](https://github.com/szTheory/muhtari/actions/runs/43841380334).
+Archive PR #75 then merged source `bac988bea6a4ec070943c11b83298ac1eee5a8c3`;
+its CI [43854355858](https://github.com/szTheory/muhtari/actions/runs/43854355858)
+and Release [43854356086](https://github.com/szTheory/muhtari/actions/runs/43854356086)
+passed. Post-archive state PR #76 is current source
+`89b6ff82812cd5be873e9f90d32ac55fded8694b`; current main CI
+[43866551295](https://github.com/szTheory/muhtari/actions/runs/43866551295)
+passed and Release [43866551368](https://github.com/szTheory/muhtari/actions/runs/43866551368)
+passed its target check with package work skipped because no new release was
+created. The exact-source baseline and bounded no-change disposition are in the
+[Phase 26 tune-up report](phases/26-measured-milestone-tune-up/26-TUNEUP.md).
 
 **Closeout:** `verified_closeout`; no new artifact was acknowledged. Fifty
 items acknowledged by earlier milestone closes remain suppressed with their
 original verdicts. See [STATE.md](STATE.md) and the v9.0 audit.
 
-**Next:** No successor milestone is selected. The current recommendation and
-strongest alternative are in the [rolling product roadmap](PRODUCT-ROADMAP.md).
+**Current milestone:** v10.0 Headless developer trace. The scope selection and
+strongest player-centered alternative are in the
+[rolling product roadmap](PRODUCT-ROADMAP.md).
 
-## Next Milestone Goals
+## Current Milestone: v10.0 Headless developer trace
 
-No successor is selected yet. The current recommendation is a narrowly scoped
-fix for a named, lawful and reproducible title-blocking Atari 7800 defect; no
-such defect is established today. The strongest alternative is to resume
-GameDrive contract qualification only when an authoritative profile, lawful
-independent PCM oracle and finite resource facts are available. See the
-[rolling product roadmap](PRODUCT-ROADMAP.md) for the evidence thresholds and
-ownership boundaries. The 201 untested titles, 3 skipped titles, nine deferred
-v3.0 requirements and original Phase 12/14 stops remain open.
+**Goal:** Help homebrew authors and Muhtari maintainers diagnose Atari 7800
+instruction and bus timing through an opt-in, reproducible headless trace.
+
+**Target features:**
+- Select trace output by frame and address range, with instruction/bus event,
+  tick, beam position and CPU context.
+- Bound trace output and verify its numeric event order using generated or
+  owned test inputs.
+- Prove observation leaves frame and state results unchanged and preserves the
+  hooks-off performance gate.
+- Document the runner workflow and trace record format.
+
+**Compatibility boundary:** Keep the feature in `muhtari-run`, preserve public
+API 8 and existing state formats, and keep callbacks/output host-owned. If a
+public observer API or version change proves necessary, stop for an explicit
+compatibility decision before expanding the scope. No GUI, host/device code,
+interactive debugger, symbols, patching, scripting, Python/Gymnasium, BK2 or
+AI/TAS work is selected. The milestone review and evidence are in
+[the v9.0 successor review](research/next-milestone/2026-11-16-future-roadmap-review.md).
+
+**Phase result and delivery status:** The trace implementation and all seven
+TRACE requirements passed phase verification at 15/15. The Linux cost receipt
+from [CI run 44123425194](https://github.com/szTheory/muhtari/actions/runs/44123425194)
+reports stable repeated samples and a raw delta of 900 against the 9,600 limit.
+Required hosted build lanes failed on the previous PR head. The compiler fixes
+and full local CI pass on this branch; v10.0 remains unshipped until the updated
+head receives authorized hosted CI and Release acceptance.
+
+The 201 unevaluated titles and 3 skipped titles are not known failures. The
+nine deferred v3.0 requirements and original Phase 12/14 stops remain open.
 
 v8.0 GameDrive contract qualification is closed locally. The milestone audit covers all five requirements and passed; both phase verification reports retain passing verdicts. `override_closeout` accepts Phase 23's stale verification fingerprint because it predates the merged timeout follow-up, as allowed by GSD-HANDOFF §3 after merged-head CI passed. The qualification result is **NO-GO** for implementation because the authoritative stream profile, independent exact-profile PCM oracle and finite resource facts remain incomplete. PRs [#67](https://github.com/szTheory/muhtari/pull/67) and [#68](https://github.com/szTheory/muhtari/pull/68) are merged. Exact-main CI passed on the timeout-correction merge commit in [run 43757444707](https://github.com/szTheory/muhtari/actions/runs/43757444707); the Release workflow passed in [run 43757444676](https://github.com/szTheory/muhtari/actions/runs/43757444676) and skipped package publication. No GameDrive implementation, public compatibility change or hardware claim was made. The v0.15.0 tag/draft remains unpublished at its earlier failing source.
 
@@ -239,6 +286,9 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 ### Validated
 
+- ✓ TUNE-14: source-qualified release/CI evidence review, cheap preflights and a bounded no-change efficiency disposition — Phase 26; [tune-up report](phases/26-measured-milestone-tune-up/26-TUNEUP.md).
+- ✓ TRACE-01–07: deterministic bounded runner trace, compatibility and documentation, including the accepted Linux hooks-off cost receipt — Phase 27; [verification](phases/27-headless-developer-trace/27-VERIFICATION.md). The verified milestone scope is not yet shipped.
+
 - ✓ TUNE-13, REL-01, REL-02, DOC-01: published corrected Souper support as v0.16.0, preserved the v0.15.0 draft/tag, passed source-bound release and latest-install gates, and updated availability docs — v9.0, Phase 25; [audit](milestones/v9.0-MILESTONE-AUDIT.md).
 
 - ✓ YM-01–08: one qualified XM/YM2151 profile, deterministic C17 mono synthesis, complete lifecycle/state, native/portable/package consumers and measured bounds — v6.0, Phase 20; shipped as v0.14.0.
@@ -289,7 +339,10 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 ### Active
 
-No requirements are assigned to a successor milestone; its scope remains unselected. The nine unmet v3.0 requirements remain deferred with their original evidence and stops; see the [v3.0 archive](milestones/v3.0-MILESTONE-AUDIT.md).
+No additional product requirements are selected. v10.0's phase acceptance is complete, but delivery remains held by the failed required CI/Release lanes above.
+
+The nine unmet v3.0 requirements remain deferred with their original evidence
+and stops; see the [v3.0 archive](milestones/v3.0-MILESTONE-AUDIT.md).
 
 ### Out of Scope
 
@@ -374,6 +427,7 @@ No requirements are assigned to a successor milestone; its scope remains unselec
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
+| Keep the headless trace runner-only and accept its cost claim only from an exact-source Linux receipt | Preserves API 8/state compatibility and prevents local comparator controls from standing in for Cachegrind evidence | ✓ Phase 27: all TRACE-01–07 passed verification; receipt delta 900/9,600 on run 44123425194; separate CI/Release build failures still block shipping |
 | Publish corrected Souper through the ordinary feature-release path and keep CI coverage unchanged | A pre-1.0 feature release follows the minor-bump rule; release evidence supports no pipeline change | ✓ v9.0 Phase 25: stable v0.16.0 passed exact-source release and latest-install checks; v0.15.0 stayed unchanged; see [audit](milestones/v9.0-MILESTONE-AUDIT.md) |
 | Keep GameDrive implementation at NO-GO until its profile, independent PCM oracle and finite resource facts are qualified | Prevents guessed stream timing/framing or unlicensed fixture reuse from becoming public media/API/state behavior | ✓ v8.0 Phase 24: all four consumer and compatibility consequences recorded; no implementation or public compatibility change selected |
 | Calibrate only the macOS x64 PAL BIOS predicate deadline from completed matching-lane samples | The exact-source timeout and missing quality artifact share one failed matrix result; measured samples justify a bounded correction without reducing coverage | ✓ v8.0 Phase 23 follow-up: 12 complete suite samples, 5.88 s maximum, 12 s registered timeout; exact-main CI green |
@@ -440,4 +494,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-16 after shipping and archiving v9.0*
+*Last updated: 2026-11-17 after Phase 27 verification*

@@ -8,13 +8,13 @@
 
 **Key accomplishments:**
 - Corrected Souper is available in stable package v0.16.0 from exact source `a0319a9c29886d776e37b818d38d36fe810f486d`; the failed v0.15.0 tag and draft remain unchanged.
-- README and status documentation merged through PR #73; phase closeout merged through PR #74. Final main CI on `9b75e6f` passed in [run 43841380444](https://github.com/szTheory/muhtari/actions/runs/43841380444). The Release workflow passed in [run 43841380334](https://github.com/szTheory/muhtari/actions/runs/43841380334) and skipped publication because no new version was due.
+- README/status PR #73 and phase closeout PR #74 merged with earlier CI [43841380444](https://github.com/szTheory/muhtari/actions/runs/43841380444) and Release [43841380334](https://github.com/szTheory/muhtari/actions/runs/43841380334) receipts. Archive PR #75 merged source `bac988bea6a4ec070943c11b83298ac1eee5a8c3`; CI [43854355858](https://github.com/szTheory/muhtari/actions/runs/43854355858) and Release [43854356086](https://github.com/szTheory/muhtari/actions/runs/43854356086) passed. Post-archive state PR #76 established current source `89b6ff82812cd5be873e9f90d32ac55fded8694b`; CI [43866551295](https://github.com/szTheory/muhtari/actions/runs/43866551295) passed and Release [43866551368](https://github.com/szTheory/muhtari/actions/runs/43866551368) skipped package work. The v0.16.0 source `a0319a9c29886d776e37b818d38d36fe810f486d` passed exact-source CI [43801428495](https://github.com/szTheory/muhtari/actions/runs/43801428495) and Release [43801428444](https://github.com/szTheory/muhtari/actions/runs/43801428444). See the [Phase 26 tune-up report](phases/26-measured-milestone-tune-up/26-TUNEUP.md) for source-specific evidence and limits.
 
 **Audit:** [v9.0 milestone audit](milestones/v9.0-MILESTONE-AUDIT.md) passed all four requirements, the phase record and all three integration flows. It also records the release run [43801428444](https://github.com/szTheory/muhtari/actions/runs/43801428444), queue/critical-path review and clean artifact scan.
 
 **Archives:** [roadmap](milestones/v9.0-ROADMAP.md), [requirements](milestones/v9.0-REQUIREMENTS.md), [product roadmap snapshot](milestones/v9.0-PRODUCT-ROADMAP.md), [audit](milestones/v9.0-MILESTONE-AUDIT.md) and [phase records](milestones/v9.0-phases/).
 
-**Next:** The successor scope remains unselected. See the recommendation and strongest alternative in [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md); select scope before running `$gsd-new-milestone`.
+**Next:** v10.0 Headless developer trace is selected and active; Phases 26–27 are recorded in [ROADMAP.md](ROADMAP.md). The durable comparison, strongest alternative and revisit triggers remain in [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md) and the [2026-11-16 successor review](research/next-milestone/2026-11-16-future-roadmap-review.md).
 
 ---
 

@@ -272,15 +272,11 @@ cancelled, and a call from another workflow does not queue behind the push run o
 
 ## Performance
 
-**Instructions per frame.** The `perf` job in `ci.yml` counts the instructions the runner executes per frame of
-the test card under Cachegrind: Ir/frame = (Ir at 360 frames − Ir at 60) / 300, in integers, with
-`--cache-sim=no`, an empty environment and runner paths of equal length, so the count is the same on every run. It
-measures the pull request's merge commit once and its first parent (the merge base) twice, then
-`tests/cmake/perf_compare.cmake` prints one line to the log and the job summary:
-
-```
-perf testcard head=3837643 base=3837643 delta_bp=0 verdict=PASS
-```
+**Instructions per frame.** CI `perf` uses Cachegrind/no cache simulation and the existing percentage ratchet.
+The trace gate compares same-source trace-loop-on/off Release runners on generated CPU code, with no trace
+options: stable 60/360 samples must differ by at most 9,600 raw instructions (32/frame). `perf.trace.controls`
+fault-tests the comparison; it is not a receipt. Normal CI records authentic tools, source, fixture and samples
+in ephemeral `quality-perf.json`. Run `runner.trace.equality` and `perf.trace.controls` locally with CTest.
 
 `delta_bp` is the change in basis points (hundredths of a percent). The verdicts:
 

@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <stdarg.h>
 #include <sys/stat.h>
+#include "../../runner/clock.h"
 #ifdef _WIN32
 #include <io.h>
 #include <windows.h>
@@ -30,12 +31,20 @@ enum {
     SAVE_CLOSE,
     SAVE_REPLACE,
     STATE_READ,
-    STATE_CLOSE
+    STATE_CLOSE,
+    TRACE_ALLOC
 };
 static int io_fault;
 static int output_fault;
+static int track_runner_allocations;
+static size_t largest_runner_allocation;
+static int time_trace_write;
+static uint64_t trace_write_started_ns, trace_write_finished_ns;
 static unsigned frames_run, temp_opens, replacements;
 static unsigned create_calls;
+static unsigned trace_error_reports, trace_alloc_reports, trace_stderr_reports;
+static unsigned trace_missing_reports, trace_detach_checks;
+static int assert_trace_detached;
 static unsigned change_at, request_at, stop_at, request_during_write;
 static int change_every;
 static unsigned replaced_at[128];
@@ -50,6 +59,8 @@ static DWORD WINAPI concurrent_flush(LPVOID unused)
 }
 #endif
 static int reject_frame;
+static unsigned reject_at;
+static muhtari *trace_instance;
 static FILE *import_stream, *save_stream;
 static int state_fd = -1;
 static FILE *state_stream;
@@ -61,6 +72,21 @@ static const uint8_t *expected_firmware;
 static unsigned notice_stub, notice_unknown, notice_signature, notice_sha1;
 static int test_print(FILE *f, const char *format, ...)
 {
+    if (strstr(format, "cannot serialize or commit trace file") != NULL) {
+        trace_error_reports++;
+        if (f == stderr)
+            trace_stderr_reports++;
+    }
+    if (strstr(format, "out of memory for trace capture") != NULL) {
+        trace_alloc_reports++;
+        if (f == stderr)
+            trace_stderr_reports++;
+    }
+    if (strstr(format, "selected trace frame did not complete") != NULL) {
+        trace_missing_reports++;
+        if (f == stderr)
+            trace_stderr_reports++;
+    }
     if (strstr(format, "signature-only stub") != NULL)
         notice_stub++;
     if (strstr(format, "unknown HSC firmware") != NULL)
@@ -75,6 +101,24 @@ static int test_print(FILE *f, const char *format, ...)
     va_end(args);
     return rc;
 }
+static void *test_malloc(size_t size)
+{
+    if (track_runner_allocations && size > largest_runner_allocation)
+        largest_runner_allocation = size;
+    if (io_fault == TRACE_ALLOC && size == 65536u * sizeof(struct muhtari__trace_event)) {
+        errno = ENOMEM;
+        return NULL;
+    }
+    return malloc(size);
+}
+
+static int test_close(FILE *f);
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ >= 11
+/* Keep the wrapper pair intact: partial inlining otherwise exposes libc's
+   fclose ownership annotation to calls of test_close. */
+static FILE *test_fopen(const char *path, const char *mode) __attribute__((malloc(test_close, 1)));
+static FILE *test_fdopen(int fd, const char *mode) __attribute__((malloc(test_close, 1)));
+#endif
 
 static FILE *test_fopen(const char *path, const char *mode)
 {
@@ -135,6 +179,14 @@ static size_t test_write(const void *p, size_t n, size_t count, FILE *f)
 #else
         request_flush();
 #endif
+    }
+    if (f == save_stream && time_trace_write) {
+        if (trace_write_started_ns == 0u)
+            trace_write_started_ns = muhtari__clock_ns();
+        size_t written = fwrite(p, n, count, f);
+        if (strncmp((const char *)p, "{\"status\":", 10u) == 0)
+            trace_write_finished_ns = muhtari__clock_ns();
+        return written;
     }
     if (f == save_stream && io_fault == SAVE_PARTIAL)
         return fwrite(p, n, count - 1u, f);
@@ -217,6 +269,8 @@ static BOOL test_move(LPCSTR from, LPCSTR to, DWORD flags)
 #endif
 static muhtari_status test_frame(muhtari *m, muhtari_frame *io)
 {
+    if (assert_trace_detached)
+        trace_instance = m;
     if (expected_firmware != NULL && frames_run == 0u) {
         muhtari_const_span span = {0};
         span.size = (uint32_t)sizeof span;
@@ -243,10 +297,12 @@ static muhtari_status test_frame(muhtari *m, muhtari_frame *io)
     }
     if (frames_run == stop_at)
         request_stop();
-    return reject_frame ? MUHTARI_STATUS_ERR_BIOS_REJECTED_CART : st;
+    return reject_frame || frames_run == reject_at ? MUHTARI_STATUS_ERR_BIOS_REJECTED_CART : st;
 }
 int runner_entry(int argc, char **argv);
+void test_destroy(muhtari *m);
 #define main runner_entry
+#define malloc test_malloc
 #define fprintf test_print
 #define fopen test_fopen
 #define open test_open
@@ -263,7 +319,9 @@ int runner_entry(int argc, char **argv);
 #define rename test_rename
 #define MoveFileExA test_move
 #define muhtari_run_frame test_frame
+#define muhtari_destroy test_destroy
 #include "../../runner/main.c"
+#undef muhtari_destroy
 #undef muhtari_run_frame
 #undef rename
 #undef MoveFileExA
@@ -280,8 +338,18 @@ int runner_entry(int argc, char **argv);
 #undef open
 #undef _open
 #undef main
+#undef malloc
 #undef fprintf
 #include "../../runner/stop.c"
+
+void test_destroy(muhtari *m)
+{
+    if (assert_trace_detached) {
+        CHECK(m->trace_callback == NULL && m->trace_user == NULL);
+        trace_detach_checks++;
+    }
+    muhtari_destroy(m);
+}
 
 static void request_flush(void)
 {
@@ -346,6 +414,493 @@ static void exact_file(const char *path, const uint8_t *want, size_t bytes)
     if (f != NULL)
         CHECK_EQ_U64(fclose(f), 0);
     free(got);
+}
+
+static int trace_file_exists(const char *path)
+{
+#ifdef _WIN32
+    struct _stat64 info;
+    return _stat64(path, &info) == 0;
+#else
+    struct stat info;
+    return stat(path, &info) == 0;
+#endif
+}
+
+static int trace_snapshot(const char *path, uint8_t *bytes, size_t capacity, size_t *length)
+{
+    FILE *f = fopen(path, "rb");
+    if (f == NULL)
+        return -1;
+    size_t n = fread(bytes, 1u, capacity, f);
+    int extra = fgetc(f);
+    int failed = ferror(f);
+    int close_failed = fclose(f);
+    if (failed || close_failed != 0 || (n == capacity && extra != EOF))
+        return -1;
+    *length = n;
+    return 0;
+}
+
+static unsigned long trace_test_pid(void)
+{
+#ifdef _WIN32
+    return (unsigned long)GetCurrentProcessId();
+#elif defined(__wasi__)
+    return 0UL;
+#else
+    return (unsigned long)getpid();
+#endif
+}
+
+static void trace_temp_path(char *path, size_t capacity, const char *destination, unsigned attempt)
+{
+    int n = snprintf(path, capacity, "%s.tmp.%lu.%u", destination, trace_test_pid(), attempt);
+    CHECK(n > 0 && (size_t)n < capacity);
+}
+
+static void trace_check_temps(const char *destination, int preserved_attempt)
+{
+    char path[1200];
+    for (unsigned attempt = 0u; attempt < 32u; attempt++) {
+        trace_temp_path(path, sizeof path, destination, attempt);
+        CHECK_EQ_U64(trace_file_exists(path), attempt == (unsigned)preserved_attempt);
+    }
+}
+
+static void trace_check_bytes(const char *path, const uint8_t *expected, size_t expected_n)
+{
+    uint8_t actual[8192];
+    size_t actual_n = 0u;
+    CHECK(expected_n <= sizeof actual);
+    CHECK_EQ_U64(trace_snapshot(path, actual, sizeof actual, &actual_n), 0u);
+    CHECK_EQ_U64(actual_n, expected_n);
+    if (actual_n == expected_n)
+        CHECK(memcmp(actual, expected, expected_n) == 0);
+}
+
+static void trace_reset_io(void)
+{
+    io_fault = IO_OK;
+    output_fault = 0;
+    track_runner_allocations = 0;
+    largest_runner_allocation = 0u;
+    time_trace_write = 0;
+    trace_write_started_ns = trace_write_finished_ns = 0u;
+    frames_run = temp_opens = replacements = create_calls = 0u;
+    trace_error_reports = trace_alloc_reports = trace_stderr_reports = 0u;
+    trace_missing_reports = trace_detach_checks = 0u;
+    assert_trace_detached = 1;
+    change_at = request_at = stop_at = request_during_write = 0u;
+    change_every = 0;
+    reject_frame = 0;
+    reject_at = 0u;
+    trace_instance = NULL;
+    import_stream = save_stream = NULL;
+    state_fd = -1;
+    state_stream = NULL;
+    state_read_requested = 0u;
+    state_probe_reads = 0u;
+    expected_import = NULL;
+    expected_bytes = 0u;
+    expected_firmware = NULL;
+    stop_flag = flush_flag = 0;
+}
+
+static int trace_run_cli(char *rom, char *trace, const char *frames, const char *frame,
+                         const char *limit)
+{
+    char *args[12];
+    char frames_copy[16], frame_copy[16], limit_copy[16];
+    int frames_n = snprintf(frames_copy, sizeof frames_copy, "%s", frames);
+    int frame_n = snprintf(frame_copy, sizeof frame_copy, "%s", frame);
+    int limit_n = limit == NULL ? 0 : snprintf(limit_copy, sizeof limit_copy, "%s", limit);
+    CHECK(frames_n > 0 && (size_t)frames_n < sizeof frames_copy);
+    CHECK(frame_n > 0 && (size_t)frame_n < sizeof frame_copy);
+    CHECK(limit == NULL || (limit_n > 0 && (size_t)limit_n < sizeof limit_copy));
+    if (frames_n <= 0 || (size_t)frames_n >= sizeof frames_copy || frame_n <= 0 ||
+        (size_t)frame_n >= sizeof frame_copy ||
+        (limit != NULL && (limit_n <= 0 || (size_t)limit_n >= sizeof limit_copy)))
+        return 2;
+    int count = 0;
+    args[count++] = "muhtari-run";
+    args[count++] = "--frames";
+    args[count++] = frames_copy;
+    args[count++] = "--trace";
+    args[count++] = trace;
+    args[count++] = "--trace-frame";
+    args[count++] = frame_copy;
+    args[count++] = "--trace-range";
+    args[count++] = "0:65535";
+    if (limit != NULL) {
+        args[count++] = "--trace-limit";
+        args[count++] = limit_copy;
+    }
+    args[count++] = rom;
+    CHECK(count <= (int)(sizeof args / sizeof args[0]));
+    return runner_entry(count, args);
+}
+
+static void trace_io(const char *dir)
+{
+    static const uint8_t sentinel[] = "previous complete capture";
+    static const int faults[] = {TRACE_ALLOC, SAVE_CREATE, SAVE_FDOPEN, SAVE_PARTIAL, SAVE_WRITE,
+                                 SAVE_FLUSH,  SAVE_SYNC,   SAVE_CLOSE,  SAVE_REPLACE};
+    char rom[1024], destination[1024], candidate[1200];
+    (void)snprintf(rom, sizeof rom, "%s/trace-io.a78", dir);
+    (void)snprintf(destination, sizeof destination, "%s/trace-io.jsonl", dir);
+    cartridge(rom, 0u, 0);
+
+    for (size_t i = 0u; i < sizeof faults / sizeof faults[0]; i++) {
+        write_bytes(destination, sentinel, sizeof sentinel);
+        trace_reset_io();
+        io_fault = faults[i];
+        unsigned status = (unsigned)trace_run_cli(rom, destination, "1", "1", NULL);
+        CHECK_EQ_U64(status, 1u);
+        CHECK_EQ_U64(frames_run, faults[i] == TRACE_ALLOC ? 0u : 1u);
+        CHECK_EQ_U64(create_calls, faults[i] == TRACE_ALLOC ? 0u : 1u);
+        CHECK_EQ_U64(temp_opens, faults[i] == TRACE_ALLOC || faults[i] == SAVE_CREATE ||
+                                         faults[i] == SAVE_FDOPEN
+                                     ? 0u
+                                     : 1u);
+        CHECK_EQ_U64(replacements, faults[i] == SAVE_REPLACE ? 1u : 0u);
+        CHECK_EQ_U64(trace_alloc_reports, faults[i] == TRACE_ALLOC ? 1u : 0u);
+        CHECK_EQ_U64(trace_error_reports, faults[i] == TRACE_ALLOC ? 0u : 1u);
+        CHECK_EQ_U64(trace_stderr_reports, 1u);
+        CHECK_EQ_U64(trace_detach_checks, faults[i] == TRACE_ALLOC ? 0u : 1u);
+        CHECK(faults[i] != TRACE_ALLOC || trace_instance == NULL);
+        trace_check_bytes(destination, sentinel, sizeof sentinel);
+        trace_check_temps(destination, -1);
+    }
+
+    /* The first sibling candidate is not ours when exclusive creation finds it. */
+    write_bytes(destination, sentinel, sizeof sentinel);
+    trace_temp_path(candidate, sizeof candidate, destination, 0u);
+    static const uint8_t foreign[] = "unowned temporary";
+    write_bytes(candidate, foreign, sizeof foreign);
+    trace_reset_io();
+    io_fault = SAVE_WRITE;
+    CHECK_EQ_U64(trace_run_cli(rom, destination, "1", "1", NULL), 1u);
+    CHECK_EQ_U64(frames_run, 1u);
+    CHECK_EQ_U64(create_calls, 2u);
+    CHECK_EQ_U64(temp_opens, 1u);
+    CHECK_EQ_U64(replacements, 0u);
+    CHECK_EQ_U64(trace_detach_checks, 1u);
+    CHECK_EQ_U64(trace_missing_reports, 0u);
+    trace_check_bytes(destination, sentinel, sizeof sentinel);
+    trace_check_bytes(candidate, foreign, sizeof foreign);
+    trace_check_temps(destination, 0);
+    CHECK(remove(candidate) == 0);
+
+    write_bytes(destination, sentinel, sizeof sentinel);
+    trace_reset_io();
+    CHECK_EQ_U64(trace_run_cli(rom, destination, "1", "1", NULL), 0u);
+    CHECK_EQ_U64(frames_run, 1u);
+    CHECK_EQ_U64(replacements, 1u);
+    CHECK_EQ_U64(trace_error_reports, 0u);
+    CHECK_EQ_U64(trace_detach_checks, 1u);
+    CHECK(trace_file_exists(destination));
+    trace_check_temps(destination, -1);
+
+    (void)snprintf(destination, sizeof destination, "%s/trace-io-truncated.jsonl", dir);
+    write_bytes(destination, sentinel, sizeof sentinel);
+    trace_reset_io();
+    CHECK_EQ_U64(trace_run_cli(rom, destination, "1", "1", "1"), 0u);
+    CHECK_EQ_U64(frames_run, 1u);
+    CHECK_EQ_U64(replacements, 1u);
+    CHECK_EQ_U64(trace_detach_checks, 1u);
+    CHECK(trace_file_exists(destination));
+    trace_check_temps(destination, -1);
+
+    (void)snprintf(destination, sizeof destination, "%s/trace-io-refused.jsonl", dir);
+    write_bytes(destination, sentinel, sizeof sentinel);
+    trace_reset_io();
+    reject_at = 1u;
+    CHECK_EQ_U64(trace_run_cli(rom, destination, "1", "1", NULL), 77u);
+    CHECK_EQ_U64(frames_run, 1u);
+    CHECK_EQ_U64(replacements, 0u);
+    CHECK_EQ_U64(trace_detach_checks, 1u);
+    CHECK_EQ_U64(trace_missing_reports, 0u);
+    trace_check_bytes(destination, sentinel, sizeof sentinel);
+    trace_check_temps(destination, -1);
+
+    (void)snprintf(destination, sizeof destination, "%s/trace-io-stopped.jsonl", dir);
+    write_bytes(destination, sentinel, sizeof sentinel);
+    trace_reset_io();
+    stop_at = 1u;
+    CHECK_EQ_U64(trace_run_cli(rom, destination, "2", "2", NULL), 1u);
+    CHECK_EQ_U64(frames_run, 1u);
+    CHECK_EQ_U64(replacements, 0u);
+    CHECK_EQ_U64(trace_detach_checks, 1u);
+    CHECK_EQ_U64(trace_missing_reports, 1u);
+    CHECK_EQ_U64(trace_stderr_reports, 1u);
+    trace_check_bytes(destination, sentinel, sizeof sentinel);
+    trace_check_temps(destination, -1);
+
+    /* Once frame two has a truthful footer, a later unrelated refusal cannot revoke it. */
+    (void)snprintf(destination, sizeof destination, "%s/trace-io-later-failure.jsonl", dir);
+    write_bytes(destination, sentinel, sizeof sentinel);
+    trace_reset_io();
+    reject_at = 3u;
+    CHECK_EQ_U64(trace_run_cli(rom, destination, "3", "2", NULL), 77u);
+    CHECK_EQ_U64(frames_run, 3u);
+    CHECK_EQ_U64(replacements, 1u);
+    CHECK_EQ_U64(trace_detach_checks, 1u);
+    CHECK_EQ_U64(trace_missing_reports, 0u);
+    CHECK(trace_file_exists(destination));
+    trace_check_temps(destination, -1);
+}
+
+static void trace_expect_usage(int argc, char **argv, const char *protected_path)
+{
+    uint8_t before[8192], after[8192];
+    size_t before_n = 0u, after_n = 0u;
+    int existed = protected_path != NULL && trace_file_exists(protected_path);
+    if (existed)
+        CHECK_EQ_U64(trace_snapshot(protected_path, before, sizeof before, &before_n), 0u);
+    frames_run = 0u;
+    CHECK_EQ_U64(runner_entry(argc, argv), 2u);
+    CHECK_EQ_U64(frames_run, 0u);
+    if (protected_path != NULL) {
+        CHECK_EQ_U64(trace_file_exists(protected_path), existed);
+        if (existed) {
+            CHECK_EQ_U64(trace_snapshot(protected_path, after, sizeof after, &after_n), 0u);
+            CHECK_EQ_U64(after_n, before_n);
+            if (after_n == before_n)
+                CHECK(memcmp(before, after, before_n) == 0);
+        }
+    }
+}
+
+static void trace_arguments(const char *dir)
+{
+    char rom[1024], trace[1024], state[1024], movie[1024];
+    (void)snprintf(rom, sizeof rom, "%s/trace-arguments.a78", dir);
+    (void)snprintf(trace, sizeof trace, "%s/trace-arguments.jsonl", dir);
+    (void)snprintf(state, sizeof state, "%s/trace-arguments.state", dir);
+    (void)snprintf(movie, sizeof movie, "%s/trace-arguments.movie", dir);
+    cartridge(rom, 0u, 0);
+    static const char movie_text[] = "muhtari-movie 1\nport1 savekey\nport2 none\n|||...BB|\n";
+    write_bytes(movie, movie_text, sizeof movie_text - 1u);
+    static const uint8_t sentinel[] = "prior trace bytes";
+    write_bytes(trace, sentinel, sizeof sentinel);
+
+#define TRACE_BAD(...)                                                                             \
+    do {                                                                                           \
+        char *bad_argv[] = {"muhtari-run", __VA_ARGS__};                                           \
+        trace_expect_usage((int)(sizeof bad_argv / sizeof bad_argv[0]), bad_argv, trace);          \
+    } while (0)
+    TRACE_BAD("--frames", "1", "--trace-frame", "1", "--trace-range", "0:65535", rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-range", "0:65535", rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "0:65535",
+              "--trace", trace, rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-frame", "1",
+              "--trace-range", "0:65535", rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "0:65535",
+              "--trace-range", "0:65535", rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "0:65535",
+              "--trace-limit", "2", "--trace-limit", "3", rom);
+    TRACE_BAD("--frames", "1", "--trace", "", "--trace-frame", "1", "--trace-range", "0:65535",
+              rom);
+    TRACE_BAD("--frames", "1", "--trace", "-", "--trace-frame", "1", "--trace-range", "0:65535",
+              rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "0", "--trace-range", "0:65535",
+              rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "+1", "--trace-range", "0:65535",
+              rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "-1", "--trace-range", "0:65535",
+              rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1x", "--trace-range", "0:65535",
+              rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "4294967296", "--trace-range",
+              "0:65535", rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "2", "--trace-range", "0:65535",
+              rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", ":1", rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "1:", rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "1:2:3",
+              rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "+1:2",
+              rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "-1:2",
+              rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "0x:2",
+              rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "1x:2",
+              rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "0:65536",
+              rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range",
+              "0x10000:0xFFFF", rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "2:1", rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "0:65535",
+              "--trace-limit", "0", rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "0:65535",
+              "--trace-limit", "+1", rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "0:65535",
+              "--trace-limit", "-1", rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "0:65535",
+              "--trace-limit", "1x", rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "0:65535",
+              "--trace-limit", "131073", rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "0:65535",
+              "--trace-limit", "4294967296", rom);
+    TRACE_BAD("--frames", "1", "--trace-limit", "1", rom);
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "0:65535",
+              "--trace-limit");
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "0:65535",
+              "--probe", rom);
+    TRACE_BAD("--frames", "1", "--trace-frame", "1", "--trace-range", "0:65535", "--trace");
+    TRACE_BAD("--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range", "0:65535");
+    {
+        char *bad_argv[] = {
+            "muhtari-run", "--frames0",    "--trace", trace, "--trace-frame", "1", "--trace-range",
+            "0:65535",     "--load-state", state,     rom};
+        trace_expect_usage((int)(sizeof bad_argv / sizeof bad_argv[0]), bad_argv, trace);
+    }
+    {
+        char *bad_argv[] = {"muhtari-run",   "--movie", movie,           "--trace", trace,
+                            "--trace-frame", "2",       "--trace-range", "0:65535", rom};
+        trace_expect_usage((int)(sizeof bad_argv / sizeof bad_argv[0]), bad_argv, trace);
+    }
+    TRACE_BAD("--trace", trace, "--trace-frame", "1", "--trace-range", "0:65535", rom);
+#undef TRACE_BAD
+}
+
+static void trace_paths(const char *dir, const char *junction_alias, const char *junction_target)
+{
+    char rom[1024], trace[1024], movie[1024], bios[1024], firmware[1024], state[1024];
+    char subdir[1024], path[1024], alias[1024], save_dir[1024], state_point[1100];
+    (void)snprintf(rom, sizeof rom, "%s/option.a78", dir);
+    (void)snprintf(movie, sizeof movie, "%s/option.movie", dir);
+    (void)snprintf(bios, sizeof bios, "%s/option.bios", dir);
+    (void)snprintf(firmware, sizeof firmware, "%s/option-firmware.bin", dir);
+    (void)snprintf(state, sizeof state, "%s/option.state", dir);
+    (void)snprintf(save_dir, sizeof save_dir, "%s", dir);
+    (void)snprintf(subdir, sizeof subdir, "%s/subdir", dir);
+#ifdef _WIN32
+    (void)_mkdir(subdir);
+#else
+    (void)mkdir(subdir, 0700);
+#endif
+    /* The script-mode test can be rerun in the same build directory. Remove
+       only names this matrix owns so each absent-destination case starts new. */
+    (void)snprintf(path, sizeof path, "%s/state-output", dir);
+    (void)remove(path);
+    (void)snprintf(path, sizeof path, "%s/frame-output.png", dir);
+    (void)remove(path);
+    (void)snprintf(path, sizeof path, "%s/normalized-output", dir);
+    (void)remove(path);
+    (void)snprintf(path, sizeof path, "%s/option.sav", dir);
+    (void)remove(path);
+    (void)snprintf(path, sizeof path, "%s/option-hardlink", dir);
+    (void)remove(path);
+    (void)snprintf(path, sizeof path, "%s/option-symlink", dir);
+    (void)remove(path);
+    (void)snprintf(path, sizeof path, "%s/trace-windows-dot.jsonl", dir);
+    (void)remove(path);
+    (void)snprintf(path, sizeof path, "%s/trace-windows-space.jsonl", dir);
+    (void)remove(path);
+    (void)snprintf(path, sizeof path, "%s/trace-windows-dot.jsonl", dir);
+    (void)remove(path);
+    (void)snprintf(path, sizeof path, "%s/trace-windows-space.jsonl", dir);
+    (void)remove(path);
+    cartridge(rom, 1u, 0);
+    static const char movie_text[] = "muhtari-movie 1\nport1 savekey\nport2 none\n|||...BB|\n";
+    write_bytes(movie, movie_text, sizeof movie_text - 1u);
+    uint8_t image[4096];
+    memset(image, 0x64, sizeof image);
+    write_bytes(bios, image, sizeof image);
+    write_bytes(firmware, image, sizeof image);
+    write_bytes(state, image, 128u);
+
+#define TRACE_BAD_PATH(protected_path, ...)                                                        \
+    do {                                                                                           \
+        char *bad_argv[] = {"muhtari-run", __VA_ARGS__};                                           \
+        trace_expect_usage((int)(sizeof bad_argv / sizeof bad_argv[0]), bad_argv, protected_path); \
+    } while (0)
+    TRACE_BAD_PATH(rom, "--frames", "1", "--trace", rom, "--trace-frame", "1", "--trace-range",
+                   "0:65535", rom);
+    TRACE_BAD_PATH(movie, "--frames", "1", "--trace", movie, "--trace-frame", "1", "--trace-range",
+                   "0:65535", "--movie", movie, rom);
+    TRACE_BAD_PATH(bios, "--frames", "1", "--boot", "bios", "--bios", bios, "--trace", bios,
+                   "--trace-frame", "1", "--trace-range", "0:65535", rom);
+    TRACE_BAD_PATH(firmware, "--frames", "1", "--hsc", "on", "--hsc-rom", firmware, "--trace",
+                   firmware, "--trace-frame", "1", "--trace-range", "0:65535", rom);
+    TRACE_BAD_PATH(state, "--frames", "1", "--load-state", state, "--trace", state, "--trace-frame",
+                   "1", "--trace-range", "0:65535", rom);
+
+    (void)snprintf(path, sizeof path, "%s/state-output", dir);
+    (void)snprintf(state_point, sizeof state_point, "1:%s", path);
+    TRACE_BAD_PATH(path, "--frames", "1", "--state-at-frame", state_point, "--trace", path,
+                   "--trace-frame", "1", "--trace-range", "0:65535", rom);
+    (void)snprintf(path, sizeof path, "%s/frame-output.png", dir);
+    (void)snprintf(state_point, sizeof state_point, "1:%s", path);
+    TRACE_BAD_PATH(path, "--frames", "1", "--dump-frame", state_point, "--trace", path,
+                   "--trace-frame", "1", "--trace-range", "0:65535", rom);
+
+    (void)snprintf(trace, sizeof trace, "%s/./option.sav", dir);
+    TRACE_BAD_PATH(trace, "--frames", "1", "--save-dir", save_dir, "--trace", trace,
+                   "--trace-frame", "1", "--trace-range", "0:65535", rom);
+
+    (void)snprintf(path, sizeof path, "%s/normalized-output", dir);
+    (void)snprintf(alias, sizeof alias, "%s/subdir/../normalized-output", dir);
+    (void)snprintf(state_point, sizeof state_point, "1:%s", path);
+    TRACE_BAD_PATH(alias, "--frames", "1", "--dump-frame", state_point, "--trace", alias,
+                   "--trace-frame", "1", "--trace-range", "0:65535", rom);
+    (void)snprintf(save_dir, sizeof save_dir, "%s/subdir/..", dir);
+    (void)snprintf(alias, sizeof alias, "%s/subdir/../option.sav", dir);
+    TRACE_BAD_PATH(alias, "--frames", "1", "--save-dir", save_dir, "--trace", alias,
+                   "--trace-frame", "1", "--trace-range", "0:65535", rom);
+
+#ifdef _WIN32
+    if (junction_alias != NULL && junction_target != NULL) {
+        char junction_trace[1024], junction_output[1024], junction_point[1100];
+        (void)snprintf(junction_trace, sizeof junction_trace, "%s/trace-junction-output.jsonl",
+                       junction_alias);
+        (void)snprintf(junction_output, sizeof junction_output, "%s/trace-junction-output.jsonl",
+                       junction_target);
+        (void)snprintf(junction_point, sizeof junction_point, "1:%s", junction_output);
+        TRACE_BAD_PATH(junction_trace, "--frames", "1", "--dump-frame", junction_point, "--trace",
+                       junction_trace, "--trace-frame", "1", "--trace-range", "0:65535", rom);
+    }
+    (void)snprintf(trace, sizeof trace, "%s/trace-windows-dot.jsonl.", dir);
+    (void)snprintf(path, sizeof path, "%s/trace-windows-dot.jsonl", dir);
+    (void)snprintf(state_point, sizeof state_point, "1:%s", path);
+    TRACE_BAD_PATH(trace, "--frames", "1", "--state-at-frame", state_point, "--trace", trace,
+                   "--trace-frame", "1", "--trace-range", "0:65535", rom);
+
+    (void)snprintf(trace, sizeof trace, "%s/trace-windows-space.jsonl ", dir);
+    (void)snprintf(path, sizeof path, "%s/trace-windows-space.jsonl", dir);
+    (void)snprintf(state_point, sizeof state_point, "1:%s", path);
+    TRACE_BAD_PATH(trace, "--frames", "1", "--state-at-frame", state_point, "--trace", trace,
+                   "--trace-frame", "1", "--trace-range", "0:65535", rom);
+#else
+    (void)junction_alias;
+    (void)junction_target;
+#endif
+
+#if !defined(_WIN32) && !defined(__wasi__)
+    (void)snprintf(alias, sizeof alias, "%s/option-hardlink", dir);
+    if (link(rom, alias) == 0) {
+        TRACE_BAD_PATH(alias, "--frames", "1", "--trace", alias, "--trace-frame", "1",
+                       "--trace-range", "0:65535", rom);
+        (void)remove(alias);
+    } else {
+        CHECK(0);
+    }
+    (void)snprintf(alias, sizeof alias, "%s/option-symlink", dir);
+    if (symlink(rom, alias) == 0) {
+        TRACE_BAD_PATH(alias, "--frames", "1", "--trace", alias, "--trace-frame", "1",
+                       "--trace-range", "0:65535", rom);
+        (void)remove(alias);
+    }
+#endif
+    (void)snprintf(trace, sizeof trace, "%s/subdir/../option.a78", dir);
+    TRACE_BAD_PATH(trace, "--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range",
+                   "0:65535", rom);
+#undef TRACE_BAD_PATH
 }
 
 static void expansion_images(const char *dir)
@@ -964,10 +1519,103 @@ static void cadence(const char *dir)
     CHECK_EQ_U64(runner_entry(4, missing), 2);
 }
 
+static void trace_bounds(const char *dir)
+{
+    char rom[1024], trace[1024];
+    snprintf(rom, sizeof rom, "%s/trace-bounds.a78", dir);
+    snprintf(trace, sizeof trace, "%s/trace-bounds.jsonl", dir);
+    cartridge(rom, 1u, 0);
+    char *args[] = {"muhtari-run", "--frames",      "1",      "--trace",
+                    trace,         "--trace-frame", "1",      "--trace-range",
+                    "0:65535",     "--trace-limit", "131072", rom};
+    largest_runner_allocation = 0u;
+    track_runner_allocations = 1;
+    int status = runner_entry((int)(sizeof args / sizeof args[0]), args);
+    track_runner_allocations = 0;
+    CHECK_EQ_U64(status, 0u);
+    CHECK_EQ_U64(frames_run, 1u);
+    CHECK_EQ_U64(sizeof(struct muhtari__trace_event), 24u);
+    CHECK(largest_runner_allocation <= 131072u * sizeof(struct muhtari__trace_event));
+
+    struct muhtari__trace_event maximum = {0};
+    maximum.tick = UINT64_MAX;
+    maximum.line = UINT16_MAX;
+    maximum.t = UINT16_MAX;
+    maximum.pc = UINT16_MAX;
+    maximum.addr = UINT16_MAX;
+    maximum.kind = UINT8_MAX;
+    maximum.rw = UINT8_MAX;
+    maximum.value = UINT8_MAX;
+    maximum.a = maximum.x = maximum.y = maximum.s = maximum.p = UINT8_MAX;
+    char line[TRACE_LINE_MAX];
+    int line_length = trace_format_line(line, sizeof line, &maximum);
+    CHECK(line_length >= 0);
+    CHECK_EQ_U64((uint64_t)line_length, TRACE_RECORD_MAX_BYTES);
+    if (line_length >= 0)
+        CHECK(line[line_length - 1] == '\n');
+    printf("trace_event_size=%zu maximum_record_line_bytes=%d record_line_ceiling=%u\n",
+           sizeof(struct muhtari__trace_event), line_length, TRACE_RECORD_MAX_BYTES);
+}
+
+static void trace_measure(char *rom, char *dir, char *region, char *mode)
+{
+    char trace[1024];
+    int n = snprintf(trace, sizeof trace, "%s/trace-%s-%s.jsonl", dir, region, mode);
+    CHECK(n > 0 && (size_t)n < sizeof trace);
+    if (n <= 0 || (size_t)n >= sizeof trace)
+        return;
+    char *plain[] = {"muhtari-run", "--frames",      "2", "--region",      region,    "--trace",
+                     trace,         "--trace-frame", "2", "--trace-range", "0:65535", rom};
+    char *maximum[] = {"muhtari-run", "--frames",
+                       "2",           "--region",
+                       region,        "--trace",
+                       trace,         "--trace-frame",
+                       "2",           "--trace-range",
+                       "0:65535",     "--trace-limit",
+                       "131072",      rom};
+    trace_write_started_ns = trace_write_finished_ns = 0u;
+    time_trace_write = 1;
+    int status = strcmp(mode, "maximum") == 0
+                     ? runner_entry((int)(sizeof maximum / sizeof maximum[0]), maximum)
+                     : runner_entry((int)(sizeof plain / sizeof plain[0]), plain);
+    time_trace_write = 0;
+    CHECK_EQ_U64(status, 0u);
+    CHECK(trace_write_started_ns != 0u && trace_write_finished_ns >= trace_write_started_ns);
+    printf("serialization_write_ns=%llu\n",
+           (unsigned long long)(trace_write_finished_ns - trace_write_started_ns));
+}
+
+static int test_save_argument_count_valid(int argc, const char *mode)
+{
+    if (argc < 3)
+        return 0;
+    if (strcmp(mode, "trace_paths") == 0)
+        return argc == 3 || argc == 5;
+    if (strcmp(mode, "trace_measure") == 0)
+        return argc == 6;
+    return argc == 3;
+}
+
+static void test_save_argument_count(void)
+{
+    CHECK(!test_save_argument_count_valid(2, "faults"));
+    CHECK(test_save_argument_count_valid(3, "faults"));
+    CHECK(!test_save_argument_count_valid(4, "faults"));
+    CHECK(test_save_argument_count_valid(3, "trace_paths"));
+    CHECK(!test_save_argument_count_valid(4, "trace_paths"));
+    CHECK(test_save_argument_count_valid(5, "trace_paths"));
+    CHECK(!test_save_argument_count_valid(6, "trace_paths"));
+    CHECK(!test_save_argument_count_valid(5, "trace_measure"));
+    CHECK(test_save_argument_count_valid(6, "trace_measure"));
+    CHECK(!test_save_argument_count_valid(7, "trace_measure"));
+    CHECK(test_save_argument_count_valid(3, "unknown"));
+}
+
 int main(int argc, char **argv)
 {
-    if (argc != 3)
+    if (argc < 3 || !test_save_argument_count_valid(argc, argv[2]))
         return 2;
+    test_save_argument_count();
     if (strcmp(argv[2], "roundtrip") == 0 || strcmp(argv[2], "verify") == 0)
         roundtrip(argv[1], strcmp(argv[2], "verify") == 0);
     else if (strcmp(argv[2], "import") == 0)
@@ -982,6 +1630,16 @@ int main(int argc, char **argv)
         expansion_images(argv[1]);
     else if (strcmp(argv[2], "cadence") == 0)
         cadence(argv[1]);
+    else if (strcmp(argv[2], "trace_bounds") == 0)
+        trace_bounds(argv[1]);
+    else if (strcmp(argv[2], "trace_arguments") == 0)
+        trace_arguments(argv[1]);
+    else if (strcmp(argv[2], "trace_paths") == 0)
+        trace_paths(argv[1], argc == 5 ? argv[3] : NULL, argc == 5 ? argv[4] : NULL);
+    else if (strcmp(argv[2], "trace_io") == 0)
+        trace_io(argv[1]);
+    else if (argc == 6 && strcmp(argv[2], "trace_measure") == 0)
+        trace_measure(argv[3], argv[1], argv[4], argv[5]);
 #ifndef __wasi__
     else if (strcmp(argv[2], "nonregular") == 0)
         nonregular(argv[1]);
