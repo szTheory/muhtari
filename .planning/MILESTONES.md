@@ -1,5 +1,27 @@
 # Project Milestones: muhtari
 
+## v10.0 Headless developer trace (Shipped: 2026-11-17)
+
+**Phases completed:** 2 phases, 8 plans, 16 tasks
+
+**Closeout type:** `override_closeout`; both phase verification reports pass and all eight milestone requirements are satisfied. The audit records two newly acknowledged items and 50 carried forward from earlier closes (see STATE.md Deferred Items).
+
+**Key accomplishments:**
+- Added bounded, versioned instruction and bus-event JSONL tracing to `muhtari-run` for a selected frame and address range.
+- Verified fixed numeric trace records, output failure handling, trace-on/off state equality, public compatibility and runner documentation.
+- Accepted the source-qualified Linux hooks-off Cachegrind receipt: 3 instructions per frame against the 32-instruction limit.
+- Fixed the GCC `mismatched-dealloc` and Clang `realpath` build failures without weakening test coverage.
+- Published stable v0.17.0 after PR #77 merged; exact-source main CI and Release checks passed.
+
+**Audit:** [v10.0 milestone audit](milestones/v10.0-MILESTONE-AUDIT.md) found no blocking gaps. The one integration warning is the conservative refusal of some distinct Windows extended-path destinations; the guard found no overwrite risk.
+
+**Delivery:** PR [#77](https://github.com/szTheory/muhtari/pull/77) merged; release PR [#78](https://github.com/szTheory/muhtari/pull/78) published [v0.17.0](https://github.com/szTheory/muhtari/releases/tag/v0.17.0) from `333380b118f62b618cb6df29cdfdd4388efc7b22`. Main CI [44214206424](https://github.com/szTheory/muhtari/actions/runs/44214206424) and Release [44214206354](https://github.com/szTheory/muhtari/actions/runs/44214206354) passed. Windows ARM64 was the longest job in both runs; neither had a failed or cancelled job. One run pair did not justify changing timeouts, caches or workflow structure.
+
+**Archives:** [roadmap](milestones/v10.0-ROADMAP.md), [requirements](milestones/v10.0-REQUIREMENTS.md), [product roadmap snapshot](milestones/v10.0-PRODUCT-ROADMAP.md), [audit](milestones/v10.0-MILESTONE-AUDIT.md) and [phase records](milestones/v10.0-phases/).
+
+**Next:** No successor milestone is selected. Review the [rolling product roadmap](PRODUCT-ROADMAP.md) and run `$gsd-new-milestone` to choose the next scope.
+---
+
 ## v9.0 Publish the corrected Souper mapper package (Shipped: 2026-11-16)
 
 **Phases completed:** 1 phase, 1 plan, 2 tasks

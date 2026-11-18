@@ -12,6 +12,9 @@ source:
   review: 27-REVIEW.md
   finding: "WR-01: Extended Windows paths are compared with ordinary path semantics"
 confidence: high
+audit_acknowledged:
+  milestone: v10.0
+  at: 2026-11-17
 ---
 
 ## Problem
