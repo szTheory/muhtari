@@ -1,11 +1,9 @@
 ---
 phase: 29-windows-extended-path-runner-support
-reviewed: 2026-11-18T23:12:04Z
+reviewed: 2026-11-18T23:28:28Z
 depth: standard
-files_reviewed: 3
+files_reviewed: 1
 files_reviewed_list:
-  - tests/runner/test_runner.c
-  - tests/runner/test_save.c
   - tests/runner/windows_paths.c
 findings:
   critical: 0
@@ -140,5 +138,23 @@ No new or open findings in this follow-up.
 ---
 
 _Follow-up reviewed: 2026-11-18T23:12:04Z_
+_Reviewer: the agent (gsd-code-reviewer)_
+_Depth: standard_
+
+## Follow-up Review — 2026-11-18T23:28:28Z
+
+**Scope:** New `load_state_with_savekey` helper and call site in `tests/runner/windows_paths.c` only.
+**Depth:** standard
+**Status:** clean
+
+No finding. The SaveKey-aware state was produced by the preceding real-process invocation with `--port1 savekey`, and the new load helper supplies the same port while using the same ROM and `--frames0`. This matches the state identity's port-device and EEPROM-port fields (`src/state.c:238-241`); the existing no-SaveKey `load_state` remains paired with its no-SaveKey state output. The owner-reported local round-trip supports the command pairing, but Windows CI remains unverified. Tests were not run in this review.
+
+## Narrative Findings (AI reviewer)
+
+No new or open findings in this follow-up.
+
+---
+
+_Follow-up reviewed: 2026-11-18T23:28:28Z_
 _Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_

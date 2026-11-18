@@ -365,6 +365,16 @@ static int load_state(const wchar_t *runner, const wchar_t *work_dir, const wcha
                      0u, NULL);
 }
 
+static int load_state_with_savekey(const wchar_t *runner, const wchar_t *work_dir,
+                                   const wchar_t *rom, const wchar_t *state,
+                                   const wchar_t *log_name)
+{
+    const wchar_t *arguments[] = {runner,          L"--frames0", L"--port1", L"savekey",
+                                  L"--load-state", state,        rom};
+    return run_child(runner, work_dir, log_name, arguments, sizeof arguments / sizeof arguments[0],
+                     0u, NULL);
+}
+
 static int equal_files(const wchar_t *left, const wchar_t *right)
 {
     HANDLE a = CreateFileW(left, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
@@ -1052,7 +1062,7 @@ static int run_namespace(const wchar_t *runner, const wchar_t *work_dir, const w
                          L"did not match the expected output\n");
         failed = 1;
     }
-    if (!failed && load_state(runner, work_dir, image, state_output, log_name) != 0) {
+    if (!failed && load_state_with_savekey(runner, work_dir, image, state_output, log_name) != 0) {
         fwprintf(stderr, L"windows path test: generated state output could not be loaded\n");
         failed = 1;
     }
