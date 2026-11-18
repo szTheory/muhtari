@@ -3,7 +3,7 @@
 **Source:** owner direction in the 2026-10-29 milestone/onboarding conversation,
 combined with the standing contracts linked below. These are product preferences
 and accepted instructions; technical research and observed behavior have separate
-evidence. Updated 2026-11-15.
+evidence. Updated 2026-11-18.
 
 ## Gamer value comes first
 
@@ -195,6 +195,9 @@ milestone with `main` CI green. Before a long suite or process, run applicable
 cheap consistency checks first. Review reproduced lessons and recent bottlenecks
 for low-effort sanity checks or fixes; investigate a failed check before retrying
 it. Keep CI/runtime evidence and any measured efficiency finding with the run.
+When the work is complete and all required CI checks are green, squash-merge its
+PR without asking for another confirmation. Keep an explicit hold, safety stop,
+or unresolved gate in place unless the owner directly clears it.
 
 ## Feature returns and compatibility evidence — 2026-11-16
 
