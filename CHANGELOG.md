@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.0](https://github.com/szTheory/muhtari/compare/v0.16.0...v0.17.0) (2026-11-18)
+
+
+### Features
+
+* add headless developer trace ([#77](https://github.com/szTheory/muhtari/issues/77)) ([8746ff2](https://github.com/szTheory/muhtari/commit/8746ff22403deee511f32d541ea9028e5c8048cc))
+
 ## [0.16.0](https://github.com/szTheory/muhtari/compare/v0.15.0...v0.16.0) (2026-11-16)
 
 
