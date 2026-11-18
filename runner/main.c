@@ -1915,9 +1915,9 @@ static FILE *save_read_open(const char *path)
         return NULL;
     FILE *f = _fdopen(fd, "rb");
     if (f == NULL) {
-        int error = errno;
+        int fdopen_error = errno;
         (void)_close(fd);
-        errno = error;
+        errno = fdopen_error;
     }
     return f;
 #else
