@@ -362,36 +362,49 @@ static void hash_frame(const uint8_t *video, const muhtari_info *info, char hex[
     muhtari__sha256_hex(digest, hex);
 }
 
-/* Writes the native frame to path as a PNG, converting each byte through the
-   warm palette into R, G and B one row at a time. row has room for one row
-   of RGB. Returns 0, or 1 after a message when the file cannot be written. */
-static int dump_frame(const uint8_t *video, const muhtari_info *info, const char *path,
-                      uint8_t *row, uint32_t region)
+typedef int (*sibling_writer)(FILE *stream, void *user);
+static int write_sibling_atomic_stream(const char *destination, sibling_writer writer, void *user);
+
+typedef struct png_write_context {
+    const uint8_t *video;
+    const muhtari_info *info;
+    uint8_t *row;
+    uint32_t region;
+} png_write_context;
+
+/* Serialize one image row at a time into the shared atomic output stream. */
+static int dump_frame_stream(FILE *stream, void *user)
 {
-    FILE *f = runner_path_open(path, "wb");
-    if (f == NULL) {
-        fprintf(stderr, "muhtari-run: cannot open %s for writing\n", path);
-        return MUHTARI__EXIT_FAILURE;
-    }
+    const png_write_context *context = (const png_write_context *)user;
+    const uint8_t *video = context->video;
+    const muhtari_info *info = context->info;
+    uint8_t *row = context->row;
     muhtari__png png;
-    int failed = muhtari__png_begin(&png, f, info->width, info->height) != 0;
-    for (uint32_t y = 0; y < info->height && !failed; y++) {
-        for (uint32_t x = 0; x < info->width; x++) {
-            uint32_t rgb = muhtari__palette_rgb_region(video[(size_t)y * info->width + x], region);
+    if (muhtari__png_begin(&png, stream, info->width, info->height) != 0)
+        return -1;
+    for (uint32_t y = 0u; y < info->height; y++) {
+        for (uint32_t x = 0u; x < info->width; x++) {
+            uint32_t rgb =
+                muhtari__palette_rgb_region(video[(size_t)y * info->width + x], context->region);
             row[3u * x] = (uint8_t)(rgb >> 16);
             row[3u * x + 1u] = (uint8_t)(rgb >> 8);
             row[3u * x + 2u] = (uint8_t)rgb;
         }
-        failed = muhtari__png_row(&png, row) != 0;
+        if (muhtari__png_row(&png, row) != 0)
+            return -1;
     }
-    if (!failed) {
-        failed = muhtari__png_end(&png) != 0;
-    }
-    if (fclose(f) != 0) {
-        failed = 1;
-    }
-    if (failed) {
-        fprintf(stderr, "muhtari-run: cannot write %s\n", path);
+    return muhtari__png_end(&png) == 0 ? 0 : -1;
+}
+
+/* Writes the native frame to path as a PNG, converting each byte through the
+   warm palette into R, G and B one row at a time. row has room for one row
+   of RGB. Returns 0, or 1 after a message when the file cannot be published. */
+static int dump_frame(const uint8_t *video, const muhtari_info *info, const char *path,
+                      uint8_t *row, uint32_t region)
+{
+    png_write_context context = {video, info, row, region};
+    if (write_sibling_atomic_stream(path, dump_frame_stream, &context) != 0) {
+        fprintf(stderr, "muhtari-run: cannot open or write %s\n", path);
         return MUHTARI__EXIT_FAILURE;
     }
     return MUHTARI__EXIT_DONE;
@@ -1991,8 +2004,6 @@ static int save_replace(const char *temporary, const char *destination)
     return runner_path_replace(temporary, destination);
 #endif
 }
-
-typedef int (*sibling_writer)(FILE *stream, void *user);
 
 typedef struct byte_span_writer {
     const void *bytes;

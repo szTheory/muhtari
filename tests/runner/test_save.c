@@ -34,10 +34,12 @@ enum {
     STATE_READ,
     STATE_CLOSE,
     TRACE_ALLOC,
-    IDENTITY_QUERY
+    IDENTITY_QUERY,
+    PNG_WRITE
 };
 static int io_fault;
 static int output_fault;
+static int png_temp_fd = -1;
 #ifdef _WIN32
 static int identity_fault;
 #endif
@@ -151,6 +153,15 @@ static FILE *test_fdopen(int fd, const char *mode)
 #else
     FILE *f = fdopen(fd, mode);
 #endif
+    if (f != NULL && fd == png_temp_fd && io_fault == PNG_WRITE) {
+        (void)setvbuf(f, NULL, _IONBF, 0);
+#ifdef _WIN32
+        (void)_close(fd);
+#else
+        (void)close(fd);
+#endif
+        png_temp_fd = -1;
+    }
     if (is_state) {
         state_fd = -1;
         state_stream = f;
@@ -223,6 +234,8 @@ static int test_open(const char *path, int flags, ...)
         va_end(args);
     }
     int fd = open(path, flags, (mode_t)mode);
+    if (fd >= 0 && creating && io_fault == PNG_WRITE)
+        png_temp_fd = fd;
     if (fd >= 0 && !creating && strstr(path, ".state") != NULL)
         state_fd = fd;
     return fd;
@@ -244,6 +257,8 @@ static int test_wopen(const wchar_t *path, int flags, ...)
         va_end(args);
     }
     int fd = _wopen(path, flags, mode);
+    if (fd >= 0 && creating && io_fault == PNG_WRITE)
+        png_temp_fd = fd;
     if (fd >= 0 && !creating && wcsstr(path, L".state") != NULL)
         state_fd = fd;
     return fd;
@@ -539,6 +554,7 @@ static void trace_reset_io(void)
     time_trace_write = 0;
     trace_write_started_ns = trace_write_finished_ns = 0u;
     frames_run = temp_opens = replacements = create_calls = 0u;
+    png_temp_fd = -1;
     trace_error_reports = trace_alloc_reports = trace_stderr_reports = 0u;
     trace_missing_reports = trace_detach_checks = 0u;
     assert_trace_detached = 1;
@@ -1305,8 +1321,8 @@ static void png_faults(const char *dir)
     static const uint8_t sentinel[] = "prior PNG bytes";
     static const uint8_t foreign[] = "foreign temporary";
     char *args[] = {"muhtari-run", "--frames", "1", "--dump-frame", frame, rom};
-    static const int faults[] = {SAVE_CREATE, SAVE_FDOPEN, SAVE_PARTIAL, SAVE_WRITE,
-                                 SAVE_FLUSH,  SAVE_SYNC,   SAVE_CLOSE,   SAVE_REPLACE};
+    static const int faults[] = {SAVE_CREATE, SAVE_FDOPEN, PNG_WRITE,   SAVE_FLUSH,
+                                 SAVE_SYNC,   SAVE_CLOSE,  SAVE_REPLACE};
     for (size_t i = 0u; i < sizeof faults / sizeof faults[0]; i++) {
         write_bytes(png, sentinel, sizeof sentinel);
         trace_reset_io();
@@ -1332,7 +1348,7 @@ static void png_faults(const char *dir)
     write_bytes(png, sentinel, sizeof sentinel);
     write_bytes(temporary, foreign, sizeof foreign);
     trace_reset_io();
-    io_fault = SAVE_WRITE;
+    io_fault = PNG_WRITE;
     CHECK_EQ_U64(runner_entry((int)(sizeof args / sizeof args[0]), args), 1u);
     CHECK_EQ_U64(frames_run, 1u);
     CHECK_EQ_U64(create_calls, 2u);

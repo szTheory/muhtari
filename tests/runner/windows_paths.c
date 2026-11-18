@@ -496,6 +496,298 @@ static int verify_output_aliases(const wchar_t *runner, const wchar_t *work_dir,
     return failed ? 1 : 0;
 }
 
+static int file_has_bytes_and_identity(HANDLE original, const wchar_t *path, const char *expected,
+                                       size_t expected_length)
+{
+    HANDLE current =
+        CreateFileW(path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                    NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (current == INVALID_HANDLE_VALUE)
+        return 0;
+    FILE_ID_INFO original_id, current_id;
+    int equal = GetFileInformationByHandleEx(original, FileIdInfo, &original_id,
+                                             (DWORD)sizeof original_id) != 0 &&
+                GetFileInformationByHandleEx(current, FileIdInfo, &current_id,
+                                             (DWORD)sizeof current_id) != 0 &&
+                original_id.VolumeSerialNumber == current_id.VolumeSerialNumber &&
+                memcmp(original_id.FileId.Identifier, current_id.FileId.Identifier,
+                       sizeof original_id.FileId.Identifier) == 0;
+    LARGE_INTEGER size;
+    if (!GetFileSizeEx(current, &size) || size.QuadPart != (LONGLONG)expected_length)
+        equal = 0;
+    char bytes[64];
+    DWORD got = 0u;
+    if (expected_length > sizeof bytes ||
+        !ReadFile(current, bytes, (DWORD)expected_length, &got, NULL) ||
+        got != (DWORD)expected_length || memcmp(bytes, expected, expected_length) != 0)
+        equal = 0;
+    (void)CloseHandle(current);
+    return equal;
+}
+
+static int no_temporary_files(const wchar_t *destination)
+{
+    const wchar_t *slash = wcsrchr(destination, L'\\');
+    if (slash == NULL || slash[1] == L'\0')
+        return 0;
+    size_t parent_length = (size_t)(slash - destination) + 1u;
+    size_t leaf_length = wcslen(slash + 1u);
+    wchar_t *parent = (wchar_t *)malloc((parent_length + 1u) * sizeof *parent);
+    if (parent == NULL)
+        return 0;
+    memcpy(parent, destination, parent_length * sizeof *parent);
+    parent[parent_length] = L'\0';
+    wchar_t *pattern = wide_join(parent, L"*");
+    free(parent);
+    if (pattern == NULL)
+        return 0;
+    WIN32_FIND_DATAW entry;
+    HANDLE search = FindFirstFileW(pattern, &entry);
+    free(pattern);
+    if (search == INVALID_HANDLE_VALUE) {
+        DWORD error = GetLastError();
+        return error == ERROR_FILE_NOT_FOUND || error == ERROR_NO_MORE_FILES;
+    }
+    int found = 0;
+    do {
+        if (wcsncmp(entry.cFileName, slash + 1u, leaf_length) == 0 &&
+            wcsncmp(entry.cFileName + leaf_length, L".tmp.", 5u) == 0) {
+            found = 1;
+            break;
+        }
+    } while (FindNextFileW(search, &entry));
+    DWORD error = GetLastError();
+    (void)FindClose(search);
+    return !found && error == ERROR_NO_MORE_FILES;
+}
+
+static int blocked_replace_case(const wchar_t *runner, const wchar_t *work_dir,
+                                const wchar_t *log_name, const wchar_t *destination,
+                                const wchar_t *const *arguments, size_t argument_count,
+                                const char *diagnostic)
+{
+    static const char sentinel[] = "prior output bytes";
+    if (!delete_file_if_present(destination) ||
+        !write_bytes(destination, sentinel, sizeof sentinel)) {
+        report_last_error(L"preparing a replacement-failure sentinel");
+        return 1;
+    }
+    HANDLE blocker =
+        CreateFileW(destination, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                    NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (blocker == INVALID_HANDLE_VALUE) {
+        report_last_error(L"holding an output without delete sharing");
+        return 1;
+    }
+    int failed =
+        run_child(runner, work_dir, log_name, arguments, argument_count, 1u, diagnostic) != 0;
+    if (!file_has_bytes_and_identity(blocker, destination, sentinel, sizeof sentinel)) {
+        fwprintf(stderr,
+                 L"windows path test: blocked replacement changed the previous destination\n");
+        failed = 1;
+    }
+    (void)CloseHandle(blocker);
+    if (!no_temporary_files(destination)) {
+        fwprintf(stderr, L"windows path test: failed replacement left a sibling temporary\n");
+        failed = 1;
+    }
+    return failed;
+}
+
+static int make_battery_cartridge(const wchar_t *path)
+{
+    uint8_t image[128u + 4096u];
+    memset(image, 0, sizeof image);
+    image[0] = 4u;
+    memcpy(image + 1u, "ATARI7800", 9u);
+    image[50] = 0x10u;
+    image[55] = image[56] = 1u;
+    image[58] = 1u;
+    memset(image + 128u, 0xEA, 4096u);
+    static const uint8_t program[] = {0xEE, 0x00, 0x10, 0x4C, 0x03, 0xF0};
+    memcpy(image + 128u, program, sizeof program);
+    image[128u + 0xFFCu] = 0x00u;
+    image[128u + 0xFFDu] = 0xF0u;
+    return write_bytes(path, image, sizeof image);
+}
+
+static int rejected_component_output(const wchar_t *runner, const wchar_t *work_dir,
+                                     const wchar_t *log_name, const wchar_t *destination,
+                                     const wchar_t *const *arguments, size_t argument_count,
+                                     const char *diagnostic)
+{
+    static const char sentinel[] = "prior output bytes";
+    if (!write_bytes(destination, sentinel, sizeof sentinel)) {
+        report_last_error(L"preparing a component-boundary sentinel");
+        return 1;
+    }
+    HANDLE original = CreateFileW(destination, GENERIC_READ,
+                                  FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
+                                  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (original == INVALID_HANDLE_VALUE) {
+        report_last_error(L"opening a component-boundary sentinel");
+        return 1;
+    }
+    int failed =
+        run_child(runner, work_dir, log_name, arguments, argument_count, 1u, diagnostic) != 0;
+    if (!file_has_bytes_and_identity(original, destination, sentinel, sizeof sentinel)) {
+        fwprintf(stderr,
+                 L"windows path test: component failure changed the previous destination\n");
+        failed = 1;
+    }
+    (void)CloseHandle(original);
+    if (!no_temporary_files(destination)) {
+        fwprintf(stderr, L"windows path test: component failure left a sibling temporary\n");
+        failed = 1;
+    }
+    return failed;
+}
+
+static int verify_component_boundaries(const wchar_t *runner, const wchar_t *work_dir,
+                                       const wchar_t *test_dir, const wchar_t *namespace_root,
+                                       const wchar_t *image, const wchar_t *log_name)
+{
+    DWORD maximum_component = 0u;
+    size_t root_length = wcslen(namespace_root);
+    wchar_t *volume_root =
+        wide_concat(namespace_root,
+                    root_length != 0u && namespace_root[root_length - 1u] == L'\\' ? L"" : L"\\");
+    if (volume_root == NULL) {
+        fwprintf(stderr, L"windows path test: allocating the volume root failed\n");
+        return 1;
+    }
+    BOOL queried =
+        GetVolumeInformationW(volume_root, NULL, 0u, NULL, &maximum_component, NULL, NULL, 0u);
+    free(volume_root);
+    if (!queried || maximum_component < 8u ||
+        maximum_component > sizeof(((WIN32_FIND_DATAW *)0)->cFileName) / sizeof(wchar_t) - 5u) {
+        report_last_error(L"querying the namespace component limit");
+        return 1;
+    }
+    size_t length = (size_t)maximum_component;
+    wchar_t *png_leaf = (wchar_t *)malloc((length + 1u) * sizeof *png_leaf);
+    wchar_t *rom_leaf = (wchar_t *)malloc((length + 1u) * sizeof *rom_leaf);
+    if (png_leaf == NULL || rom_leaf == NULL) {
+        free(png_leaf);
+        free(rom_leaf);
+        fwprintf(stderr, L"windows path test: allocating component-boundary names failed\n");
+        return 1;
+    }
+    for (size_t i = 0u; i < length; i++)
+        png_leaf[i] = rom_leaf[i] = L'p';
+    memcpy(png_leaf + length - 4u, L".png", 5u * sizeof *png_leaf);
+    memcpy(rom_leaf + length - 4u, L".a78", 5u * sizeof *rom_leaf);
+
+    wchar_t *png = wide_join(test_dir, png_leaf);
+    wchar_t *frame = png != NULL ? state_point(png, L'1') : NULL;
+    wchar_t *rom = wide_join(test_dir, rom_leaf);
+    wchar_t *battery_leaf = _wcsdup(rom_leaf);
+    if (battery_leaf != NULL)
+        memcpy(battery_leaf + length - 4u, L".sav", 5u * sizeof *battery_leaf);
+    wchar_t *battery = battery_leaf != NULL ? wide_join(test_dir, battery_leaf) : NULL;
+    int failed =
+        png == NULL || frame == NULL || rom == NULL || battery_leaf == NULL || battery == NULL;
+    if (!failed) {
+        const wchar_t *args[] = {runner, L"--frames", L"1", L"--dump-frame", frame, image};
+        failed =
+            rejected_component_output(runner, work_dir, log_name, png, args,
+                                      sizeof args / sizeof args[0], "cannot open or write") != 0;
+    }
+    if (!failed && !make_battery_cartridge(rom)) {
+        report_last_error(L"creating a maximum-component battery cartridge");
+        failed = 1;
+    }
+    if (!failed) {
+        const wchar_t *args[] = {runner, L"--frames", L"1", L"--save-dir", test_dir, rom};
+        failed = rejected_component_output(runner, work_dir, log_name, battery, args,
+                                           sizeof args / sizeof args[0], "cannot commit save") != 0;
+    }
+    if (png != NULL && !delete_file_if_present(png)) {
+        report_last_error(L"removing a component-boundary PNG");
+        failed = 1;
+    }
+    if (rom != NULL && !delete_file_if_present(rom)) {
+        report_last_error(L"removing a component-boundary cartridge");
+        failed = 1;
+    }
+    if (battery != NULL && !delete_file_if_present(battery)) {
+        report_last_error(L"removing a component-boundary battery file");
+        failed = 1;
+    }
+    free(png_leaf);
+    free(rom_leaf);
+    free(png);
+    free(frame);
+    free(rom);
+    free(battery_leaf);
+    free(battery);
+    return failed ? 1 : 0;
+}
+
+static int verify_blocked_outputs(const wchar_t *runner, const wchar_t *work_dir,
+                                  const wchar_t *test_dir, const wchar_t *image,
+                                  const wchar_t *name, const wchar_t *log_name)
+{
+    wchar_t *png = wide_join(test_dir, L"blocked-frame.png");
+    wchar_t *state = wide_join(test_dir, L"blocked-state.bin");
+    wchar_t *trace = wide_join(test_dir, L"blocked-trace.jsonl");
+    wchar_t *battery_rom = wide_join(test_dir, L"blocked-battery.a78");
+    wchar_t *battery = wide_join(test_dir, L"blocked-battery.sav");
+    wchar_t *frame = png != NULL ? state_point(png, L'1') : NULL;
+    wchar_t *state_arg = state != NULL ? state_point(state, L'1') : NULL;
+    int failed = png == NULL || state == NULL || trace == NULL || battery_rom == NULL ||
+                 battery == NULL || frame == NULL || state_arg == NULL;
+    const wchar_t *owned[] = {png, state, trace, battery_rom, battery};
+    for (size_t i = 0u; !failed && i < sizeof owned / sizeof owned[0]; i++) {
+        if (!delete_file_if_present(owned[i])) {
+            report_last_error(L"clearing a blocked output fixture");
+            failed = 1;
+        }
+    }
+    if (!failed) {
+        const wchar_t *args[] = {runner, L"--frames", L"1", L"--dump-frame", frame, image};
+        failed = blocked_replace_case(runner, work_dir, log_name, png, args,
+                                      sizeof args / sizeof args[0], "cannot open or write") != 0;
+    }
+    if (!failed) {
+        const wchar_t *args[] = {runner, L"--frames", L"1", L"--state-at-frame", state_arg, image};
+        failed = blocked_replace_case(runner, work_dir, log_name, state, args,
+                                      sizeof args / sizeof args[0], "cannot write output") != 0;
+    }
+    if (!failed) {
+        const wchar_t *args[] = {
+            runner, L"--frames",      L"1",       L"--trace", trace, L"--trace-frame",
+            L"1",   L"--trace-range", L"0:65535", image};
+        failed = blocked_replace_case(runner, work_dir, log_name, trace, args,
+                                      sizeof args / sizeof args[0],
+                                      "cannot serialize or commit trace file") != 0;
+    }
+    if (!failed && !make_battery_cartridge(battery_rom)) {
+        report_last_error(L"creating a battery output fixture");
+        failed = 1;
+    }
+    if (!failed) {
+        const wchar_t *args[] = {runner, L"--frames", L"1", L"--save-dir", test_dir, battery_rom};
+        failed = blocked_replace_case(runner, work_dir, log_name, battery, args,
+                                      sizeof args / sizeof args[0], "cannot commit save") != 0;
+    }
+    for (size_t i = 0u; i < sizeof owned / sizeof owned[0]; i++) {
+        if (owned[i] != NULL && !delete_file_if_present(owned[i])) {
+            report_last_error(L"removing a blocked output fixture");
+            failed = 1;
+        }
+    }
+    free(png);
+    free(state);
+    free(trace);
+    free(battery_rom);
+    free(battery);
+    free(frame);
+    free(state_arg);
+    (void)name;
+    return failed ? 1 : 0;
+}
+
 static wchar_t *deep_test_directory(const wchar_t *root, wchar_t **directories, size_t capacity,
                                     size_t *count)
 {
@@ -673,6 +965,11 @@ static int run_namespace(const wchar_t *runner, const wchar_t *work_dir, const w
         }
     }
     if (!failed && verify_output_aliases(runner, work_dir, namespace_root, fixture, name, log_name))
+        failed = 1;
+    if (!failed && verify_blocked_outputs(runner, work_dir, test_dir, image, name, log_name))
+        failed = 1;
+    if (!failed &&
+        verify_component_boundaries(runner, work_dir, test_dir, namespace_root, image, log_name))
         failed = 1;
 
     static const wchar_t *const invalid_paths[] = {
