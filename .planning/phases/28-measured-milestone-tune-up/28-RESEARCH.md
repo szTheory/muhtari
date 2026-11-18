@@ -1,7 +1,7 @@
 # Phase 28: Measured milestone tune-up - Research
 
-**Researched:** 2026-11-18  
-**Domain:** Maintainer evidence, CI receipt review, and planning-ledger reconciliation  
+**Researched:** 2026-11-18<br>
+**Domain:** Maintainer evidence, CI receipt review, and planning-ledger reconciliation<br>
 **Confidence:** HIGH
 
 <user_constraints>
@@ -280,5 +280,5 @@ None. The phase context fixes the source set, no-change disposition, counter-onl
 - Architecture: HIGH — the phase is limited to the report and planning ledger by locked context.
 - Pitfalls: HIGH — exact mismatch, workflow distinctions, and measured-sample lessons are recorded in local sources and the current CLI reproduced the mismatch.
 
-**Research date:** 2026-11-18  
+**Research date:** 2026-11-18<br>
 **Valid until:** Revisit if the selected source snapshot or phase scope changes before execution.
