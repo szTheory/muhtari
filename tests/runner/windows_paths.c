@@ -257,7 +257,7 @@ static int run_child(const wchar_t *runner, const wchar_t *work_dir, const wchar
         return 1;
     }
     SECURITY_ATTRIBUTES security = {0};
-    security.nLength = sizeof security;
+    security.nLength = (DWORD)sizeof security;
     security.bInheritHandle = TRUE;
     HANDLE log = CreateFileW(log_path, GENERIC_WRITE, FILE_SHARE_READ, &security, CREATE_ALWAYS,
                              FILE_ATTRIBUTE_NORMAL, NULL);
@@ -274,7 +274,7 @@ static int run_child(const wchar_t *runner, const wchar_t *work_dir, const wchar
         return 1;
     }
     STARTUPINFOW startup = {0};
-    startup.cb = sizeof startup;
+    startup.cb = (DWORD)sizeof startup;
     startup.dwFlags = STARTF_USESTDHANDLES;
     startup.hStdInput = input;
     startup.hStdOutput = log;
@@ -321,14 +321,14 @@ static int run_child(const wchar_t *runner, const wchar_t *work_dir, const wchar
                : 1;
 }
 
-static wchar_t *state_point(const wchar_t *path)
+static wchar_t *state_point(const wchar_t *path, wchar_t frame)
 {
     size_t length = wcslen(path);
     if (length > SIZE_MAX / sizeof(wchar_t) - 3u)
         return NULL;
     wchar_t *point = (wchar_t *)malloc((length + 3u) * sizeof *point);
     if (point != NULL) {
-        point[0] = L'0';
+        point[0] = frame;
         point[1] = L':';
         memcpy(point + 2u, path, (length + 1u) * sizeof *point);
     }
@@ -338,7 +338,7 @@ static wchar_t *state_point(const wchar_t *path)
 static int save_state(const wchar_t *runner, const wchar_t *work_dir, const wchar_t *rom,
                       const wchar_t *state, const wchar_t *log_name)
 {
-    wchar_t *point = state_point(state);
+    wchar_t *point = state_point(state, L'0');
     if (point == NULL)
         return 1;
     const wchar_t *arguments[] = {runner, L"--frames0", L"--state-at-frame", point, rom};
@@ -391,6 +391,27 @@ static int equal_files(const wchar_t *left, const wchar_t *right)
     return equal;
 }
 
+static wchar_t *deep_test_directory(const wchar_t *root, wchar_t **directories, size_t capacity,
+                                    size_t *count)
+{
+    static const wchar_t component[] =
+        L"segment-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-\x732B";
+    *count = 0u;
+    if (capacity == 0u)
+        return NULL;
+    directories[0] = wide_join(root, L"paths-\x732B");
+    if (directories[0] == NULL)
+        return NULL;
+    *count = 1u;
+    while (*count < capacity) {
+        directories[*count] = wide_join(directories[*count - 1u], component);
+        if (directories[*count] == NULL)
+            return NULL;
+        (*count)++;
+    }
+    return directories[*count - 1u];
+}
+
 static int run_namespace(const wchar_t *runner, const wchar_t *work_dir, const wchar_t *fixture,
                          const wchar_t *simple_source, const wchar_t *bios_source,
                          const wchar_t *namespace_root, const wchar_t *name)
@@ -399,7 +420,10 @@ static int run_namespace(const wchar_t *runner, const wchar_t *work_dir, const w
     uint8_t firmware_bytes[4096];
     memset(firmware_bytes, 0x64, sizeof firmware_bytes);
 
-    wchar_t *test_dir = wide_join(namespace_root, L"paths-\x732B");
+    wchar_t *directories[8] = {0};
+    size_t directory_count = 0u;
+    wchar_t *test_dir = deep_test_directory(
+        namespace_root, directories, sizeof directories / sizeof directories[0], &directory_count);
     wchar_t *image = test_dir != NULL ? wide_join(test_dir, L"image-\x732B.a78") : NULL;
     wchar_t *state = test_dir != NULL ? wide_join(test_dir, L"state-\x732B. ") : NULL;
     wchar_t *state_output =
@@ -429,14 +453,25 @@ static int run_namespace(const wchar_t *runner, const wchar_t *work_dir, const w
             }
         }
     }
-    if (!failed && !CreateDirectoryW(test_dir, NULL) && GetLastError() != ERROR_ALREADY_EXISTS) {
-        report_last_error(L"creating namespace test directory");
-        failed = 1;
-    }
     if (!failed) {
-        DWORD attributes = GetFileAttributesW(test_dir);
-        if (attributes == INVALID_FILE_ATTRIBUTES || (attributes & FILE_ATTRIBUTE_DIRECTORY) == 0u)
+        for (size_t i = 0u; i < directory_count; i++) {
+            if (!CreateDirectoryW(directories[i], NULL) && GetLastError() != ERROR_ALREADY_EXISTS) {
+                report_last_error(L"creating deep namespace test directory");
+                failed = 1;
+                break;
+            }
+            DWORD attributes = GetFileAttributesW(directories[i]);
+            if (attributes == INVALID_FILE_ATTRIBUTES ||
+                (attributes & FILE_ATTRIBUTE_DIRECTORY) == 0u) {
+                report_last_error(L"checking deep namespace test directory");
+                failed = 1;
+                break;
+            }
+        }
+        if (!failed && wcslen(test_dir) <= (size_t)MAX_PATH) {
+            fwprintf(stderr, L"windows path test: generated path did not exceed MAX_PATH\n");
             failed = 1;
+        }
     }
     if (!failed && (!CopyFileW(fixture, image, FALSE) || !CopyFileW(simple_source, simple, FALSE) ||
                     !CopyFileW(bios_source, bios, FALSE) ||
@@ -491,7 +526,7 @@ static int run_namespace(const wchar_t *runner, const wchar_t *work_dir, const w
             failed = 1;
     }
     if (!failed) {
-        wchar_t *state_arg = state_point(state_output);
+        wchar_t *state_arg = state_point(state_output, L'1');
         if (state_arg == NULL) {
             failed = 1;
         } else {
@@ -564,14 +599,16 @@ static int run_namespace(const wchar_t *runner, const wchar_t *work_dir, const w
             failed = 1;
         }
     }
-    if (test_dir != NULL) {
-        DWORD attributes = GetFileAttributesW(test_dir);
-        if (attributes != INVALID_FILE_ATTRIBUTES && !RemoveDirectoryW(test_dir)) {
-            report_last_error(L"removing namespace test directory");
-            failed = 1;
+    for (size_t i = directory_count; i != 0u; i--) {
+        if (directories[i - 1u] != NULL) {
+            DWORD attributes = GetFileAttributesW(directories[i - 1u]);
+            if (attributes != INVALID_FILE_ATTRIBUTES && !RemoveDirectoryW(directories[i - 1u])) {
+                report_last_error(L"removing deep namespace test directory");
+                failed = 1;
+            }
+            free(directories[i - 1u]);
         }
     }
-    free(test_dir);
     free(image);
     free(state);
     free(state_output);
