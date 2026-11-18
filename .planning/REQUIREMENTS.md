@@ -1,0 +1,63 @@
+# Requirements: muhtari
+
+**Defined:** 2026-11-18  
+**Core Value:** 7800 games behave as they do on the console, identically on every platform, from a small MIT-licensed C library any host can embed.
+
+## v1 Requirements
+
+Requirements selected for milestone v11.0. The source-qualified recommendation,
+scope limits and alternatives are in the [future-roadmap review](research/next-milestone/2026-11-18-future-roadmap-review.md).
+
+### Measured milestone tune-up
+
+- [ ] **TUNE-15**: Maintainers can review source-qualified current release and CI evidence, including queue time, critical path, job durations, cancelled work, cheap preflight results and a proportionate quality/maintenance disposition, with a bounded no-change result when measurements do not justify a correction.
+- [ ] **TUNE-16**: The Phase 27 deferred-items register counts match its 52 entries (16 open, 0 waived, 36 fixed) while preserving every item's text and verdict.
+
+### Windows runner paths
+
+- [ ] **WINPATH-01**: Users can pass explicit local `\\?\` and extended UNC `\\?\UNC\` paths to every documented `muhtari-run` filesystem-path argument: cartridge, movie, BIOS, HSC firmware, state input, save directory, state output, frame image output and trace output. Supported absolute paths preserve Unicode names and literal extended-namespace semantics, including names ending in a dot or space and paths longer than `MAX_PATH` where the filesystem permits them.
+- [ ] **WINPATH-02**: `muhtari-run` distinguishes separate extended-namespace destinations that differ only by names preserved by that namespace, while refusing destinations that resolve to the same file or overlap an input or another output. Existing ordinary Windows alias behavior, including existing-file identity and parent-junction aliases, remains protected across ordinary and extended forms.
+- [ ] **WINPATH-03**: State, frame-image, trace and battery outputs use the runner's safe write behavior for supported extended paths; a failed create, write or replacement reports an error and does not truncate or partially replace an existing destination.
+- [ ] **WINPATH-04**: The Windows runner contract names the supported namespace forms and tested path-length boundary. Windows CI exercises the actual runner with local paths longer than `MAX_PATH`, Unicode and literal suffix names, extended UNC paths through an accessible test share, distinct outputs, true aliases, input/output overlap, ordinary-path controls and output failure preservation.
+
+## Future Requirements
+
+Deferred beyond v11.0:
+
+- **WINPATH-05**: Support native NT device paths, volume-GUID paths and other Windows namespaces beyond explicit drive-letter `\\?\` and `\\?\UNC\` forms.
+- **WINPATH-06**: Promise path lengths or filesystem naming behavior beyond the longest representative path and name cases that the supported Windows CI environment can create and verify.
+
+## Out of Scope
+
+| Feature | Reason |
+|---------|--------|
+| Public C API, ABI, serialized-state or emulated-behavior changes | This is a `muhtari-run` file-path capability; existing consumers and machine identity remain unchanged. |
+| New deliverables, GUI/device code, dependencies or broad CI topology/cache/deadline changes | No evidence requires these changes for runner path support; CI changes need measured justification. |
+| Windows device namespaces, relative extended paths or a claim of unlimited path length | The selected contract covers explicit absolute drive-letter and extended UNC forms, bounded by filesystem and verified CI behavior. |
+| Relaxing ordinary path alias, overlap or atomic-output checks | Extended paths must retain existing output safety guarantees. |
+
+## Traceability
+
+Every v1 requirement maps to exactly one phase in [ROADMAP.md](ROADMAP.md).
+Phase 28 performs the measured tune-up and count-only register reconciliation;
+Phase 29 depends on Phase 28 and implements, documents and verifies runner path
+support in Windows CI. All requirements remain pending until phase verification.
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| TUNE-15 | Phase 28 | Pending |
+| TUNE-16 | Phase 28 | Pending |
+| WINPATH-01 | Phase 29 | Pending |
+| WINPATH-02 | Phase 29 | Pending |
+| WINPATH-03 | Phase 29 | Pending |
+| WINPATH-04 | Phase 29 | Pending |
+
+**Coverage:**
+- v1 requirements: 6 total
+- Mapped to phases: 6
+- Unmapped: 0
+- Duplicate assignments: 0
+
+---
+*Requirements defined: 2026-11-18*
+*Last updated: 2026-11-18 after v11.0 roadmap creation and traceability validation*
