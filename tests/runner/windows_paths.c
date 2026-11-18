@@ -961,14 +961,15 @@ static int run_namespace(const wchar_t *runner, const wchar_t *work_dir, const w
             failed = 1;
     }
     if (!failed) {
-        const wchar_t *args[] = {runner, L"--frames0", L"--boot", L"bios", L"--bios", bios, simple};
+        const wchar_t *args[] = {runner,  L"--frames", L"1", L"--boot",
+                                 L"bios", L"--bios",   bios, simple};
         if (run_child(runner, work_dir, log_name, args, sizeof args / sizeof args[0], 0u, NULL) !=
             0)
             failed = 1;
     }
     if (!failed) {
-        const wchar_t *args[] = {runner,       L"--frames0", L"--hsc", L"on",
-                                 L"--hsc-rom", firmware,     image};
+        const wchar_t *args[] = {runner, L"--frames",  L"1",     L"--hsc",
+                                 L"on",  L"--hsc-rom", firmware, image};
         if (run_child(runner, work_dir, log_name, args, sizeof args / sizeof args[0], 0u, NULL) !=
             0)
             failed = 1;

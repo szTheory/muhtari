@@ -51,6 +51,8 @@ static unsigned frames_run, temp_opens, replacements;
 static unsigned create_calls;
 static unsigned trace_error_reports, trace_alloc_reports, trace_stderr_reports;
 static unsigned trace_missing_reports, trace_detach_checks;
+static const char *expected_usage_reason;
+static unsigned matching_usage_reasons;
 static int assert_trace_detached;
 static unsigned change_at, request_at, stop_at, request_during_write;
 static int change_every;
@@ -104,6 +106,14 @@ static int test_print(FILE *f, const char *format, ...)
         notice_sha1++;
     va_list args;
     va_start(args, format);
+    if (f == stderr && expected_usage_reason != NULL && strstr(format, "muhtari-run: %s") != NULL) {
+        va_list check_args;
+        va_copy(check_args, args);
+        const char *reason = va_arg(check_args, const char *);
+        if (reason != NULL && strstr(reason, expected_usage_reason) != NULL)
+            matching_usage_reasons++;
+        va_end(check_args);
+    }
     int rc = vfprintf(f, format, args);
     va_end(args);
     return rc;
@@ -739,6 +749,16 @@ static void trace_expect_usage(int argc, char **argv, const char *protected_path
     }
 }
 
+static void trace_expect_usage_reason(int argc, char **argv, const char *protected_path,
+                                      const char *reason)
+{
+    expected_usage_reason = reason;
+    matching_usage_reasons = 0u;
+    trace_expect_usage(argc, argv, protected_path);
+    expected_usage_reason = NULL;
+    CHECK_EQ_U64(matching_usage_reasons, 1u);
+}
+
 static void trace_arguments(const char *dir)
 {
     char rom[1024], trace[1024], state[1024], movie[1024];
@@ -909,7 +929,7 @@ static void trace_matrix_prepare_input(const char *target, enum trace_matrix_inp
 static void trace_matrix_bad_case(char *directory, char *rom, char *target,
                                   enum trace_matrix_input input_role,
                                   enum trace_matrix_output first_output, int second_output,
-                                  unsigned frames)
+                                  unsigned frames, const char *expected_reason)
 {
     char first_specification[1200], second_specification[1200];
     char *argv[32];
@@ -920,8 +940,9 @@ static void trace_matrix_bad_case(char *directory, char *rom, char *target,
     trace_matrix_append_output(argv, &argc, first_output, target, directory, 1u,
                                first_specification, sizeof first_specification);
     if (second_output >= 0) {
+        unsigned second_frame = frames == 2u ? 2u : 1u;
         trace_matrix_append_output(argv, &argc, (enum trace_matrix_output)second_output, target,
-                                   directory, 2u, second_specification,
+                                   directory, second_frame, second_specification,
                                    sizeof second_specification);
     }
     switch (input_role) {
@@ -956,7 +977,10 @@ static void trace_matrix_bad_case(char *directory, char *rom, char *target,
         argv[argc++] = rom;
         break;
     }
-    trace_expect_usage((int)argc, argv, target);
+    if (expected_reason != NULL)
+        trace_expect_usage_reason((int)argc, argv, target, expected_reason);
+    else
+        trace_expect_usage((int)argc, argv, target);
 }
 
 static void trace_path_role_matrix(const char *directory, const char *rom)
@@ -979,7 +1003,8 @@ static void trace_path_role_matrix(const char *directory, const char *rom)
         for (size_t j = 0u; j < sizeof outputs / sizeof outputs[0]; j++) {
             trace_matrix_prepare_input(target, inputs[i]);
             trace_reset_io();
-            trace_matrix_bad_case(directory_copy, rom_copy, target, inputs[i], outputs[j], -1, 1u);
+            trace_matrix_bad_case(directory_copy, rom_copy, target, inputs[i], outputs[j], -1, 1u,
+                                  "conflicts");
         }
     }
     for (size_t i = 0u; i < sizeof outputs / sizeof outputs[0]; i++) {
@@ -987,18 +1012,18 @@ static void trace_path_role_matrix(const char *directory, const char *rom)
             write_bytes(target, sentinel, sizeof sentinel);
             trace_reset_io();
             trace_matrix_bad_case(directory_copy, rom_copy, target, TRACE_MATRIX_NO_INPUT,
-                                  outputs[i], (int)outputs[j], 1u);
+                                  outputs[i], (int)outputs[j], 1u, "conflicts");
         }
     }
 
     write_bytes(target, sentinel, sizeof sentinel);
     trace_reset_io();
     trace_matrix_bad_case(directory_copy, rom_copy, target, TRACE_MATRIX_NO_INPUT,
-                          TRACE_MATRIX_FRAME, TRACE_MATRIX_FRAME, 2u);
+                          TRACE_MATRIX_FRAME, TRACE_MATRIX_FRAME, 2u, NULL);
     write_bytes(target, sentinel, sizeof sentinel);
     trace_reset_io();
     trace_matrix_bad_case(directory_copy, rom_copy, target, TRACE_MATRIX_NO_INPUT,
-                          TRACE_MATRIX_STATE_OUTPUT, TRACE_MATRIX_STATE_OUTPUT, 2u);
+                          TRACE_MATRIX_STATE_OUTPUT, TRACE_MATRIX_STATE_OUTPUT, 2u, NULL);
 
 #ifdef _WIN32
     (void)snprintf(target, sizeof target, "%s/identity-unresolved.png", directory_copy);

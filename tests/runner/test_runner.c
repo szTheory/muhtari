@@ -43,6 +43,15 @@ static void movie_track(void *ptr, size_t n)
     }
     CHECK(0);
 }
+#ifndef _WIN32
+static char *movie_realpath(const char *path, char *resolved_path)
+{
+    char *result = realpath(path, resolved_path);
+    if (result != NULL && resolved_path == NULL)
+        movie_track(result, strlen(result) + 1u);
+    return result;
+}
+#endif
 static void *movie_alloc(size_t n)
 {
     movie_attempts++;
@@ -135,6 +144,9 @@ int runner_entry(int argc, char **argv);
 #define malloc movie_alloc
 #define realloc movie_realloc
 #define free(p) movie_free(p)
+#ifndef _WIN32
+#define realpath movie_realpath
+#endif
 #define muhtari_load movie_load
 #define muhtari_set_input_ex movie_input
 #define muhtari_run_frame movie_frame
@@ -142,6 +154,9 @@ int runner_entry(int argc, char **argv);
 #undef muhtari_run_frame
 #undef muhtari_set_input_ex
 #undef muhtari_load
+#ifndef _WIN32
+#undef realpath
+#endif
 #undef free
 #undef realloc
 #undef malloc
