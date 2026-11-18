@@ -10,8 +10,8 @@ scope limits and alternatives are in the [future-roadmap review](research/next-m
 
 ### Measured milestone tune-up
 
-- [ ] **TUNE-15**: Maintainers can review source-qualified current release and CI evidence, including queue time, critical path, job durations, cancelled work, cheap preflight results and a proportionate quality/maintenance disposition, with a bounded no-change result when measurements do not justify a correction.
-- [ ] **TUNE-16**: The Phase 27 deferred-items register counts match its 52 entries (16 open, 0 waived, 36 fixed) while preserving every item's text and verdict.
+- [x] **TUNE-15**: Maintainers can review source-qualified current release and CI evidence, including queue time, critical path, job durations, cancelled work, cheap preflight results and a proportionate quality/maintenance disposition, with a bounded no-change result when measurements do not justify a correction.
+- [x] **TUNE-16**: The Phase 27 deferred-items register counts match its 52 entries (16 open, 0 waived, 36 fixed) while preserving every item's text and verdict.
 
 ### Windows runner paths
 
@@ -45,8 +45,8 @@ support in Windows CI. All requirements remain pending until phase verification.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TUNE-15 | Phase 28 | Pending |
-| TUNE-16 | Phase 28 | Pending |
+| TUNE-15 | Phase 28 | Complete |
+| TUNE-16 | Phase 28 | Complete |
 | WINPATH-01 | Phase 29 | Pending |
 | WINPATH-02 | Phase 29 | Pending |
 | WINPATH-03 | Phase 29 | Pending |

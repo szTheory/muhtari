@@ -1,19 +1,20 @@
 ---
 gsd_state_version: "1.0"
 milestone: v11.0
-current_phase: 28
-current_phase_name: Measured milestone tune-up
-status: executing
-stopped_at: Completed 28-01-PLAN.md
-last_updated: "2026-11-18T15:42:10.932Z"
+current_phase: 29
+current_phase_name: Windows extended-path runner support
+status: planning
+stopped_at: Phase 28 complete, ready to plan Phase 29
+last_updated: "2026-11-18T17:15:57.752Z"
 last_activity: 2026-11-18
-last_activity_desc: Phase 28 configured local CI passed; execution closeout in progress
-state_head: 1eb4bbae0bfd4c3f83fba0a6407023f8404480c0
+last_activity_desc: Phase 28 complete, transitioned to Phase 29
+state_head: 699c3ecd377ad902fec83324d6901813ad3a037a
 progress:
   total_phases: 2
-  completed_phases: 0
-  total_plans: 1
-  completed_plans: 1
+  completed_phases: 1
+  total_plans: 2
+  completed_plans: 2
+  percent: 50
 milestone_name: Windows extended-path support
 ---
 
@@ -26,18 +27,18 @@ See [PROJECT.md](PROJECT.md) (updated 2026-11-18), [ROADMAP.md](ROADMAP.md), [RE
 
 ## Current Position
 
-Phase: 28 (Measured milestone tune-up) — PLAN EXECUTION COMPLETE
-Plan: 1 of 1
-Status: Summary closeout; phase verification pending
-Last activity: 2026-11-18 — Configured local CI passed; automated phase verification remains next
+Phase: 29 — Windows extended-path runner support
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-11-18 — Phase 28 complete, transitioned to Phase 29
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 Phase 28 P01 completed in 39 min. This single-plan sample does not establish an execution trend.
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 28 | 2/2 | 57 min | 28.5 min |
+| 28 | 2 | - | - |
 | 29 | 0/TBD | - | - |
 Prior metrics and source-qualified receipts remain in the [v10.0 archive](milestones/v10.0-ROADMAP.md), [audit](milestones/v10.0-MILESTONE-AUDIT.md) and phase summaries. Stable v0.17.0 is published; the failed v0.15.0 tag and draft remain unchanged and unpublished.
 **Per-Plan Metrics:**
@@ -114,8 +115,8 @@ At v10.0 close, two items were newly acknowledged; 50 items acknowledged at earl
 | deferred_items | 11/deferred-items.md: Found in plan 04  - `diag.bankset_tracer` and `diag.bankset` both write `build/ci/tests/diag/bankset/32n/` and carry no resource lock, so under `ctest -j` one can read the other's `pixels.png` half written (`bankset --bankset-png ... png: chunk longer than the file`). Seen once in `cmake --workflow --preset ci`; passes alone and on rerun. Not caused by plan 04; a fix is a `RESOURCE_LOCK` or a separate output directory in `tests/diag/tests.cmake`.  Resolved in the gap round: `diag.bankset` now writes `build/<preset>/tests/diag/bankset-matrix/` and `diag.bankset_tracer` keeps `build/<preset>/tests/diag/bankset/`, so the two tests share no output file. | acknowledged; historical disposition retained | 2026-10-29 | v2.0 |
 
 ## Session Continuity
-Last session: 2026-11-18T15:42:10.920Z
-Stopped at: Completed 28-01-PLAN.md
+Last session: 2026-11-18T16:57:49.199Z
+Stopped at: Phase 28 complete, ready to plan Phase 29
 Resume file: None
 
 Next action: `$gsd-verify-work 28`. Phase 29 remains dependent on Phase 28; both TUNE requirements await verifier disposition. No routine owner approval is pending.

@@ -24,7 +24,7 @@ and rejected alternatives are in the [successor review](research/next-milestone/
 
 ## Phases
 
-- [ ] **Phase 28: Measured milestone tune-up** - Qualify current delivery evidence and reconcile the Phase 27 register counts without changing verdicts.
+- [x] **Phase 28: Measured milestone tune-up** - Qualify current delivery evidence and reconcile the Phase 27 register counts without changing verdicts. (completed 2026-11-18)
 - [ ] **Phase 29: Windows extended-path runner support** - Use explicit local and UNC extended paths across runner inputs and outputs with preserved collision and replacement safety.
 
 ## Phase Details
@@ -38,11 +38,11 @@ and rejected alternatives are in the [successor review](research/next-milestone/
   1. Maintainers can identify the exact current release and reviewed CI sources, distinguish historical failures from accepted results, and inspect queue time, critical path, job durations, cancelled work and cheap preflight results through commands, exit statuses and run links.
   2. Maintainers can review a proportionate quality/maintenance disposition covering performance, CI/CD, ease of use, architecture, documentation and upgrade path; a justified small correction or bounded no-change result preserves required fault coverage, existing limits and evidence distinctions.
   3. The register identified by Phase 27's deferred item reports 52 total entries: 16 open, 0 waived and 36 fixed. Every entry's text and verdict is unchanged; only the mismatched aggregate counts are reconciled.
-**Plans**: 1/2 plans executed
+**Plans**: 2/2 plans complete
 
 Plans:
 - [x] 28-01-PLAN.md — Qualify current delivery evidence, preserve pipeline contracts and reconcile only the shared register counts; execution complete, phase verification pending.
-- [ ] 28-02-PLAN.md — Reconcile the Phase 28 performance metrics gap in STATE without changing acceptance; execution pending.
+- [x] 28-02-PLAN.md — Reconcile the Phase 28 performance metrics gap in STATE without changing acceptance; phase verification pending.
 
 This is the recurring [SEED-007 tune-up](seeds/SEED-007-milestone-tune-up.md),
 including [SEED-009's proportional maintenance review](seeds/SEED-009-proportional-maintenance-review.md).
@@ -90,7 +90,7 @@ validation phase. Ship the final phase before milestone archival.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 28. Measured milestone tune-up | 1/1 | Execution complete; verification pending | - |
+| 28. Measured milestone tune-up | 2/2 | Complete    | 2026-11-18 |
 | 29. Windows extended-path runner support | 0/TBD | Not started | - |
 
 **Coverage:** All 6 v1 requirements map to exactly one phase; none are unmapped.
