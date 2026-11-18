@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <stdarg.h>
 #include <sys/stat.h>
+#include <wchar.h>
 #include "../../runner/clock.h"
 #ifdef _WIN32
 #include <io.h>
@@ -116,10 +117,13 @@ static int test_close(FILE *f);
 #if defined(__GNUC__) && !defined(__clang__) && __GNUC__ >= 11
 /* Keep the wrapper pair intact: partial inlining otherwise exposes libc's
    fclose ownership annotation to calls of test_close. */
+#ifndef _WIN32
 static FILE *test_fopen(const char *path, const char *mode) __attribute__((malloc(test_close, 1)));
+#endif
 static FILE *test_fdopen(int fd, const char *mode) __attribute__((malloc(test_close, 1)));
 #endif
 
+#ifndef _WIN32
 static FILE *test_fopen(const char *path, const char *mode)
 {
     FILE *f = fopen(path, mode);
@@ -127,6 +131,12 @@ static FILE *test_fopen(const char *path, const char *mode)
         import_stream = f;
     return f;
 }
+#else
+static FILE *test_wfopen(const wchar_t *path, const wchar_t *mode)
+{
+    return _wfopen(path, mode);
+}
+#endif
 static FILE *test_fdopen(int fd, const char *mode)
 {
     int is_state = strcmp(mode, "rb") == 0 && fd == state_fd;
@@ -192,14 +202,11 @@ static size_t test_write(const void *p, size_t n, size_t count, FILE *f)
         return fwrite(p, n, count - 1u, f);
     return f == save_stream && io_fault == SAVE_WRITE ? 0u : fwrite(p, n, count, f);
 }
+#ifndef _WIN32
 static int test_open(const char *path, int flags, ...)
 {
     int mode = 0;
-#ifdef _WIN32
-    int creating = flags & _O_CREAT;
-#else
     int creating = flags & O_CREAT;
-#endif
     if (creating) {
         create_calls++;
         if (io_fault == SAVE_CREATE) {
@@ -211,15 +218,33 @@ static int test_open(const char *path, int flags, ...)
         mode = va_arg(args, int);
         va_end(args);
     }
-#ifdef _WIN32
-    int fd = _open(path, flags, mode);
-#else
     int fd = open(path, flags, (mode_t)mode);
-#endif
     if (fd >= 0 && !creating && strstr(path, ".state") != NULL)
         state_fd = fd;
     return fd;
 }
+#else
+static int test_wopen(const wchar_t *path, int flags, ...)
+{
+    int mode = 0;
+    int creating = flags & _O_CREAT;
+    if (creating) {
+        create_calls++;
+        if (io_fault == SAVE_CREATE) {
+            errno = EACCES;
+            return -1;
+        }
+        va_list args;
+        va_start(args, flags);
+        mode = va_arg(args, int);
+        va_end(args);
+    }
+    int fd = _wopen(path, flags, mode);
+    if (fd >= 0 && !creating && wcsstr(path, L".state") != NULL)
+        state_fd = fd;
+    return fd;
+}
+#endif
 static int test_flush(FILE *f)
 {
     if (f == stdout && output_fault)
@@ -259,12 +284,12 @@ static int test_rename(const char *from, const char *to)
     return io_fault == SAVE_REPLACE ? -1 : rename(from, to);
 }
 #else
-static BOOL test_move(LPCSTR from, LPCSTR to, DWORD flags)
+static BOOL test_move(LPCWSTR from, LPCWSTR to, DWORD flags)
 {
     replacements++;
     if (replacements <= 128u)
         replaced_at[replacements - 1u] = frames_run;
-    return io_fault == SAVE_REPLACE ? FALSE : MoveFileExA(from, to, flags);
+    return io_fault == SAVE_REPLACE ? FALSE : MoveFileExW(from, to, flags);
 }
 #endif
 static muhtari_status test_frame(muhtari *m, muhtari_frame *io)
@@ -304,9 +329,13 @@ void test_destroy(muhtari *m);
 #define main runner_entry
 #define malloc test_malloc
 #define fprintf test_print
+#ifndef _WIN32
 #define fopen test_fopen
 #define open test_open
-#define _open test_open
+#else
+#define _wfopen test_wfopen
+#define _wopen test_wopen
+#endif
 #define fdopen test_fdopen
 #define _fdopen test_fdopen
 #define fread test_read
@@ -317,14 +346,16 @@ void test_destroy(muhtari *m);
 #define fsync test_sync
 #define _commit test_sync
 #define rename test_rename
-#define MoveFileExA test_move
+#ifdef _WIN32
+#define MoveFileExW test_move
+#endif
 #define muhtari_run_frame test_frame
 #define muhtari_destroy test_destroy
 #include "../../runner/main.c"
 #undef muhtari_destroy
 #undef muhtari_run_frame
 #undef rename
-#undef MoveFileExA
+#undef MoveFileExW
 #undef _commit
 #undef fsync
 #undef fclose
@@ -334,9 +365,14 @@ void test_destroy(muhtari *m);
 #undef fread
 #undef _fdopen
 #undef fdopen
+#undef test_wfopen
+#ifndef _WIN32
 #undef fopen
 #undef open
-#undef _open
+#else
+#undef _wfopen
+#undef _wopen
+#endif
 #undef main
 #undef malloc
 #undef fprintf
