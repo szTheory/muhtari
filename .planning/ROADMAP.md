@@ -63,11 +63,11 @@ topology, cache or deadline changes; no new audit program or quota is required.
   3. Distinct extended-namespace destinations, including suffix-distinct names, succeed; destinations naming the same file or overlapping an input or another output are refused before modification. Existing-file identity, parent-junction aliases and ordinary/extended mixed-form controls retain ordinary Windows protections.
   4. A failed create, write or replacement produces a clear error and preserves the prior destination bytes for state, frame-image, trace and battery outputs; successful writes retain safe replacement behavior.
   5. Windows CI exercises the actual runner on the supported Windows architectures with local paths longer than `MAX_PATH`, Unicode/literal suffix names and extended UNC paths through an accessible test share, alongside distinct-output, true-alias, overlap, ordinary-path and failure-preservation controls. User documentation states the supported absolute forms, measured path-length boundary and clear failure behavior for unsupported operations.
-**Plans**: 1/3 plans executed
+**Plans**: 2/3 plans executed
 
 Plans:
 - [x] 29-01-PLAN.md — Preserve Unicode and explicit namespace paths through every runner file operation and real-process test entry.
-- [ ] 29-02-PLAN.md — Apply shared target-identity preflight and atomic preservation across all outputs.
+- [x] 29-02-PLAN.md — Apply shared target-identity preflight and atomic preservation across all outputs.
 - [ ] 29-03-PLAN.md — Complete Windows local/UNC acceptance, measured path documentation and source-qualified CI evidence.
 
 The path contract is grounded in the [selected review](research/next-milestone/2026-11-18-future-roadmap-review.md)
@@ -96,7 +96,7 @@ validation phase. Ship the final phase before milestone archival.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 28. Measured milestone tune-up | 2/2 | Complete    | 2026-11-18 |
-| 29. Windows extended-path runner support | 1/3 | In Progress | - |
+| 29. Windows extended-path runner support | 2/3 | In Progress | - |
 
 **Coverage:** All 6 v1 requirements map to exactly one phase; none are unmapped.
 See [requirements traceability](REQUIREMENTS.md#traceability).
