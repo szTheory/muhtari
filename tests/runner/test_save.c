@@ -808,6 +808,16 @@ static void trace_paths(const char *dir, const char *junction_alias, const char 
 {
     char rom[1024], trace[1024], movie[1024], bios[1024], firmware[1024], state[1024];
     char subdir[1024], path[1024], alias[1024], save_dir[1024], state_point[1100];
+    char *derived_battery = runner_battery_path("save-dir", "roms/game\\name.a78");
+    CHECK(derived_battery != NULL);
+    if (derived_battery != NULL) {
+#ifdef _WIN32
+        CHECK(strcmp(derived_battery, "save-dir\\name.sav") == 0);
+#else
+        CHECK(strcmp(derived_battery, "save-dir/game\\name.sav") == 0);
+#endif
+        free(derived_battery);
+    }
     (void)snprintf(rom, sizeof rom, "%s/option.a78", dir);
     (void)snprintf(movie, sizeof movie, "%s/option.movie", dir);
     (void)snprintf(bios, sizeof bios, "%s/option.bios", dir);
