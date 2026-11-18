@@ -1294,6 +1294,56 @@ static void imports(const char *dir)
     free(expected);
 }
 
+static void png_faults(const char *dir)
+{
+    char rom[1024], png[1024], frame[1100], temporary[1200];
+    (void)snprintf(rom, sizeof rom, "%s/png-fault.a78", dir);
+    (void)snprintf(png, sizeof png, "%s/png-fault.png", dir);
+    int frame_n = snprintf(frame, sizeof frame, "1:%s", png);
+    CHECK(frame_n > 0 && (size_t)frame_n < sizeof frame);
+    cartridge(rom, 0u, 0);
+    static const uint8_t sentinel[] = "prior PNG bytes";
+    static const uint8_t foreign[] = "foreign temporary";
+    char *args[] = {"muhtari-run", "--frames", "1", "--dump-frame", frame, rom};
+    static const int faults[] = {SAVE_CREATE, SAVE_FDOPEN, SAVE_PARTIAL, SAVE_WRITE,
+                                 SAVE_FLUSH,  SAVE_SYNC,   SAVE_CLOSE,   SAVE_REPLACE};
+    for (size_t i = 0u; i < sizeof faults / sizeof faults[0]; i++) {
+        write_bytes(png, sentinel, sizeof sentinel);
+        trace_reset_io();
+        io_fault = faults[i];
+        CHECK_EQ_U64(runner_entry((int)(sizeof args / sizeof args[0]), args), 1u);
+        CHECK_EQ_U64(frames_run, 1u);
+        CHECK_EQ_U64(create_calls, 1u);
+        CHECK_EQ_U64(temp_opens, faults[i] == SAVE_CREATE || faults[i] == SAVE_FDOPEN ? 0u : 1u);
+        CHECK_EQ_U64(replacements, faults[i] == SAVE_REPLACE ? 1u : 0u);
+        trace_check_bytes(png, sentinel, sizeof sentinel);
+        trace_check_temps(png, -1);
+    }
+
+#ifdef _WIN32
+    unsigned long pid = (unsigned long)GetCurrentProcessId();
+#elif defined(__wasi__)
+    unsigned long pid = 0u;
+#else
+    unsigned long pid = (unsigned long)getpid();
+#endif
+    int temporary_n = snprintf(temporary, sizeof temporary, "%s.tmp.%lu.0", png, pid);
+    CHECK(temporary_n > 0 && (size_t)temporary_n < sizeof temporary);
+    write_bytes(png, sentinel, sizeof sentinel);
+    write_bytes(temporary, foreign, sizeof foreign);
+    trace_reset_io();
+    io_fault = SAVE_WRITE;
+    CHECK_EQ_U64(runner_entry((int)(sizeof args / sizeof args[0]), args), 1u);
+    CHECK_EQ_U64(frames_run, 1u);
+    CHECK_EQ_U64(create_calls, 2u);
+    CHECK_EQ_U64(temp_opens, 1u);
+    CHECK_EQ_U64(replacements, 0u);
+    trace_check_bytes(png, sentinel, sizeof sentinel);
+    trace_check_bytes(temporary, foreign, sizeof foreign);
+    trace_check_temps(png, 0);
+    CHECK_EQ_U64(remove(temporary), 0u);
+}
+
 static void faults(const char *dir)
 {
     char rom[1024], save[1024], foreign[1100], own[1100];
@@ -1340,7 +1390,9 @@ static void faults(const char *dir)
     CHECK_EQ_U64(runner_entry(4, plain), 0);
     exact_file(save, bytes, sizeof bytes);
     char bad_dump[1100];
-    snprintf(bad_dump, sizeof bad_dump, "1:%s/missing/picture.png", dir);
+    /* The existing directory is identifiable during preflight but rejects an
+       actual stream open after the frame, exercising output failure ordering. */
+    snprintf(bad_dump, sizeof bad_dump, "1:%s", dir);
     char directory[1024];
     snprintf(directory, sizeof directory, "%s", dir);
     char *output[] = {"muhtari-run", "--frames",     "1",      "--save-dir",
@@ -1391,6 +1443,7 @@ static void faults(const char *dir)
     CHECK_EQ_U64(replacements, 1);
     bytes[0]++;
     exact_file(save, bytes, sizeof bytes);
+    png_faults(dir);
 }
 
 #ifndef __wasi__
