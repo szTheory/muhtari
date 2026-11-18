@@ -758,7 +758,11 @@ static char *runner_battery_path(const char *directory, const char *image_path)
         return NULL;
     const char *base = image_path;
     for (const char *p = image_path; *p != '\0'; p++) {
-        if (*p == '/' || *p == '\\')
+        if (*p == '/'
+#ifdef _WIN32
+            || *p == '\\'
+#endif
+        )
             base = p + 1;
     }
     const char *dot = strrchr(base, '.');
