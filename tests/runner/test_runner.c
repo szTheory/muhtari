@@ -451,7 +451,12 @@ static void movie_owner(char *dir, char *rom)
     CHECK_EQ_U64(
         muhtari__movie_next_ex(mv.bytes, mv.bytes_count, &mv.header, &mv.cursor, &decoded, &err),
         0);
+#ifdef _WIN32
+    /* The Windows path open converts its UTF-8 filename with one tracked allocation. */
+    CHECK_EQ_U64(movie_attempts, 15u);
+#else
     CHECK_EQ_U64(movie_attempts, 14u);
+#endif
     printf("movie2 bytes %zu frames %u allocation_calls %u live %zu peak %zu cursor %zu packet %zu "
            "elapsed_ns %llu\n",
            mv.bytes_count, (unsigned)mv.count, movie_attempts, movie_live, movie_peak,

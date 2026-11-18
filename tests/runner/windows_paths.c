@@ -1011,11 +1011,15 @@ static int run_namespace(const wchar_t *runner, const wchar_t *work_dir, const w
                     memcpy(dump_arg + 2u, png, (length + 1u) * sizeof *dump_arg);
                 }
             }
-            const wchar_t *run_args[] = {
-                runner,    L"--frames",      L"1",       L"--save-dir",
-                test_dir,  L"--trace",       trace,      L"--trace-frame",
-                L"1",      L"--trace-range", L"0:65535", L"--state-at-frame",
-                state_arg, L"--dump-frame",  dump_arg,   image};
+            const wchar_t *run_args[] = {runner,     L"--frames",
+                                         L"1",       L"--port1",
+                                         L"savekey", L"--save-dir",
+                                         test_dir,   L"--trace",
+                                         trace,      L"--trace-frame",
+                                         L"1",       L"--trace-range",
+                                         L"0:65535", L"--state-at-frame",
+                                         state_arg,  L"--dump-frame",
+                                         dump_arg,   image};
             if (dump_arg == NULL ||
                 run_child(runner, work_dir, log_name, run_args,
                           sizeof run_args / sizeof run_args[0], 0u, NULL) != 0) {
@@ -1027,11 +1031,13 @@ static int run_namespace(const wchar_t *runner, const wchar_t *work_dir, const w
     }
     if (!failed) {
         const wchar_t *outputs[] = {state_output, trace, png, battery};
+        static const wchar_t *const output_roles[] = {L"state", L"trace", L"PNG", L"battery"};
         for (size_t i = 0u; i < sizeof outputs / sizeof outputs[0]; i++) {
             DWORD attributes = GetFileAttributesW(outputs[i]);
             if (attributes == INVALID_FILE_ATTRIBUTES ||
                 (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0u) {
-                fwprintf(stderr, L"windows path test: expected output is missing\n");
+                fwprintf(stderr, L"windows path test: expected %ls output is missing: %ls\n",
+                         output_roles[i], outputs[i]);
                 failed = 1;
                 break;
             }
@@ -1041,9 +1047,9 @@ static int run_namespace(const wchar_t *runner, const wchar_t *work_dir, const w
     static const char trace_header[] = "{\"format\":\"muhtari-trace\"";
     if (!failed && (!file_starts_with(png, png_signature, (DWORD)sizeof png_signature) ||
                     !file_starts_with(trace, trace_header, (DWORD)(sizeof trace_header - 1u)) ||
-                    !file_has_exact_size(battery, 32768))) {
-        fwprintf(stderr, L"windows path test: PNG, trace, or derived SaveKey bytes did not match "
-                         L"the expected output\n");
+                    !file_has_exact_size(battery, 34816))) {
+        fwprintf(stderr, L"windows path test: PNG, trace, or combined HSC/SaveKey battery bytes "
+                         L"did not match the expected output\n");
         failed = 1;
     }
     if (!failed && load_state(runner, work_dir, image, state_output, log_name) != 0) {

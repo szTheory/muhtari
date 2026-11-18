@@ -1098,7 +1098,8 @@ static void trace_paths(const char *dir, const char *junction_alias, const char 
     (void)remove(path);
     (void)snprintf(path, sizeof path, "%s/trace-windows-space.jsonl", dir);
     (void)remove(path);
-    cartridge(rom, 1u, 0);
+    /* Change HSC RAM once so the real-process battery path reaches save_flush. */
+    cartridge(rom, 1u, 1);
     static const char movie_text[] = "muhtari-movie 1\nport1 savekey\nport2 none\n|||...BB|\n";
     write_bytes(movie, movie_text, sizeof movie_text - 1u);
     uint8_t image[4096];

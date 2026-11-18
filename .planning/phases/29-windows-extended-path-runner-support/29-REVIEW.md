@@ -1,11 +1,12 @@
 ---
 phase: 29-windows-extended-path-runner-support
-reviewed: 2026-11-18T22:41:57Z
+reviewed: 2026-11-18T23:12:04Z
 depth: standard
-files_reviewed: 2
+files_reviewed: 3
 files_reviewed_list:
-  - runner/main.c
   - tests/runner/test_runner.c
+  - tests/runner/test_save.c
+  - tests/runner/windows_paths.c
 findings:
   critical: 0
   warning: 0
@@ -99,5 +100,45 @@ No new or open findings in this follow-up.
 ---
 
 _Follow-up reviewed: 2026-11-18T22:41:57Z_
+_Reviewer: the agent (gsd-code-reviewer)_
+_Depth: standard_
+
+## Follow-up Review — 2026-11-18T23:08:24Z
+
+**Scope:** Latest changes in `tests/runner/test_runner.c` and `tests/runner/windows_paths.c` only.
+**Depth:** standard
+**Status:** issues_found
+
+The Windows movie allocation assertion correctly includes the one tracked UTF-8-to-wide allocation made by `runner_path_open`; the non-Windows count remains unchanged. The real-process output check now forces HSC attachment, and its missing-output diagnostic reports the matched output role and path. However, this does not make the fixture produce the expected 32 KiB SaveKey file: the fixture created by `trace_paths` has HSC only, and the process arguments do not select a SaveKey port. With HSC attachment alone the battery size is 2 KiB, and this fixture's program does not dirty HSC RAM, so `save_flush` has no changed battery to write. WR-01 and WR-02 remain resolved by the prior follow-ups. Tests were not run, as requested.
+
+## Narrative Findings (AI reviewer)
+
+### WR-03: Windows output matrix cannot produce its expected SaveKey battery
+
+**File:** `tests/runner/windows_paths.c:1014-1052`
+**Issue:** The real-process run passes `--hsc on`, but the `image` fixture comes from `trace_paths`, which writes an HSC-only cartridge (`devices=1`) with a non-mutating loop. The run supplies no `--port1 savekey`, and its fixture has no SaveKey header bit. HSC attachment therefore provides only 2,048 battery bytes; because the program never changes HSC RAM, `save_flush` sees the imported generation unchanged and creates no battery file. The matrix then requires the battery output to exist and be exactly 32,768 bytes, so this Windows path test fails before it can validate the intended output path. Evidence: `tests/runner/test_save.c:1101-1103`, `src/cart.c:601-610`, `src/instance.c:281-286`, and `runner/main.c:2150-2165`.
+**Fix:** Keep HSC attached, explicitly select a SaveKey port for this process run, and use a fixture program that changes HSC RAM so the battery becomes dirty. Then assert the combined expected size (2,048 HSC bytes plus 32,768 SaveKey bytes), or change the scenario to expect and deliberately produce the HSC-only size.
+
+---
+
+_Follow-up reviewed: 2026-11-18T23:08:24Z_
+_Reviewer: the agent (gsd-code-reviewer)_
+_Depth: standard_
+
+## Follow-up Review — 2026-11-18T23:12:04Z
+
+**Scope:** Final Windows CI correction in `tests/runner/test_runner.c`, `tests/runner/test_save.c`, and `tests/runner/windows_paths.c`.
+**Depth:** standard
+**Status:** clean
+
+WR-03 is resolved. The fixture now changes HSC RAM, the real-process command explicitly selects SaveKey on port 1, and its HSC-only cartridge header makes the default automatic HSC mode attach HSC. The battery therefore contains 2,048 HSC bytes plus 32,768 SaveKey bytes, matching the 34,816-byte assertion; the HSC write changes the generation so the final `save_flush` persists it. The role and path arrays also match the output array, so a missing-output diagnostic names the specific artifact and path. The Windows movie allocation count includes the single tracked allocation for `runner_path_open`'s UTF-8-to-wide conversion. WR-01, WR-02, and WR-03 are resolved; no open findings remain. Tests were not run, as requested.
+
+## Narrative Findings (AI reviewer)
+
+No new or open findings in this follow-up.
+
+---
+
+_Follow-up reviewed: 2026-11-18T23:12:04Z_
 _Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_
