@@ -536,6 +536,20 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
       execute_process(COMMAND ${EMULATOR} "${SAVE_TEST}" "${DIR}" trace_paths
           "${junction_alias}" "${junction_target}"
         RESULT_VARIABLE harness_rc OUTPUT_VARIABLE harness_out ERROR_VARIABLE harness_err TIMEOUT 30)
+      set(junction_process_target "${junction_target}/trace-junction-process.jsonl")
+      set(junction_process_alias "${junction_alias}/trace-junction-process.jsonl")
+      file(WRITE "${junction_process_target}" "prior junction output\n")
+      execute_process(COMMAND ${RUN} --frames 1 --dump-frame "1:${junction_process_target}"
+          --trace "${junction_process_alias}" --trace-frame 1 --trace-range 0:65535
+          "${DIR}/option.a78"
+        RESULT_VARIABLE junction_process_rc OUTPUT_VARIABLE junction_process_out
+        ERROR_VARIABLE junction_process_err TIMEOUT 20)
+      file(READ "${junction_process_target}" junction_process_bytes)
+      if(NOT junction_process_rc STREQUAL "2" OR NOT junction_process_out STREQUAL "" OR
+         NOT junction_process_err MATCHES "output path conflicts with an input or another output" OR
+         NOT junction_process_bytes STREQUAL "prior junction output\n")
+        message(FATAL_ERROR "real runner did not refuse a junction output alias before mutation: ${junction_process_rc}\n${junction_process_out}${junction_process_err}")
+      endif()
       file(REMOVE_RECURSE "${junction_alias}" "${junction_target}")
     else()
       execute_process(COMMAND ${EMULATOR} "${SAVE_TEST}" "${DIR}" trace_paths

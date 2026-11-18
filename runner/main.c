@@ -872,7 +872,7 @@ static char *trace_normalize_wasi_parent(const char *path)
    the parent through a directory handle so junction aliases also compare
    equal; the WASI fallback normalizes dot/parent components. */
 #ifdef _WIN32
-typedef wchar_t trace_path_char;
+typedef wchar_t runner_path_char;
 
 static int runner_windows_extended_prefix(const wchar_t *path)
 {
@@ -909,34 +909,73 @@ static wchar_t *runner_windows_full_path(const wchar_t *path)
     return full;
 }
 
-static wchar_t *trace_windows_final_path(const wchar_t *path)
+static int runner_windows_file_id(const wchar_t *path, FILE_ID_INFO *identity)
 {
-    HANDLE directory = CreateFileW(path, FILE_READ_ATTRIBUTES,
-                                   FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
-                                   OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
-    if (directory == INVALID_HANDLE_VALUE)
-        return NULL;
+    HANDLE handle = CreateFileW(path, FILE_READ_ATTRIBUTES,
+                                FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
+                                OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    if (handle == INVALID_HANDLE_VALUE)
+        return 0;
+    int ok =
+        GetFileInformationByHandleEx(handle, FileIdInfo, identity, (DWORD)sizeof *identity) != 0;
+    DWORD error = ok ? ERROR_SUCCESS : GetLastError();
+    (void)CloseHandle(handle);
+    if (!ok)
+        SetLastError(error);
+    return ok;
+}
 
-    const DWORD path_capacity = 32768u;
-    wchar_t *resolved = (wchar_t *)malloc((size_t)path_capacity * sizeof *resolved);
+static wchar_t *runner_windows_final_path(const wchar_t *path)
+{
+    HANDLE handle = CreateFileW(path, FILE_READ_ATTRIBUTES,
+                                FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
+                                OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    if (handle == INVALID_HANDLE_VALUE)
+        return NULL;
+    const DWORD capacity = 32768u;
+    wchar_t *resolved = (wchar_t *)malloc((size_t)capacity * sizeof *resolved);
     if (resolved == NULL) {
-        (void)CloseHandle(directory);
+        (void)CloseHandle(handle);
         return NULL;
     }
-    DWORD resolved_len = GetFinalPathNameByHandleW(directory, resolved, path_capacity,
-                                                   FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
-    (void)CloseHandle(directory);
-    if (resolved_len == 0u || resolved_len >= path_capacity) {
+    DWORD length = GetFinalPathNameByHandleW(handle, resolved, capacity,
+                                             FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
+    (void)CloseHandle(handle);
+    if (length == 0u || length >= capacity) {
         free(resolved);
         return NULL;
     }
     return resolved;
 }
+
+static int runner_windows_parent_id(const wchar_t *path, FILE_ID_INFO *identity)
+{
+    wchar_t *full = runner_windows_full_path(path);
+    if (full == NULL)
+        return 0;
+    wchar_t *last_separator = NULL;
+    for (wchar_t *p = full; *p != L'\0'; p++) {
+        if (*p == L'/' || *p == L'\\')
+            last_separator = p;
+    }
+    if (last_separator == NULL) {
+        free(full);
+        return 0;
+    }
+    size_t parent_len = (size_t)(last_separator - full) + 1u;
+    wchar_t *parent = runner_wide_duplicate(full, parent_len);
+    free(full);
+    if (parent == NULL)
+        return 0;
+    int ok = runner_windows_file_id(parent, identity);
+    free(parent);
+    return ok;
+}
 #else
-typedef char trace_path_char;
+typedef char runner_path_char;
 #endif
 
-static trace_path_char *trace_normalized_path(const char *path)
+static runner_path_char *runner_normalized_target_path(const char *path)
 {
 #ifdef _WIN32
     wchar_t *wide_path = runner_path_to_wide(path);
@@ -965,7 +1004,7 @@ static trace_path_char *trace_normalized_path(const char *path)
         free(full);
         return NULL;
     }
-    wchar_t *canonical_parent = trace_windows_final_path(parent);
+    wchar_t *canonical_parent = runner_windows_final_path(parent);
     free(parent);
     if (canonical_parent == NULL) {
         free(full);
@@ -1061,30 +1100,72 @@ static trace_path_char *trace_normalized_path(const char *path)
 #endif
 }
 
-static int trace_paths_equal(const char *left, const char *right)
+static int runner_paths_equal(const char *left, const char *right)
 {
-    if (same_lexical_path(left, right))
-        return 1;
     if (left == NULL || right == NULL)
         return 0;
+    if (same_lexical_path(left, right))
+        return 1;
 #ifdef _WIN32
     wchar_t *wide_left = runner_path_to_wide(left);
     wchar_t *wide_right = runner_path_to_wide(right);
-    struct _stat64 left_info, right_info;
-    int left_exists = wide_left != NULL && _wstat64(wide_left, &left_info) == 0;
-    int right_exists = wide_right != NULL && _wstat64(wide_right, &right_info) == 0;
+    if (wide_left == NULL || wide_right == NULL) {
+        free(wide_left);
+        free(wide_right);
+        return -1;
+    }
+    FILE_ID_INFO left_info, right_info;
+    int left_exists = runner_windows_file_id(wide_left, &left_info);
+    DWORD left_error = left_exists ? ERROR_SUCCESS : GetLastError();
+    int right_exists = runner_windows_file_id(wide_right, &right_info);
+    DWORD right_error = right_exists ? ERROR_SUCCESS : GetLastError();
+    int left_absent =
+        !left_exists && (left_error == ERROR_FILE_NOT_FOUND || left_error == ERROR_PATH_NOT_FOUND);
+    int right_absent = !right_exists &&
+                       (right_error == ERROR_FILE_NOT_FOUND || right_error == ERROR_PATH_NOT_FOUND);
+    if ((!left_exists && !left_absent) || (!right_exists && !right_absent)) {
+        free(wide_left);
+        free(wide_right);
+        return -1;
+    }
+    if (left_exists && right_exists) {
+        int equal = left_info.VolumeSerialNumber == right_info.VolumeSerialNumber &&
+                    memcmp(left_info.FileId.Identifier, right_info.FileId.Identifier,
+                           sizeof left_info.FileId.Identifier) == 0;
+        free(wide_left);
+        free(wide_right);
+        return equal;
+    }
+    FILE_ID_INFO left_parent, right_parent;
+    if (!runner_windows_parent_id(wide_left, &left_parent) ||
+        !runner_windows_parent_id(wide_right, &right_parent)) {
+        free(wide_left);
+        free(wide_right);
+        return -1;
+    }
+    int same_parent = left_parent.VolumeSerialNumber == right_parent.VolumeSerialNumber &&
+                      memcmp(left_parent.FileId.Identifier, right_parent.FileId.Identifier,
+                             sizeof left_parent.FileId.Identifier) == 0;
     free(wide_left);
     free(wide_right);
+    if (!same_parent)
+        return 0;
 #else
     struct stat left_info, right_info;
+    errno = 0;
     int left_exists = stat(left, &left_info) == 0;
+    int left_error = errno;
+    errno = 0;
     int right_exists = stat(right, &right_info) == 0;
-#endif
+    int right_error = errno;
+    if ((!left_exists && left_error != ENOENT) || (!right_exists && right_error != ENOENT))
+        return -1;
     if (left_exists && right_exists && left_info.st_ino != 0 &&
         left_info.st_dev == right_info.st_dev && left_info.st_ino == right_info.st_ino)
         return 1;
-    trace_path_char *normalized_left = trace_normalized_path(left);
-    trace_path_char *normalized_right = trace_normalized_path(right);
+#endif
+    runner_path_char *normalized_left = runner_normalized_target_path(left);
+    runner_path_char *normalized_right = runner_normalized_target_path(right);
     if (normalized_left == NULL || normalized_right == NULL) {
         free(normalized_left);
         free(normalized_right);
@@ -1106,38 +1187,63 @@ static int trace_paths_equal(const char *left, const char *right)
     return equal;
 }
 
-/* save_import spells the derived destination as DIR/<ROM stem>.sav. Resolve
-   that path against trace output along with the explicit inputs and outputs. */
-static int trace_path_conflicts(const options *o)
+/* Compare all output/input and output/output pairs before a frame can run.
+   The battery destination comes from the same helper used by save I/O. */
+static int runner_invocation_path_conflicts(const options *o)
 {
-    if (o->trace_file == NULL)
-        return 0;
     const char *inputs[] = {o->rom, o->movie, o->bios, o->hsc_rom, o->load_state};
-    for (size_t i = 0u; i < sizeof inputs / sizeof inputs[0]; i++) {
-        int equal = trace_paths_equal(o->trace_file, inputs[i]);
-        if (equal != 0)
-            return equal;
-    }
-    for (uint32_t i = 0u; i < o->dump_count; i++) {
-        int equal = trace_paths_equal(o->trace_file, o->dump_paths[i]);
-        if (equal != 0)
-            return equal;
-    }
-    for (uint32_t i = 0u; i < o->state_output_count; i++) {
-        int equal = trace_paths_equal(o->trace_file, o->state_outputs[i].path);
-        if (equal != 0)
-            return equal;
-    }
+    char *battery_path = NULL;
     if (o->save_dir != NULL && o->rom != NULL) {
-        char *save_path = runner_battery_path(o->save_dir, o->rom);
-        if (save_path == NULL)
+        battery_path = runner_battery_path(o->save_dir, o->rom);
+        if (battery_path == NULL)
             return -1;
-        int equal = trace_paths_equal(o->trace_file, save_path);
-        free(save_path);
-        if (equal != 0)
-            return equal;
     }
-    return 0;
+    size_t output_count = (size_t)o->dump_count + (size_t)o->state_output_count +
+                          (o->trace_file != NULL ? 1u : 0u) + (battery_path != NULL ? 1u : 0u);
+    if (output_count > SIZE_MAX / sizeof(const char *)) {
+        free(battery_path);
+        return -1;
+    }
+    const char **outputs =
+        output_count != 0u ? (const char **)malloc(output_count * sizeof *outputs) : NULL;
+    if (output_count != 0u && outputs == NULL) {
+        free(battery_path);
+        return -1;
+    }
+    size_t out = 0u;
+    for (uint32_t i = 0u; i < o->dump_count; i++)
+        outputs[out++] = o->dump_paths[i];
+    for (uint32_t i = 0u; i < o->state_output_count; i++)
+        outputs[out++] = o->state_outputs[i].path;
+    if (o->trace_file != NULL)
+        outputs[out++] = o->trace_file;
+    if (battery_path != NULL)
+        outputs[out++] = battery_path;
+
+    int unresolved = 0;
+    for (size_t i = 0u; i < output_count; i++) {
+        for (size_t j = 0u; j < sizeof inputs / sizeof inputs[0]; j++) {
+            int equal = runner_paths_equal(outputs[i], inputs[j]);
+            if (equal > 0) {
+                free(outputs);
+                free(battery_path);
+                return 1;
+            }
+            unresolved |= equal < 0;
+        }
+        for (size_t j = 0u; j < i; j++) {
+            int equal = runner_paths_equal(outputs[i], outputs[j]);
+            if (equal > 0) {
+                free(outputs);
+                free(battery_path);
+                return 1;
+            }
+            unresolved |= equal < 0;
+        }
+    }
+    free(outputs);
+    free(battery_path);
+    return unresolved ? -1 : 0;
 }
 
 /* Returns 0 when the options are spelled right, 2 after a usage message, 1
@@ -1557,15 +1663,13 @@ static int check_options(options *o, const muhtari__movie_header *h, uint32_t mo
                 return usage("duplicate --hash-state point");
         }
     }
-    if (o->trace_file != NULL) {
-        int conflicts = trace_path_conflicts(o);
-        if (conflicts < 0) {
-            fprintf(stderr, "muhtari-run: cannot safely validate trace destination path\n");
-            return MUHTARI__EXIT_FAILURE;
-        }
-        if (conflicts != 0)
-            return usage("trace file path conflicts with an input or output");
+    int path_conflicts = runner_invocation_path_conflicts(o);
+    if (path_conflicts < 0) {
+        fprintf(stderr, "muhtari-run: cannot safely validate output path identity\n");
+        return MUHTARI__EXIT_FAILURE;
     }
+    if (path_conflicts != 0)
+        return usage("output path conflicts with an input or another output");
     if (o->hash_state_count > 0u)
         qsort(o->hash_state_frames, o->hash_state_count, sizeof o->hash_state_frames[0],
               compare_u32);

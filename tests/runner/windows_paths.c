@@ -88,6 +88,15 @@ static wchar_t *extended_drive_root(const wchar_t *work_dir)
     return extended;
 }
 
+static wchar_t *ordinary_namespace_path(const wchar_t *path)
+{
+    if (wcsncmp(path, L"\\\\?\\UNC\\", 8u) == 0)
+        return wide_prefix(L"\\\\", path + 8u);
+    if (wcsncmp(path, L"\\\\?\\", 4u) == 0)
+        return _wcsdup(path + 4u);
+    return _wcsdup(path);
+}
+
 static int append_char(wchar_t *buffer, size_t capacity, size_t *used, wchar_t value)
 {
     if (*used >= capacity)
@@ -391,6 +400,102 @@ static int equal_files(const wchar_t *left, const wchar_t *right)
     return equal;
 }
 
+static int verify_output_aliases(const wchar_t *runner, const wchar_t *work_dir,
+                                 const wchar_t *namespace_root, const wchar_t *fixture,
+                                 const wchar_t *name, const wchar_t *log_name)
+{
+    static const char collision_message[] = "output path conflicts with an input or another output";
+    wchar_t *ordinary_root = ordinary_namespace_path(namespace_root);
+    wchar_t *image = wide_join(namespace_root, L"identity-alias.a78");
+    wchar_t *ordinary_image = image != NULL ? ordinary_namespace_path(image) : NULL;
+    wchar_t *image_copy = wide_join(namespace_root, L"identity-alias-copy.bin");
+    wchar_t *battery_rom = wide_join(namespace_root, L"identity-battery.sav");
+    wchar_t *battery_copy = wide_join(namespace_root, L"identity-battery-copy.bin");
+    wchar_t *hard_link = wide_join(namespace_root, L"identity-hard-link.a78");
+    wchar_t *frame = ordinary_image != NULL ? state_point(ordinary_image, L'1') : NULL;
+    wchar_t *state = ordinary_image != NULL ? state_point(ordinary_image, L'1') : NULL;
+    int failed = ordinary_root == NULL || image == NULL || ordinary_image == NULL ||
+                 image_copy == NULL || battery_rom == NULL || battery_copy == NULL ||
+                 hard_link == NULL || frame == NULL || state == NULL;
+    const wchar_t *owned[] = {image, image_copy, battery_rom, battery_copy, hard_link};
+    for (size_t i = 0u; !failed && i < sizeof owned / sizeof owned[0]; i++) {
+        if (!delete_file_if_present(owned[i])) {
+            report_last_error(L"clearing an identity alias fixture");
+            failed = 1;
+        }
+    }
+    if (!failed && (!CopyFileW(fixture, image, FALSE) || !CopyFileW(image, image_copy, FALSE))) {
+        report_last_error(L"creating an identity collision fixture");
+        failed = 1;
+    }
+
+    if (!failed) {
+        const wchar_t *args[] = {runner, L"--frames", L"1", L"--dump-frame", frame, image};
+        if (run_child(runner, work_dir, log_name, args, sizeof args / sizeof args[0], 2u,
+                      collision_message) != 0 ||
+            !equal_files(image, image_copy))
+            failed = 1;
+    }
+    if (!failed) {
+        const wchar_t *args[] = {runner, L"--frames", L"1", L"--state-at-frame", state, image};
+        if (run_child(runner, work_dir, log_name, args, sizeof args / sizeof args[0], 2u,
+                      collision_message) != 0 ||
+            !equal_files(image, image_copy))
+            failed = 1;
+    }
+    if (!failed) {
+        const wchar_t *args[] = {
+            runner, L"--frames",      L"1",       L"--trace", ordinary_image, L"--trace-frame",
+            L"1",   L"--trace-range", L"0:65535", image};
+        if (run_child(runner, work_dir, log_name, args, sizeof args / sizeof args[0], 2u,
+                      collision_message) != 0 ||
+            !equal_files(image, image_copy))
+            failed = 1;
+    }
+    if (!failed &&
+        (!CopyFileW(fixture, battery_rom, FALSE) || !CopyFileW(battery_rom, battery_copy, FALSE))) {
+        report_last_error(L"creating a battery identity collision fixture");
+        failed = 1;
+    }
+    if (!failed) {
+        const wchar_t *args[] = {runner,        L"--frames",   L"1",
+                                 L"--save-dir", ordinary_root, battery_rom};
+        if (run_child(runner, work_dir, log_name, args, sizeof args / sizeof args[0], 2u,
+                      collision_message) != 0 ||
+            !equal_files(battery_rom, battery_copy))
+            failed = 1;
+    }
+    if (!failed && wcscmp(name, L"drive") == 0) {
+        if (!CreateHardLinkW(hard_link, image, NULL)) {
+            report_last_error(L"creating a hard-link alias");
+            failed = 1;
+        } else {
+            const wchar_t *args[] = {runner, L"--frames", L"1", L"--dump-frame", frame, hard_link};
+            if (run_child(runner, work_dir, log_name, args, sizeof args / sizeof args[0], 2u,
+                          collision_message) != 0 ||
+                !equal_files(image, image_copy) || !equal_files(hard_link, image_copy))
+                failed = 1;
+        }
+    }
+
+    for (size_t i = 0u; i < sizeof owned / sizeof owned[0]; i++) {
+        if (owned[i] != NULL && !delete_file_if_present(owned[i])) {
+            report_last_error(L"removing an identity alias fixture");
+            failed = 1;
+        }
+    }
+    free(ordinary_root);
+    free(image);
+    free(ordinary_image);
+    free(image_copy);
+    free(battery_rom);
+    free(battery_copy);
+    free(hard_link);
+    free(frame);
+    free(state);
+    return failed ? 1 : 0;
+}
+
 static wchar_t *deep_test_directory(const wchar_t *root, wchar_t **directories, size_t capacity,
                                     size_t *count)
 {
@@ -567,6 +672,8 @@ static int run_namespace(const wchar_t *runner, const wchar_t *work_dir, const w
             }
         }
     }
+    if (!failed && verify_output_aliases(runner, work_dir, namespace_root, fixture, name, log_name))
+        failed = 1;
 
     static const wchar_t *const invalid_paths[] = {
         L"\\\\?\\relative\\bad.a78",
