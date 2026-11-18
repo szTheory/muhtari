@@ -1,16 +1,20 @@
 ---
 gsd_state_version: "1.0"
 milestone: v11.0
-milestone_name: Windows extended-path support
-status: planning
-last_updated: "2026-11-18"
+current_phase: 28
+current_phase_name: Measured milestone tune-up
+status: executing
+stopped_at: 28-01 execution complete; summary and phase verification pending
+last_updated: "2026-11-18T15:30:27Z"
 last_activity: 2026-11-18
+last_activity_desc: Phase 28 configured local CI passed; execution closeout in progress
+state_head: "0be908edfb4c6bc582b382affb4293bc6064502e"
 progress:
   total_phases: 2
   completed_phases: 0
-  total_plans: 0
+  total_plans: 1
   completed_plans: 0
-  percent: 0
+milestone_name: Windows extended-path support
 ---
 
 # Project State
@@ -18,14 +22,14 @@ progress:
 ## Project Reference
 See [PROJECT.md](PROJECT.md) (updated 2026-11-18), [ROADMAP.md](ROADMAP.md), [REQUIREMENTS.md](REQUIREMENTS.md), [product roadmap](PRODUCT-ROADMAP.md) and [selected scope review](research/next-milestone/2026-11-18-future-roadmap-review.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** Phase 28 — measured milestone tune-up; v11.0 Windows extended-path support is selected.
+**Current focus:** Phase 28 — Measured milestone tune-up
 
 ## Current Position
 
-Phase: 28 of 29 (Measured milestone tune-up; first of 2 v11.0 phases)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-11-18 — v11.0 roadmap written; all six requirements mapped once to Phases 28–29.
+Phase: 28 (Measured milestone tune-up) — PLAN EXECUTION COMPLETE
+Plan: 1 of 1
+Status: Summary closeout; phase verification pending
+Last activity: 2026-11-18 — Configured local CI passed; automated phase verification remains next
 
 Progress: [░░░░░░░░░░] 0%
 

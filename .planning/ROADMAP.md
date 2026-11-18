@@ -41,7 +41,7 @@ and rejected alternatives are in the [successor review](research/next-milestone/
 **Plans**: 1 plan
 
 Plans:
-- [ ] 28-01-PLAN.md — Qualify current delivery evidence, preserve pipeline contracts and reconcile only the shared register counts.
+- [x] 28-01-PLAN.md — Qualify current delivery evidence, preserve pipeline contracts and reconcile only the shared register counts; execution complete, phase verification pending.
 
 This is the recurring [SEED-007 tune-up](seeds/SEED-007-milestone-tune-up.md),
 including [SEED-009's proportional maintenance review](seeds/SEED-009-proportional-maintenance-review.md).
@@ -89,7 +89,7 @@ validation phase. Ship the final phase before milestone archival.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 28. Measured milestone tune-up | 0/TBD | Not started | - |
+| 28. Measured milestone tune-up | 1/1 | Execution complete; verification pending | - |
 | 29. Windows extended-path runner support | 0/TBD | Not started | - |
 
 **Coverage:** All 6 v1 requirements map to exactly one phase; none are unmapped.
