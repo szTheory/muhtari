@@ -1,32 +1,55 @@
 Start with the user's current objective, real consumers, existing implementation,
-binding contracts and settled decisions. Use relevant project memory before new
-research; sanity-check it where age or new evidence matters. Adapt roles to the
-problem rather than enumerating unrelated specialties.
+binding contracts and settled decisions. Read relevant project memory, lessons,
+recent verification receipts and bottleneck notes before researching; sanity-check
+old conclusions when new evidence could change them. Identify the actual decisions
+and acceptance boundaries, then select only the stakeholder and technical lenses
+that can affect them. Do not enumerate unrelated specialties for the appearance of
+coverage.
 
-Fan out independent questions with explicit ownership and disjoint deliverables.
-For emulator work, relevant lenses can include players/host ergonomics, hardware
-and state correctness, API/lifecycle design, security/provenance, deterministic
-verification, performance/resource costs and build/release operations. Read-only
-reviews can run together. Do not implement or plan downstream phases prematurely.
+For each decision, fan out independent questions with explicit ownership and
+disjoint deliverables. Use subagents when authorized, assigning focused research,
+implementation-pattern, or adversarial-review questions rather than duplicating the
+same broad prompt. Keep read-only research parallel; keep one owner for shared
+planning state. Expand breadth and depth while another angle could change scope,
+ordering, acceptance, or the recommendation. Stop at diminishing returns when new
+angles only repeat established evidence or add speculative detail. Do not implement
+or plan downstream phases prematurely.
 
-For each decision, identify the objective, consumer and concrete failure boundary.
-Compare doing nothing, the smallest useful change and the strongest alternative.
-Explain meaningful pros/cons, examples, patterns, footguns, migration/maintenance
-cost and the evidence that could overturn the recommendation. Separate reproduced
-facts, source-backed facts, inference and unknowns. Prefer reputable primary
-sources, record exact links or source revisions, and observe the project's source
-licensing restrictions even for research.
+For each decision, state the objective, consumer, constraints and concrete failure
+boundary. Compare doing nothing, the smallest useful change and the strongest
+meaningful alternative; add other options only when they expose a real tradeoff.
+Explain pros, cons, concrete examples, established patterns, anti-patterns,
+footguns, security and operational effects, migration and maintenance cost, and
+what evidence could overturn the recommendation. Adapt the lenses to the domain:
+for example, emulator work may need player/host ergonomics, hardware and state
+correctness, API/lifecycle design, security/provenance, deterministic verification,
+performance/resource costs and build/release operations; UI work may need user
+expectations, accessibility, visual hierarchy, interaction design and platform
+conventions. Consider neighboring products or ecosystems when they provide
+transferable evidence, not as a substitute for this project's constraints.
+
+Separate locally reproduced facts, primary-source claims, inference and unknowns.
+Prefer authoritative specifications, official documentation and original research;
+record exact links or source revisions, evidence date/class and confidence. Browse
+when current or niche facts could change the decision. Observe the project's source
+licensing restrictions even for research, and never inspect prohibited source code.
+Run an adversarial pass against the leading recommendation: try to falsify its
+assumptions, expose boundary cases, identify the strongest counterexample, and say
+what evidence would change the choice. Synthesize the results into one coherent
+recommendation per decision and check that recommendations do not conflict with one
+another.
 
 Follow the dependency ladder: remove the need, reuse this repository, use standard
-facilities, use the platform, then write the minimum. A small understood permissive
-copy can be better than another dependency; retain its provenance and update duty.
-Use a package when substantial present correctness/security work justifies its
-runtime/build/transitive scope. A flatter tree alone is not a safety proof.
+facilities, use the platform, then write the minimum. Prefer a small, auditable
+permissive copy over a new dependency when it solves the same real need; retain its
+provenance and update duty. Add a package when its present correctness or security
+benefit justifies its runtime, build and transitive scope. A flatter dependency tree
+reduces exposure and maintenance, but is not by itself a safety proof.
 
-Synthesize one coherent recommendation per decision and across interactions. Run
-one adversarial pass. Expand only when unresolved evidence could change scope,
-ordering or acceptance, then stop at diminishing returns. Prefer present player
-and host outcomes over speculative infrastructure or unrequested abstractions.
+Prefer present player and host outcomes over speculative infrastructure or
+unrequested abstractions. Expand only while unresolved evidence could change scope,
+ordering, acceptance or the synthesized recommendation; then stop at diminishing
+returns.
 
 Persist high-signal findings, rationale, source confidence, rejected alternatives
 and revisit triggers in the milestone's research/summary and rolling roadmap.
@@ -35,7 +58,10 @@ hypotheses. Refresh Immediate / Next / Mid / Long horizons at each milestone
 start and close, keeping later horizons directional rather than execution plans.
 
 Recommend acceptance observable by existing tests, hosts or CI, with commands,
-exit statuses and run URLs. Preserve required contracts and advisory distinctions.
+exit statuses and run URLs. Before a long suite or process, identify a cheap
+applicable consistency or sanity check using the current implementation, lessons
+and recent bottlenecks; keep its fault detection and required coverage intact.
+Preserve required contracts and advisory distinctions.
 The owner verifies nothing by default; voluntary gameplay feedback is scoped
 evidence, not recurring UAT. Keep ROMs, firmware and personal results local.
 

@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <wchar.h>
 #include "../../runner/clock.h"
+#include "../../runner/png.h"
 #ifdef _WIN32
 #include <io.h>
 #include <windows.h>
@@ -39,7 +40,6 @@ enum {
 };
 static int io_fault;
 static int output_fault;
-static int png_temp_fd = -1;
 #ifdef _WIN32
 static int identity_fault;
 #endif
@@ -53,6 +53,7 @@ static unsigned trace_error_reports, trace_alloc_reports, trace_stderr_reports;
 static unsigned trace_missing_reports, trace_detach_checks;
 static const char *expected_usage_reason;
 static unsigned matching_usage_reasons;
+static unsigned png_row_calls;
 static int assert_trace_detached;
 static unsigned change_at, request_at, stop_at, request_during_write;
 static int change_every;
@@ -133,11 +134,13 @@ static int test_close(FILE *f);
 #if defined(__GNUC__) && !defined(__clang__) && __GNUC__ >= 11
 /* Keep the wrapper pair intact: partial inlining otherwise exposes libc's
    fclose ownership annotation to calls of test_close. */
+static int test_close(FILE *f) __attribute__((noipa));
 #ifndef _WIN32
 static FILE *test_fopen(const char *path, const char *mode)
-    __attribute__((malloc, malloc(test_close, 1)));
+    __attribute__((malloc, malloc(test_close, 1), noipa));
 #endif
-static FILE *test_fdopen(int fd, const char *mode) __attribute__((malloc, malloc(test_close, 1)));
+static FILE *test_fdopen(int fd, const char *mode)
+    __attribute__((malloc, malloc(test_close, 1), noipa));
 #endif
 
 #ifndef _WIN32
@@ -164,15 +167,6 @@ static FILE *test_fdopen(int fd, const char *mode)
 #else
     FILE *f = fdopen(fd, mode);
 #endif
-    if (f != NULL && fd == png_temp_fd && io_fault == PNG_WRITE) {
-        (void)setvbuf(f, NULL, _IONBF, 0);
-#ifdef _WIN32
-        (void)_close(fd);
-#else
-        (void)close(fd);
-#endif
-        png_temp_fd = -1;
-    }
     if (is_state) {
         state_fd = -1;
         state_stream = f;
@@ -245,8 +239,6 @@ static int test_open(const char *path, int flags, ...)
         va_end(args);
     }
     int fd = open(path, flags, (mode_t)mode);
-    if (fd >= 0 && creating && io_fault == PNG_WRITE)
-        png_temp_fd = fd;
     if (fd >= 0 && !creating && strstr(path, ".state") != NULL)
         state_fd = fd;
     return fd;
@@ -268,8 +260,6 @@ static int test_wopen(const wchar_t *path, int flags, ...)
         va_end(args);
     }
     int fd = _wopen(path, flags, mode);
-    if (fd >= 0 && creating && io_fault == PNG_WRITE)
-        png_temp_fd = fd;
     if (fd >= 0 && !creating && wcsstr(path, L".state") != NULL)
         state_fd = fd;
     return fd;
@@ -365,6 +355,7 @@ static muhtari_status test_frame(muhtari *m, muhtari_frame *io)
 }
 int runner_entry(int argc, char **argv);
 void test_destroy(muhtari *m);
+static int test_png_row(muhtari__png *png, const uint8_t *rgb);
 #define main runner_entry
 #define malloc test_malloc
 #define fprintf test_print
@@ -391,9 +382,11 @@ void test_destroy(muhtari *m);
 #endif
 #define muhtari_run_frame test_frame
 #define muhtari_destroy test_destroy
+#define muhtari__png_row test_png_row
 #include "../../runner/main.c"
 #undef muhtari_destroy
 #undef muhtari_run_frame
+#undef muhtari__png_row
 #undef rename
 #undef MoveFileExW
 #undef GetFileInformationByHandleEx
@@ -417,6 +410,15 @@ void test_destroy(muhtari *m);
 #undef main
 #undef malloc
 #undef fprintf
+
+static int test_png_row(muhtari__png *png, const uint8_t *rgb)
+{
+    /* Fail after a complete row so the runner must discard a partial PNG temp. */
+    if (io_fault == PNG_WRITE && png_row_calls++ == 1u)
+        return -1;
+    return muhtari__png_row(png, rgb);
+}
+
 #include "../../runner/stop.c"
 
 void test_destroy(muhtari *m)
@@ -565,7 +567,7 @@ static void trace_reset_io(void)
     time_trace_write = 0;
     trace_write_started_ns = trace_write_finished_ns = 0u;
     frames_run = temp_opens = replacements = create_calls = 0u;
-    png_temp_fd = -1;
+    png_row_calls = 0u;
     trace_error_reports = trace_alloc_reports = trace_stderr_reports = 0u;
     trace_missing_reports = trace_detach_checks = 0u;
     assert_trace_detached = 1;

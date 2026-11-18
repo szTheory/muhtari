@@ -1479,7 +1479,7 @@ static int runner_windows_path_supported(const char *path)
         return 1;
     wchar_t *wide = runner_path_to_wide(path);
     if (wide == NULL)
-        return 0;
+        return errno == ENOMEM ? -1 : 0;
     int supported = 1;
     if (runner_windows_extended_prefix(wide)) {
         size_t length = wcslen(wide);
@@ -1522,16 +1522,19 @@ static int runner_path_arguments_supported(const options *opt)
     const char *paths[] = {opt->probe,   opt->rom,        opt->movie,    opt->bios,
                            opt->hsc_rom, opt->load_state, opt->save_dir, opt->trace_file};
     for (size_t i = 0u; i < sizeof paths / sizeof paths[0]; i++) {
-        if (!runner_windows_path_supported(paths[i]))
-            return 0;
+        int supported = runner_windows_path_supported(paths[i]);
+        if (supported != 1)
+            return supported;
     }
     for (uint32_t i = 0u; i < opt->dump_count; i++) {
-        if (!runner_windows_path_supported(opt->dump_paths[i]))
-            return 0;
+        int supported = runner_windows_path_supported(opt->dump_paths[i]);
+        if (supported != 1)
+            return supported;
     }
     for (uint32_t i = 0u; i < opt->state_output_count; i++) {
-        if (!runner_windows_path_supported(opt->state_outputs[i].path))
-            return 0;
+        int supported = runner_windows_path_supported(opt->state_outputs[i].path);
+        if (supported != 1)
+            return supported;
     }
 #else
     (void)opt;
@@ -2797,8 +2800,14 @@ static int runner_main_utf8(int argc, char **argv)
     options opt;
     memset(&opt, 0, sizeof opt);
     int status = parse_options(argc, argv, &opt);
-    if (status == MUHTARI__EXIT_DONE && !opt.printed && !runner_path_arguments_supported(&opt)) {
-        status = usage("unsupported or malformed Windows path namespace");
+    if (status == MUHTARI__EXIT_DONE && !opt.printed) {
+        int paths_supported = runner_path_arguments_supported(&opt);
+        if (paths_supported < 0) {
+            fprintf(stderr, "muhtari-run: out of memory validating Windows path arguments\n");
+            status = MUHTARI__EXIT_FAILURE;
+        } else if (paths_supported == 0) {
+            status = usage("unsupported or malformed Windows path namespace");
+        }
     }
     if (status == MUHTARI__EXIT_DONE && opt.probe != NULL) {
         status = probe(opt.probe);

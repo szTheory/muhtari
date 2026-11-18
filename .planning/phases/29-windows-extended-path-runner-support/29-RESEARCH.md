@@ -230,6 +230,9 @@ Omitted because workflow.nyquist_validation is explicitly false. [VERIFIED: .pla
 - [Microsoft: GetFinalPathNameByHandleW](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getfinalpathnamebyhandlew)
 - [Microsoft: MoveFileExW](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-movefileexw)
 - [Microsoft: New-SmbShare](https://learn.microsoft.com/en-us/powershell/module/smbshare/new-smbshare?view=windowsserver2025-ps)
+- [Microsoft: GetVolumeInformationW](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getvolumeinformationw)
+- [Microsoft: GetVolumePathNameW](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getvolumepathnamew)
+- [Microsoft: System Error Codes 0-499](https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-)
 - [GitHub: Hosted runners reference](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)
 - [CMake: execute_process](https://cmake.org/cmake/help/latest/command/execute_process.html)
 
@@ -244,6 +247,14 @@ Omitted because workflow.nyquist_validation is explicitly false. [VERIFIED: .pla
 - tests/runner/tests.cmake:1887-1939; tests/inventory/ci.txt:691-712
 - .github/workflows/ci.yml:156-190
 - docs/runner.md:252-255
+
+## Implementation Follow-up (2026-11-18)
+
+The first current-milestone Windows run, [44406933777](https://github.com/szTheory/muhtari/actions/runs/44406933777), reached the x64 path process test and failed while asking `GetVolumeInformationW` about the deep test directory (Win32 error 144). Microsoft specifies that this API takes a volume root path with a trailing backslash; the system error table defines 144 as `ERROR_DIR_NOT_ROOT`. Its documentation also says SMB 3.0 does not support volume-management functions. The test now derives the actual local drive root for drive measurements and uses the share's backing local drive to get its filesystem/component limit while still executing the component-boundary operations over the actual UNC share. The run's initial failures remain recorded in `29-ACCEPTANCE.md`; no UNC result is accepted from this correction until the Windows jobs pass.
+
+The same x64 run exposed an allocation-fault classification bug: a failed Windows UTF-8-to-UTF-16 allocation was reported as malformed path usage. Path validation now preserves a third outcome for allocation failure so the runner returns its runtime failure status. The Windows test harness also closed a CRT file descriptor while keeping its owning `FILE *` open to induce a PNG-write failure; the new test seam fails after one real PNG row instead, leaving a partial sibling temporary for the runner's cleanup and preservation behavior to handle. This test-harness diagnosis is inferred from the run log ending during that case; the next Windows CI run must confirm it.
+
+Primary evidence: [Microsoft GetVolumeInformationW](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getvolumeinformationw) requires a volume root with a trailing slash and states that SMB 3.0 does not support volume-management functions; [Microsoft GetVolumePathNameW](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getvolumepathnamew) resolves the mount point containing a local path, including mounted folders; [Microsoft System Error Codes](https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-) identifies 144 as `ERROR_DIR_NOT_ROOT`.
 
 ## Metadata
 

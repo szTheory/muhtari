@@ -561,15 +561,35 @@ static int no_temporary_files(const wchar_t *destination)
     return !found && error == ERROR_NO_MORE_FILES;
 }
 
-static int query_volume_limits(const wchar_t *namespace_root, DWORD *maximum_component,
+static wchar_t *local_volume_root(const wchar_t *local_path)
+{
+    const DWORD capacity = 32768u;
+    wchar_t *volume_root = (wchar_t *)malloc((size_t)capacity * sizeof *volume_root);
+    if (volume_root == NULL) {
+        SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+        return NULL;
+    }
+    if (!GetVolumePathNameW(local_path, volume_root, capacity)) {
+        DWORD error = GetLastError();
+        free(volume_root);
+        SetLastError(error);
+        return NULL;
+    }
+    size_t length = wcslen(volume_root);
+    if (length == 0u || volume_root[length - 1u] != L'\\') {
+        free(volume_root);
+        SetLastError(ERROR_INVALID_NAME);
+        return NULL;
+    }
+    return volume_root;
+}
+
+static int query_volume_limits(const wchar_t *local_path, DWORD *maximum_component,
                                wchar_t *filesystem_name, DWORD filesystem_name_capacity)
 {
-    size_t root_length = wcslen(namespace_root);
-    wchar_t *volume_root =
-        wide_concat(namespace_root,
-                    root_length != 0u && namespace_root[root_length - 1u] == L'\\' ? L"" : L"\\");
+    wchar_t *volume_root = local_volume_root(local_path);
     if (volume_root == NULL) {
-        fwprintf(stderr, L"windows path test: allocating the volume root failed\n");
+        report_last_error(L"locating the containing local volume");
         return 0;
     }
     BOOL queried = GetVolumeInformationW(volume_root, NULL, 0u, NULL, maximum_component, NULL,
@@ -917,7 +937,8 @@ static int run_namespace(const wchar_t *runner, const wchar_t *work_dir, const w
             failed = 1;
         }
         if (!failed &&
-            !query_volume_limits(namespace_root, &maximum_component, filesystem_name,
+            !query_volume_limits(wcscmp(name, L"drive") == 0 ? namespace_root : work_dir,
+                                 &maximum_component, filesystem_name,
                                  (DWORD)(sizeof filesystem_name / sizeof filesystem_name[0])))
             failed = 1;
     }
@@ -1074,13 +1095,15 @@ static int run_namespace(const wchar_t *runner, const wchar_t *work_dir, const w
             if (temp_length > longest_temp_candidate)
                 longest_temp_candidate = temp_length;
         }
-        printf("windows-paths: namespace=%ls filesystem=%ls max_component_utf16=%lu "
+        printf("windows-paths: namespace=%ls filesystem=%ls filesystem_limit_source=%ls "
+               "max_component_utf16=%lu "
                "test_dir_utf16=%zu max_path_exceeded=yes max_final_output_utf16=%zu "
                "battery_sav_utf16=%zu battery_temp_candidate_max_utf16=%zu "
                "all_temp_candidate_max_utf16=%zu suffix_case=literal_trailing_dot_and_space\n",
-               name, filesystem_name, (unsigned long)maximum_component, wcslen(test_dir),
-               longest_output, wcslen(battery), sibling_temp_candidate_max_length(battery),
-               longest_temp_candidate);
+               name, filesystem_name,
+               wcscmp(name, L"drive") == 0 ? L"namespace-drive" : L"SMB-backing-drive",
+               (unsigned long)maximum_component, wcslen(test_dir), longest_output, wcslen(battery),
+               sibling_temp_candidate_max_length(battery), longest_temp_candidate);
     }
 
     for (size_t i = 0u; i < sizeof owned / sizeof owned[0]; i++) {
