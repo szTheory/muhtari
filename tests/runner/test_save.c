@@ -134,9 +134,10 @@ static int test_close(FILE *f);
 /* Keep the wrapper pair intact: partial inlining otherwise exposes libc's
    fclose ownership annotation to calls of test_close. */
 #ifndef _WIN32
-static FILE *test_fopen(const char *path, const char *mode) __attribute__((malloc(test_close, 1)));
+static FILE *test_fopen(const char *path, const char *mode)
+    __attribute__((malloc, malloc(test_close, 1)));
 #endif
-static FILE *test_fdopen(int fd, const char *mode) __attribute__((malloc(test_close, 1)));
+static FILE *test_fdopen(int fd, const char *mode) __attribute__((malloc, malloc(test_close, 1)));
 #endif
 
 #ifndef _WIN32
@@ -985,7 +986,7 @@ static void trace_matrix_bad_case(char *directory, char *rom, char *target,
 
 static void trace_path_role_matrix(const char *directory, const char *rom)
 {
-    char directory_copy[1024], rom_copy[1024], target[1024];
+    char directory_copy[1024], rom_copy[1024], target[2048];
     int dir_n = snprintf(directory_copy, sizeof directory_copy, "%s", directory);
     int rom_n = snprintf(rom_copy, sizeof rom_copy, "%s", rom);
     CHECK(dir_n > 0 && (size_t)dir_n < sizeof directory_copy);
