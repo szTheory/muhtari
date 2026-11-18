@@ -247,7 +247,7 @@ filling the limit is complete; one more matching event marks truncation, without
 
 The default is 65,536 events (1.5 MiB); hard maximum: 131,072 (3 MiB), 149 bytes per line and
 19,529,920 bytes per file. The source-derived PAL maximum is 81,416 events including instruction/interrupt
-overshoot; [trace bounds](../.planning/phases/27-headless-developer-trace/27-BOUNDS.md) derives these limits.
+overshoot; [trace bounds](../.planning/milestones/v10.0-phases/27-headless-developer-trace/27-BOUNDS.md) derives these limits.
 
 Only a successful selected frame is atomically published. Frame refusal or output failure preserves an old
 file or creates none. Failures exit `1` (a refusal may exit `77`); invalid arguments exit `2`;

@@ -17,28 +17,24 @@ that any host can embed.
 ## Current State
 
 Muhtari is not finished as a universal Atari 7800 compatibility project. It has
-three deliverables: a C library, a headless runner and a libretro core. The
-latest published package is v0.16.0 and includes the selected XM/YM2151 profile
-and Souper mapper. The unpublished v0.15.0 draft and tag remain unchanged at the
-source that failed its Wasm32 test.
+three deliverables: a C library, a headless runner and a libretro core. Stable
+v0.17.0 is the latest published package; it includes the selected XM/YM2151
+profile, Souper mapper and the v10.0 headless developer trace. The unpublished
+v0.15.0 draft and tag remain unchanged at the source that failed its Wasm32 test.
 
 The pinned title list has 204 entries: 201 are untested and 3 are skipped. Nine
 older Playstead/frontend requirements remain unresolved. GameDrive and BupChip
 streamed audio are not implemented. The public [status page](../docs/status.md)
 summarizes these limits.
 
-Phase 27's original v10.0 trace verification passed 15/15, including the
-source-qualified Linux instruction-cost receipt. Its report is stale for the
-current source after the compiler portability follow-up. Draft PR 77's existing
-CI and Release workflows failed in GCC `mismatched-dealloc` and Clang
-`realpath` build lanes. The causes are fixed locally, and the full local CI
-workflow passes; the current commits have no hosted acceptance yet. The
-historical receipts remain in the [Phase 27 verification](phases/27-headless-developer-trace/27-VERIFICATION.md)
-and [CI evidence](phases/27-headless-developer-trace/27-CI-EVIDENCE.md); the
-local diagnosis and commands are in the [compiler debug record](debug/resolved/ci-gcc-clang-build.md).
-v10.0 remains unshipped until current-source verification and authorized hosted
-CI/Release gates pass. The one-push observation scope is spent and does not
-authorize another remote action.
+The v10.0 trace and its GCC `mismatched-dealloc` and Clang `realpath` portability
+fixes are merged. Stable v0.17.0 was published from main source
+`333380b118f62b618cb6df29cdfdd4388efc7b22`. Exact-source main CI and Release
+passed in [run 44214206424](https://github.com/szTheory/muhtari/actions/runs/44214206424)
+and [run 44214206354](https://github.com/szTheory/muhtari/actions/runs/44214206354).
+The release's install-line check passed. Phase and release evidence remains in
+the [v10.0 audit](milestones/v10.0-MILESTONE-AUDIT.md) and archived
+[Phase 27 records](milestones/v10.0-phases/27-headless-developer-trace/).
 
 ### Completion standard
 
@@ -55,7 +51,7 @@ workflow. Its audit, exact-source release evidence and final main CI are recorde
 in [the v9.0 audit](milestones/v9.0-MILESTONE-AUDIT.md), [the archive](milestones/v9.0-ROADMAP.md)
 and [the phase release receipt](milestones/v9.0-phases/25-publish-the-corrected-souper-mapper/25-RELEASE.md).
 
-## Latest Shipped Milestone: v9.0 Souper package publication
+## Prior Shipped Milestone: v9.0 Souper package publication
 
 **Goal:** Publish the corrected, already-merged Souper mapper without changing
 emulator behavior or moving the failed v0.15.0 tag.
@@ -84,45 +80,42 @@ passed. Post-archive state PR #76 is current source
 passed and Release [43866551368](https://github.com/szTheory/muhtari/actions/runs/43866551368)
 passed its target check with package work skipped because no new release was
 created. The exact-source baseline and bounded no-change disposition are in the
-[Phase 26 tune-up report](phases/26-measured-milestone-tune-up/26-TUNEUP.md).
+[Phase 26 tune-up report](milestones/v10.0-phases/26-measured-milestone-tune-up/26-TUNEUP.md).
 
 **Closeout:** `verified_closeout`; no new artifact was acknowledged. Fifty
 items acknowledged by earlier milestone closes remain suppressed with their
 original verdicts. See [STATE.md](STATE.md) and the v9.0 audit.
 
-**Current milestone:** v10.0 Headless developer trace. The scope selection and
-strongest player-centered alternative are in the
-[rolling product roadmap](PRODUCT-ROADMAP.md).
-
-## Current Milestone: v10.0 Headless developer trace
+## Latest Shipped Milestone: v10.0 Headless developer trace
 
 **Goal:** Help homebrew authors and Muhtari maintainers diagnose Atari 7800
 instruction and bus timing through an opt-in, reproducible headless trace.
 
-**Target features:**
-- Select trace output by frame and address range, with instruction/bus event,
-  tick, beam position and CPU context.
-- Bound trace output and verify its numeric event order using generated or
-  owned test inputs.
-- Prove observation leaves frame and state results unchanged and preserves the
-  hooks-off performance gate.
-- Document the runner workflow and trace record format.
+**Outcome:** `muhtari-run` emits bounded, versioned JSONL instruction and bus
+events for a selected frame and inclusive address range. Numeric trace records,
+trace-on/off state equality, output fault controls and the hooks-off performance
+gate passed. The trace stays runner-private and preserves public API 8, ABI 1
+and existing state formats. A conservative Windows extended-path refusal edge
+is deferred; it does not create an overwrite risk.
 
-**Compatibility boundary:** Keep the feature in `muhtari-run`, preserve public
-API 8 and existing state formats, and keep callbacks/output host-owned. If a
-public observer API or version change proves necessary, stop for an explicit
-compatibility decision before expanding the scope. No GUI, host/device code,
-interactive debugger, symbols, patching, scripting, Python/Gymnasium, BK2 or
-AI/TAS work is selected. The milestone review and evidence are in
-[the v9.0 successor review](research/next-milestone/2026-11-16-future-roadmap-review.md).
+**Delivery:** PR [#77](https://github.com/szTheory/muhtari/pull/77) merged the
+trace and compiler portability fixes. Release PR
+[#78](https://github.com/szTheory/muhtari/pull/78) published stable
+[v0.17.0](https://github.com/szTheory/muhtari/releases/tag/v0.17.0) from source
+`333380b118f62b618cb6df29cdfdd4388efc7b22`. Main CI
+[44214206424](https://github.com/szTheory/muhtari/actions/runs/44214206424) and
+Release [44214206354](https://github.com/szTheory/muhtari/actions/runs/44214206354)
+passed on that exact source, including latest-install verification.
 
-**Phase result and delivery status:** The trace implementation and all seven
-TRACE requirements passed phase verification at 15/15. The Linux cost receipt
-from [CI run 44123425194](https://github.com/szTheory/muhtari/actions/runs/44123425194)
-reports stable repeated samples and a raw delta of 900 against the 9,600 limit.
-Required hosted build lanes failed on the previous PR head. The compiler fixes
-and full local CI pass on this branch; v10.0 remains unshipped until the updated
-head receives authorized hosted CI and Release acceptance.
+**Closeout:** `override_closeout`; both phase reports pass and all eight v1
+requirements are satisfied. The audit records one non-blocking Windows path
+limitation and two newly acknowledged items; 50 earlier acknowledgments carry
+forward with their original verdicts. See the [v10.0 audit](milestones/v10.0-MILESTONE-AUDIT.md),
+[archive](milestones/v10.0-ROADMAP.md) and [STATE.md](STATE.md).
+
+**Next:** No successor milestone is selected. The current recommendation and
+strongest alternative are in the [rolling product roadmap](PRODUCT-ROADMAP.md);
+run `$gsd-new-milestone` to choose the next scope.
 
 The 201 unevaluated titles and 3 skipped titles are not known failures. The
 nine deferred v3.0 requirements and original Phase 12/14 stops remain open.
@@ -286,8 +279,8 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 ### Validated
 
-- ✓ TUNE-14: source-qualified release/CI evidence review, cheap preflights and a bounded no-change efficiency disposition — Phase 26; [tune-up report](phases/26-measured-milestone-tune-up/26-TUNEUP.md).
-- ✓ TRACE-01–07: deterministic bounded runner trace, compatibility and documentation, including the accepted Linux hooks-off cost receipt — Phase 27; [verification](phases/27-headless-developer-trace/27-VERIFICATION.md). The verified milestone scope is not yet shipped.
+- ✓ TUNE-14: source-qualified release/CI evidence review, cheap preflights and a bounded no-change efficiency disposition — Phase 26; [tune-up report](milestones/v10.0-phases/26-measured-milestone-tune-up/26-TUNEUP.md).
+- ✓ TRACE-01–07: deterministic bounded runner trace, compatibility and documentation, including the accepted Linux hooks-off cost receipt — Phase 27; [verification](milestones/v10.0-phases/27-headless-developer-trace/27-VERIFICATION.md). Shipped as v0.17.0 in v10.0.
 
 - ✓ TUNE-13, REL-01, REL-02, DOC-01: published corrected Souper support as v0.16.0, preserved the v0.15.0 draft/tag, passed source-bound release and latest-install gates, and updated availability docs — v9.0, Phase 25; [audit](milestones/v9.0-MILESTONE-AUDIT.md).
 
@@ -339,7 +332,7 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 ### Active
 
-No additional product requirements are selected. v10.0's phase acceptance is complete, but delivery remains held by the failed required CI/Release lanes above.
+No additional product requirements are selected. v10.0 is shipped; the next milestone scope has not yet been chosen.
 
 The nine unmet v3.0 requirements remain deferred with their original evidence
 and stops; see the [v3.0 archive](milestones/v3.0-MILESTONE-AUDIT.md).
@@ -427,7 +420,7 @@ and stops; see the [v3.0 archive](milestones/v3.0-MILESTONE-AUDIT.md).
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Keep the headless trace runner-only and accept its cost claim only from an exact-source Linux receipt | Preserves API 8/state compatibility and prevents local comparator controls from standing in for Cachegrind evidence | ✓ Phase 27: all TRACE-01–07 passed verification; receipt delta 900/9,600 on run 44123425194; separate CI/Release build failures still block shipping |
+| Keep the headless trace runner-only and accept its cost claim only from an exact-source Linux receipt | Preserves API 8/state compatibility and prevents local comparator controls from standing in for Cachegrind evidence | ✓ v10.0: TRACE-01–07 passed; receipt delta 900/9,600 on run 44123425194; compiler fixes merged and stable v0.17.0 passed exact-source CI/Release |
 | Publish corrected Souper through the ordinary feature-release path and keep CI coverage unchanged | A pre-1.0 feature release follows the minor-bump rule; release evidence supports no pipeline change | ✓ v9.0 Phase 25: stable v0.16.0 passed exact-source release and latest-install checks; v0.15.0 stayed unchanged; see [audit](milestones/v9.0-MILESTONE-AUDIT.md) |
 | Keep GameDrive implementation at NO-GO until its profile, independent PCM oracle and finite resource facts are qualified | Prevents guessed stream timing/framing or unlicensed fixture reuse from becoming public media/API/state behavior | ✓ v8.0 Phase 24: all four consumer and compatibility consequences recorded; no implementation or public compatibility change selected |
 | Calibrate only the macOS x64 PAL BIOS predicate deadline from completed matching-lane samples | The exact-source timeout and missing quality artifact share one failed matrix result; measured samples justify a bounded correction without reducing coverage | ✓ v8.0 Phase 23 follow-up: 12 complete suite samples, 5.88 s maximum, 12 s registered timeout; exact-main CI green |
@@ -494,4 +487,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-17 after Phase 27 verification*
+*Last updated: 2026-11-17 after v10.0 closeout*

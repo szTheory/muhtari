@@ -2,34 +2,34 @@
 gsd_state_version: "1.0"
 milestone: v10.0
 milestone_name: Headless developer trace
-current_phase: 27
-status: completed
-stopped_at: Phase 27 complete — all phases complete
-last_updated: "2026-11-17T20:16:28Z"
+status: Awaiting next milestone
+stopped_at: v10.0 complete — awaiting successor selection
+last_updated: "2026-11-18T03:01:37Z"
 last_activity: 2026-11-17
-last_activity_desc: Phase 27 compiler fixes passed exact-head hosted CI, Release, and Nightly
-state_head: 4dba7cfd982108e291736bc5e34c01f90edf025a
+last_activity_desc: Milestone v10.0 completed and archived
+state_head: 333380b118f62b618cb6df29cdfdd4388efc7b22
 progress:
   total_phases: 2
   completed_phases: 2
   total_plans: 8
   completed_plans: 8
   percent: 100
+current_phase: null
 ---
 
 # Project State
 
 ## Project Reference
-See [PROJECT.md](PROJECT.md) (updated 2026-11-17), [ROADMAP.md](ROADMAP.md), [REQUIREMENTS.md](REQUIREMENTS.md), [product roadmap](PRODUCT-ROADMAP.md) and [successor review](research/next-milestone/2026-11-16-future-roadmap-review.md).
+See [PROJECT.md](PROJECT.md) (updated 2026-11-17), [ROADMAP.md](ROADMAP.md), [v10.0 requirements archive](milestones/v10.0-REQUIREMENTS.md), [product roadmap](PRODUCT-ROADMAP.md) and [successor review](research/next-milestone/2026-11-16-future-roadmap-review.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** Phase 27 — Headless developer trace
+**Current focus:** Planning the next milestone
 
 ## Current Position
-Phase: 27
-Plan: Not started
-Status: All phases complete
-Last activity: 2026-11-17 — Phase 27 complete
-Progress: [██████████] 100%
+
+Phase: Milestone v10.0 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-11-17 — Milestone v10.0 completed and archived
 
 ## Performance Metrics
 Phase 26 completed three documentation-only plans; product implementation timing and trend are not yet measured.
@@ -37,7 +37,7 @@ Phase 26 completed three documentation-only plans; product implementation timing
 |-------|-------|-------|----------|
 | 26 | 3 | - | - |
 | 27 | 5 | - | - |
-Prior milestone metrics and exact-source receipts remain in the [v9.0 archive](milestones/v9.0-ROADMAP.md), [audit](milestones/v9.0-MILESTONE-AUDIT.md) and earlier milestone records. Stable v0.16.0 is published; failed v0.15.0 remains unchanged and unpublished.
+Prior milestone metrics and exact-source receipts remain in the [v9.0 archive](milestones/v9.0-ROADMAP.md), [audit](milestones/v9.0-MILESTONE-AUDIT.md) and earlier milestone records. Stable v0.17.0 is published; the failed v0.15.0 tag and draft remain unchanged and unpublished.
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
@@ -46,6 +46,7 @@ Prior milestone metrics and exact-source receipts remain in the [v9.0 archive](m
 | Phase 27-headless-developer-trace P02 | 83min | 3 tasks | 9 files |
 | Phase 27 P03 | 48min | 2 tasks | 13 files |
 | Phase 27 P04 | 107min | 2 tasks | 1 files |
+| Phase 27 P06 | 80min | 3 tasks | 5 files |
 
 ## Accumulated Context
 ### Decisions
@@ -62,20 +63,22 @@ Prior milestone metrics and exact-source receipts remain in the [v9.0 archive](m
 - [Phase 27]: Exact-source Windows x64 and arm64 path receipts established TRACE-03; the Linux receipt later established TRACE-06.
 - [Phase 27]: Keep the Phase 27 acceptance matrix unchanged until all required exact-source receipts pass; the receipts now pass, including hosted CI, Release, and Nightly on current head `4dba7cfd`.
 - [Phase 27]: One initial CI run does not support a topology, timeout, or cache change.
-- [Phase 27 gap closure]: Commit `2160cfd` contains the local trace-limit comparison correction; its earlier source-authorization claim remains unverified. The owner later authorized one push of reviewed descendant `4630288` to draft PR 77 and a bounded observation, which produced the accepted TRACE-06 receipt. That one-use remote scope is spent and authorizes no further push or run.
+- [Phase 27 gap closure]: Commit `2160cfd` contains the local trace-limit comparison correction; its earlier source-authorization claim remains unverified. The owner later authorized one push of reviewed descendant `4630288` to draft PR 77 and a bounded observation, which produced the accepted TRACE-06 receipt. That original one-push observation cap is spent and does not authorize a further PR 77 update or retry. The later PR 77 merge and v0.17.0 release are recorded in the v10.0 delivery evidence.
 
 ### Pending Todos
 Inherited todos and optional seeds retain their dispositions; no unrelated work is promoted. Root remains canonical and older dirty worktrees require content/ancestry reconciliation before import. See [workspace reconciliation](debug/workspace-reconciliation-2026-11-10.md).
 ### Blockers/Concerns
-- Phase 26 is complete. Phase 27 is verified 15/15, and TRACE-06 is complete from the accepted Linux perf receipt. The GCC `-Werror=mismatched-dealloc` and Clang undeclared `realpath` failures were fixed and the exact current head `4dba7cfd` passed hosted CI, Release, and Nightly. Release's temporary rehearsal prerelease and tag were cleaned up; no stable release was published. Draft PR 77 remains open and must stay unmerged under its explicit instruction. The single-push observation scope is spent; no further push, dispatch, rerun, merge, or stable release is authorized. Plan 27-05's earlier failed observation remains terminal. Nine deferred v3.0 requirements remain open: TUNE-06/07, PLAY-01–04 and FRONT-02–04. The denied Phase 12 diagnostic-app request must not be retried; original Phase 12/14 host/remote stops, spent allowances, expired windows and no-retry limits remain binding.
+- v10.0 is complete and shipped as stable v0.17.0. PR #77 and release PR #78 merged; main CI [44214206424](https://github.com/szTheory/muhtari/actions/runs/44214206424) and Release [44214206354](https://github.com/szTheory/muhtari/actions/runs/44214206354) passed on source `333380b118f62b618cb6df29cdfdd4388efc7b22`. The two newly acknowledged v10.0 items are recorded as deferred; 50 earlier acknowledgments retain their original verdicts. Nine deferred v3.0 requirements remain open: TUNE-06/07, PLAY-01–04 and FRONT-02–04. The denied Phase 12 diagnostic-app request must not be retried; original Phase 12/14 host/remote stops, spent allowances, expired windows and no-retry limits remain binding.
 - GameDrive implementation remains NO-GO pending authoritative timing/framing, a lawful independent exact-profile PCM oracle and finite resource facts. Preserve the [v8.0 qualification](milestones/v8.0-phases/24-qualify-the-gamedrive-audio-contract/24-QUALIFICATION.md); no unlicensed sample/encoder source is permitted.
 - Phase 21's spec-less probe remains unresolved and nonblocking. No retail, physical hardware or owner-device acceptance is inferred. LibFuturo owns browser/host routes; Playstead owns player integration; twentysixhundo owns Atari 2600.
 
 ## Deferred Items
-At v9.0 close, no new items were acknowledged; 50 items acknowledged at earlier closes remain suppressed with their original verdicts. At v8.0 close, no new items were acknowledged; at v7.0 close, one debug-session item was newly acknowledged and 49 were carried forward. Its `unknown` verdict is preserved; suppression expires if the artifact changes. Earlier disclosures from v3.0 and prior closes remain below.
+At v10.0 close, two items were newly acknowledged; 50 items acknowledged at earlier closes remain suppressed with their original verdicts. At v9.0 close, no new items were acknowledged. At v8.0 close, no new items were acknowledged; at v7.0 close, one debug-session item was newly acknowledged and 49 were carried forward. Its `unknown` verdict is preserved; suppression expires if the artifact changes. Earlier disclosures from v3.0 and prior closes remain below.
 
 | Category | Item | Status | Deferred At | Milestone |
 |----------|------|--------|-------------|-----------|
+| todos | 2026-11-17-define-extended-windows-output-path-support.md (presence-only) | acknowledged | 2026-11-17 | v10.0 |
+| deferred_items | 27/deferred-items.md: - The optional GSD WINDOWS deviation append was rejected because the existing register's frontmatter counts disagree with its entries: frontmatter reports 17 open, 0 waived, 35 fixed, 52 total; entries count 16 open, 0 waived, 36 fixed, 52 total. Reconcile the shared register before the next append. No repair was attempted because the count mismatch predates and is outside this plan. | acknowledged | 2026-11-17 | v10.0 |
 | debug_sessions | workspace-reconciliation-2026-11-13 | unknown | 2026-11-14 | v7.0 |
 | debug_sessions | phase12-capture-live-proposal | executed-terminal-failure | 2026-11-10 | v3.0 |
 | debug_sessions | phase12-diagnostics-live-proposal | executed-terminal-failure | 2026-11-10 | v3.0 |
@@ -116,8 +119,12 @@ At v9.0 close, no new items were acknowledged; 50 items acknowledged at earlier 
 | deferred_items | 11/deferred-items.md: Found in plan 04  - `diag.bankset_tracer` and `diag.bankset` both write `build/ci/tests/diag/bankset/32n/` and carry no resource lock, so under `ctest -j` one can read the other's `pixels.png` half written (`bankset --bankset-png ... png: chunk longer than the file`). Seen once in `cmake --workflow --preset ci`; passes alone and on rerun. Not caused by plan 04; a fix is a `RESOURCE_LOCK` or a separate output directory in `tests/diag/tests.cmake`.  Resolved in the gap round: `diag.bankset` now writes `build/<preset>/tests/diag/bankset-matrix/` and `diag.bankset_tracer` keeps `build/<preset>/tests/diag/bankset/`, so the two tests share no output file. | acknowledged; historical disposition retained | 2026-10-29 | v2.0 |
 
 ## Session Continuity
-Last session: 2026-11-17T20:16:28Z
-Stopped at: Phase 27 compiler recovery verified on exact hosted head; PR 77 remains explicitly unmerged
+Last session: 2026-11-18T03:01:37Z
+Stopped at: v10.0 milestone archived; next milestone scope not selected
 Resume file: None
 
-Next action: Phase 27 compiler fixes and local/hosted verification are complete. PR 77 remains open and draft under its explicit unmerged instruction. The bounded push/observation scope is spent; no further push or rerun is authorized in this work, and no merge or stable release is authorized while the PR instruction remains. No GSD command is currently valid; the owner acts next only to grant a new scope or change that boundary.
+Next action: select the successor scope with `$gsd-new-milestone` after the archive PR is merged with green main CI.
+
+## Operator Next Steps
+
+- Start the next milestone with $gsd-new-milestone

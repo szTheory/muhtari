@@ -1071,3 +1071,10 @@ compiler failure; reapplying removes it. GCC 15.3 and Apple Clang 21 targeting
 Linux/glibc establish local compiler evidence, not an exact hosted-toolchain pass.
 Commands, exits and limits: [compiler debug session](debug/ci-gcc-clang-build.md).
 Run URL: N/A-local.
+
+
+## Keep active-plan counts current when a superseded plan is replaced (2026-11-17)
+
+**MU-GSD-029:** During v10.0 closeout, Phase 27 listed five active plans (`27-01`–`27-04` and `27-06`), but its progress line still said 4/5 after the cost-receipt plan completed. The earlier partial `27-05` plan was explicitly superseded and excluded from the active set. `query roadmap.analyze` reported five plans and five summaries; correcting the displayed count to 5/5 and rerunning the query confirmed both phases complete and eight milestone plans total. Keep superseded plans for history, but update progress from the active plan set before archiving.
+
+Evidence: `git diff --check` and `query roadmap.analyze` exited 0 before archival; the archived Phase 27 roadmap now shows 5/5. Run URL: N/A-local.
