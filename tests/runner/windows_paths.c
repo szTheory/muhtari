@@ -561,6 +561,68 @@ static int no_temporary_files(const wchar_t *destination)
     return !found && error == ERROR_NO_MORE_FILES;
 }
 
+static int query_volume_limits(const wchar_t *namespace_root, DWORD *maximum_component,
+                               wchar_t *filesystem_name, DWORD filesystem_name_capacity)
+{
+    size_t root_length = wcslen(namespace_root);
+    wchar_t *volume_root =
+        wide_concat(namespace_root,
+                    root_length != 0u && namespace_root[root_length - 1u] == L'\\' ? L"" : L"\\");
+    if (volume_root == NULL) {
+        fwprintf(stderr, L"windows path test: allocating the volume root failed\n");
+        return 0;
+    }
+    BOOL queried = GetVolumeInformationW(volume_root, NULL, 0u, NULL, maximum_component, NULL,
+                                         filesystem_name, filesystem_name_capacity);
+    free(volume_root);
+    if (!queried) {
+        report_last_error(L"querying the namespace filesystem limits");
+        return 0;
+    }
+    if (*maximum_component < 8u ||
+        *maximum_component > sizeof(((WIN32_FIND_DATAW *)0)->cFileName) / sizeof(wchar_t) - 5u) {
+        fwprintf(stderr, L"windows path test: unreasonable filesystem component limit\n");
+        return 0;
+    }
+    return 1;
+}
+
+static size_t sibling_temp_candidate_max_length(const wchar_t *destination)
+{
+    size_t length = wcslen(destination);
+    /* The sibling suffix is .tmp.<DWORD PID>.<attempt 0..31>. */
+    return length <= SIZE_MAX - 18u ? length + 18u : SIZE_MAX;
+}
+
+static int file_starts_with(const wchar_t *path, const void *expected, DWORD expected_length)
+{
+    HANDLE file =
+        CreateFileW(path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                    NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (file == INVALID_HANDLE_VALUE)
+        return 0;
+    unsigned char buffer[64];
+    DWORD read = 0u;
+    int matches = expected_length <= (DWORD)sizeof buffer &&
+                  ReadFile(file, buffer, expected_length, &read, NULL) != 0 &&
+                  read == expected_length && memcmp(buffer, expected, expected_length) == 0;
+    (void)CloseHandle(file);
+    return matches;
+}
+
+static int file_has_exact_size(const wchar_t *path, LONGLONG expected_size)
+{
+    HANDLE file =
+        CreateFileW(path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                    NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (file == INVALID_HANDLE_VALUE)
+        return 0;
+    LARGE_INTEGER size;
+    int matches = GetFileSizeEx(file, &size) != 0 && size.QuadPart == expected_size;
+    (void)CloseHandle(file);
+    return matches;
+}
+
 static int blocked_replace_case(const wchar_t *runner, const wchar_t *work_dir,
                                 const wchar_t *log_name, const wchar_t *destination,
                                 const wchar_t *const *arguments, size_t argument_count,
@@ -644,26 +706,9 @@ static int rejected_component_output(const wchar_t *runner, const wchar_t *work_
 }
 
 static int verify_component_boundaries(const wchar_t *runner, const wchar_t *work_dir,
-                                       const wchar_t *test_dir, const wchar_t *namespace_root,
-                                       const wchar_t *image, const wchar_t *log_name)
+                                       const wchar_t *test_dir, const wchar_t *image,
+                                       const wchar_t *log_name, DWORD maximum_component)
 {
-    DWORD maximum_component = 0u;
-    size_t root_length = wcslen(namespace_root);
-    wchar_t *volume_root =
-        wide_concat(namespace_root,
-                    root_length != 0u && namespace_root[root_length - 1u] == L'\\' ? L"" : L"\\");
-    if (volume_root == NULL) {
-        fwprintf(stderr, L"windows path test: allocating the volume root failed\n");
-        return 1;
-    }
-    BOOL queried =
-        GetVolumeInformationW(volume_root, NULL, 0u, NULL, &maximum_component, NULL, NULL, 0u);
-    free(volume_root);
-    if (!queried || maximum_component < 8u ||
-        maximum_component > sizeof(((WIN32_FIND_DATAW *)0)->cFileName) / sizeof(wchar_t) - 5u) {
-        report_last_error(L"querying the namespace component limit");
-        return 1;
-    }
     size_t length = (size_t)maximum_component;
     wchar_t *png_leaf = (wchar_t *)malloc((length + 1u) * sizeof *png_leaf);
     wchar_t *rom_leaf = (wchar_t *)malloc((length + 1u) * sizeof *rom_leaf);
@@ -821,6 +866,8 @@ static int run_namespace(const wchar_t *runner, const wchar_t *work_dir, const w
     size_t directory_count = 0u;
     wchar_t *test_dir = deep_test_directory(
         namespace_root, directories, sizeof directories / sizeof directories[0], &directory_count);
+    DWORD maximum_component = 0u;
+    wchar_t filesystem_name[MAX_PATH + 1u] = {0};
     wchar_t *image = test_dir != NULL ? wide_join(test_dir, L"image-\x732B.a78") : NULL;
     wchar_t *state = test_dir != NULL ? wide_join(test_dir, L"state-\x732B. ") : NULL;
     wchar_t *state_output =
@@ -869,6 +916,10 @@ static int run_namespace(const wchar_t *runner, const wchar_t *work_dir, const w
             fwprintf(stderr, L"windows path test: generated path did not exceed MAX_PATH\n");
             failed = 1;
         }
+        if (!failed &&
+            !query_volume_limits(namespace_root, &maximum_component, filesystem_name,
+                                 (DWORD)(sizeof filesystem_name / sizeof filesystem_name[0])))
+            failed = 1;
     }
     if (!failed && (!CopyFileW(fixture, image, FALSE) || !CopyFileW(simple_source, simple, FALSE) ||
                     !CopyFileW(bios_source, bios, FALSE) ||
@@ -964,12 +1015,25 @@ static int run_namespace(const wchar_t *runner, const wchar_t *work_dir, const w
             }
         }
     }
+    static const unsigned char png_signature[] = {0x89u, 'P', 'N', 'G', 0x0Du, 0x0Au, 0x1Au, 0x0Au};
+    static const char trace_header[] = "{\"format\":\"muhtari-trace\"";
+    if (!failed && (!file_starts_with(png, png_signature, (DWORD)sizeof png_signature) ||
+                    !file_starts_with(trace, trace_header, (DWORD)(sizeof trace_header - 1u)) ||
+                    !file_has_exact_size(battery, 32768))) {
+        fwprintf(stderr, L"windows path test: PNG, trace, or derived SaveKey bytes did not match "
+                         L"the expected output\n");
+        failed = 1;
+    }
+    if (!failed && load_state(runner, work_dir, image, state_output, log_name) != 0) {
+        fwprintf(stderr, L"windows path test: generated state output could not be loaded\n");
+        failed = 1;
+    }
     if (!failed && verify_output_aliases(runner, work_dir, namespace_root, fixture, name, log_name))
         failed = 1;
     if (!failed && verify_blocked_outputs(runner, work_dir, test_dir, image, name, log_name))
         failed = 1;
     if (!failed &&
-        verify_component_boundaries(runner, work_dir, test_dir, namespace_root, image, log_name))
+        verify_component_boundaries(runner, work_dir, test_dir, image, log_name, maximum_component))
         failed = 1;
 
     static const wchar_t *const invalid_paths[] = {
@@ -995,6 +1059,27 @@ static int run_namespace(const wchar_t *runner, const wchar_t *work_dir, const w
             fwprintf(stderr, L"windows path test: malformed namespace changed an output\n");
             failed = 1;
         }
+    }
+
+    if (!failed) {
+        const wchar_t *outputs[] = {state_output, trace, png, battery};
+        size_t longest_output = 0u;
+        size_t longest_temp_candidate = 0u;
+        for (size_t i = 0u; i < sizeof outputs / sizeof outputs[0]; i++) {
+            size_t output_length = wcslen(outputs[i]);
+            size_t temp_length = sibling_temp_candidate_max_length(outputs[i]);
+            if (output_length > longest_output)
+                longest_output = output_length;
+            if (temp_length > longest_temp_candidate)
+                longest_temp_candidate = temp_length;
+        }
+        printf("windows-paths: namespace=%ls filesystem=%ls max_component_utf16=%lu "
+               "test_dir_utf16=%zu max_path_exceeded=yes max_final_output_utf16=%zu "
+               "battery_sav_utf16=%zu battery_temp_candidate_max_utf16=%zu "
+               "all_temp_candidate_max_utf16=%zu suffix_case=literal_trailing_dot_and_space\n",
+               name, filesystem_name, (unsigned long)maximum_component, wcslen(test_dir),
+               longest_output, wcslen(battery), sibling_temp_candidate_max_length(battery),
+               longest_temp_candidate);
     }
 
     for (size_t i = 0u; i < sizeof owned / sizeof owned[0]; i++) {

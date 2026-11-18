@@ -112,3 +112,5 @@ foreach ($failure in $cleanupFailures) {
 if ($null -ne $primaryFailure -or $cleanupFailures.Count -ne 0) {
   exit 1
 }
+
+[Console]::WriteLine('Windows SMB share lifecycle: create/read/write/remove verified.')
