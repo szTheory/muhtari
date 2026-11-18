@@ -37,7 +37,7 @@ Progress: [░░░░░░░░░░] 0%
 Phase 28 P01 completed in 39 min. This single-plan sample does not establish an execution trend.
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 28 | 2/2 | 54 min | 27 min |
+| 28 | 2/2 | 57 min | 28.5 min |
 | 29 | 0/TBD | - | - |
 Prior metrics and source-qualified receipts remain in the [v10.0 archive](milestones/v10.0-ROADMAP.md), [audit](milestones/v10.0-MILESTONE-AUDIT.md) and phase summaries. Stable v0.17.0 is published; the failed v0.15.0 tag and draft remain unchanged and unpublished.
 **Per-Plan Metrics:**
@@ -45,7 +45,7 @@ Prior metrics and source-qualified receipts remain in the [v10.0 archive](milest
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 28 P01 | 39 min | 2 tasks | 5 files |
-| Phase 28 P02 | 15 min | 2 tasks | 2 files |
+| Phase 28 P02 | 18 min | 2 tasks | 2 files |
 
 ## Accumulated Context
 ### Decisions

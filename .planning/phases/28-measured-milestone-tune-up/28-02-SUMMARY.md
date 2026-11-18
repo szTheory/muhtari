@@ -10,7 +10,7 @@ provides:
   - Evidence-derived Phase 28 performance metrics with Phase 29 still unstarted
 affects: [phase-28-verification]
 actuals:
-  tokens: 1521
+  tokens: 1522
   tasks: 2
   commits: 2
 commits: 2
@@ -37,7 +37,7 @@ coverage:
         ref: "Focused Node state assertion; gsd_run query validate.consistency --raw; gsd_run query roadmap.analyze --raw; git diff --check HEAD -- .planning; all N/A-local"
         status: pass
     human_judgment: false
-duration: 15 min
+duration: 18 min
 completed: 2026-11-18
 status: complete
 ---
@@ -48,9 +48,9 @@ status: complete
 
 ## Performance
 
-- **Duration:** 15 min
+- **Duration:** 18 min
 - **Started:** 2026-11-18T16:33:35Z
-- **Completed:** 2026-11-18T16:48:52Z
+- **Completed:** 2026-11-18T16:51:42Z
 - **Tasks:** 2
 - **Files modified or created:** 2
 
