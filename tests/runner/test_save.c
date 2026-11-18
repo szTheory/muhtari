@@ -33,10 +33,14 @@ enum {
     SAVE_REPLACE,
     STATE_READ,
     STATE_CLOSE,
-    TRACE_ALLOC
+    TRACE_ALLOC,
+    IDENTITY_QUERY
 };
 static int io_fault;
 static int output_fault;
+#ifdef _WIN32
+static int identity_fault;
+#endif
 static int track_runner_allocations;
 static size_t largest_runner_allocation;
 static int time_trace_write;
@@ -291,6 +295,15 @@ static BOOL test_move(LPCWSTR from, LPCWSTR to, DWORD flags)
         replaced_at[replacements - 1u] = frames_run;
     return io_fault == SAVE_REPLACE ? FALSE : MoveFileExW(from, to, flags);
 }
+static BOOL test_file_information(HANDLE handle, FILE_INFO_BY_HANDLE_CLASS info_class,
+                                  LPVOID information, DWORD size)
+{
+    if (info_class == FileIdInfo && io_fault == IDENTITY_QUERY) {
+        SetLastError(ERROR_ACCESS_DENIED);
+        return FALSE;
+    }
+    return GetFileInformationByHandleEx(handle, info_class, information, size);
+}
 #endif
 static muhtari_status test_frame(muhtari *m, muhtari_frame *io)
 {
@@ -348,6 +361,7 @@ void test_destroy(muhtari *m);
 #define rename test_rename
 #ifdef _WIN32
 #define MoveFileExW test_move
+#define GetFileInformationByHandleEx test_file_information
 #endif
 #define muhtari_run_frame test_frame
 #define muhtari_destroy test_destroy
@@ -356,6 +370,7 @@ void test_destroy(muhtari *m);
 #undef muhtari_run_frame
 #undef rename
 #undef MoveFileExW
+#undef GetFileInformationByHandleEx
 #undef _commit
 #undef fsync
 #undef fclose
@@ -804,6 +819,193 @@ static void trace_arguments(const char *dir)
 #undef TRACE_BAD
 }
 
+enum trace_matrix_input {
+    TRACE_MATRIX_NO_INPUT = -1,
+    TRACE_MATRIX_ROM,
+    TRACE_MATRIX_MOVIE,
+    TRACE_MATRIX_BIOS,
+    TRACE_MATRIX_FIRMWARE,
+    TRACE_MATRIX_STATE
+};
+
+enum trace_matrix_output {
+    TRACE_MATRIX_FRAME,
+    TRACE_MATRIX_STATE_OUTPUT,
+    TRACE_MATRIX_TRACE,
+    TRACE_MATRIX_BATTERY
+};
+
+static void trace_matrix_append_output(char **argv, unsigned *argc, enum trace_matrix_output role,
+                                       char *target, char *directory, unsigned frame,
+                                       char *specification, size_t capacity)
+{
+    int n;
+    switch (role) {
+    case TRACE_MATRIX_FRAME:
+        n = snprintf(specification, capacity, "%u:%s", frame, target);
+        CHECK(n > 0 && (size_t)n < capacity);
+        argv[(*argc)++] = "--dump-frame";
+        argv[(*argc)++] = specification;
+        break;
+    case TRACE_MATRIX_STATE_OUTPUT:
+        n = snprintf(specification, capacity, "%u:%s", frame, target);
+        CHECK(n > 0 && (size_t)n < capacity);
+        argv[(*argc)++] = "--state-at-frame";
+        argv[(*argc)++] = specification;
+        break;
+    case TRACE_MATRIX_TRACE:
+        argv[(*argc)++] = "--trace";
+        argv[(*argc)++] = target;
+        argv[(*argc)++] = "--trace-frame";
+        argv[(*argc)++] = "1";
+        argv[(*argc)++] = "--trace-range";
+        argv[(*argc)++] = "0:65535";
+        break;
+    case TRACE_MATRIX_BATTERY:
+        argv[(*argc)++] = "--save-dir";
+        argv[(*argc)++] = directory;
+        break;
+    }
+}
+
+static void trace_matrix_prepare_input(const char *target, enum trace_matrix_input role)
+{
+    static const char movie_text[] = "muhtari-movie 1\nport1 savekey\nport2 none\n|||...BB|\n";
+    uint8_t image[4096];
+    memset(image, 0x64, sizeof image);
+    switch (role) {
+    case TRACE_MATRIX_ROM:
+        cartridge(target, 1u, 0);
+        break;
+    case TRACE_MATRIX_MOVIE:
+        write_bytes(target, movie_text, sizeof movie_text - 1u);
+        break;
+    case TRACE_MATRIX_BIOS:
+    case TRACE_MATRIX_FIRMWARE:
+    case TRACE_MATRIX_STATE:
+        write_bytes(target, image, sizeof image);
+        break;
+    case TRACE_MATRIX_NO_INPUT:
+        break;
+    }
+}
+
+static void trace_matrix_bad_case(char *directory, char *rom, char *target,
+                                  enum trace_matrix_input input_role,
+                                  enum trace_matrix_output first_output, int second_output,
+                                  unsigned frames)
+{
+    char first_specification[1200], second_specification[1200];
+    char *argv[32];
+    unsigned argc = 0u;
+    argv[argc++] = "muhtari-run";
+    argv[argc++] = "--frames";
+    argv[argc++] = frames == 2u ? "2" : "1";
+    trace_matrix_append_output(argv, &argc, first_output, target, directory, 1u,
+                               first_specification, sizeof first_specification);
+    if (second_output >= 0) {
+        trace_matrix_append_output(argv, &argc, (enum trace_matrix_output)second_output, target,
+                                   directory, 2u, second_specification,
+                                   sizeof second_specification);
+    }
+    switch (input_role) {
+    case TRACE_MATRIX_ROM:
+        argv[argc++] = target;
+        break;
+    case TRACE_MATRIX_MOVIE:
+        argv[argc++] = "--movie";
+        argv[argc++] = target;
+        argv[argc++] = rom;
+        break;
+    case TRACE_MATRIX_BIOS:
+        argv[argc++] = "--boot";
+        argv[argc++] = "bios";
+        argv[argc++] = "--bios";
+        argv[argc++] = target;
+        argv[argc++] = rom;
+        break;
+    case TRACE_MATRIX_FIRMWARE:
+        argv[argc++] = "--hsc";
+        argv[argc++] = "on";
+        argv[argc++] = "--hsc-rom";
+        argv[argc++] = target;
+        argv[argc++] = rom;
+        break;
+    case TRACE_MATRIX_STATE:
+        argv[argc++] = "--load-state";
+        argv[argc++] = target;
+        argv[argc++] = rom;
+        break;
+    case TRACE_MATRIX_NO_INPUT:
+        argv[argc++] = rom;
+        break;
+    }
+    trace_expect_usage((int)argc, argv, target);
+}
+
+static void trace_path_role_matrix(const char *directory, const char *rom)
+{
+    char directory_copy[1024], rom_copy[1024], target[1024];
+    int dir_n = snprintf(directory_copy, sizeof directory_copy, "%s", directory);
+    int rom_n = snprintf(rom_copy, sizeof rom_copy, "%s", rom);
+    CHECK(dir_n > 0 && (size_t)dir_n < sizeof directory_copy);
+    CHECK(rom_n > 0 && (size_t)rom_n < sizeof rom_copy);
+    (void)snprintf(target, sizeof target, "%s/option.sav", directory_copy);
+    static const enum trace_matrix_output outputs[] = {
+        TRACE_MATRIX_FRAME, TRACE_MATRIX_STATE_OUTPUT, TRACE_MATRIX_TRACE, TRACE_MATRIX_BATTERY};
+    static const enum trace_matrix_input inputs[] = {TRACE_MATRIX_ROM, TRACE_MATRIX_MOVIE,
+                                                     TRACE_MATRIX_BIOS, TRACE_MATRIX_FIRMWARE,
+                                                     TRACE_MATRIX_STATE};
+    uint8_t sentinel[32];
+    memset(sentinel, 0xA7, sizeof sentinel);
+
+    for (size_t i = 0u; i < sizeof inputs / sizeof inputs[0]; i++) {
+        for (size_t j = 0u; j < sizeof outputs / sizeof outputs[0]; j++) {
+            trace_matrix_prepare_input(target, inputs[i]);
+            trace_reset_io();
+            trace_matrix_bad_case(directory_copy, rom_copy, target, inputs[i], outputs[j], -1, 1u);
+        }
+    }
+    for (size_t i = 0u; i < sizeof outputs / sizeof outputs[0]; i++) {
+        for (size_t j = i + 1u; j < sizeof outputs / sizeof outputs[0]; j++) {
+            write_bytes(target, sentinel, sizeof sentinel);
+            trace_reset_io();
+            trace_matrix_bad_case(directory_copy, rom_copy, target, TRACE_MATRIX_NO_INPUT,
+                                  outputs[i], (int)outputs[j], 1u);
+        }
+    }
+
+    write_bytes(target, sentinel, sizeof sentinel);
+    trace_reset_io();
+    trace_matrix_bad_case(directory_copy, rom_copy, target, TRACE_MATRIX_NO_INPUT,
+                          TRACE_MATRIX_FRAME, TRACE_MATRIX_FRAME, 2u);
+    write_bytes(target, sentinel, sizeof sentinel);
+    trace_reset_io();
+    trace_matrix_bad_case(directory_copy, rom_copy, target, TRACE_MATRIX_NO_INPUT,
+                          TRACE_MATRIX_STATE_OUTPUT, TRACE_MATRIX_STATE_OUTPUT, 2u);
+
+#ifdef _WIN32
+    (void)snprintf(target, sizeof target, "%s/identity-unresolved.png", directory_copy);
+    (void)remove(target);
+    char frame[1200];
+    (void)snprintf(frame, sizeof frame, "1:%s", target);
+    char *args[] = {"muhtari-run", "--frames", "1", "--dump-frame", frame, rom_copy};
+    uint8_t before[8192], after[8192];
+    size_t before_n = 0u, after_n = 0u;
+    CHECK_EQ_U64(trace_snapshot(rom_copy, before, sizeof before, &before_n), 0u);
+    trace_reset_io();
+    io_fault = IDENTITY_QUERY;
+    CHECK_EQ_U64(runner_entry((int)(sizeof args / sizeof args[0]), args), 1u);
+    io_fault = IO_OK;
+    CHECK_EQ_U64(frames_run, 0u);
+    CHECK_EQ_U64(trace_file_exists(target), 0u);
+    CHECK_EQ_U64(trace_snapshot(rom_copy, after, sizeof after, &after_n), 0u);
+    CHECK_EQ_U64(after_n, before_n);
+    if (after_n == before_n)
+        CHECK(memcmp(before, after, before_n) == 0);
+#endif
+}
+
 static void trace_paths(const char *dir, const char *junction_alias, const char *junction_target)
 {
     char rom[1024], trace[1024], movie[1024], bios[1024], firmware[1024], state[1024];
@@ -932,6 +1134,9 @@ static void trace_paths(const char *dir, const char *junction_alias, const char 
     if (link(rom, alias) == 0) {
         TRACE_BAD_PATH(alias, "--frames", "1", "--trace", alias, "--trace-frame", "1",
                        "--trace-range", "0:65535", rom);
+        (void)snprintf(state_point, sizeof state_point, "1:%s", alias);
+        TRACE_BAD_PATH(alias, "--frames", "1", "--dump-frame", state_point, rom);
+        cartridge(rom, 1u, 0);
         (void)remove(alias);
     } else {
         CHECK(0);
@@ -946,6 +1151,7 @@ static void trace_paths(const char *dir, const char *junction_alias, const char 
     (void)snprintf(trace, sizeof trace, "%s/subdir/../option.a78", dir);
     TRACE_BAD_PATH(trace, "--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range",
                    "0:65535", rom);
+    trace_path_role_matrix(dir, rom);
 #undef TRACE_BAD_PATH
 }
 
