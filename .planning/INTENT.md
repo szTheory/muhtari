@@ -55,6 +55,17 @@ for people evaluating or using the project. Keep it short and current. Link a
 maintained status page that says what is available, what remains, and what
 evidence would count as completion; refresh both when the project state changes.
 
+Owner direction, 2026-11-19: Muhtari is entering a maturity and usability stage.
+Keep its user jobs and personas grounded in current deliverables and dated
+consumer evidence; distinguish direct feedback from inference and preserve
+ownership boundaries. Each milestone should look for the largest concrete
+friction in how players, runner users, homebrew developers and library
+integrators get started. Improve the affected docs and comments as work proceeds:
+remove generic narration that does not explain intent, keep hardware claims
+sourced, and fix the highest-impact code or documentation debt found on those
+paths. Avoid a repository-wide style sweep, unsupported compatibility claims,
+and new host or device responsibilities.
+
 ## Retain useful understanding
 
 Maintain [rolling horizons](PRODUCT-ROADMAP.md) at every milestone start and close:

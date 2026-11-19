@@ -150,37 +150,50 @@ scripting, AI/TAS and browser/player work remain deferred or sibling-owned.
 Preserve the nine v3.0 requirements and the original Phase 12/14 host and
 remote stops.
 
-## Immediate — no next milestone is selected
+## Immediate — v12.0 first-use readiness
 
-v11.0 is shipped and archived. Preserve its current evidence and safety stops;
-do not reopen the v3.0 owner-host gaps, GameDrive NO-GO, or sibling-owned browser
-work as a shortcut to a new scope. The next milestone needs an explicit owner
-choice.
+Owner direction at the v11.0 close moved the next milestone toward a mature,
+approachable product. Recommend **v12.0 — First-use readiness**: maintain a
+current, evidence-labeled map of the people Muhtari serves and their jobs, then
+make the first successful use clear for its three deliverables: play a lawfully
+obtained game through RetroArch, run a cartridge with `muhtari-run`, and build a
+small C host against the library package. Keep the README concise, repair stale
+archive links, and verify examples against current source/package behavior.
+Clean comments and documentation debt in the files touched by these paths; do
+not turn this into an unbounded style rewrite or compatibility sweep.
+
+The strongest alternative is the finite gameplay replay candidate below. It has
+direct player value and reuses the movie and runner support, but no exact fixture
+with confirmed rights and an independent expected gameplay result is recorded.
+That is a promotion gate, not a reason to guess or acquire protected assets.
+Profile-first Windows ARM64 CI investigation remains lower priority: existing
+samples show duration but do not attribute it to a safe optimization.
+
+Preserve v11.0's receipts and the existing stops: do not reopen the nine v3.0
+owner-host gaps, denied Phase 12 request, spent Phase 14 host scope, GameDrive
+NO-GO, or sibling-owned browser work. See the [2026-11-19 first-use review](research/next-milestone/2026-11-19-first-use-readiness-review.md).
 
 ## Next — one finite gameplay replay scenario
 
-The preferred product outcome is a small, scenario-level gameplay replay using
-the existing movie and runner support. It should catch a player-visible
-regression in an actual in-game state or event while keeping the deliverable
-inside Muhtari's core/runner responsibilities. Do not turn the 201 unevaluated
-titles into a bug queue or use frame/audio hashes alone to claim broad
-compatibility.
+After v12.0, prefer a small, scenario-level gameplay replay using existing
+movie and runner support. It should catch a player-visible regression in an
+actual in-game state or event while staying inside Muhtari's core/runner
+responsibilities. Do not turn the 201 unevaluated titles into a bug queue or use
+frame/audio hashes alone to claim broad compatibility.
 
-This is a candidate, not a selected milestone: no exact named fixture is yet
-recorded together with its distribution/use rights and an independent expected
-gameplay result. Promote it only when those inputs are in hand and the bounded
-scenario can be reproduced without owner-host or real-hardware authority. The
-[2026-11-19 successor review](research/next-milestone/2026-11-19-successor-review.md)
-records the evidence, adversarial limits and minimum acceptance.
+Promote it only when one exact named fixture has documented distribution/use
+rights and an independent expected gameplay result, with region, device and
+bounded movie inputs. Acceptance must include pass/fault controls and run
+without owner-host or real-hardware authority. The [2026-11-19 successor
+review](research/next-milestone/2026-11-19-successor-review.md) records why that
+gate is currently open.
 
-The strongest alternative is a profile-first investigation of the Windows ARM64
-independent-base quality comparison. The latest two runs place that stage near
-25–27 minutes inside a 42–44 minute job, but current evidence has no per-test
-attribution. Keep reviewing every CI/Release run and use compatible `act`
-preflight as documented; do not schedule another general CI tune-up or change
-workflow structure until comparable measurements point to a safe, repeatable
-target. The [v11.0 audit](milestones/v11.0-MILESTONE-AUDIT.md#cicd-efficiency-review)
-has the current timings and coverage-preserving no-change result.
+The profile-first Windows ARM64 comparison remains a later candidate. Keep
+reviewing every CI/Release run and using compatible `act` preflight as
+documented; do not schedule another general CI tune-up or change workflow
+structure until comparable measurements isolate a safe, repeatable target. The
+[v11.0 audit](milestones/v11.0-MILESTONE-AUDIT.md#cicd-efficiency-review) has
+the current timings and coverage-preserving no-change result.
 
 ## Qualification gates and standing exclusions
 
@@ -304,6 +317,7 @@ example; reproduce sibling lessons locally before adopting them.
 | 2026-11-16 | Re-ranked and selected the successor after reviewing the owner's gameplay feedback and future-roadmap question | No player-blocking defect is established, GameDrive remains unqualified, and the pinned title count is not a bug queue. The owner selected one bounded headless trace slice from SEED-004 as a buildable developer capability; the strongest player-centered alternative remains a small lawful gameplay replay set with independent outcomes. Broader tool work still needs demonstrated users. |
 | 2026-11-18 | Reconciled the v10.0 archive, refreshed the successor recommendation and selected v11.0 | v10.0 shipped as v0.17.0 and PR #80 archived it. The trace exposed one safe but user-visible Windows path false-positive; the owner selected end-to-end explicit extended-path support and correction of the deferred-register counts during tune-up. A clear refusal was the lower-risk alternative. A finite gameplay set remains unready without named lawful inputs and independent outcomes. |
 | 2026-11-19 | Shipped and archived v11.0; refreshed the successor recommendation | v0.18.0, exact-source main CI/Release and latest-install passed. Windows ARM64 and its independent-base comparison are measured cost centers, but no per-test profile supports a safe shortcut. Prefer one lawful gameplay replay scenario when its fixture rights and independent outcome are qualified; otherwise keep scope unselected. |
+| 2026-11-19 | Selected v12.0 first-use readiness after the owner prioritized product maturity and approachable onboarding | Current source inspection found a README that stops at the test card, stale Phase 25 links, and persona horizons that predate the current product. Refresh user jobs and verify first-use paths for RetroArch, the runner and the installed C package; keep gameplay replay next until its rights/oracle gate closes. Mid/Long remain directional: accuracy and hardware need qualified sources/fixtures, while tools and ports need demonstrated users and measured budgets. |
 
 | 2026-11-10 | Completed the offline v4.0 core slice; retain ship and real-browser work as distinct next decisions | All five scoped requirements and integration flows passed locally; measured SDK results are explicitly headless and emulated. |
 
@@ -319,6 +333,11 @@ example; reproduce sibling lessons locally before adopting them.
 - SEED-003 accuracy, SEED-005 low-power ports and SEED-002/004 tooling keep their
   existing promotion triggers. SEED-006 is retired; Atari 2600 emulation belongs
   to `twentysixhundo`.
+- v12.0 addresses a bounded documentation debt: the README/status page contain
+  stale Phase 25 links, the player quick start stops at the test card, and the
+  persona/JTBD horizons need reconciliation with current deliverables. Keep
+  future comment and documentation cleanup tied to a concrete user journey or
+  correctness issue; do not create a catch-all style sweep.
 
 | 2026-11-10 | Promoted v5.0 downloadable Emscripten libretro packaging after successful v4.0 publication | Three specialist reviews and an adversarial synthesis identified the concrete CI-artifact-only gap; local package/release integrity preparation advances browser integrators without UI or renewed host authority. |
 
