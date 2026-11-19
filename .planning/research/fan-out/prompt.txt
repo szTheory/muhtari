@@ -1,3 +1,10 @@
+Apply this process to every `$gsd-discuss-phase`, including discussions run as
+part of an authorized autonomous milestone. For each real decision, explore the
+relevant specialist and stakeholder lenses broadly and deeply enough to test the
+recommendation; use independent subagents for questions that can change it, then
+stop when further angles only repeat evidence or add speculation. Adapt the roles
+to the project instead of using a fixed checklist.
+
 Start with the user's current objective, real consumers, existing implementation,
 binding contracts and settled decisions. Read relevant project memory, lessons,
 recent verification receipts and bottleneck notes before researching; sanity-check
