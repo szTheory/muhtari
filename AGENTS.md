@@ -47,10 +47,12 @@
 An Atari 7800 emulator core in C. This repository ships three things: a C library, a headless
 command-line runner (`muhtari-run`), and a libretro core. RetroArch or another host provides the window.
 
-Project state lives in `.planning/` (PROJECT.md, REQUIREMENTS.md, ROADMAP.md, STATE.md). Reference material
-with sources is indexed in `.planning/preparation/README.md`; open the file it points to before designing or
-building a subsystem. Settled choices are in `.planning/preparation/DECISIONS.md`; do not reopen one without new
-evidence.
+Project state lives in `.planning/`: PROJECT.md, ROADMAP.md and STATE.md persist
+between milestones; REQUIREMENTS.md is present for a selected active milestone,
+then archived under `milestones/` at closeout. Reference material with sources
+is indexed in `.planning/preparation/README.md`; open the file it points to
+before designing or building a subsystem. Settled choices are in
+`.planning/preparation/DECISIONS.md`; do not reopen one without new evidence.
 
 ## Rules
 
@@ -143,8 +145,11 @@ evidence.
    `gh pr merge --auto --squash` in a shell (never inside GSD command text), and confirm a CI run exists on the
    head commit; after the merge, confirm the release pull request is green. Whenever reviewing a running or
    completed CI/release run, inspect its queue, critical path, job durations and cancelled work for low-effort
-   efficiency gains. Preserve test/fault coverage and release evidence; require measured, multi-run evidence for
-   structural, timeout or cache changes, and record when the run supports no safe improvement.
+   efficiency gains. Run cheap relevant consistency checks before long work. Use GitHub `act` when a compatible
+   local preflight shortens feedback, and keep its evidence distinct from hosted platform, permission, OIDC,
+   artifact and release checks; see `docs/maintaining.md`. Preserve test/fault coverage and release evidence;
+   require measured, multi-run evidence for structural, timeout or cache changes, and record when the run supports
+   no safe improvement.
 10. **Evidence is a command, an exit status and a run URL**, never a committed log.
 11. **Lessons.** Before planning a phase or changing a subsystem, read relevant entries in `.planning/LESSONS.md`;
     record newly reproduced lessons there with evidence. Inbound lessons remain hypotheses until reproduced here.

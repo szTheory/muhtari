@@ -1,8 +1,8 @@
 ---
 title: "Product roadmap (rolling)"
-summary: "Completed / Next / Mid / Long direction for muhtari with evidence and promotion triggers."
+summary: "Completed / Immediate / Next / Mid / Long direction for muhtari with evidence and promotion triggers."
 read_when: "At every new-milestone and complete-milestone step, and when a finding changes priorities."
-updated: 2026-11-18
+updated: 2026-11-19
 ---
 
 # Product roadmap (rolling)
@@ -35,7 +35,7 @@ Post-archive state PR #76 established current source
 Release [43866551368](https://github.com/szTheory/muhtari/actions/runs/43866551368);
 the latter skipped package work because no new release was created. This
 publishes existing behavior; it adds no hardware claim or emulator feature. The
-[Phase 26 tune-up report](phases/26-measured-milestone-tune-up/26-TUNEUP.md)
+[Phase 26 tune-up report](milestones/v10.0-phases/26-measured-milestone-tune-up/26-TUNEUP.md)
 records current timings, the report-only Nightly cancellation and the bounded
 no-change decision.
 See the [v9.0 audit](milestones/v9.0-MILESTONE-AUDIT.md)
@@ -116,49 +116,73 @@ See the [v10.0 audit](milestones/v10.0-MILESTONE-AUDIT.md),
 [archive](milestones/v10.0-ROADMAP.md) and the
 [owner's closeout receipts](https://github.com/szTheory/muhtari/pull/80).
 
-### Selected — v11.0 Windows extended-path support
+### Completed — v11.0 Windows extended-path support
 
-Resolve the known muhtari-run Windows output-path limitation and reconcile the
-Phase 27 deferred-register count during the required measured tune-up.
-The current guard can treat two distinct outputs as aliases when one uses the
-explicit `\\?\` namespace and a name ends in a dot or space. It refuses before
-writing, so this is a usability limitation rather than an overwrite defect.
-The selected scope is to support the explicit local `\\?\` and UNC
-`\\?\UNC\` file namespaces end to end for runner paths, preserving their
-literal naming semantics while keeping collision checks and atomic output
-protections. Scope compatibility to the runner; do not change the public C API,
-serialized state, emulated behavior, or deliverables.
+v11.0 completed the measured delivery/maintenance tune-up, reconciled the
+Phase 27 deferred-register counts without changing verdicts, and shipped
+explicit absolute Windows drive and extended UNC path support throughout
+`muhtari-run`. Actual Windows x64 and ARM64 CI covered path identity, Unicode
+and literal names, successful I/O, collision refusal and output-failure
+preservation. Stable [v0.18.0](https://github.com/szTheory/muhtari/releases/tag/v0.18.0)
+shipped from `ac4ee132449f82848da1db493c428f78d463d6cd`; exact-source main CI
+[44606205865](https://github.com/szTheory/muhtari/actions/runs/44606205865),
+Release [44606205880](https://github.com/szTheory/muhtari/actions/runs/44606205880),
+all 20 assets and latest-install passed. The work preserves public API 8, ABI 1,
+serialized state, emulated behavior and the three deliverables. See the
+[audit](milestones/v11.0-MILESTONE-AUDIT.md), [requirements](milestones/v11.0-REQUIREMENTS.md)
+and [phase records](milestones/v11.0-phases/).
 
-This requires a Windows path/API audit, not just an exception to suffix
-trimming. The current runner uses narrow Windows path routines in its safety
-comparison. Microsoft documents that `\\?\` disables ordinary string
-parsing, `\\?\UNC\` represents extended UNC paths, and long paths require
-Unicode APIs; the specific file operations must be qualified. Require actual
-runner tests in Windows CI for distinct extended names, true aliases, collision
-refusal, and output replacement/failure behavior before documenting support.
-Do not claim arbitrary long-path support unless the complete argument, path,
-open and replace chain passes those controls. See the
-[updated successor review](research/next-milestone/2026-11-18-future-roadmap-review.md).
-
-The strongest lower-risk alternative was to preserve the current fail-closed
-behavior, reject both explicit namespaces with a clear early diagnostic, and
-limit v11.0 to the tune-up and ledger correction. The owner selected support
-because the carried follow-up identifies a concrete compatibility gap and the
-runner's input, collision and output paths can be qualified together in Windows
-CI.
+The CI review found Windows ARM64 to be the long pole, with its independent-base
+quality comparison taking about 26 minutes in the final main run. Queue delay
+was about ten seconds. The recent samples and absence of per-test timings do not
+support a safe coverage-preserving change to workflow structure, cache policy or
+deadlines. Cheap native checks ran before hosted acceptance; `act` parsed the
+workflow but stopped at its first-run image prompt before launching a container.
+See the [source-qualified CI/CD review](milestones/v11.0-MILESTONE-AUDIT.md#cicd-efficiency-review)
+and [maintainer runbook](../docs/maintaining.md#local-github-actions-preflight).
 
 Further feature returns are narrower after the shipped trace, but the project
 is not complete. Do not turn the 201 unevaluated pinned-title rows into a bug
-queue: unevaluated is unknown, and current owned samples mostly prove boot or
-model behavior. A finite gameplay replay set remains the strongest player-led
-future direction once named titles, lawful inputs and independent gameplay
-outcomes are identified. GameDrive remains NO-GO pending an authoritative
-stream profile, a lawful independent PCM oracle and finite resource facts.
-Broader tracing, scripting, AI/TAS and browser/player work remain deferred or
-sibling-owned. Preserve the nine v3.0 requirements and the original Phase 12/14
-host and remote stops.
+queue: untested is unknown, and current owned samples mostly prove boot or
+model behavior. GameDrive remains NO-GO pending an authoritative stream profile,
+a lawful independent PCM oracle and finite resource facts. Broader tracing,
+scripting, AI/TAS and browser/player work remain deferred or sibling-owned.
+Preserve the nine v3.0 requirements and the original Phase 12/14 host and
+remote stops.
 
-## Later — implementation only after qualification
+## Immediate — no next milestone is selected
+
+v11.0 is shipped and archived. Preserve its current evidence and safety stops;
+do not reopen the v3.0 owner-host gaps, GameDrive NO-GO, or sibling-owned browser
+work as a shortcut to a new scope. The next milestone needs an explicit owner
+choice.
+
+## Next — one finite gameplay replay scenario
+
+The preferred product outcome is a small, scenario-level gameplay replay using
+the existing movie and runner support. It should catch a player-visible
+regression in an actual in-game state or event while keeping the deliverable
+inside Muhtari's core/runner responsibilities. Do not turn the 201 unevaluated
+titles into a bug queue or use frame/audio hashes alone to claim broad
+compatibility.
+
+This is a candidate, not a selected milestone: no exact named fixture is yet
+recorded together with its distribution/use rights and an independent expected
+gameplay result. Promote it only when those inputs are in hand and the bounded
+scenario can be reproduced without owner-host or real-hardware authority. The
+[2026-11-19 successor review](research/next-milestone/2026-11-19-successor-review.md)
+records the evidence, adversarial limits and minimum acceptance.
+
+The strongest alternative is a profile-first investigation of the Windows ARM64
+independent-base quality comparison. The latest two runs place that stage near
+25–27 minutes inside a 42–44 minute job, but current evidence has no per-test
+attribution. Keep reviewing every CI/Release run and use compatible `act`
+preflight as documented; do not schedule another general CI tune-up or change
+workflow structure until comparable measurements point to a safe, repeatable
+target. The [v11.0 audit](milestones/v11.0-MILESTONE-AUDIT.md#cicd-efficiency-review)
+has the current timings and coverage-preserving no-change result.
+
+## Qualification gates and standing exclusions
 
 For an accuracy milestone, require one concrete title-blocking 7800 correction
 backed by a lawful discriminating input and an independent expected result. Do
@@ -240,7 +264,7 @@ Inspection sources in the sibling checkout: `docs/browser-host.md`,
 `.planning/workstreams/browser-host/MILESTONE-CONTEXT.md`. No sibling edits,
 builds, host runs or CI were performed.
 
-## Mid-term — measured accuracy and qualified hardware
+## Mid — measured accuracy and qualified hardware
 
 Broader hardware such as BupChip, composite filtering, or other boards follows
 only after source/license review, a bounded cost model, and a lawful acceptance
@@ -250,7 +274,7 @@ player gap can move forward sooner. Playstead-managed state history and exact
 Continue remain behind a supported host capture/load boundary and recovery
 policy.
 
-## Long-term — tools, emulator family and more devices
+## Long — tools, emulator family and more devices
 
 Beyond the shipped trace slice, inspection/debugger expansion,
 Python/AI environments, Lua on demand, full recording, BK2/TAS and speedrun
@@ -279,6 +303,7 @@ example; reproduce sibling lessons locally before adopting them.
 | 2026-11-16 | Shipped v9.0, archived it, and reconciled the current main baseline | Exact-source CI 43801428495 and Release 43801428444 passed for v0.16.0. Archive PR #75 receipts 43854355858/43854356086 and current PR #76 receipts 43866551295/43866551368 are recorded separately; both main CI runs queued immediately and had Windows ARM64→WASM32 critical paths, with no required-CI cancellations. One report-only Nightly property job was cancelled at its configured cap. Two comparable main observations and no per-case profile support no timeout, cache, topology or coverage change; see the Phase 26 tune-up report. |
 | 2026-11-16 | Re-ranked and selected the successor after reviewing the owner's gameplay feedback and future-roadmap question | No player-blocking defect is established, GameDrive remains unqualified, and the pinned title count is not a bug queue. The owner selected one bounded headless trace slice from SEED-004 as a buildable developer capability; the strongest player-centered alternative remains a small lawful gameplay replay set with independent outcomes. Broader tool work still needs demonstrated users. |
 | 2026-11-18 | Reconciled the v10.0 archive, refreshed the successor recommendation and selected v11.0 | v10.0 shipped as v0.17.0 and PR #80 archived it. The trace exposed one safe but user-visible Windows path false-positive; the owner selected end-to-end explicit extended-path support and correction of the deferred-register counts during tune-up. A clear refusal was the lower-risk alternative. A finite gameplay set remains unready without named lawful inputs and independent outcomes. |
+| 2026-11-19 | Shipped and archived v11.0; refreshed the successor recommendation | v0.18.0, exact-source main CI/Release and latest-install passed. Windows ARM64 and its independent-base comparison are measured cost centers, but no per-test profile supports a safe shortcut. Prefer one lawful gameplay replay scenario when its fixture rights and independent outcome are qualified; otherwise keep scope unselected. |
 
 | 2026-11-10 | Completed the offline v4.0 core slice; retain ship and real-browser work as distinct next decisions | All five scoped requirements and integration flows passed locally; measured SDK results are explicitly headless and emulated. |
 

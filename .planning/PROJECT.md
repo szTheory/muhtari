@@ -18,36 +18,38 @@ that any host can embed.
 
 Muhtari is not finished as a universal Atari 7800 compatibility project. It has
 three deliverables: a C library, a headless runner and a libretro core. Stable
-v0.17.0 is the latest published package; it includes the selected XM/YM2151
-profile, Souper mapper and the v10.0 headless developer trace. The unpublished
-v0.15.0 draft and tag remain unchanged at the source that failed its Wasm32 test.
+v0.18.0 is the latest published package; it includes the selected XM/YM2151
+profile, Souper mapper, v10.0 headless trace and v11.0 Windows extended-path
+runner support. The unpublished v0.15.0 draft and tag remain unchanged at the
+source that failed its Wasm32 test.
 
 The pinned title list has 204 entries: 201 are untested and 3 are skipped. Nine
 older Playstead/frontend requirements remain unresolved. GameDrive and BupChip
 streamed audio are not implemented. The public [status page](../docs/status.md)
 summarizes these limits.
 
-The v10.0 trace and its GCC `mismatched-dealloc` and Clang `realpath` portability
-fixes are merged. Stable v0.17.0 was published from main source
-`333380b118f62b618cb6df29cdfdd4388efc7b22`. Exact-source main CI and Release
-passed in [run 44214206424](https://github.com/szTheory/muhtari/actions/runs/44214206424)
-and [run 44214206354](https://github.com/szTheory/muhtari/actions/runs/44214206354).
-The release's install-line check passed. Phase and release evidence remains in
-the [v10.0 audit](milestones/v10.0-MILESTONE-AUDIT.md) and archived
-[Phase 27 records](milestones/v10.0-phases/27-headless-developer-trace/).
+v11.0 shipped from main source `ac4ee132449f82848da1db493c428f78d463d6cd`.
+Stable [v0.18.0](https://github.com/szTheory/muhtari/releases/tag/v0.18.0)
+contains 20 verified assets. Exact-source main CI
+[44606205865](https://github.com/szTheory/muhtari/actions/runs/44606205865),
+Release [44606205880](https://github.com/szTheory/muhtari/actions/runs/44606205880)
+and its latest-install check passed. The [v11.0 audit](milestones/v11.0-MILESTONE-AUDIT.md)
+and [archived phase records](milestones/v11.0-phases/) retain the acceptance
+evidence. The earlier [v10.0 audit](milestones/v10.0-MILESTONE-AUDIT.md) and
+[Phase 27 records](milestones/v10.0-phases/27-headless-developer-trace/) remain
+available.
 
-## Current Milestone: v11.0 Windows extended-path support
+## Completed Milestone: v11.0 Windows extended-path support
 
-**Goal:** Support explicit Windows extended-length paths throughout the runner's file operations while preserving path identity checks, safe output replacement and clear failures.
+**Outcome:** Stable v0.18.0 shipped the runner's measured Windows extended-path support. The feature stays in the runner and preserves API 8, ABI 1, serialized state, emulated behavior and all three deliverables.
 
-**Target features:**
-- Accept and preserve local `\\?\` and extended UNC `\\?\UNC\` path semantics across runner inputs and outputs, with claims limited to path forms and lengths exercised on Windows.
-- Preserve ordinary Windows path behavior, alias and overlap refusal, atomic output handling and prior-file preservation on write or replacement failures.
-- Add Windows CI controls that exercise the real runner with distinct extended names, true collisions and supported long-path cases; retain a clear diagnostic when an operation cannot support a requested form.
-- Complete the recurring measured milestone tune-up and correct the Phase 27 deferred-register count without changing its verdicts.
+**Delivered:**
+- Supported explicit absolute local `\\?\` and extended UNC `\\?\UNC\` paths across runner input and output operations, with tested path boundaries documented.
+- Added invocation-wide path identity checks and safe sibling-temp output replacement, preserving existing files on failures.
+- Passed actual runner drive and SMB UNC acceptance on Windows x64 and ARM64, with collision, overlap and ordinary-path controls.
+- Completed the measured milestone tune-up and corrected the 52-entry deferred-register totals without changing any verdict.
 
-The feature remains runner-only. It does not change the public C API or ABI,
-serialized state, emulated behavior or the three deliverables.
+No next milestone scope is selected; see [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md).
 
 ### Completion standard
 
@@ -291,6 +293,8 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 ### Validated
 
+- ✓ TUNE-15, TUNE-16: source-qualified delivery/maintenance review and corrected 52-entry deferred register, preserving every entry verdict — v11.0, Phase 28; [audit](milestones/v11.0-MILESTONE-AUDIT.md).
+- ✓ WINPATH-01–04: explicit Windows drive/extended UNC paths, invocation-wide identity checks, safe output replacement and measured Windows acceptance — v11.0, Phase 29; shipped in v0.18.0, [verification](milestones/v11.0-phases/29-windows-extended-path-runner-support/29-VERIFICATION.md).
 - ✓ TUNE-14: source-qualified release/CI evidence review, cheap preflights and a bounded no-change efficiency disposition — Phase 26; [tune-up report](milestones/v10.0-phases/26-measured-milestone-tune-up/26-TUNEUP.md).
 - ✓ TRACE-01–07: deterministic bounded runner trace, compatibility and documentation, including the accepted Linux hooks-off cost receipt — Phase 27; [verification](milestones/v10.0-phases/27-headless-developer-trace/27-VERIFICATION.md). Shipped as v0.17.0 in v10.0.
 
@@ -344,13 +348,9 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 ### Active
 
-v11.0 selects end-to-end Windows extended-path support in `muhtari-run` and a
-measured milestone tune-up. See [REQUIREMENTS.md](REQUIREMENTS.md) for the
-scoped acceptance criteria. The feature preserves the public API/ABI, state
-formats, emulated behavior and deliverables.
-
-The nine unmet v3.0 requirements remain deferred with their original evidence
-and stops; see the [v3.0 archive](milestones/v3.0-MILESTONE-AUDIT.md).
+No next-milestone requirements are selected. The nine unmet v3.0 requirements
+remain deferred with their original evidence and stops; see the
+[v3.0 audit](milestones/v3.0-MILESTONE-AUDIT.md).
 
 ### Out of Scope
 
@@ -435,6 +435,8 @@ and stops; see the [v3.0 archive](milestones/v3.0-MILESTONE-AUDIT.md).
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
+| Support explicit Windows extended drive and UNC paths through existing runner APIs with invocation-wide identity checks and sibling-temp publication | Fixes the carried compatibility limitation while preserving literal names, safe failure and the three-deliverable/API contract | ✓ v11.0: WINPATH-01–04 passed on Windows x64/ARM64 and shipped in v0.18.0; see the [audit](milestones/v11.0-MILESTONE-AUDIT.md) |
+| Keep full CI inventories, independent-base quality checks, exact-source release equality, attestation and latest-install gates after the v11.0 timing review | Current durations identify Windows ARM64 as the critical path but do not identify a coverage-preserving shortcut; queue delay is negligible | ✓ v11.0: required coverage stayed intact; no topology, cache or deadline change was supported by the measured runs |
 | Keep the headless trace runner-only and accept its cost claim only from an exact-source Linux receipt | Preserves API 8/state compatibility and prevents local comparator controls from standing in for Cachegrind evidence | ✓ v10.0: TRACE-01–07 passed; receipt delta 900/9,600 on run 44123425194; compiler fixes merged and stable v0.17.0 passed exact-source CI/Release |
 | Publish corrected Souper through the ordinary feature-release path and keep CI coverage unchanged | A pre-1.0 feature release follows the minor-bump rule; release evidence supports no pipeline change | ✓ v9.0 Phase 25: stable v0.16.0 passed exact-source release and latest-install checks; v0.15.0 stayed unchanged; see [audit](milestones/v9.0-MILESTONE-AUDIT.md) |
 | Keep GameDrive implementation at NO-GO until its profile, independent PCM oracle and finite resource facts are qualified | Prevents guessed stream timing/framing or unlicensed fixture reuse from becoming public media/API/state behavior | ✓ v8.0 Phase 24: all four consumer and compatibility consequences recorded; no implementation or public compatibility change selected |
@@ -502,4 +504,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-18 after v11.0 milestone start*
+*Last updated: 2026-11-19 after v11.0 milestone completion*

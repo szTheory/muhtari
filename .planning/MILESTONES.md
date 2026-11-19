@@ -1,5 +1,27 @@
 # Project Milestones: muhtari
 
+## v11.0 Windows extended-path support (Shipped: 2026-11-19)
+
+**Phases completed:** 2 phases, 5 plans, 10 tasks
+
+**Closeout type:** `verified_closeout`; all six requirements and both phase verification reports passed. Known verification overrides: 0 newly acknowledged, 51 carried forward from prior closes (see STATE.md Deferred Items).
+
+**Key accomplishments:**
+- Completed the source-qualified tune-up and corrected the 52-entry deferred register without changing any entry's verdict.
+- Added end-to-end explicit Windows drive and extended UNC path support to the runner, including literal names, path-identity checks and safe output replacement.
+- Passed actual-runner drive and SMB UNC path coverage on Windows x64 and ARM64, with the tested path limits documented.
+- Published stable v0.18.0 with 20 assets; exact-source main CI, Release and latest-install checks passed.
+
+**Audit:** [v11.0 milestone audit](milestones/v11.0-MILESTONE-AUDIT.md) found no v11.0 requirement or integration gaps. Nine v3.0 requirements remain deferred with their original evidence and stops.
+
+**Delivery:** Release PR [#82](https://github.com/szTheory/muhtari/pull/82) merged. Stable [v0.18.0](https://github.com/szTheory/muhtari/releases/tag/v0.18.0) was published from `ac4ee132449f82848da1db493c428f78d463d6cd`; main CI [44606205865](https://github.com/szTheory/muhtari/actions/runs/44606205865) and Release [44606205880](https://github.com/szTheory/muhtari/actions/runs/44606205880) passed. Release verified all 20 assets and `install-line-latest` passed.
+
+**Archives:** [roadmap](milestones/v11.0-ROADMAP.md), [requirements](milestones/v11.0-REQUIREMENTS.md), [product roadmap snapshot](milestones/v11.0-PRODUCT-ROADMAP.md), [audit](milestones/v11.0-MILESTONE-AUDIT.md) and [phase records](milestones/v11.0-phases/).
+
+**Next:** No v12.0 scope is selected. Review the [rolling product roadmap](PRODUCT-ROADMAP.md) and run `$gsd-new-milestone` after the owner chooses the recommended next scope or its strongest alternative.
+
+---
+
 ## v10.0 Headless developer trace (Shipped: 2026-11-17)
 
 **Phases completed:** 2 phases, 8 plans, 16 tasks

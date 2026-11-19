@@ -1,37 +1,34 @@
 ---
 gsd_state_version: "1.0"
 milestone: v11.0
-current_phase: 29
-status: completed
-stopped_at: Phase 29 complete — all phases complete
-last_updated: "2026-11-19T16:05:00.272Z"
+status: Awaiting next milestone
+stopped_at: v11.0 shipped and archived — next milestone scope choice pending
+last_updated: "2026-11-19T21:33:31Z"
 last_activity: 2026-11-19
-last_activity_desc: Phase 29 complete
-state_head: 41943af85f83a02f5a9cc56b62e29f2bd97c25e5
+last_activity_desc: Milestone v11.0 completed and archived
+state_head: ac4ee132449f82848da1db493c428f78d463d6cd
 progress:
   total_phases: 2
   completed_phases: 2
   total_plans: 5
   completed_plans: 5
-  percent: 100
 milestone_name: Windows extended-path support
+current_phase: null
 ---
 
 # Project State
 
 ## Project Reference
-See [PROJECT.md](PROJECT.md) (updated 2026-11-18), [ROADMAP.md](ROADMAP.md), [REQUIREMENTS.md](REQUIREMENTS.md), [product roadmap](PRODUCT-ROADMAP.md) and [selected scope review](research/next-milestone/2026-11-18-future-roadmap-review.md).
+See [PROJECT.md](PROJECT.md) (updated 2026-11-19), [ROADMAP.md](ROADMAP.md), the [v11.0 requirements archive](milestones/v11.0-REQUIREMENTS.md), [product roadmap](PRODUCT-ROADMAP.md), and [v11.0 scope](research/next-milestone/2026-11-18-future-roadmap-review.md) and [successor review](research/next-milestone/2026-11-19-successor-review.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** Phase 29 — Windows extended-path runner support
+**Current focus:** v11.0 is shipped and archived; choose the next milestone scope from PRODUCT-ROADMAP.md.
 
 ## Current Position
 
-Phase: 29
-Plan: Not started
-Status: All phases complete
-Last activity: 2026-11-19 — Phase 29 complete
-
-Progress: [██████████] 100%
+Phase: Milestone v11.0 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-11-19 — Milestone v11.0 completed and archived
 
 ## Performance Metrics
 Phase 28 P01 completed in 39 min. This single-plan sample does not establish an execution trend.
@@ -39,7 +36,7 @@ Phase 28 P01 completed in 39 min. This single-plan sample does not establish an 
 |-------|-------|-------|----------|
 | 28 | 2 | - | - |
 | 29 | 3 | - | - |
-Prior metrics and source-qualified receipts remain in the [v10.0 archive](milestones/v10.0-ROADMAP.md), [audit](milestones/v10.0-MILESTONE-AUDIT.md) and phase summaries. Stable v0.17.0 is published; the failed v0.15.0 tag and draft remain unchanged and unpublished.
+Prior metrics remain in the [v10.0 archive](milestones/v10.0-ROADMAP.md), [audit](milestones/v10.0-MILESTONE-AUDIT.md) and phase summaries. Stable v0.18.0 is published; the failed v0.15.0 tag and draft remain unchanged and unpublished.
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
@@ -59,26 +56,26 @@ Prior metrics and source-qualified receipts remain in the [v10.0 archive](milest
 - Run cheap source-specific consistency checks before long suites. Preserve required fault detection and measured-evidence rules; no unsupported timeout, cache, topology or quota changes. Ship the final phase before archiving its active roadmap rows.
 - [Phase 28]: Preserve five hosted receipts as source-specific historical evidence.
 - [Phase 28]: Make no CI topology, timeout, cache, resource, or membership change without comparable completed measurements.
-- [Phase 28]: Leave TUNE-15 and TUNE-16 pending phase verification.
+- [Phase 28]: TUNE-15 and TUNE-16 passed phase verification; all register verdicts were preserved.
 - [Phase 29]: Keep Windows path conversion and file operations on existing C and Win32 APIs; no dependency or public interface change.
-- [Phase 29]: Leave Windows and UNC acceptance pending until the actual Windows runner and SMB test run in Phase 29-03.
+- [Phase 29]: WINPATH-01–04 passed actual Windows x64 and ARM64 runner and SMB acceptance; the documented path limits remain evidence-bound.
 - [Phase 29]: Apply one identity preflight across all runner input/output roles, using fail-closed filesystem evidence.
 - [Phase 29]: Stream frame PNGs through the existing checked sibling-temp publisher to preserve prior output on failure.
 - [Phase 29]: Accept WINPATH-01 through WINPATH-04 from c3 actual Windows x64 and ARM64 evidence; the synthetic CI merge tree matches reviewed source.
-- [Phase 29]: Treat CTest COST 50 as a scheduling-only follow-up; measure hosted ordering on the next PR run and make no timing claim yet.
+- [Phase 29]: The final main/Release runs confirmed Windows ARM64 as the CI critical path; no case-level profile supports a safe ordering change.
 - [Phase 29]: Keep CI and Release coverage/topology intact; overlapping equality runner cost alone does not justify a changed-file classifier.
 
 ### Pending Todos
-The [Windows path follow-up](todos/pending/2026-11-17-define-extended-windows-output-path-support.md) is selected for Phase 29; its acknowledgment is retained below until verified closure. Other todos/seeds retain their dispositions. Root remains canonical and older dirty worktrees require content/ancestry reconciliation before import. See [workspace reconciliation](debug/workspace-reconciliation-2026-11-10.md).
+The [Windows path follow-up](todos/completed/2026-11-17-define-extended-windows-output-path-support.md) was completed in Phase 29. Other todos/seeds retain their dispositions. Root remains canonical and older dirty worktrees require content/ancestry reconciliation before import. See [workspace reconciliation](debug/workspace-reconciliation-2026-11-10.md).
 ### Blockers/Concerns
 - v10.0 is complete and shipped as stable v0.17.0. PR #77 and release PR #78 merged; main CI [44214206424](https://github.com/szTheory/muhtari/actions/runs/44214206424) and Release [44214206354](https://github.com/szTheory/muhtari/actions/runs/44214206354) passed on source `333380b118f62b618cb6df29cdfdd4388efc7b22`. The two newly acknowledged v10.0 items are recorded as deferred; 50 earlier acknowledgments retain their original verdicts. Nine deferred v3.0 requirements remain open: TUNE-06/07, PLAY-01–04 and FRONT-02–04. The denied Phase 12 diagnostic-app request must not be retried; original Phase 12/14 host/remote stops, spent allowances, expired windows and no-retry limits remain binding.
 - GameDrive implementation remains NO-GO pending authoritative timing/framing, a lawful independent exact-profile PCM oracle and finite resource facts. Preserve the [v8.0 qualification](milestones/v8.0-phases/24-qualify-the-gamedrive-audio-contract/24-QUALIFICATION.md); no unlicensed sample/encoder source is permitted.
 - Phase 21's spec-less probe remains unresolved and nonblocking. No retail, physical hardware or owner-device acceptance is inferred. LibFuturo owns browser/host routes; Playstead owns player integration; twentysixhundo owns Atari 2600.
 - The original Phase 27 PR 77 one-push observation cap is spent; it authorizes no further update or retry. The historical source-authorization claim on `2160cfd` remains unverified. Subsequent PR 77 merge and v0.17.0 release evidence do not reopen that scope; see the [v10.0 records](milestones/v10.0-phases/27-headless-developer-trace/).
-- No v11.0 planning blocker is known. Phase 29 needs actual Windows local/UNC namespace receipts, including an accessible CI test share; unavailable Windows evidence leaves that requirement pending. No owner-device or real-host run is selected.
+- v11.0 shipped as stable v0.18.0 from `ac4ee132449f82848da1db493c428f78d463d6cd`; main CI [44606205865](https://github.com/szTheory/muhtari/actions/runs/44606205865), Release [44606205880](https://github.com/szTheory/muhtari/actions/runs/44606205880), all 20 assets and the latest-install check passed. No owner-device or real-host run was required or claimed.
 
 ## Deferred Items
-At v10.0 close, two items were newly acknowledged; 50 items acknowledged at earlier closes remain suppressed with their original verdicts. At v9.0 close, no new items were acknowledged. At v8.0 close, no new items were acknowledged; at v7.0 close, one debug-session item was newly acknowledged and 49 were carried forward. Its `unknown` verdict is preserved; suppression expires if the artifact changes. Earlier disclosures from v3.0 and prior closes remain below.
+At v11.0 close, no new items were acknowledged; 51 items acknowledged at earlier closes remain suppressed with their original verdicts. At v10.0 close, two items were newly acknowledged; 50 earlier items remained suppressed. At v9.0 close, no new items were acknowledged. At v8.0 close, no new items were acknowledged; at v7.0 close, one debug-session item was newly acknowledged and 49 were carried forward. Its `unknown` verdict is preserved; suppression expires if the artifact changes. Earlier disclosures from v3.0 and prior closes remain below.
 
 | Category | Item | Status | Deferred At | Milestone |
 |----------|------|--------|-------------|-----------|
@@ -124,12 +121,12 @@ At v10.0 close, two items were newly acknowledged; 50 items acknowledged at earl
 | deferred_items | 11/deferred-items.md: Found in plan 04  - `diag.bankset_tracer` and `diag.bankset` both write `build/ci/tests/diag/bankset/32n/` and carry no resource lock, so under `ctest -j` one can read the other's `pixels.png` half written (`bankset --bankset-png ... png: chunk longer than the file`). Seen once in `cmake --workflow --preset ci`; passes alone and on rerun. Not caused by plan 04; a fix is a `RESOURCE_LOCK` or a separate output directory in `tests/diag/tests.cmake`.  Resolved in the gap round: `diag.bankset` now writes `build/<preset>/tests/diag/bankset-matrix/` and `diag.bankset_tracer` keeps `build/<preset>/tests/diag/bankset/`, so the two tests share no output file. | acknowledged; historical disposition retained | 2026-10-29 | v2.0 |
 
 ## Session Continuity
-Last session: 2026-11-19T16:09:53Z
-Stopped at: Phase 29 complete — all phases complete
+Last session: 2026-11-19T21:33:31Z
+Stopped at: v11.0 shipped and archived — next milestone scope choice pending
 Resume file: None
 
-Next action: $gsd-ship. Phase 29 verification passed; publish the final phase PR before milestone audit and archival.
+Next action: choose whether to promote the finite gameplay replay candidate once its fixture/oracle gate is met, or prefer a profile-first Windows ARM64 CI investigation; run $gsd-new-milestone to begin the selected scope.
 
 ## Operator Next Steps
 
-- No user action is needed. After clearing context, resume with `$gsd-ship`; the agent owns the final phase PR, milestone audit and closeout while preserving the verified Windows evidence.
+- After choosing the successor scope, start it with `$gsd-new-milestone`.
