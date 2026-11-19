@@ -41,7 +41,8 @@ Deferred beyond v11.0:
 Every v1 requirement maps to exactly one phase in [ROADMAP.md](ROADMAP.md).
 Phase 28 performs the measured tune-up and count-only register reconciliation;
 Phase 29 depends on Phase 28 and implements, documents and verifies runner path
-support in Windows CI. All requirements remain pending until phase verification.
+support in Windows CI. Requirements marked complete below have passing phase
+verification; requirements without passing verification remain pending.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|

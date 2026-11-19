@@ -184,13 +184,16 @@ muhtari_add_test(NAME policy.dependabot.self_test
     -P ${hygiene_scripts}/expect_fail.cmake
   LABELS hygiene policy TIMEOUT 30)
 
-# The changes job's classifier: heavy=false only for a non-empty list wholly
-# under .planning/, both names of a rename included, from a pull request of at
-# most 3000 files, the most the files API lists.
+# The changes job's classifier: heavy=false for planning-only paths, or for
+# exactly the three release-please metadata files when its caller confirms the
+# same-repository release branch. Mismatches fail closed.
 set(hygiene_classify [=[
 script=$1
+workflow=$2
+jq_filter=$3
+jq=$4
 check() {
-  got=$(printf '%b' "$2" | sh "$script" "${3-2}")
+  got=$(printf '%b' "$2" | sh "$script" "${3-2}" "${4-}")
   if [ "$got" != "heavy=$1" ]
   then
     echo "ci.classify: want heavy=$1, got $got for: $2"
@@ -210,10 +213,59 @@ check false '.planning/STATE.md\n' 3000
 check true '.planning/STATE.md\n' 3001
 check true '.planning/STATE.md\n' ''
 check true '.planning/STATE.md\n' 'x'
-echo "ci.classify: 13 lists"
+check false '.release-please-manifest.json\nCHANGELOG.md\nversion.txt\n' 3 true
+check false 'version.txt\n.release-please-manifest.json\nCHANGELOG.md\n' 3 true
+check true '.release-please-manifest.json\nCHANGELOG.md\n' 2 true
+check true '.release-please-manifest.json\nCHANGELOG.md\nversion.txt\nsrc/core.c\n' 4 true
+check true '.release-please-manifest.json\nCHANGELOG.md\nversion.txt\nversion.txt\n' 3 true
+check true '.release-please-manifest.json\nCHANGELOG.md\nversion.txt\n' 4 true
+check true '.planning/STATE.md\n' 1 true
+check true '.release-please-manifest.json\nCHANGELOG.md\nversion.txt\n' 3 false
+paths=$(printf '%s' '[{"filename":".release-please-manifest.json\n"},{"filename":"CHANGELOG.md"},{"filename":"version.txt"}]' | "$jq" -r -f "$jq_filter")
+check true "$paths" 3 true
+paths=$(printf '%s' '[{"filename":".release-please-manifest.json\nCHANGELOG.md"},{"filename":"version.txt"},{"filename":"\n"}]' | "$jq" -r -f "$jq_filter")
+check true "$paths" 3 true
+paths=$(printf '%s' '[{"filename":".release-please-manifest.json","previous_filename":"CHANGELOG.md\nversion.txt"},{"filename":"CHANGELOG.md"},{"filename":"version.txt"}]' | "$jq" -r -f "$jq_filter")
+check true "$paths" 3 true
+echo "ci.classify: 24 lists"
+if ! grep -F 'RELEASE_METADATA_PR: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == '\''release-please--branches--main'\'' && github.event.pull_request.base.ref == '\''main'\'' }}' "$workflow" > /dev/null
+then
+  echo "ci.classify: trusted release guard missing"
+  exit 1
+fi
+if ! grep -F 'sh scripts/classify-changes.sh "$CHANGED" "$RELEASE_METADATA_PR"' "$workflow" > /dev/null
+then
+  echo "ci.classify: release flag is not connected to the classifier"
+  exit 1
+fi
+if ! grep -F 'jq -r -f scripts/classify-pr-paths.jq' "$workflow" > /dev/null
+then
+  echo "ci.classify: line-safe API path filter is not connected to the classifier"
+  exit 1
+fi
+echo "ci.classify: trusted release guard present"
 ]=])
 muhtari_add_test(NAME ci.classify
   COMMAND ${MUHTARI_SH} -c "${hygiene_classify}" sh ${CMAKE_SOURCE_DIR}/scripts/classify-changes.sh
+    ${hygiene_ci} ${CMAKE_SOURCE_DIR}/scripts/classify-pr-paths.jq ${MUHTARI_JQ}
+  LABELS hygiene TIMEOUT 30)
+file(READ ${hygiene_ci} hygiene_yml)
+string(REPLACE "github.event.pull_request.head.repo.full_name == github.repository"
+  "github.event.pull_request.head.repo.full_name != github.repository" hygiene_bad_yml "${hygiene_yml}")
+if(hygiene_bad_yml STREQUAL hygiene_yml)
+  message(FATAL_ERROR "ci.classify.workflow_guard.self_test: trusted-branch guard fixture was unchanged")
+endif()
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/hygiene/classifier_guard_fixture)
+file(WRITE ${CMAKE_BINARY_DIR}/hygiene/classifier_guard_fixture/ci.yml "${hygiene_bad_yml}")
+set(hygiene_cmd ${MUHTARI_SH} -c "${hygiene_classify}" sh
+  ${CMAKE_SOURCE_DIR}/scripts/classify-changes.sh
+  ${CMAKE_BINARY_DIR}/hygiene/classifier_guard_fixture/ci.yml
+  ${CMAKE_SOURCE_DIR}/scripts/classify-pr-paths.jq ${MUHTARI_JQ})
+string(REPLACE ";" "$<SEMICOLON>" hygiene_cmd "${hygiene_cmd}")
+muhtari_add_test(NAME ci.classify.workflow_guard.self_test
+  COMMAND ${CMAKE_COMMAND} "-DCMD=${hygiene_cmd}" -DCODE=1
+    "-DREGEX=ci.classify: trusted release guard missing"
+    -P ${hygiene_scripts}/expect_fail.cmake
   LABELS hygiene TIMEOUT 30)
 
 # Every workflow timeout names a run ID or says provisional. The self test

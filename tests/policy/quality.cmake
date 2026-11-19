@@ -417,6 +417,16 @@ if(STAGE STREQUAL failure)
   message(FATAL_ERROR "isolated baseline fault ${STAGE}")
 endif()
 ]=])
+  file(WRITE "${WORK}/windows-base-path-driver.cmake"
+    "set(QUALITY_BASE_WORKFLOW_ONLY ON)\ninclude([==[${ROOT}/tests/cmake/quality_evidence.cmake]==])\n"
+    "set(BUILD [==[${WORK}/fallback]==])\nset(CONFIG ci-msvc)\n"
+    "set(ENV{RUNNER_TEMP} [==[${WORK}/runner-temp]==])\n"
+    "quality_base_tree_path(observed)\n"
+    "if(NOT observed STREQUAL [==[${WORK}/runner-temp/muhtari-quality-base]==])\nmessage(FATAL_ERROR \"Windows baseline ignored RUNNER_TEMP\")\nendif()\n"
+    "set(CONFIG ci)\nquality_base_tree_path(observed)\n"
+    "if(NOT observed STREQUAL [==[${WORK}/fallback/quality-base]==])\nmessage(FATAL_ERROR \"non-Windows baseline path changed\")\nendif()\n")
+  execute_process(COMMAND "${CMAKE_COMMAND}" -P "${WORK}/windows-base-path-driver.cmake"
+    COMMAND_ERROR_IS_FATAL ANY OUTPUT_QUIET)
   file(WRITE "${WORK}/windows-base-driver.cmake"
     "set(QUALITY_BASE_WORKFLOW_ONLY ON)\ninclude([==[${ROOT}/tests/cmake/quality_evidence.cmake]==])\nquality_base_workflow(\"\${TREE}\" ci-msvc)\n")
   foreach(case pass normal package added-step changed-step)
@@ -1061,6 +1071,7 @@ foreach(case unchanged additions push dispatch dispatch_ref later_base changed c
     endif()
   endif()
   file(WRITE "${repo}/tests/built/expected.txt" "${candidate_samples}")
+  set(quality_base_tree "${repo}/build/ci/quality-base")
   set(produce "${CMAKE_COMMAND}" -E env GITHUB_EVENT_PATH=${WORK}/event.json GITHUB_EVENT_NAME=${event_name} GITHUB_SHA=${workflow_sha}
     "${CMAKE_COMMAND}" -DROOT=${repo} -DBUILD=${repo}/build/ci -DOUT=${WORK}/produced.json
     -DSHA=${producer_head} -DCONFIG=ci -DSOURCE=${run} -DBUILD_BASE=ON
@@ -1088,11 +1099,14 @@ foreach(case unchanged additions push dispatch dispatch_ref later_base changed c
       list(REMOVE_ITEM produce -DBUILD_BASE=ON)
     endif()
   endif()
-  if(rebuild_base AND EXISTS "${repo}/build/ci/quality-base")
-    file(REMOVE_RECURSE "${repo}/build/ci/quality-base")
+  if(rebuild_base AND EXISTS "${quality_base_tree}")
+    file(REMOVE_RECURSE "${quality_base_tree}")
     execute_process(COMMAND git -C "${repo}" worktree prune COMMAND_ERROR_IS_FATAL ANY)
   endif()
   execute_process(COMMAND ${produce} COMMAND_ERROR_IS_FATAL ANY OUTPUT_QUIET)
+  if(NOT EXISTS "${quality_base_tree}/CMakeLists.txt")
+    message(FATAL_ERROR "quality_evidence: independent base worktree is missing")
+  endif()
   file(READ "${WORK}/produced.json" produced)
   file(READ "${repo}/build/ci/quality-base.json" produced_base)
   string(JSON value GET "${produced}" metrics archive_bytes value)

@@ -35,7 +35,9 @@ key-decisions:
 duration: 39 min
 completed: 2026-11-18
 status: complete
-requirements-completed: []
+requirements-completed:
+  - TUNE-15
+  - TUNE-16
 coverage:
   - id: TUNE-15
     description: Source-qualified delivery evidence, six maintenance dispositions, and bounded no-change rationale are recorded.

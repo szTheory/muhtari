@@ -37,7 +37,7 @@ key-files:
     - .planning/phases/29-windows-extended-path-runner-support/29-REVIEW.md
 key-decisions:
   - "Accept the four Windows path requirements from the c3 source-qualified behavioral evidence on both Windows architectures; the synthetic CI merge tree exactly matches the reviewed candidate tree."
-  - "Treat CTest COST 50 as a scheduling-only follow-up. The next hosted run must measure its ordering effect; no improvement is claimed from simulated registration."
+  - "Exact-source c4 confirms CTest COST 50 moves the Windows path test earlier while preserving its test, fixtures and timeout; it improves failure feedback, not runtime."
   - "Keep CI/Release coverage and topology intact. The observed overlapping Release/Nightly equality work does not yet justify adding changed-file classifier machinery."
 patterns-established:
   - "Record source identity, command, exit status, run URL, matrix measurements and cleanup evidence together in the acceptance matrix."
@@ -112,9 +112,9 @@ Plan changes were committed as they were completed. The measured plan history co
 
 ## CI Efficiency Review
 
-- CI completed in 48m16s, Release in 56m13s and Nightly in 21m21s. Queue delay was under about 40 seconds, the Windows ARM64 jobs were the critical path at 45m02s in CI and 44m52s in Release, and no c3 jobs were cancelled.
+- c3 CI completed in 48m16s, Release in 56m13s and Nightly in 21m21s. c4 Windows ARM64 took 42m19s in CI and 46m15s in Release; queues stayed under about 17 seconds and no c3/c4 jobs were cancelled. One pair does not establish a trend.
 - Release and Nightly ran overlapping equality work for 52m53s combined. This is runner cost, not a demonstrated critical-path reduction. A changed-file classifier adds maintenance and alignment risk without evidence across independent PRs, so no CI topology or coverage change is recommended.
-- The Windows path test took 8.68/5.25 seconds on x64 and 47.02/45.78 seconds on ARM64 in CI/Release. Its existing default CTest cost placed it near the end of the inventories (729/736 x64 and 735/736 ARM64). The follow-up sets Windows-only `COST 50`, retaining the same test, timeout, fixtures and coverage. Simulated registration confirmed the configured cost and timeout at scaling factors 1 and 2; it does not show hosted ordering or time saved. Measure that effect on the next hosted PR run before claiming improvement.
+- The Windows path test moved from 729/736 and 735/736 in c3 to 43/736 and 45/736 in c4; its c4 runtimes were 8.80s x64 and 51.06s ARM64. Windows-only `COST 50` retains the same test, timeout, fixtures and coverage. It moves failure feedback earlier but does not speed the test or whole suite.
 
 ## Files Created/Modified
 
@@ -128,7 +128,7 @@ Plan changes were committed as they were completed. The measured plan history co
 ## Decisions Made
 
 - The c3 behavioral run completes WINPATH-01 through WINPATH-04. Later CTest cost metadata does not alter test membership or behavior, and does not invalidate the source-qualified product evidence.
-- The COST50 scheduling experiment remains unmeasured until c4. It is a follow-up efficiency observation, not a pending product requirement or phase acceptance gap.
+- Exact-source c4 measures the COST50 scheduling experiment. Earlier test ordering is confirmed; no total runtime improvement is claimed. This is an efficiency observation, not a product acceptance gap.
 - Preserve the existing CI matrix and all coverage. No cache, topology, timeout, or workflow-deadline change was supported by these runs.
 
 ## Deviations from Plan
@@ -137,7 +137,7 @@ Several in-scope failures exposed necessary fixes during the plan: Windows path 
 
 ## Issues Encountered
 
-Earlier local and hosted attempts are preserved in `29-ACCEPTANCE.md`, including the original local 735/736 failure and intermediate Windows/WASI/toolchain failures. Their causes were repaired or the runs were superseded by the successful c3 evidence. The final c3 results pass; COST50 hosted ordering remains unmeasured as described above.
+Earlier local and hosted attempts are preserved in `29-ACCEPTANCE.md`, including the original local 735/736 failure and intermediate Windows/WASI/toolchain failures. Their causes were repaired or the runs were superseded by c3. Exact-source c4 also passes and measures the ordering follow-up.
 
 ## User Setup Required
 
@@ -145,7 +145,7 @@ None. No owner hardware or manual Windows check is needed.
 
 ## Next Phase Readiness
 
-All four product requirements have local and source-qualified Windows evidence. The phase verifier owns the phase-level acceptance record; this plan does not create or edit `29-VERIFICATION.md`. The next hosted PR run can measure the COST50 ordering effect.
+All four product requirements have local and source-qualified Windows evidence. The phase verifier owns the phase-level acceptance record; this plan does not create or edit `29-VERIFICATION.md`. Exact-source c4 now measures the COST50 ordering effect; no owner action is needed.
 
 ---
 *Phase: 29-windows-extended-path-runner-support*
