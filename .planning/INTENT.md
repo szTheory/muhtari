@@ -66,6 +66,14 @@ sourced, and fix the highest-impact code or documentation debt found on those
 paths. Avoid a repository-wide style sweep, unsupported compatibility claims,
 and new host or device responsibilities.
 
+Owner direction, 2026-11-19: keep the repository root as the canonical
+workspace for sequential GSD work. At milestone close, finish publication and
+archive work, return root to updated `main`, and leave it clean while preserving
+explicitly local settings. Use a separate worktree only for concurrent work or
+to protect existing user changes; reconcile its ancestry and dirty contents
+into root and remove the temporary checkout before handoff. The next milestone
+should start from the root checkout without asking the owner to switch folders.
+
 ## Retain useful understanding
 
 Maintain [rolling horizons](PRODUCT-ROADMAP.md) at every milestone start and close:

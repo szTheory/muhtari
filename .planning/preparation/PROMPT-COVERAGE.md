@@ -106,8 +106,9 @@ at the root; LESSONS, PRODUCT-ROADMAP, SEED-NNN under `.planning/`. "v1.0 ph2" =
 | 69 | Review active and completed CI/Release runs for low-effort feedback-time gains, preserve test/fault/release evidence, use `act` for compatible local preflight, and run cheap consistency checks before long suites | AGENTS owner direction; INTENT; GSD-HANDOFF 3; `docs/maintaining.md` CI and Release runbooks | Documented | Added 2026-11-19 and applied during v11.0: measured queue, critical path, job durations and cancellations; local `act` parsing plus native hygiene; no safe workflow-structure, cache or deadline change supported by the available runs. |
 | 70 | As Muhtari matures, make its deliverables approachable, maintain evidence-backed personas/JTBD, keep comments and user docs accurate, and retire high-impact code/documentation debt as work touches it | AGENTS owner direction; INTENT; PRODUCT-ROADMAP; v12.0 requirements | Documented | Added 2026-11-19. v12.0 makes first-use and persona currency explicit; future milestones continue targeted debt cleanup without broad style sweeps. |
 | 71 | Follow the recommended successor scope and prepare this milestone for an explicit `$gsd-autonomous` run; provide the exact post-context command | AGENTS owner direction; INTENT; PRODUCT-ROADMAP; v12.0 scope review and roadmap | Documented | Added 2026-11-19. The command is provided after v12.0 requirements and phases are committed; autonomous execution remains the owner's next invocation. |
+| 72 | Keep sequential GSD work in the canonical root checkout; close milestones with main current and clean, reconciling and removing temporary worktrees before handoff | AGENTS owner direction; INTENT; v12.0 root reconciliation | Documented | Added 2026-11-19 after the owner identified repeated worktree handoff confusion. Root now contains the v12 scope on its milestone branch; the duplicate v12 checkout was removed. |
 
-Totals: Documented 65, Partial 3, Later 3, Inapplicable 0.
+Totals: Documented 66, Partial 3, Later 3, Inapplicable 0.
 
 ## v8.0 closeout receipt — 2026-11-15
 

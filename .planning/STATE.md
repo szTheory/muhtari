@@ -3,9 +3,9 @@ gsd_state_version: "1.0"
 milestone: v12.0
 status: In Progress
 stopped_at: v12.0 scoped — Phase 30 ready for autonomous execution
-last_updated: "2026-11-19T23:44:47Z"
+last_updated: "2026-11-19T23:57:45Z"
 last_activity: 2026-11-19
-last_activity_desc: Milestone v12.0 first-use readiness scoped
+last_activity_desc: v12.0 scope reconciled into the canonical root checkout
 state_head: cd7ce9e792b452647e0d438ee6d188ff778c4641
 progress:
   total_phases: 2
@@ -28,7 +28,7 @@ See [PROJECT.md](PROJECT.md), the active [requirements](REQUIREMENTS.md) and [ro
 Phase: Milestone v12.0 scoped
 Plan: —
 Status: Ready for Phase 30
-Last activity: 2026-11-19 — v12.0 scope and requirements recorded
+Last activity: 2026-11-19 — v12.0 scope reconciled into the canonical root checkout
 
 ## Performance Metrics
 No v12.0 plan metrics exist yet. v11.0's 19h 8m Phase 29 figure is elapsed time across implementation, handoffs and hosted CI, not a test run; the longest individual final CI job was 44m04. The final main run had about 10 seconds of queue time and no cancellations. The [v11.0 audit](milestones/v11.0-MILESTONE-AUDIT.md#cicd-efficiency-review) records the measurements and why they support no safe workflow change.
@@ -110,12 +110,12 @@ At v11.0 close, no new items were acknowledged; 51 items acknowledged at earlier
 | deferred_items | 11/deferred-items.md: Found in plan 04  - `diag.bankset_tracer` and `diag.bankset` both write `build/ci/tests/diag/bankset/32n/` and carry no resource lock, so under `ctest -j` one can read the other's `pixels.png` half written (`bankset --bankset-png ... png: chunk longer than the file`). Seen once in `cmake --workflow --preset ci`; passes alone and on rerun. Not caused by plan 04; a fix is a `RESOURCE_LOCK` or a separate output directory in `tests/diag/tests.cmake`.  Resolved in the gap round: `diag.bankset` now writes `build/<preset>/tests/diag/bankset-matrix/` and `diag.bankset_tracer` keeps `build/<preset>/tests/diag/bankset/`, so the two tests share no output file. | acknowledged; historical disposition retained | 2026-10-29 | v2.0 |
 
 ## Session Continuity
-Last session: 2026-11-19T23:44:47Z
+Last session: 2026-11-19T23:57:45Z
 Stopped at: v12.0 first-use readiness scoped — Phase 30 ready for autonomous execution
 Resume file: None
 
-Next action: run `$gsd-autonomous` from the v12.0 milestone worktree to discuss, plan, execute and close out the selected scope within its documented boundaries.
+Next action: run `$gsd-autonomous` from the canonical root checkout to discuss, plan, execute and close out the selected scope within its documented boundaries.
 
 ## Operator Next Steps
 
-- After clearing context, run `$gsd-autonomous` in `.worktrees/milestone-v12-first-use-readiness`.
+- After clearing context, run `$gsd-autonomous` from the canonical root checkout.
