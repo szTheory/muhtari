@@ -238,3 +238,59 @@ The failure/refusal assertions remain unchanged. The focused WASI `runner.trace.
 _Follow-up reviewed: 2026-11-19T08:42:15Z_
 _Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_
+
+## Follow-up Review — 2026-11-19T10:21:08Z
+
+**Scope:** Added successful replacement case and output-argument helper in `tests/runner/windows_paths.c`.
+**Depth:** standard
+**Status:** issues_found
+
+The helper runs the output-producing process again with pre-existing extended drive and UNC destinations. State reload and the battery byte comparison meaningfully check replacement. One coverage gap remains for PNG and trace output:
+
+### WR-04 (WARNING): PNG and trace checks allow stale trailing bytes
+
+**File:** `tests/runner/windows_paths.c:1089-1092`
+**Severity:** WARNING
+**Issue:** After replacing the old PNG and trace contents with a short sentinel, the test checks only that the new PNG signature and trace header appear at byte zero. An implementation that writes a valid new prefix without truncating/replacing the full destination could leave the old sentinel or other stale bytes after the new data and still pass these checks. The test therefore does not establish that the complete PNG and trace files were replaced successfully on either namespace.
+**Fix:** Validate each complete output, including PNG chunk termination at EOF and complete JSONL records with a final newline; treat read/parse errors as failure. Alternatively, compare against a fully validated expected artifact when the run's deterministic inputs make that appropriate.
+
+The case is invoked once for the extended drive namespace and once for the extended UNC namespace by `tests/runner/windows_paths.ps1`. Allocation bounds, owned-file cleanup, and the added replacement snapshot cleanup are sound on the reviewed paths. Tests were not run during this review.
+
+_Follow-up reviewed: 2026-11-19T10:21:08Z_
+_Reviewer: the agent (gsd-code-reviewer)_
+_Depth: standard_
+
+## Follow-up Review — 2026-11-19T10:25:00Z
+
+**Scope:** Updated successful replacement checks and bounded sentinel scanner in `tests/runner/windows_paths.c`.
+**Depth:** standard
+**Status:** issues_found
+
+WR-04 is resolved. `file_contains_bytes` scans the complete file in bounded chunks, carries enough overlap to detect matches across chunk boundaries, and returns an error on open, read, or close failure; the call sites reject any nonzero result. The case continues to run for both drive and UNC namespaces. One remaining issue affects the battery replacement assertion:
+
+### WR-05 (WARNING): Battery comparison treats read errors as byte differences
+
+**File:** `tests/runner/windows_paths.c:378-410,1133`
+**Severity:** WARNING
+**Issue:** `equal_files` returns `0` both when file contents differ and when either open/read fails. The replacement assertion fails only when it returns `1`, so an I/O error while comparing the saved pre-run battery with the new battery is interpreted as proof that the output changed. In that case the test can pass without establishing battery replacement, including on the SMB-backed UNC path.
+**Fix:** Make this comparison tri-state (equal, different, error) and fail the test on an error; require a completed byte comparison that reports different contents.
+
+Tests were not run during this review.
+
+_Follow-up reviewed: 2026-11-19T10:25:00Z_
+_Reviewer: the agent (gsd-code-reviewer)_
+_Depth: standard_
+
+## Follow-up Review — 2026-11-19T10:26:12Z
+
+**Scope:** Tri-state battery comparison in `tests/runner/windows_paths.c`.
+**Depth:** standard
+**Status:** clean
+
+WR-05 is resolved. `compare_files` returns `-1` for open, size-query, read, short-read, or close failures; it returns `0` only after equal-sized files compare byte-for-byte and `1` only after a completed comparison establishes different sizes or bytes. The replacement assertion requires exactly `1`, so comparison errors now fail the test. Both acquired handles are closed on all paths; the legacy `equal_files` wrapper still treats only `0` as equal for its existing callers. Together with the preceding sentinel-scan change, no finding remains in the reviewed replacement coverage.
+
+Tests were not run during this review.
+
+_Follow-up reviewed: 2026-11-19T10:26:12Z_
+_Reviewer: the agent (gsd-code-reviewer)_
+_Depth: standard_

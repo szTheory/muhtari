@@ -375,7 +375,8 @@ static int load_state_with_savekey(const wchar_t *runner, const wchar_t *work_di
                      0u, NULL);
 }
 
-static int equal_files(const wchar_t *left, const wchar_t *right)
+/* Return 0 for equal bytes, 1 for different bytes, and -1 when comparison fails. */
+static int compare_files(const wchar_t *left, const wchar_t *right)
 {
     HANDLE a = CreateFileW(left, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
                            FILE_ATTRIBUTE_NORMAL, NULL);
@@ -386,28 +387,41 @@ static int equal_files(const wchar_t *left, const wchar_t *right)
             (void)CloseHandle(a);
         if (b != INVALID_HANDLE_VALUE)
             (void)CloseHandle(b);
-        return 0;
+        return -1;
     }
     LARGE_INTEGER a_size, b_size;
-    int equal = GetFileSizeEx(a, &a_size) && GetFileSizeEx(b, &b_size) && a_size.QuadPart >= 0 &&
-                b_size.QuadPart >= 0 && a_size.QuadPart == b_size.QuadPart &&
-                a_size.QuadPart <= 16 * 1024 * 1024;
+    int result = -1;
+    if (GetFileSizeEx(a, &a_size) && GetFileSizeEx(b, &b_size) && a_size.QuadPart >= 0 &&
+        b_size.QuadPart >= 0 && a_size.QuadPart <= 16 * 1024 * 1024 &&
+        b_size.QuadPart <= 16 * 1024 * 1024) {
+        result = a_size.QuadPart == b_size.QuadPart ? 0 : 1;
+    }
     uint8_t a_bytes[4096], b_bytes[4096];
-    while (equal && a_size.QuadPart > 0) {
+    while (result == 0 && a_size.QuadPart > 0) {
         DWORD request = a_size.QuadPart > (LONGLONG)sizeof a_bytes ? (DWORD)sizeof a_bytes
                                                                    : (DWORD)a_size.QuadPart;
         DWORD a_got = 0u, b_got = 0u;
         if (!ReadFile(a, a_bytes, request, &a_got, NULL) ||
-            !ReadFile(b, b_bytes, request, &b_got, NULL) || a_got != request || b_got != request ||
-            memcmp(a_bytes, b_bytes, request) != 0) {
-            equal = 0;
+            !ReadFile(b, b_bytes, request, &b_got, NULL) || a_got != request || b_got != request) {
+            result = -1;
+            break;
+        }
+        if (memcmp(a_bytes, b_bytes, request) != 0) {
+            result = 1;
             break;
         }
         a_size.QuadPart -= request;
     }
-    (void)CloseHandle(a);
-    (void)CloseHandle(b);
-    return equal;
+    BOOL a_closed = CloseHandle(a);
+    BOOL b_closed = CloseHandle(b);
+    if (!a_closed || !b_closed)
+        result = -1;
+    return result;
+}
+
+static int equal_files(const wchar_t *left, const wchar_t *right)
+{
+    return compare_files(left, right) == 0;
 }
 
 static int verify_output_aliases(const wchar_t *runner, const wchar_t *work_dir,
@@ -640,6 +654,42 @@ static int file_starts_with(const wchar_t *path, const void *expected, DWORD exp
     return matches;
 }
 
+static int file_contains_bytes(const wchar_t *path, const void *expected, size_t expected_length)
+{
+    if (expected_length == 0u || expected_length > 64u)
+        return -1;
+    HANDLE file = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
+                              OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (file == INVALID_HANDLE_VALUE)
+        return -1;
+
+    uint8_t buffer[4096u + 64u];
+    size_t carried = 0u;
+    int found = 0;
+    int failed = 0;
+    for (;;) {
+        DWORD read = 0u;
+        if (!ReadFile(file, buffer + carried, 4096u, &read, NULL)) {
+            failed = 1;
+            break;
+        }
+        size_t available = carried + (size_t)read;
+        for (size_t i = 0u; i + expected_length <= available; i++) {
+            if (memcmp(buffer + i, expected, expected_length) == 0) {
+                found = 1;
+                break;
+            }
+        }
+        if (found || read == 0u)
+            break;
+        carried = available < expected_length - 1u ? available : expected_length - 1u;
+        memmove(buffer, buffer + available - carried, carried);
+    }
+    if (!CloseHandle(file))
+        failed = 1;
+    return failed ? -1 : found;
+}
+
 static int file_has_exact_size(const wchar_t *path, LONGLONG expected_size)
 {
     HANDLE file =
@@ -799,6 +849,40 @@ static int verify_component_boundaries(const wchar_t *runner, const wchar_t *wor
     return failed ? 1 : 0;
 }
 
+static int run_namespace_outputs(const wchar_t *runner, const wchar_t *work_dir,
+                                 const wchar_t *test_dir, const wchar_t *image,
+                                 const wchar_t *state_output, const wchar_t *trace,
+                                 const wchar_t *png, const wchar_t *log_name)
+{
+    wchar_t *state_arg = state_point(state_output, L'1');
+    size_t png_length = wcslen(png);
+    wchar_t *dump_arg = NULL;
+    if (png_length <= SIZE_MAX / sizeof *dump_arg - 3u) {
+        dump_arg = (wchar_t *)malloc((png_length + 3u) * sizeof *dump_arg);
+        if (dump_arg != NULL) {
+            dump_arg[0] = L'1';
+            dump_arg[1] = L':';
+            memcpy(dump_arg + 2u, png, (png_length + 1u) * sizeof *dump_arg);
+        }
+    }
+    if (state_arg == NULL || dump_arg == NULL) {
+        free(state_arg);
+        free(dump_arg);
+        fwprintf(stderr, L"windows path test: allocating extended output arguments failed\n");
+        return 1;
+    }
+
+    const wchar_t *arguments[] = {
+        runner,     L"--frames",         L"1",      L"--port1",       L"savekey", L"--save-dir",
+        test_dir,   L"--trace",          trace,     L"--trace-frame", L"1",       L"--trace-range",
+        L"0:65535", L"--state-at-frame", state_arg, L"--dump-frame",  dump_arg,   image};
+    int failed = run_child(runner, work_dir, log_name, arguments,
+                           sizeof arguments / sizeof arguments[0], 0u, NULL) != 0;
+    free(state_arg);
+    free(dump_arg);
+    return failed;
+}
+
 static int verify_blocked_outputs(const wchar_t *runner, const wchar_t *work_dir,
                                   const wchar_t *test_dir, const wchar_t *image,
                                   const wchar_t *name, const wchar_t *log_name)
@@ -910,16 +994,18 @@ static int run_namespace(const wchar_t *runner, const wchar_t *work_dir, const w
     wchar_t *trace = test_dir != NULL ? wide_join(test_dir, L"trace-\x732B.jsonl ") : NULL;
     wchar_t *png = test_dir != NULL ? wide_join(test_dir, L"frame-\x732B.png.") : NULL;
     wchar_t *battery = test_dir != NULL ? wide_join(test_dir, L"image-\x732B.sav") : NULL;
+    wchar_t *battery_before = wide_join(namespace_root, L"replacement-before.sav");
     wchar_t *invalid_trace = test_dir != NULL ? wide_join(test_dir, L"invalid-trace.jsonl") : NULL;
     wchar_t *sentinel = test_dir != NULL ? wide_join(test_dir, L"sentinel.bin") : NULL;
     wchar_t *log_name = wide_concat(L"windows-paths-", name);
     wchar_t *baseline = wide_join(work_dir, L"windows-paths-baseline.state");
-    wchar_t *owned[] = {image,    state, state_output, movie,   simple,        bios,
-                        firmware, trace, png,          battery, invalid_trace, sentinel};
+    wchar_t *owned[] = {image,          state,         state_output, movie, simple,
+                        bios,           firmware,      trace,        png,   battery,
+                        battery_before, invalid_trace, sentinel};
     int failed = test_dir == NULL || image == NULL || state == NULL || state_output == NULL ||
                  movie == NULL || simple == NULL || bios == NULL || firmware == NULL ||
-                 trace == NULL || png == NULL || battery == NULL || invalid_trace == NULL ||
-                 sentinel == NULL || log_name == NULL || baseline == NULL;
+                 trace == NULL || png == NULL || battery == NULL || battery_before == NULL ||
+                 invalid_trace == NULL || sentinel == NULL || log_name == NULL || baseline == NULL;
     if (!failed) {
         for (size_t i = 0u; i < sizeof owned / sizeof owned[0]; i++) {
             if (!delete_file_if_present(owned[i])) {
@@ -1007,38 +1093,8 @@ static int run_namespace(const wchar_t *runner, const wchar_t *work_dir, const w
             failed = 1;
     }
     if (!failed) {
-        wchar_t *state_arg = state_point(state_output, L'1');
-        if (state_arg == NULL) {
-            failed = 1;
-        } else {
-            wchar_t *dump_arg = NULL;
-            if (png != NULL) {
-                size_t prefix = 2u;
-                size_t length = wcslen(png);
-                dump_arg = (wchar_t *)malloc((prefix + length + 1u) * sizeof *dump_arg);
-                if (dump_arg != NULL) {
-                    dump_arg[0] = L'1';
-                    dump_arg[1] = L':';
-                    memcpy(dump_arg + 2u, png, (length + 1u) * sizeof *dump_arg);
-                }
-            }
-            const wchar_t *run_args[] = {runner,     L"--frames",
-                                         L"1",       L"--port1",
-                                         L"savekey", L"--save-dir",
-                                         test_dir,   L"--trace",
-                                         trace,      L"--trace-frame",
-                                         L"1",       L"--trace-range",
-                                         L"0:65535", L"--state-at-frame",
-                                         state_arg,  L"--dump-frame",
-                                         dump_arg,   image};
-            if (dump_arg == NULL ||
-                run_child(runner, work_dir, log_name, run_args,
-                          sizeof run_args / sizeof run_args[0], 0u, NULL) != 0) {
-                failed = 1;
-            }
-            free(dump_arg);
-            free(state_arg);
-        }
+        failed = run_namespace_outputs(runner, work_dir, test_dir, image, state_output, trace, png,
+                                       log_name) != 0;
     }
     if (!failed) {
         const wchar_t *outputs[] = {state_output, trace, png, battery};
@@ -1066,6 +1122,41 @@ static int run_namespace(const wchar_t *runner, const wchar_t *work_dir, const w
     if (!failed && load_state_with_savekey(runner, work_dir, image, state_output, log_name) != 0) {
         fwprintf(stderr, L"windows path test: generated state output could not be loaded\n");
         failed = 1;
+    }
+    if (!failed) {
+        static const char replacement_sentinel[] = "prior extended output bytes";
+        if (!CopyFileW(battery, battery_before, FALSE) ||
+            !write_bytes(state_output, replacement_sentinel, sizeof replacement_sentinel - 1u) ||
+            !write_bytes(trace, replacement_sentinel, sizeof replacement_sentinel - 1u) ||
+            !write_bytes(png, replacement_sentinel, sizeof replacement_sentinel - 1u)) {
+            report_last_error(L"preparing existing extended output destinations");
+            failed = 1;
+        }
+        if (!failed && run_namespace_outputs(runner, work_dir, test_dir, image, state_output, trace,
+                                             png, log_name) != 0)
+            failed = 1;
+        if (!failed &&
+            (!file_starts_with(png, png_signature, (DWORD)sizeof png_signature) ||
+             !file_starts_with(trace, trace_header, (DWORD)(sizeof trace_header - 1u)) ||
+             file_contains_bytes(state_output, replacement_sentinel,
+                                 sizeof replacement_sentinel - 1u) != 0 ||
+             file_contains_bytes(trace, replacement_sentinel, sizeof replacement_sentinel - 1u) !=
+                 0 ||
+             file_contains_bytes(png, replacement_sentinel, sizeof replacement_sentinel - 1u) !=
+                 0 ||
+             !file_has_exact_size(battery, 34816) || compare_files(battery_before, battery) != 1)) {
+            fwprintf(stderr, L"windows path test: successful replacement of an existing extended "
+                             L"output did not produce expected bytes\n");
+            failed = 1;
+        }
+        if (!failed &&
+            load_state_with_savekey(runner, work_dir, image, state_output, log_name) != 0) {
+            fwprintf(stderr,
+                     L"windows path test: replaced extended state output could not be loaded\n");
+            failed = 1;
+        }
+        if (!failed)
+            printf("windows-paths: successful replacement verified for extended %ls paths\n", name);
     }
     if (!failed && verify_output_aliases(runner, work_dir, namespace_root, fixture, name, log_name))
         failed = 1;
@@ -1149,6 +1240,7 @@ static int run_namespace(const wchar_t *runner, const wchar_t *work_dir, const w
     free(trace);
     free(png);
     free(battery);
+    free(battery_before);
     free(invalid_trace);
     free(sentinel);
     free(log_name);
