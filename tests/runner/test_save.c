@@ -1140,12 +1140,14 @@ static void trace_paths(const char *dir, const char *junction_alias, const char 
     (void)snprintf(path, sizeof path, "%s/normalized-output", dir);
     (void)snprintf(alias, sizeof alias, "%s/subdir/../normalized-output", dir);
     (void)snprintf(state_point, sizeof state_point, "1:%s", path);
-    TRACE_BAD_PATH(alias, "--frames", "1", "--dump-frame", state_point, "--trace", alias,
+    /* Snapshot the canonical names; WASI stat traps on protected paths containing `..`. */
+    TRACE_BAD_PATH(path, "--frames", "1", "--dump-frame", state_point, "--trace", alias,
                    "--trace-frame", "1", "--trace-range", "0:65535", rom);
     (void)snprintf(save_dir, sizeof save_dir, "%s/subdir/..", dir);
+    (void)snprintf(path, sizeof path, "%s/option.sav", dir);
     (void)snprintf(alias, sizeof alias, "%s/subdir/../option.sav", dir);
-    TRACE_BAD_PATH(alias, "--frames", "1", "--save-dir", save_dir, "--trace", alias,
-                   "--trace-frame", "1", "--trace-range", "0:65535", rom);
+    TRACE_BAD_PATH(path, "--frames", "1", "--save-dir", save_dir, "--trace", alias, "--trace-frame",
+                   "1", "--trace-range", "0:65535", rom);
 
 #ifdef _WIN32
     if (junction_alias != NULL && junction_target != NULL) {
@@ -1194,7 +1196,7 @@ static void trace_paths(const char *dir, const char *junction_alias, const char 
     }
 #endif
     (void)snprintf(trace, sizeof trace, "%s/subdir/../option.a78", dir);
-    TRACE_BAD_PATH(trace, "--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range",
+    TRACE_BAD_PATH(rom, "--frames", "1", "--trace", trace, "--trace-frame", "1", "--trace-range",
                    "0:65535", rom);
     trace_path_role_matrix(dir, rom);
 #undef TRACE_BAD_PATH
