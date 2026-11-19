@@ -741,7 +741,8 @@ static void trace_io(const char *dir)
 
 static void trace_expect_usage(int argc, char **argv, const char *protected_path)
 {
-    uint8_t before[8192], after[8192];
+    /* The path matrix nests this snapshot with other large frames on WASI's 64 KiB stack. */
+    static uint8_t before[8192], after[8192];
     size_t before_n = 0u, after_n = 0u;
     int existed = protected_path != NULL && trace_file_exists(protected_path);
     if (existed)

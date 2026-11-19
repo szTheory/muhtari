@@ -1,10 +1,10 @@
 ---
 phase: 29-windows-extended-path-runner-support
-reviewed: 2026-11-19T00:07:21Z
+reviewed: 2026-11-19T08:42:15Z
 depth: standard
 files_reviewed: 1
 files_reviewed_list:
-  - tests/runner/windows_paths.c
+  - tests/runner/test_save.c
 findings:
   critical: 0
   warning: 0
@@ -221,5 +221,20 @@ No actionable finding. On WASI the helper now probes the harness-owned regular f
 This source review does not establish that the new probe passes in the WASI runtime. The recorded WASI failures exercised the earlier `stat()` probe, and the successful Nightly WASI job builds and benchmarks the runner without running `runner.trace.paths`. The acceptance record appropriately leaves exact-source WASI and Windows rows pending; this test-only change does not itself accept the Windows path behavior. Tests were not run, as requested.
 
 _Follow-up reviewed: 2026-11-19T07:23:01Z_
+_Reviewer: the agent (gsd-code-reviewer)_
+_Depth: standard_
+
+## Follow-up Review — WASI snapshot buffers
+
+**Reviewed:** 2026-11-19T08:42:15Z
+**Scope:** `tests/runner/test_save.c:742-743`, moving the two trace snapshots to static storage.
+**Depth:** standard
+**Status:** clean
+
+No actionable finding. `trace_expect_usage()` is called sequentially by the path matrix and argument checks; it is not recursive or concurrently invoked. The two buffers are consumed entirely within each call, are fully overwritten by `trace_snapshot()` before comparison, and do not escape. Static storage therefore preserves the before/after length and byte checks while removing 16 KiB of automatic storage from the nested WASI call path. The bounded-memory tradeoff is small and consistent with the project's documented 64 KiB WASI stack guidance. The exact peak stack usage was not instrumented, so the review treats the stack explanation as the best fit for the reproduced failure and successful focused rerun, rather than a measured high-water mark.
+
+The failure/refusal assertions remain unchanged. The focused WASI `runner.trace.paths` test and all 12 WASI trace/core trace tests pass on this source; native CI and release tests pass. No additional change is recommended.
+
+_Follow-up reviewed: 2026-11-19T08:42:15Z_
 _Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_
