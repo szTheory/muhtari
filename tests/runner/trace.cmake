@@ -661,9 +661,12 @@ foreach(case IN ITEMS arguments bounds equality filters io limits paths oracle)
     LABELS runner portable TIMEOUT 60)
 endforeach()
 if(WIN32)
+  # This Windows-only matrix took up to 47.33 seconds on ARM64; schedule it
+  # ahead of short tests so a path failure is reported earlier.
   set_tests_properties(runner.trace.paths PROPERTIES
     FIXTURES_REQUIRED "built_openbios;built_simple"
-    TIMEOUT ${windows_path_ctest_timeout})
+    TIMEOUT ${windows_path_ctest_timeout}
+    COST 50)
 endif()
 muhtari_add_test(NAME runner.trace.disabled_config COMMAND ${CMAKE_COMMAND}
   "-DCMAKE_COMMAND=${CMAKE_COMMAND}" "-DCHECK=${PROJECT_SOURCE_DIR}/cmake/TraceLoopConfig.cmake"

@@ -1,10 +1,10 @@
 ---
 phase: 29-windows-extended-path-runner-support
-reviewed: 2026-11-19T08:42:15Z
+reviewed: 2026-11-19T15:04:52Z
 depth: standard
 files_reviewed: 1
 files_reviewed_list:
-  - tests/runner/test_save.c
+  - tests/runner/trace.cmake
 findings:
   critical: 0
   warning: 0
@@ -303,3 +303,19 @@ _Depth: standard_
 The drive and SMB UNC cases write a state file and PNG whose extended paths differ only by a literal trailing dot or space. The test verifies both outputs exist, the PNG signature and state reload succeed, and the paths resolve to different volume/file identities. File open, identity-query, close, and cleanup failures all fail the case. No actionable issue or MSVC compatibility risk found; the file already uses `FILE_ID_INFO` and `FileIdInfo`.
 
 The exact-source Windows x64 and ARM64 CI and Release jobs subsequently passed these cases on source `c0c112e`; see `29-ACCEPTANCE.md`. The current follow-up includes the suffix paths in the maximum-length measurement. Its early existence check remains limited to persistent outputs; the suffix helper validates its temporary output pair before cleaning both files. The next source-qualified run confirms this measurement extension.
+
+## Follow-up Review — 2026-11-19T15:04:52Z
+
+**Scope:** Windows-only CTest scheduling cost for `runner.trace.paths` in `tests/runner/trace.cmake`.
+**Depth:** standard
+**Status:** clean
+
+No actionable issue found. `COST 50` is applied to the already registered test inside the existing `if(WIN32)` block. It leaves the test inventory, labels, fixture requirements, and calibrated timeout unchanged. The Windows CI test preset sets `execution.jobs` to the empty string, which CMake defines as `--parallel` with the worker count omitted; CTest therefore uses test costs when ordering eligible work. Its documented behavior is descending cost, and this project has existing costs near observed runtime (including 28 for a 27.10-second test and 125 for a 124.92-second test). The new value 50 is a reasonable rounded estimate for the 47.33-second ARM64 maximum, so the test is scheduled ahead of the default-cost tests while higher-cost jobs can remain earlier. Fixture setup dependencies still take precedence. The property changes scheduling only and cannot omit the test or relax its timeout.
+
+The parent verified generated registration with simulated Windows configuration: `COST=50`, `TIMEOUT=100` at scale 1 and `COST=50`, `TIMEOUT=200` at scale 2. This validates CMake registration, not real Windows ordering or a reduction in hosted wall time; retain that claim as a hypothesis until the next hosted run measures it.
+
+Sources: [CMake `COST`](https://cmake.org/cmake/help/latest/prop_test/COST.html), [CMake test preset `jobs`](https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html#test-preset), [CTest `FIXTURES_REQUIRED`](https://cmake.org/cmake/help/latest/prop_test/FIXTURES_REQUIRED.html).
+
+_Reviewed: 2026-11-19T15:04:52Z_
+_Reviewer: the agent (gsd-code-reviewer)_
+_Depth: standard_

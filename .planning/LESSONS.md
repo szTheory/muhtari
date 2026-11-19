@@ -1090,8 +1090,10 @@ downloads to a transient mirror/resource error. Add two `Acquire::Retries`
 attempts to both package-index refresh and install while keeping the signed
 mirror list and `--error-on=any`. The offline `policy.ubuntu_apt.controls`
 consumer verifies option forwarding and fail-on-exhaustion; it does not emulate
-an APT network retry. A fresh hosted run must confirm the retry against the
-runner network.
+an APT network retry. Exact-source c3 CI [run 44543122949](https://github.com/szTheory/muhtari/actions/runs/44543122949)
+and Release [run 44543122965](https://github.com/szTheory/muhtari/actions/runs/44543122965) both passed BE32 package
+setup with the retry option present, but neither had a transient fetch to retry. The retry branch itself remains
+unexercised; do not claim hosted retry recovery from a normal successful download.
 
 Sources: [Ubuntu `apt.conf(5)`](https://manpages.ubuntu.com/manpages/resolute/man5/apt.conf.5.html),
 [`apt-get(8)`](https://manpages.ubuntu.com/manpages/resolute/man8/apt-get.8.html).
@@ -1104,10 +1106,27 @@ Status: observed; hosted retry confirmation pending.
 Release run reached the existing 60.02-second limit with no case output. Set
 the Windows PowerShell child limit to twice the slowest completed sample
 (95 seconds) and CTest's outer limit to 100 seconds so CMake can report its
-timeout first. Both limits remain finite and the full drive/SMB test matrix and
-cleanup assertions remain enabled. The new bounds await exact-source hosted
-validation; the local host does not execute this Windows-only process matrix.
+timeout first. On exact-source c3, Windows x64 and ARM64 CI and Release completed
+their full path matrices and cleanup assertions; CI measured `runner.trace.paths`
+at 8.68 seconds on x64 and 47.02 seconds on ARM64. Both limits remain finite,
+and the local host does not execute this Windows-only process matrix.
 
 Sources: [CMake `execute_process(TIMEOUT)`](https://cmake.org/cmake/help/latest/command/execute_process.html),
 [CTest `TIMEOUT`](https://cmake.org/cmake/help/latest/prop_test/TIMEOUT.html).
-Status: observed; calibrated bound pending hosted confirmation.
+Status: reproduced; calibrated bound passed exact-source c3 Windows CI and Release.
+
+## Schedule the slow Windows path matrix before short tests (2026-11-19)
+
+**MU-TEST-020:** In exact-source c3 Windows CI, `runner.trace.paths` had the
+default CTest cost of 1 and completed at test 729/736 on x64 (8.68 seconds) and
+735/736 on ARM64 (47.02 seconds). A prior ARM64 sample reached 47.33 seconds.
+Set Windows-only `COST 50` so CTest can schedule the measured long test earlier
+while preserving its fixtures, timeout, inventory membership and full test
+behavior. This should improve failure feedback; it cannot reduce the required
+base-comparison work, and only the next hosted run can establish the ordering
+or wall-time effect.
+
+Sources: [CTest `COST`](https://cmake.org/cmake/help/latest/prop_test/COST.html),
+[c3 CI x64 job](https://github.com/szTheory/muhtari/actions/runs/44543122949/job/135626560630),
+[c3 CI ARM64 job](https://github.com/szTheory/muhtari/actions/runs/44543122949/job/135626560798).
+Status: adopted after independent review; c4 hosted scheduling measurement pending.
