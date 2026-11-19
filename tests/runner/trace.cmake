@@ -536,6 +536,20 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
       execute_process(COMMAND ${EMULATOR} "${SAVE_TEST}" "${DIR}" trace_paths
           "${junction_alias}" "${junction_target}"
         RESULT_VARIABLE harness_rc OUTPUT_VARIABLE harness_out ERROR_VARIABLE harness_err TIMEOUT 30)
+      set(junction_process_target "${junction_target}/trace-junction-process.jsonl")
+      set(junction_process_alias "${junction_alias}/trace-junction-process.jsonl")
+      file(WRITE "${junction_process_target}" "prior junction output\n")
+      execute_process(COMMAND ${RUN} --frames 1 --dump-frame "1:${junction_process_target}"
+          --trace "${junction_process_alias}" --trace-frame 1 --trace-range 0:65535
+          "${DIR}/option.a78"
+        RESULT_VARIABLE junction_process_rc OUTPUT_VARIABLE junction_process_out
+        ERROR_VARIABLE junction_process_err TIMEOUT 20)
+      file(READ "${junction_process_target}" junction_process_bytes)
+      if(NOT junction_process_rc STREQUAL "2" OR NOT junction_process_out STREQUAL "" OR
+         NOT junction_process_err MATCHES "output path conflicts with an input or another output" OR
+         NOT junction_process_bytes STREQUAL "prior junction output\n")
+        message(FATAL_ERROR "real runner did not refuse a junction output alias before mutation: ${junction_process_rc}\n${junction_process_out}${junction_process_err}")
+      endif()
       file(REMOVE_RECURSE "${junction_alias}" "${junction_target}")
     else()
       execute_process(COMMAND ${EMULATOR} "${SAVE_TEST}" "${DIR}" trace_paths
@@ -543,6 +557,25 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     endif()
     if(NOT harness_rc STREQUAL "0" OR NOT harness_out STREQUAL "")
       message(FATAL_ERROR "actual-main trace path ownership matrix failed or wrote stdout: ${harness_rc}\n${harness_out}${harness_err}")
+    endif()
+    if(CMAKE_HOST_WIN32)
+      execute_process(
+        COMMAND powershell.exe -NoProfile -NonInteractive -File
+          "${WINDOWS_PATH_SCRIPT}" -Runner "${RUN}" -Driver "${WINDOWS_PATH_DRIVER}"
+          -WorkDir "${DIR}" -Fixture "${DIR}/option.a78" -Simple "${WINDOWS_PATH_SIMPLE}"
+          -Bios "${WINDOWS_PATH_BIOS}"
+        RESULT_VARIABLE process_paths_rc OUTPUT_VARIABLE process_paths_out
+        ERROR_VARIABLE process_paths_err TIMEOUT "${WINDOWS_PATH_TIMEOUT}")
+      if(NOT process_paths_rc STREQUAL "0")
+        message(FATAL_ERROR "Windows real-process drive/SMB path acceptance failed: ${process_paths_rc}\n${process_paths_out}${process_paths_err}")
+      endif()
+      if(NOT process_paths_out MATCHES "windows-paths: namespace=drive" OR
+         NOT process_paths_out MATCHES "windows-paths: namespace=unc" OR
+         NOT process_paths_out MATCHES "Windows SMB share lifecycle: create/read/write/remove verified")
+        message(FATAL_ERROR "Windows path acceptance did not report both measured namespaces and completed SMB cleanup:\n${process_paths_out}")
+      endif()
+      file(WRITE "${DIR}/windows-path-measurements.txt" "${process_paths_out}")
+      message(STATUS "${process_paths_out}")
     endif()
   elseif(CASE STREQUAL "io")
     file(MAKE_DIRECTORY "${DIR}")
@@ -585,6 +618,28 @@ set_target_properties(muhtari-test-trace PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-test-trace)
 
+if(WIN32)
+  add_executable(muhtari-test-windows-paths ${CMAKE_CURRENT_LIST_DIR}/windows_paths.c)
+  set_target_properties(muhtari-test-windows-paths PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+  muhtari_warnings(muhtari-test-windows-paths)
+  add_dependencies(muhtari-test-trace muhtari-test-windows-paths)
+  set(windows_path_script ${CMAKE_CURRENT_LIST_DIR}/windows_paths.ps1)
+  set(windows_path_simple ${PROJECT_BINARY_DIR}/built/simple/simple.bas.a78)
+  set(windows_path_bios ${PROJECT_BINARY_DIR}/built/openbios/openbios.bin)
+  # 95s = 2 x 47.33s, the slowest of 3 completed ARM64 runs on 66a1e85 and
+  # 7c7f663 (CI 44505809259, Release 44505809357, CI 44532572779).
+  math(EXPR windows_path_process_timeout "95 * ${MUHTARI_TIMEOUT_SCALE}")
+  # Leave 5s after the child-process limit for CMake to report the timeout.
+  math(EXPR windows_path_ctest_timeout "100 * ${MUHTARI_TIMEOUT_SCALE}")
+  set(windows_path_args
+    "-DWINDOWS_PATH_TIMEOUT=${windows_path_process_timeout}"
+    "-DWINDOWS_PATH_SCRIPT=${windows_path_script}"
+    "-DWINDOWS_PATH_DRIVER=$<TARGET_FILE:muhtari-test-windows-paths>"
+    "-DWINDOWS_PATH_SIMPLE=${windows_path_simple}"
+    "-DWINDOWS_PATH_BIOS=${windows_path_bios}")
+endif()
+
 string(REPLACE ";" "$<SEMICOLON>" trace_emulator "${CMAKE_CROSSCOMPILING_EMULATOR}")
 file(MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/tests/trace-smoke")
 muhtari_add_test(NAME runner.trace.smoke
@@ -601,9 +656,18 @@ foreach(case IN ITEMS arguments bounds equality filters io limits paths oracle)
       "-DDIAG_DRIVER=$<TARGET_FILE:muhtari-test-diag>"
       "-DSOUPER_TEMPLATE=${PROJECT_SOURCE_DIR}/tests/diag/souper.a78"
       "-DDIR=${PROJECT_BINARY_DIR}/tests/trace-${case}" "-DCASE=${case}"
+      ${windows_path_args}
       -P ${CMAKE_CURRENT_LIST_FILE}
     LABELS runner portable TIMEOUT 60)
 endforeach()
+if(WIN32)
+  # This Windows-only matrix took up to 47.33 seconds on ARM64; schedule it
+  # ahead of short tests so a path failure is reported earlier.
+  set_tests_properties(runner.trace.paths PROPERTIES
+    FIXTURES_REQUIRED "built_openbios;built_simple"
+    TIMEOUT ${windows_path_ctest_timeout}
+    COST 50)
+endif()
 muhtari_add_test(NAME runner.trace.disabled_config COMMAND ${CMAKE_COMMAND}
   "-DCMAKE_COMMAND=${CMAKE_COMMAND}" "-DCHECK=${PROJECT_SOURCE_DIR}/cmake/TraceLoopConfig.cmake"
   -P ${PROJECT_SOURCE_DIR}/tests/cmake/trace_loop_config.cmake

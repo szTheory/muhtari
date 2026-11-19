@@ -3,6 +3,7 @@ created: 2026-11-17T00:07:48.000Z
 title: Define extended Windows output path support
 area: runner
 severity: minor
+resolves_phase: 29
 files:
   - runner/main.c
   - tests/runner/test_save.c

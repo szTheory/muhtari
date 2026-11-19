@@ -1,9 +1,15 @@
 /* The runner's bench statistics, stop flag and MD5, one case per argv[1]:
    percentile, bytes, format, stop or md5. */
 #include <signal.h>
+#include <stdarg.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
+#include <io.h>
+#include <wchar.h>
+#endif
 
 #include "../../runner/bench.h"
 #include "../../runner/md5.h"
@@ -24,6 +30,23 @@ static muhtari_input_ex movie_packets[4];
 static uint32_t movie_first_device;
 static const char *movie_mutate;
 static unsigned movie_expect_pal, movie_video_allocs, movie_audio_allocs;
+static unsigned movie_path_oom_reports;
+#ifdef _WIN32
+static unsigned movie_path_file_opens;
+static FILE *movie_wfopen(const wchar_t *path, const wchar_t *mode);
+#endif
+
+static int movie_print(FILE *stream, const char *format, ...)
+{
+    if (stream == stderr &&
+        strcmp(format, "muhtari-run: out of memory validating Windows path arguments\n") == 0)
+        movie_path_oom_reports++;
+    va_list args;
+    va_start(args, format);
+    int result = vfprintf(stream, format, args);
+    va_end(args);
+    return result;
+}
 
 static void movie_track(void *ptr, size_t n)
 {
@@ -43,6 +66,15 @@ static void movie_track(void *ptr, size_t n)
     }
     CHECK(0);
 }
+#if !defined(_WIN32) && !defined(__wasi__)
+static char *movie_realpath(const char *path, char *resolved_path)
+{
+    char *result = realpath(path, resolved_path);
+    if (result != NULL && resolved_path == NULL)
+        movie_track(result, strlen(result) + 1u);
+    return result;
+}
+#endif
 static void *movie_alloc(size_t n)
 {
     movie_attempts++;
@@ -134,7 +166,14 @@ int runner_entry(int argc, char **argv);
 #define main runner_entry
 #define malloc movie_alloc
 #define realloc movie_realloc
+#define fprintf movie_print
 #define free(p) movie_free(p)
+#ifdef _WIN32
+#define _wfopen movie_wfopen
+#endif
+#if !defined(_WIN32) && !defined(__wasi__)
+#define realpath movie_realpath
+#endif
 #define muhtari_load movie_load
 #define muhtari_set_input_ex movie_input
 #define muhtari_run_frame movie_frame
@@ -142,10 +181,25 @@ int runner_entry(int argc, char **argv);
 #undef muhtari_run_frame
 #undef muhtari_set_input_ex
 #undef muhtari_load
+#if !defined(_WIN32) && !defined(__wasi__)
+#undef realpath
+#endif
+#ifdef _WIN32
+#undef _wfopen
+#endif
 #undef free
+#undef fprintf
 #undef realloc
 #undef malloc
 #undef main
+
+#ifdef _WIN32
+static FILE *movie_wfopen(const wchar_t *path, const wchar_t *mode)
+{
+    movie_path_file_opens++;
+    return _wfopen(path, mode);
+}
+#endif
 
 static void movie_reset(void)
 {
@@ -153,6 +207,10 @@ static void movie_reset(void)
     movie_attempts = movie_fail_at = movie_loads = movie_frame_calls = movie_inputs = 0u;
     movie_peak = movie_largest = 0u;
     movie_first_device = 0u;
+    movie_path_oom_reports = 0u;
+#ifdef _WIN32
+    movie_path_file_opens = 0u;
+#endif
     movie_mutate = NULL;
     movie_expect_pal = movie_video_allocs = movie_audio_allocs = 0u;
     memset(movie_packets, 0, sizeof movie_packets);
@@ -246,10 +304,22 @@ static void movie_owner(char *dir, char *rom)
                      "--hsc",       "on",      "--save-dir", dir,        rom};
     CHECK_EQ_U64(runner_entry(10, saved), 0);
     unsigned allocations = movie_attempts;
+#ifdef _WIN32
+    int saw_path_oom = 0;
+#endif
     for (unsigned fail = 1u; fail <= allocations; fail++) {
         movie_reset();
         movie_fail_at = fail;
         CHECK_EQ_U64(runner_entry(10, saved), 1);
+#ifdef _WIN32
+        /* Path-validation allocation failures precede input opens and emulation. */
+        if (movie_path_oom_reports != 0u) {
+            saw_path_oom = 1;
+            CHECK_EQ_U64(movie_path_oom_reports, 1u);
+            CHECK_EQ_U64(movie_path_file_opens, 0u);
+            CHECK_EQ_U64(movie_loads | movie_frame_calls | movie_inputs, 0u);
+        }
+#endif
         CHECK_EQ_U64(movie_live, 0u);
         FILE *save_file = fopen(save_path, "rb");
         CHECK(save_file != NULL);
@@ -260,6 +330,9 @@ static void movie_owner(char *dir, char *rom)
             CHECK_EQ_U64(fclose(save_file), 0);
         }
     }
+#ifdef _WIN32
+    CHECK(saw_path_oom);
+#endif
 
     static const char gun_pal[] = "muhtari-movie 2\nport1 lightgun\nport2 none\n"
                                   "|lightgun:0,0,0|none:|...BB|\n"
@@ -378,7 +451,12 @@ static void movie_owner(char *dir, char *rom)
     CHECK_EQ_U64(
         muhtari__movie_next_ex(mv.bytes, mv.bytes_count, &mv.header, &mv.cursor, &decoded, &err),
         0);
+#ifdef _WIN32
+    /* The Windows path open converts its UTF-8 filename with one tracked allocation. */
+    CHECK_EQ_U64(movie_attempts, 15u);
+#else
     CHECK_EQ_U64(movie_attempts, 14u);
+#endif
     printf("movie2 bytes %zu frames %u allocation_calls %u live %zu peak %zu cursor %zu packet %zu "
            "elapsed_ns %llu\n",
            mv.bytes_count, (unsigned)mv.count, movie_attempts, movie_live, movie_peak,

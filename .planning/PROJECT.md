@@ -36,6 +36,19 @@ The release's install-line check passed. Phase and release evidence remains in
 the [v10.0 audit](milestones/v10.0-MILESTONE-AUDIT.md) and archived
 [Phase 27 records](milestones/v10.0-phases/27-headless-developer-trace/).
 
+## Current Milestone: v11.0 Windows extended-path support
+
+**Goal:** Support explicit Windows extended-length paths throughout the runner's file operations while preserving path identity checks, safe output replacement and clear failures.
+
+**Target features:**
+- Accept and preserve local `\\?\` and extended UNC `\\?\UNC\` path semantics across runner inputs and outputs, with claims limited to path forms and lengths exercised on Windows.
+- Preserve ordinary Windows path behavior, alias and overlap refusal, atomic output handling and prior-file preservation on write or replacement failures.
+- Add Windows CI controls that exercise the real runner with distinct extended names, true collisions and supported long-path cases; retain a clear diagnostic when an operation cannot support a requested form.
+- Complete the recurring measured milestone tune-up and correct the Phase 27 deferred-register count without changing its verdicts.
+
+The feature remains runner-only. It does not change the public C API or ABI,
+serialized state, emulated behavior or the three deliverables.
+
 ### Completion standard
 
 A scoped feature is complete when its source-qualified behavior has deterministic,
@@ -113,9 +126,8 @@ limitation and two newly acknowledged items; 50 earlier acknowledgments carry
 forward with their original verdicts. See the [v10.0 audit](milestones/v10.0-MILESTONE-AUDIT.md),
 [archive](milestones/v10.0-ROADMAP.md) and [STATE.md](STATE.md).
 
-**Next:** No successor milestone is selected. The current recommendation and
-strongest alternative are in the [rolling product roadmap](PRODUCT-ROADMAP.md);
-run `$gsd-new-milestone` to choose the next scope.
+**Next:** v11.0 selects support for Windows extended paths, including explicit
+local and UNC namespaces, as described in the [rolling product roadmap](PRODUCT-ROADMAP.md).
 
 The 201 unevaluated titles and 3 skipped titles are not known failures. The
 nine deferred v3.0 requirements and original Phase 12/14 stops remain open.
@@ -332,7 +344,10 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 ### Active
 
-No additional product requirements are selected. v10.0 is shipped; the next milestone scope has not yet been chosen.
+v11.0 selects end-to-end Windows extended-path support in `muhtari-run` and a
+measured milestone tune-up. See [REQUIREMENTS.md](REQUIREMENTS.md) for the
+scoped acceptance criteria. The feature preserves the public API/ABI, state
+formats, emulated behavior and deliverables.
 
 The nine unmet v3.0 requirements remain deferred with their original evidence
 and stops; see the [v3.0 archive](milestones/v3.0-MILESTONE-AUDIT.md).
@@ -487,4 +502,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-17 after v10.0 closeout*
+*Last updated: 2026-11-18 after v11.0 milestone start*

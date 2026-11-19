@@ -59,6 +59,24 @@ The release workflow never cancels a run: runs on `main` queue behind each other
 A version moves to 1.0.0 only through a final `Release-As: 1.0.0` line in the body of the pull request that should
 cut it.
 
+## Local GitHub Actions preflight
+
+Use `act` when a Docker-based local run can shorten feedback before hosted CI or
+Release/CD. First list jobs, then run only a compatible job when it adds useful
+evidence:
+
+```sh
+act -l -W .github/workflows/ci.yml
+act pull_request -W .github/workflows/ci.yml -j hygiene
+```
+
+`act` reports local Docker behavior; it does not establish hosted Windows/macOS,
+GitHub permissions, OIDC, artifact or release-publication behavior. The current
+`act` parser also rejects `.github/workflows/release.yml`'s `concurrency.queue: max`,
+which GitHub accepts. Keep that control and use hosted Release runs for
+release evidence. The configured CMake workflow below is the direct local route
+for Linux lanes.
+
 ## The rehearsal
 
 A pull request from this repository that changes `release.yml`, `be-equality.yml`,

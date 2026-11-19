@@ -84,6 +84,27 @@ keep them narrowly tied to that failure mode rather than adding setup with no us
 screening value. Treat one run as a lead, not enough evidence for structural,
 timeout, or cache changes. This is standing guidance, not another UAT gate.
 
+Owner direction, 2026-11-19: apply the fan-out brief to every phase discussion.
+For each decision, use independent specialist subagents where another perspective
+could change the recommendation; consider relevant product, design, engineering,
+security, reliability and operations lenses as the domain requires. Compare real
+alternatives with their tradeoffs, examples, patterns, footguns and strongest
+counterargument; prefer primary sources for niche or changing facts. Synthesize one
+coherent recommendation per decision and stop when added research cannot change it.
+Keep the dependency tree small when repository code, standard facilities or the
+platform meet the need. This is standing discussion guidance, not a request to
+reopen already locked phase context.
+
+Owner direction, 2026-11-19: review every CI and Release/CD run while active and
+after completion for queue time, critical path, job durations, cancelled work and
+low-effort ways to shorten feedback and iteration time. Preserve required test,
+fault and release coverage. Put cheap relevant consistency checks before long
+work, record when evidence supports no safe improvement, and require measured
+results across runs before changing workflow structure, caches or deadlines.
+Use GitHub `act` for compatible local preflight when it improves feedback, while
+keeping Docker/local results distinct from hosted platform, permissions, OIDC,
+artifact and release evidence.
+
 Owner reaffirmation, 2026-11-11: use upstream scoping to keep milestone and later
 phase work directionally correct and economical. Retain the high-signal result,
 source identity, confidence, alternatives and revisit triggers in the existing

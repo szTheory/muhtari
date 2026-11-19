@@ -1,76 +1,81 @@
 ---
 gsd_state_version: "1.0"
-milestone: v10.0
-status: Awaiting next milestone
-stopped_at: v10.0 complete — awaiting successor selection
-last_updated: "2026-11-18T03:11:10.727Z"
-last_activity: 2026-11-17
-last_activity_desc: v10.0 archive branch published for closeout PR
-state_head: 41dda6b541064d182a2e46802b709bbf0c4b7999
+milestone: v11.0
+current_phase: 29
+status: completed
+stopped_at: Phase 29 complete — all phases complete
+last_updated: "2026-11-19T16:05:00.272Z"
+last_activity: 2026-11-19
+last_activity_desc: Phase 29 complete
+state_head: 41943af85f83a02f5a9cc56b62e29f2bd97c25e5
 progress:
   total_phases: 2
   completed_phases: 2
-  total_plans: 8
-  completed_plans: 8
+  total_plans: 5
+  completed_plans: 5
   percent: 100
-milestone_name: Headless developer trace
-current_phase: null
+milestone_name: Windows extended-path support
 ---
 
 # Project State
 
 ## Project Reference
-See [PROJECT.md](PROJECT.md) (updated 2026-11-17), [ROADMAP.md](ROADMAP.md), [v10.0 requirements archive](milestones/v10.0-REQUIREMENTS.md), [product roadmap](PRODUCT-ROADMAP.md) and [successor review](research/next-milestone/2026-11-16-future-roadmap-review.md).
+See [PROJECT.md](PROJECT.md) (updated 2026-11-18), [ROADMAP.md](ROADMAP.md), [REQUIREMENTS.md](REQUIREMENTS.md), [product roadmap](PRODUCT-ROADMAP.md) and [selected scope review](research/next-milestone/2026-11-18-future-roadmap-review.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** Planning the next milestone
+**Current focus:** Phase 29 — Windows extended-path runner support
 
 ## Current Position
 
-Phase: Milestone v10.0 complete
-Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-11-17 -- v10.0 archive branch published for closeout PR
+Phase: 29
+Plan: Not started
+Status: All phases complete
+Last activity: 2026-11-19 — Phase 29 complete
+
+Progress: [██████████] 100%
 
 ## Performance Metrics
-Phase 26 completed three documentation-only plans; product implementation timing and trend are not yet measured.
+Phase 28 P01 completed in 39 min. This single-plan sample does not establish an execution trend.
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 26 | 3 | - | - |
-| 27 | 5 | - | - |
-Prior milestone metrics and exact-source receipts remain in the [v9.0 archive](milestones/v9.0-ROADMAP.md), [audit](milestones/v9.0-MILESTONE-AUDIT.md) and earlier milestone records. Stable v0.17.0 is published; the failed v0.15.0 tag and draft remain unchanged and unpublished.
+| 28 | 2 | - | - |
+| 29 | 3 | - | - |
+Prior metrics and source-qualified receipts remain in the [v10.0 archive](milestones/v10.0-ROADMAP.md), [audit](milestones/v10.0-MILESTONE-AUDIT.md) and phase summaries. Stable v0.17.0 is published; the failed v0.15.0 tag and draft remain unchanged and unpublished.
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
-| Phase 27 P01 | 70min | 2 tasks | 11 files |
-| Phase 27-headless-developer-trace P02 | 83min | 3 tasks | 9 files |
-| Phase 27 P03 | 48min | 2 tasks | 13 files |
-| Phase 27 P04 | 107min | 2 tasks | 1 files |
-| Phase 27 P06 | 80min | 3 tasks | 5 files |
+| Phase 28 P01 | 39 min | 2 tasks | 5 files |
+| Phase 28 P02 | 18 min | 2 tasks | 2 files |
+| Phase 29 P01 | 44m | 2 tasks | 5 files |
+| Phase 29 P02 | 43min | 2 tasks | 4 files |
+| Phase 29 P03 | 19h 8m | 2 tasks | 18 files |
 
 ## Accumulated Context
 ### Decisions
-- Owner selected one bounded, opt-in `muhtari-run` instruction/bus trace, with frame/address filters, tick/beam/CPU context, finite output and generated/owned numeric acceptance.
-- Keep public API 8, ABI 1 and existing state formats unchanged: legacy 1/6, YM 2/7 and Souper 3/8 (format/behavior). Trace callbacks/buffers remain outside machine state; observation must preserve frame/state hashes and the existing hooks-off cost gate. A necessary public observer API is an explicit compatibility decision boundary.
-- Phase 26 maps TUNE-14; Phase 27 maps TRACE-01–07. Keep implementation, deterministic acceptance, docs and review together; add no validation-tail phase. Use current project/review facts over the historical API 7 research SUMMARY.
+- Owner selected support for explicit absolute Windows drive-letter `\\?\` and extended UNC `\\?\UNC\` paths throughout `muhtari-run`; Unicode, literal suffixes and long-path claims require the complete file-operation chain and real Windows CI evidence.
+- Keep public API 8, ABI 1, existing state formats (legacy 1/6, YM 2/7, Souper 3/8 format/behavior), emulated behavior and all three deliverables unchanged. New namespaces, dependencies and host/UI work are outside this runner-only scope.
+- Phase 28 maps TUNE-15/16: SEED-007/009's source-qualified measured tune-up plus count-only reconciliation to 52 total, 16 open, 0 waived, 36 fixed. Preserve every register entry and verdict. Phase 29 maps WINPATH-01–04; implementation, Windows CI acceptance, documentation and review stay together.
 - Selected milestone work follows the owner's autonomous local follow-through preference. Normal Git publication, PR merge and required CI/release automation are authorized at natural delivery points; original host/remote stops remain intact.
-- [Phase 27]: Keep trace callbacks private and per-instance, outside serialized state and public compatibility surfaces.
-- [Phase 27]: Select traced execution at frame entry; reserve the measured hooks-off cost gate for plan 27-03.
-- [Phase 27-headless-developer-trace]: Selected 65,536 default and 131,072 hard trace limits after source-grounded PAL overshoot analysis, actual record sizing and comparable NTSC/PAL captures.
-- [Phase 27-headless-developer-trace]: Kept alias checks trace-specific and reused the existing sibling-temp atomic writer; public API, ABI and state formats remain unchanged.
-- [Phase 27]: Keep TRACE-06 pending until the normal Linux perf job provides an authentic source-qualified Cachegrind receipt; local controls are not a substitute. This condition was satisfied by the accepted PR 77 receipt in run 44123425194.
-- [Phase 27]: Preserve public API 8, ABI 1 and state formats 1/6, 2/7 and 3/8 across trace acceptance.
-- [Phase 27]: Exact-source Windows x64 and arm64 path receipts established TRACE-03; the Linux receipt later established TRACE-06.
-- [Phase 27]: Keep the Phase 27 acceptance matrix unchanged until all required exact-source receipts pass; the receipts now pass, including hosted CI, Release, and Nightly on current head `4dba7cfd`.
-- [Phase 27]: One initial CI run does not support a topology, timeout, or cache change.
-- [Phase 27 gap closure]: Commit `2160cfd` contains the local trace-limit comparison correction; its earlier source-authorization claim remains unverified. The owner later authorized one push of reviewed descendant `4630288` to draft PR 77 and a bounded observation, which produced the accepted TRACE-06 receipt. That original one-push observation cap is spent and does not authorize a further PR 77 update or retry. The later PR 77 merge and v0.17.0 release are recorded in the v10.0 delivery evidence.
+- Run cheap source-specific consistency checks before long suites. Preserve required fault detection and measured-evidence rules; no unsupported timeout, cache, topology or quota changes. Ship the final phase before archiving its active roadmap rows.
+- [Phase 28]: Preserve five hosted receipts as source-specific historical evidence.
+- [Phase 28]: Make no CI topology, timeout, cache, resource, or membership change without comparable completed measurements.
+- [Phase 28]: Leave TUNE-15 and TUNE-16 pending phase verification.
+- [Phase 29]: Keep Windows path conversion and file operations on existing C and Win32 APIs; no dependency or public interface change.
+- [Phase 29]: Leave Windows and UNC acceptance pending until the actual Windows runner and SMB test run in Phase 29-03.
+- [Phase 29]: Apply one identity preflight across all runner input/output roles, using fail-closed filesystem evidence.
+- [Phase 29]: Stream frame PNGs through the existing checked sibling-temp publisher to preserve prior output on failure.
+- [Phase 29]: Accept WINPATH-01 through WINPATH-04 from c3 actual Windows x64 and ARM64 evidence; the synthetic CI merge tree matches reviewed source.
+- [Phase 29]: Treat CTest COST 50 as a scheduling-only follow-up; measure hosted ordering on the next PR run and make no timing claim yet.
+- [Phase 29]: Keep CI and Release coverage/topology intact; overlapping equality runner cost alone does not justify a changed-file classifier.
 
 ### Pending Todos
-Inherited todos and optional seeds retain their dispositions; no unrelated work is promoted. Root remains canonical and older dirty worktrees require content/ancestry reconciliation before import. See [workspace reconciliation](debug/workspace-reconciliation-2026-11-10.md).
+The [Windows path follow-up](todos/pending/2026-11-17-define-extended-windows-output-path-support.md) is selected for Phase 29; its acknowledgment is retained below until verified closure. Other todos/seeds retain their dispositions. Root remains canonical and older dirty worktrees require content/ancestry reconciliation before import. See [workspace reconciliation](debug/workspace-reconciliation-2026-11-10.md).
 ### Blockers/Concerns
 - v10.0 is complete and shipped as stable v0.17.0. PR #77 and release PR #78 merged; main CI [44214206424](https://github.com/szTheory/muhtari/actions/runs/44214206424) and Release [44214206354](https://github.com/szTheory/muhtari/actions/runs/44214206354) passed on source `333380b118f62b618cb6df29cdfdd4388efc7b22`. The two newly acknowledged v10.0 items are recorded as deferred; 50 earlier acknowledgments retain their original verdicts. Nine deferred v3.0 requirements remain open: TUNE-06/07, PLAY-01–04 and FRONT-02–04. The denied Phase 12 diagnostic-app request must not be retried; original Phase 12/14 host/remote stops, spent allowances, expired windows and no-retry limits remain binding.
 - GameDrive implementation remains NO-GO pending authoritative timing/framing, a lawful independent exact-profile PCM oracle and finite resource facts. Preserve the [v8.0 qualification](milestones/v8.0-phases/24-qualify-the-gamedrive-audio-contract/24-QUALIFICATION.md); no unlicensed sample/encoder source is permitted.
 - Phase 21's spec-less probe remains unresolved and nonblocking. No retail, physical hardware or owner-device acceptance is inferred. LibFuturo owns browser/host routes; Playstead owns player integration; twentysixhundo owns Atari 2600.
+- The original Phase 27 PR 77 one-push observation cap is spent; it authorizes no further update or retry. The historical source-authorization claim on `2160cfd` remains unverified. Subsequent PR 77 merge and v0.17.0 release evidence do not reopen that scope; see the [v10.0 records](milestones/v10.0-phases/27-headless-developer-trace/).
+- No v11.0 planning blocker is known. Phase 29 needs actual Windows local/UNC namespace receipts, including an accessible CI test share; unavailable Windows evidence leaves that requirement pending. No owner-device or real-host run is selected.
 
 ## Deferred Items
 At v10.0 close, two items were newly acknowledged; 50 items acknowledged at earlier closes remain suppressed with their original verdicts. At v9.0 close, no new items were acknowledged. At v8.0 close, no new items were acknowledged; at v7.0 close, one debug-session item was newly acknowledged and 49 were carried forward. Its `unknown` verdict is preserved; suppression expires if the artifact changes. Earlier disclosures from v3.0 and prior closes remain below.
@@ -119,12 +124,12 @@ At v10.0 close, two items were newly acknowledged; 50 items acknowledged at earl
 | deferred_items | 11/deferred-items.md: Found in plan 04  - `diag.bankset_tracer` and `diag.bankset` both write `build/ci/tests/diag/bankset/32n/` and carry no resource lock, so under `ctest -j` one can read the other's `pixels.png` half written (`bankset --bankset-png ... png: chunk longer than the file`). Seen once in `cmake --workflow --preset ci`; passes alone and on rerun. Not caused by plan 04; a fix is a `RESOURCE_LOCK` or a separate output directory in `tests/diag/tests.cmake`.  Resolved in the gap round: `diag.bankset` now writes `build/<preset>/tests/diag/bankset-matrix/` and `diag.bankset_tracer` keeps `build/<preset>/tests/diag/bankset/`, so the two tests share no output file. | acknowledged; historical disposition retained | 2026-10-29 | v2.0 |
 
 ## Session Continuity
-Last session: 2026-11-18T03:01:37Z
-Stopped at: v10.0 milestone archived; next milestone scope not selected
+Last session: 2026-11-19T16:09:53Z
+Stopped at: Phase 29 complete — all phases complete
 Resume file: None
 
-Next action: select the successor scope with `$gsd-new-milestone` after the archive PR is merged with green main CI.
+Next action: $gsd-ship. Phase 29 verification passed; publish the final phase PR before milestone audit and archival.
 
 ## Operator Next Steps
 
-- Start the next milestone with $gsd-new-milestone
+- No user action is needed. After clearing context, resume with `$gsd-ship`; the agent owns the final phase PR, milestone audit and closeout while preserving the verified Windows evidence.

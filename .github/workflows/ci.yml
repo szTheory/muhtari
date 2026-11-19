@@ -188,6 +188,21 @@ jobs:
           scripts/fetch-pin.sh rcheevos build/pins/rcheevos
       - name: Build, test, package
         run: cmake --workflow --preset ${{ matrix.preset }}
+      - name: Windows path measurements
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $measurements = 'build/ci-msvc/tests/trace-paths/windows-path-measurements.txt'
+          if (-not (Test-Path -LiteralPath $measurements -PathType Leaf)) {
+            throw "Windows path measurement output is missing: $measurements"
+          }
+          $output = Get-Content -LiteralPath $measurements -Raw
+          if ($output -notmatch '(?m)^windows-paths: namespace=drive ' -or
+              $output -notmatch '(?m)^windows-paths: namespace=unc ' -or
+              $output -notmatch 'Windows SMB share lifecycle: create/read/write/remove verified') {
+            throw "Windows path measurement output is incomplete:`n$output"
+          }
+          Write-Output $output
       - name: Every test ran
         run: >-
           cmake -DJUNIT=build/${{ matrix.preset }}/junit.xml -DINVENTORY=tests/inventory/ci.txt
@@ -368,8 +383,8 @@ jobs:
           scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
           scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios
           scripts/fetch-pin.sh rcheevos build/pins/rcheevos
-      - name: Cross compiler and qemu-user
-        run: sh scripts/ubuntu-apt.sh gcc-powerpc-linux-gnu g++-powerpc-linux-gnu qemu-user
+      - name: PowerPC cross compilers
+        run: sh scripts/ubuntu-apt.sh gcc-powerpc-linux-gnu g++-powerpc-linux-gnu
       - run: cmake --workflow --preset be32-compile
 
   # Exactly six native runtime files, including all three numeric board

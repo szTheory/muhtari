@@ -45,7 +45,7 @@ muhtari-run --help | --version
 | `--bench N` | Run N frames, time each one, and print the report described under [Output](#output). It keeps 4 bytes per frame, so where `size_t` has 32 bits an N of 1073741824 or more exits 1 as out of memory. |
 | `--hash-frame N` | After frame N, print the SHA-256 of its picture. Repeat the option for more frames. N is from 1 to the frame count. |
 | `--diagnostic` | After the run, report the fixed diagnostic mailbox. Requires content and explicit `--frames N` with the ordinary frame bounds; no `--bench` or implicit movie frame count. |
-| `--dump-frame N:FILE` | After frame N, write its picture to FILE as a PNG. Repeat the option for more frames or files. |
+| `--dump-frame N:FILE` | After frame N, atomically write a PNG to FILE. Repeat for more frames or files. |
 | `--trace FILE` | Write CPU instruction and bus events for one selected invocation frame as versioned JSON Lines. Requires a cartridge, `--trace-frame N` and inclusive `--trace-range LO:HI`. Works with `--frames`, `--bench`, and a movie's default frame count. |
 | `--trace-frame N` | Select a successful one-based frame call in this invocation; restored machine frame counters do not affect the selection. |
 | `--trace-range LO:HI` | Keep instruction rows by instruction-start PC and bus rows by their CPU bus address, independently, within this inclusive range. Bounds accept decimal or `0x` hexadecimal from 0 through 65535. |
@@ -173,12 +173,12 @@ sets require HSC Off when an expansion would otherwise attach it.
 muhtari-run --frames 600 --save-dir saves --hsc on game.a78
 ```
 
-Create the directory before starting the runner. Without `--save-dir`, the runner reads and creates no save
-files. With it, a cartridge without battery storage runs without a save file after validating the directory.
+Create the directory first. Without `--save-dir`, no save files are read or created. With it, a battery-free
+cartridge runs without a save file after directory validation.
 The file name uses only the final ROM component and removes its final extension: `game.a78` becomes
 `game.sav`, `game.rev.a78` becomes `game.rev.sav`, `.hidden` becomes `.hidden.sav`, and `game` becomes
-`game.sav`. Both native Windows path separators are accepted. Use one writer per save path. Games with the
-same basename and concurrent sessions need separate save directories; there is no locking or identity sidecar.
+`game.sav`. Use one writer per path; concurrent same-basename sessions need separate directories. No locking
+or identity sidecar is used.
 
 The file is the library's raw layout version 1: HSC SRAM alone is 2,048 bytes, EEPROM alone is 32,768 bytes,
 and combined storage is 34,816 bytes with HSC first. Firmware is separate and never enters the save. Restore
@@ -187,13 +187,11 @@ their prefix and pad the rest with FF; exact files copy verbatim. An oversized f
 non-regular-file, open, read and close errors exit 1 before any frame. Rejected imports never arm persistence.
 The import is clean: missing files stay absent and existing files stay unchanged until emulated bytes change.
 
-At each save cadence, on a save request and on normal or orderly stop exit, dirty committed bytes are written
-to an exclusively created sibling temporary, then checked
-for complete write, stdio flush, file sync and close. POSIX `rename`, or Windows `MoveFileEx` with replacement
-and write-through and no copy fallback, replaces the destination. That replacement is the commit point.
-Tests exercise previous-file preservation on every pre-replacement failure and ownership of temporary files.
-This is a local-filesystem guarantee, without a universal power-loss durability promise or a promise to retain
-old bytes after successful replacement followed by a later error. No directory sync is required.
+At each cadence, on request or normal/orderly stop, dirty bytes go to an exclusively created sibling
+temporary; complete writes, flush, file sync and close are checked. POSIX `rename` or Windows `MoveFileEx`
+replacement (write-through, no copy fallback) commits the destination. This local-filesystem guarantee is
+not universal power-loss durability. A later error after replacement does not restore old bytes; the directory
+is not synced.
 
 A save failure prints an error and exits 1 without a cleanup retry. Final flushing precedes destruction of
 valid state, including after an unrelated PNG or output error following valid frames; the original failure
@@ -212,6 +210,13 @@ This permits direct SRAM callers and does not implement HSC formatting, screens,
 Supplied firmware prints `hsc_sha1 <40 lowercase hex digits>` and separate unknown-identity or missing-C6/FE
 signature warnings as applicable. Unknown exact-sized firmware remains accepted. See
 [the embedding contract](embedding.md) and [cartridge hardware](hardware/cartridge.md).
+
+## Windows paths
+
+Extended paths use absolute `\\?\C:\...` or `\\?\UNC\server\share\...` forms; tests cover `猫`, literal
+dot/space suffixes and paths beyond `MAX_PATH`. Ordinary paths follow Win32 rules. Unsupported forms and
+unverified identities fail closed. Windows x64/ARM64 CI reached NTFS drive/SMB outputs of 500/492 UTF-16
+units (`.sav`: 489/481); component limit 255. Temp candidates calculate to 518/510; creation is not assured.
 
 ## Output
 

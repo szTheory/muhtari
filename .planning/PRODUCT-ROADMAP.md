@@ -2,7 +2,7 @@
 title: "Product roadmap (rolling)"
 summary: "Completed / Next / Mid / Long direction for muhtari with evidence and promotion triggers."
 read_when: "At every new-milestone and complete-milestone step, and when a finding changes priorities."
-updated: 2026-11-16
+updated: 2026-11-18
 ---
 
 # Product roadmap (rolling)
@@ -104,48 +104,59 @@ The v0.15.0 tag/draft still targets the earlier source that failed its exact
 Wasm32 gate; it remains unpublished and was not retargeted. The original
 Phase 12/14 host and remote stops are unchanged.
 
-### Immediate — v10.0 headless developer trace
+### Completed — v10.0 headless developer trace
 
-The owner selected this direction on 2026-11-16. Keep v10.0 to one deliberately
-small **headless developer trace**: an opt-in `muhtari-run` trace of instruction
-and bus-access events, with tick and beam position, restricted to a selected
-frame and address range. This is useful for homebrew authors and emulator
-maintainers debugging banked code or timing; it is not a player quality-of-life
-feature and does not fix a known game defect.
-The trace should use generated or owned inputs, have a literal numeric event
-oracle, remain bounded, preserve frame/state hashes when enabled, and pass the
-existing hooks-off cost gate. Keep interactive stepping, symbols, overlays,
-patching, Lua, Python/Gymnasium, BK2 and AI/TAS out of this milestone. The
-architecture already plans an optional trace loop, the runner has no trace
-option, and SEED-004's v4-shipped trigger has fired. Developer documentation
-supports the value of trace/debug tools, but does not prove direct demand for
-Muhtari's implementation. See the [bounded candidate review](research/next-milestone/2026-11-16-future-roadmap-review.md).
+v10.0 shipped as stable v0.17.0 from exact source
+333380b118f62b618cb6df29cdfdd4388efc7b22. PR #80 merged the archive. Its PR CI [44229018798](https://github.com/szTheory/muhtari/actions/runs/44229018798), post-merge main CI [44233889699](https://github.com/szTheory/muhtari/actions/runs/44233889699), and Release [44233889579](https://github.com/szTheory/muhtari/actions/runs/44233889579) passed. No new release PR was needed because the package version did not change.
+The trace is bounded, runner-only, and preserves the public API, ABI and state
+formats. Its audit has no blocking gaps. It records two deferred follow-ups:
+the Windows extended-path false-positive and the Phase 27 deferred-register
+count mismatch. The path guard fails closed and no overwrite case was found.
+See the [v10.0 audit](milestones/v10.0-MILESTONE-AUDIT.md),
+[archive](milestones/v10.0-ROADMAP.md) and the
+[owner's closeout receipts](https://github.com/szTheory/muhtari/pull/80).
 
-This recommendation follows the owner's 2026-11-16 report that several games
-played well: that is useful positive experience, but the exact titles and setup
-were not specified, so it does not add compatibility-ledger passes. The pinned
-204-title list still has 201 unevaluated rows and 3 skipped rows; unevaluated
-does not mean failing. Of 49 owned sample/diagnostic rows, 46 pass, mostly for
-title-screen, boot-only or model-conformance evidence. Do not turn either count
-into a queue of bugs.
+### Selected — v11.0 Windows extended-path support
 
-The strongest player-centered alternative is a **finite gameplay replay set**
-for a few named, rights-cleared titles, each with an independent expected
-gameplay outcome. That would improve confidence for actual play, but no such
-set is currently qualified; a movie replay or title-screen hash alone would
-not establish gameplay. If developer diagnostics do not justify another
-feature, prefer maintenance and evidence-backed fixes over inventing features.
-For a future accuracy fix, require a named title-blocking defect with a lawful
-discriminating input and source-qualified reproduction.
+Resolve the known muhtari-run Windows output-path limitation and reconcile the
+Phase 27 deferred-register count during the required measured tune-up.
+The current guard can treat two distinct outputs as aliases when one uses the
+explicit `\\?\` namespace and a name ends in a dot or space. It refuses before
+writing, so this is a usability limitation rather than an overwrite defect.
+The selected scope is to support the explicit local `\\?\` and UNC
+`\\?\UNC\` file namespaces end to end for runner paths, preserving their
+literal naming semantics while keeping collision checks and atomic output
+protections. Scope compatibility to the runner; do not change the public C API,
+serialized state, emulated behavior, or deliverables.
 
-Keep the selected trace runner-only and the public API at version 8. If a
-public observer API or API-version change proves necessary, pause for an
-explicit compatibility decision before expanding scope. GameDrive remains NO-GO until
-authoritative stream timing/framing, a lawful independent PCM oracle and finite
-resource facts exist. Preserve the nine deferred v3.0 requirements and original
-Phase 12/14 host and remote stops. LibFuturo owns browser-host work, and
-`twentysixhundo` owns Atari 2600. Do not reuse the unlicensed GameDrive sample
-or encoder, start host validation, or infer owner-hardware results.
+This requires a Windows path/API audit, not just an exception to suffix
+trimming. The current runner uses narrow Windows path routines in its safety
+comparison. Microsoft documents that `\\?\` disables ordinary string
+parsing, `\\?\UNC\` represents extended UNC paths, and long paths require
+Unicode APIs; the specific file operations must be qualified. Require actual
+runner tests in Windows CI for distinct extended names, true aliases, collision
+refusal, and output replacement/failure behavior before documenting support.
+Do not claim arbitrary long-path support unless the complete argument, path,
+open and replace chain passes those controls. See the
+[updated successor review](research/next-milestone/2026-11-18-future-roadmap-review.md).
+
+The strongest lower-risk alternative was to preserve the current fail-closed
+behavior, reject both explicit namespaces with a clear early diagnostic, and
+limit v11.0 to the tune-up and ledger correction. The owner selected support
+because the carried follow-up identifies a concrete compatibility gap and the
+runner's input, collision and output paths can be qualified together in Windows
+CI.
+
+Further feature returns are narrower after the shipped trace, but the project
+is not complete. Do not turn the 201 unevaluated pinned-title rows into a bug
+queue: unevaluated is unknown, and current owned samples mostly prove boot or
+model behavior. A finite gameplay replay set remains the strongest player-led
+future direction once named titles, lawful inputs and independent gameplay
+outcomes are identified. GameDrive remains NO-GO pending an authoritative
+stream profile, a lawful independent PCM oracle and finite resource facts.
+Broader tracing, scripting, AI/TAS and browser/player work remain deferred or
+sibling-owned. Preserve the nine v3.0 requirements and the original Phase 12/14
+host and remote stops.
 
 ## Later — implementation only after qualification
 
@@ -241,7 +252,7 @@ policy.
 
 ## Long-term — tools, emulator family and more devices
 
-Beyond the single trace slice proposed above, inspection/debugger expansion,
+Beyond the shipped trace slice, inspection/debugger expansion,
 Python/AI environments, Lua on demand, full recording, BK2/TAS and speedrun
 tooling follow demonstrated users (SEED-002/004). Handheld ports retain
 SEED-005 and require measured frame-time/power budgets. Atari 2600 emulation
@@ -267,6 +278,7 @@ example; reproduce sibling lessons locally before adopting them.
 | 2026-11-15 | Delivered the v8.0 archive through PR #69 and refreshed the successor recommendation | Main CI passed on the merge commit and Release skipped package publication; no jobs were cancelled and the audit has no open items. GameDrive remains NO-GO, v0.15.0 remains unpublished, and no successor scope is selected. |
 | 2026-11-16 | Shipped v9.0, archived it, and reconciled the current main baseline | Exact-source CI 43801428495 and Release 43801428444 passed for v0.16.0. Archive PR #75 receipts 43854355858/43854356086 and current PR #76 receipts 43866551295/43866551368 are recorded separately; both main CI runs queued immediately and had Windows ARM64→WASM32 critical paths, with no required-CI cancellations. One report-only Nightly property job was cancelled at its configured cap. Two comparable main observations and no per-case profile support no timeout, cache, topology or coverage change; see the Phase 26 tune-up report. |
 | 2026-11-16 | Re-ranked and selected the successor after reviewing the owner's gameplay feedback and future-roadmap question | No player-blocking defect is established, GameDrive remains unqualified, and the pinned title count is not a bug queue. The owner selected one bounded headless trace slice from SEED-004 as a buildable developer capability; the strongest player-centered alternative remains a small lawful gameplay replay set with independent outcomes. Broader tool work still needs demonstrated users. |
+| 2026-11-18 | Reconciled the v10.0 archive, refreshed the successor recommendation and selected v11.0 | v10.0 shipped as v0.17.0 and PR #80 archived it. The trace exposed one safe but user-visible Windows path false-positive; the owner selected end-to-end explicit extended-path support and correction of the deferred-register counts during tune-up. A clear refusal was the lower-risk alternative. A finite gameplay set remains unready without named lawful inputs and independent outcomes. |
 
 | 2026-11-10 | Completed the offline v4.0 core slice; retain ship and real-browser work as distinct next decisions | All five scoped requirements and integration flows passed locally; measured SDK results are explicitly headless and emulated. |
 

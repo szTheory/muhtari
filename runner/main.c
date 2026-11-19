@@ -37,6 +37,7 @@
 #include <wchar.h>
 #include <sys/stat.h>
 #ifdef _WIN32
+#include <limits.h>
 #include <direct.h>
 #include <io.h>
 #include <windows.h>
@@ -82,6 +83,141 @@ _Static_assert(TRACE_LIMIT_MAX *TRACE_RECORD_MAX_BYTES <= TRACE_OUTPUT_BODY_MAX,
                "hard trace cap fits the runner output objective");
 _Static_assert(TRACE_RECORD_MAX_BYTES <= TRACE_LINE_MAX,
                "trace line capacity covers every fixed-width numeric field");
+
+#ifdef _WIN32
+/* Runner path strings use UTF-8 internally so option parsing stays byte based,
+   while every Windows filesystem call crosses into UTF-16 without ACP loss. */
+static wchar_t *runner_path_to_wide(const char *path)
+{
+    if (path == NULL) {
+        errno = EINVAL;
+        return NULL;
+    }
+    size_t bytes = strlen(path);
+    if (bytes >= (size_t)INT_MAX) {
+        errno = ENAMETOOLONG;
+        return NULL;
+    }
+    int capacity =
+        MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path, (int)bytes + 1, NULL, 0);
+    if (capacity <= 0 || (size_t)capacity > SIZE_MAX / sizeof(wchar_t)) {
+        errno = EINVAL;
+        return NULL;
+    }
+    wchar_t *wide = (wchar_t *)malloc((size_t)capacity * sizeof *wide);
+    if (wide == NULL) {
+        errno = ENOMEM;
+        return NULL;
+    }
+    if (MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path, (int)bytes + 1, wide, capacity) !=
+        capacity) {
+        int error = GetLastError();
+        free(wide);
+        SetLastError((DWORD)error);
+        errno = EINVAL;
+        return NULL;
+    }
+    return wide;
+}
+
+static int runner_utf8_mode(const char *mode, wchar_t wide[8])
+{
+    size_t i = 0u;
+    for (; mode[i] != '\0' && i + 1u < 8u; i++) {
+        if ((unsigned char)mode[i] > 0x7fu)
+            return 0;
+        wide[i] = (wchar_t)(unsigned char)mode[i];
+    }
+    if (mode[i] != '\0')
+        return 0;
+    wide[i] = L'\0';
+    return 1;
+}
+
+static FILE *runner_path_open(const char *path, const char *mode)
+{
+    wchar_t *wide_path = runner_path_to_wide(path);
+    wchar_t wide_mode[8];
+    if (wide_path == NULL)
+        return NULL;
+    if (!runner_utf8_mode(mode, wide_mode)) {
+        free(wide_path);
+        errno = EINVAL;
+        return NULL;
+    }
+    FILE *stream = _wfopen(wide_path, wide_mode);
+    int error = errno;
+    free(wide_path);
+    errno = error;
+    return stream;
+}
+
+static int runner_path_open_fd(const char *path, int flags, int mode)
+{
+    wchar_t *wide_path = runner_path_to_wide(path);
+    if (wide_path == NULL)
+        return -1;
+    int fd = _wopen(wide_path, flags, mode);
+    int error = errno;
+    free(wide_path);
+    errno = error;
+    return fd;
+}
+
+static int runner_path_remove(const char *path)
+{
+    wchar_t *wide_path = runner_path_to_wide(path);
+    if (wide_path == NULL)
+        return -1;
+    int rc = _wremove(wide_path);
+    int error = errno;
+    free(wide_path);
+    errno = error;
+    return rc;
+}
+
+static int runner_path_replace(const char *temporary, const char *destination)
+{
+    wchar_t *wide_temporary = runner_path_to_wide(temporary);
+    wchar_t *wide_destination = runner_path_to_wide(destination);
+    if (wide_temporary == NULL || wide_destination == NULL) {
+        free(wide_temporary);
+        free(wide_destination);
+        return -1;
+    }
+    BOOL replaced = MoveFileExW(wide_temporary, wide_destination,
+                                MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH);
+    int error = (int)GetLastError();
+    free(wide_temporary);
+    free(wide_destination);
+    if (!replaced) {
+        SetLastError((DWORD)error);
+        errno = EIO;
+        return -1;
+    }
+    return 0;
+}
+#else
+static FILE *runner_path_open(const char *path, const char *mode)
+{
+    return fopen(path, mode);
+}
+
+static int runner_path_open_fd(const char *path, int flags, int mode)
+{
+    return open(path, flags, (mode_t)mode);
+}
+
+static int runner_path_remove(const char *path)
+{
+    return remove(path);
+}
+
+static int runner_path_replace(const char *temporary, const char *destination)
+{
+    return rename(temporary, destination);
+}
+#endif
 
 typedef struct state_output {
     uint32_t frame;
@@ -226,36 +362,49 @@ static void hash_frame(const uint8_t *video, const muhtari_info *info, char hex[
     muhtari__sha256_hex(digest, hex);
 }
 
-/* Writes the native frame to path as a PNG, converting each byte through the
-   warm palette into R, G and B one row at a time. row has room for one row
-   of RGB. Returns 0, or 1 after a message when the file cannot be written. */
-static int dump_frame(const uint8_t *video, const muhtari_info *info, const char *path,
-                      uint8_t *row, uint32_t region)
+typedef int (*sibling_writer)(FILE *stream, void *user);
+static int write_sibling_atomic_stream(const char *destination, sibling_writer writer, void *user);
+
+typedef struct png_write_context {
+    const uint8_t *video;
+    const muhtari_info *info;
+    uint8_t *row;
+    uint32_t region;
+} png_write_context;
+
+/* Serialize one image row at a time into the shared atomic output stream. */
+static int dump_frame_stream(FILE *stream, void *user)
 {
-    FILE *f = fopen(path, "wb");
-    if (f == NULL) {
-        fprintf(stderr, "muhtari-run: cannot open %s for writing\n", path);
-        return MUHTARI__EXIT_FAILURE;
-    }
+    const png_write_context *context = (const png_write_context *)user;
+    const uint8_t *video = context->video;
+    const muhtari_info *info = context->info;
+    uint8_t *row = context->row;
     muhtari__png png;
-    int failed = muhtari__png_begin(&png, f, info->width, info->height) != 0;
-    for (uint32_t y = 0; y < info->height && !failed; y++) {
-        for (uint32_t x = 0; x < info->width; x++) {
-            uint32_t rgb = muhtari__palette_rgb_region(video[(size_t)y * info->width + x], region);
+    if (muhtari__png_begin(&png, stream, info->width, info->height) != 0)
+        return -1;
+    for (uint32_t y = 0u; y < info->height; y++) {
+        for (uint32_t x = 0u; x < info->width; x++) {
+            uint32_t rgb =
+                muhtari__palette_rgb_region(video[(size_t)y * info->width + x], context->region);
             row[3u * x] = (uint8_t)(rgb >> 16);
             row[3u * x + 1u] = (uint8_t)(rgb >> 8);
             row[3u * x + 2u] = (uint8_t)rgb;
         }
-        failed = muhtari__png_row(&png, row) != 0;
+        if (muhtari__png_row(&png, row) != 0)
+            return -1;
     }
-    if (!failed) {
-        failed = muhtari__png_end(&png) != 0;
-    }
-    if (fclose(f) != 0) {
-        failed = 1;
-    }
-    if (failed) {
-        fprintf(stderr, "muhtari-run: cannot write %s\n", path);
+    return muhtari__png_end(&png) == 0 ? 0 : -1;
+}
+
+/* Writes the native frame to path as a PNG, converting each byte through the
+   warm palette into R, G and B one row at a time. row has room for one row
+   of RGB. Returns 0, or 1 after a message when the file cannot be published. */
+static int dump_frame(const uint8_t *video, const muhtari_info *info, const char *path,
+                      uint8_t *row, uint32_t region)
+{
+    png_write_context context = {video, info, row, region};
+    if (write_sibling_atomic_stream(path, dump_frame_stream, &context) != 0) {
+        fprintf(stderr, "muhtari-run: cannot open or write %s\n", path);
         return MUHTARI__EXIT_FAILURE;
     }
     return MUHTARI__EXIT_DONE;
@@ -385,7 +534,7 @@ static uint8_t *read_image(const char *path, size_t *out_n)
         fprintf(stderr, "muhtari-run: out of memory\n");
         return NULL;
     }
-    FILE *f = fopen(path, "rb");
+    FILE *f = runner_path_open(path, "rb");
     if (f == NULL) {
         fprintf(stderr, "muhtari-run: %s: cannot open\n", path);
         free(image);
@@ -614,10 +763,52 @@ static int same_lexical_path(const char *left, const char *right)
     return left != NULL && right != NULL && strcmp(left, right) == 0;
 }
 
-/* Normalize the WASI parent spelling lexically; existing file identity is
-   still checked separately with stat where that filesystem supports it. */
+/* save_import spells the battery destination from the selected directory and
+   cartridge basename. Keep the join byte-exact in UTF-8; separators are ASCII. */
+static char *runner_battery_path(const char *directory, const char *image_path)
+{
+    if (directory == NULL || image_path == NULL)
+        return NULL;
+    const char *base = image_path;
+    for (const char *p = image_path; *p != '\0'; p++) {
+        if (*p == '/'
+#ifdef _WIN32
+            || *p == '\\'
+#endif
+        )
+            base = p + 1;
+    }
+    const char *dot = strrchr(base, '.');
+    size_t stem = dot != NULL && dot != base ? (size_t)(dot - base) : strlen(base);
+    size_t directory_len = strlen(directory);
+    int needs_separator = directory_len != 0u && directory[directory_len - 1u] != '/' &&
+                          directory[directory_len - 1u] != '\\';
+    size_t separator_len = (size_t)needs_separator;
+    if (stem == 0u || directory_len > SIZE_MAX - separator_len ||
+        directory_len + separator_len > SIZE_MAX - stem ||
+        directory_len + separator_len + stem > SIZE_MAX - 5u)
+        return NULL;
+    size_t output_len = directory_len + separator_len + stem + 4u;
+    char *output = (char *)malloc(output_len + 1u);
+    if (output == NULL)
+        return NULL;
+    memcpy(output, directory, directory_len);
+    if (needs_separator != 0) {
+#ifdef _WIN32
+        output[directory_len] = '\\';
+#else
+        output[directory_len] = '/';
+#endif
+    }
+    memcpy(output + directory_len + separator_len, base, stem);
+    memcpy(output + directory_len + separator_len + stem, ".sav", 5u);
+    return output;
+}
+
+/* Normalize a WASI path lexically. Callers must fail closed when collapsing
+   `..` would make two distinct spellings appear unrelated. */
 #if defined(__wasi__)
-static char *trace_normalize_wasi_parent(const char *path)
+static char *runner_normalize_wasi_path(const char *path)
 {
     char *cwd = NULL;
     if (path[0] != '/') {
@@ -687,52 +878,145 @@ static char *trace_normalize_wasi_parent(const char *path)
     free(full);
     return normalized;
 }
+
+static int runner_wasi_has_parent_component(const char *path)
+{
+    const char *cursor = path;
+    while (*cursor != '\0') {
+        while (*cursor == '/')
+            cursor++;
+        const char *component = cursor;
+        while (*cursor != '\0' && *cursor != '/')
+            cursor++;
+        if ((size_t)(cursor - component) == 2u && component[0] == '.' && component[1] == '.')
+            return 1;
+    }
+    return 0;
+}
 #endif
 
-/* Normalize the final parent and basename. POSIX realpath resolves symlinked
-   parents even when the destination itself does not exist. Windows resolves
-   the parent through a directory handle so junction aliases also compare
-   equal; the WASI fallback normalizes dot/parent components. */
+/* Normalize a target path for comparison. POSIX resolves symlinked parents
+   even when the destination is absent; Windows resolves parents through a
+   directory handle; WASI uses a rooted lexical spelling. */
 #ifdef _WIN32
-typedef wchar_t trace_path_char;
+typedef wchar_t runner_path_char;
 
-static wchar_t *trace_windows_final_path(const char *path)
+static int runner_windows_extended_prefix(const wchar_t *path)
 {
-    HANDLE directory = CreateFileA(path, FILE_READ_ATTRIBUTES,
-                                   FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
-                                   OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
-    if (directory == INVALID_HANDLE_VALUE)
-        return NULL;
+    return path[0] == L'\\' && path[1] == L'\\' && path[2] == L'?' && path[3] == L'\\';
+}
 
-    const DWORD path_capacity = 32768u;
-    wchar_t *resolved = (wchar_t *)malloc((size_t)path_capacity * sizeof *resolved);
-    if (resolved == NULL) {
-        (void)CloseHandle(directory);
+static wchar_t *runner_wide_duplicate(const wchar_t *text, size_t count)
+{
+    if (count > SIZE_MAX / sizeof(wchar_t) - 1u)
+        return NULL;
+    wchar_t *copy = (wchar_t *)malloc((count + 1u) * sizeof *copy);
+    if (copy != NULL) {
+        memcpy(copy, text, count * sizeof *copy);
+        copy[count] = L'\0';
+    }
+    return copy;
+}
+
+static wchar_t *runner_windows_full_path(const wchar_t *path)
+{
+    if (runner_windows_extended_prefix(path))
+        return runner_wide_duplicate(path, wcslen(path));
+    DWORD needed = GetFullPathNameW(path, 0u, NULL, NULL);
+    if (needed == 0u || needed > 32768u)
+        return NULL;
+    wchar_t *full = (wchar_t *)malloc((size_t)needed * sizeof *full);
+    if (full == NULL)
+        return NULL;
+    DWORD written = GetFullPathNameW(path, needed, full, NULL);
+    if (written == 0u || written >= needed) {
+        free(full);
         return NULL;
     }
-    DWORD resolved_len = GetFinalPathNameByHandleW(directory, resolved, path_capacity,
-                                                   FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
-    (void)CloseHandle(directory);
-    if (resolved_len == 0u || resolved_len >= path_capacity) {
+    return full;
+}
+
+static int runner_windows_file_id(const wchar_t *path, FILE_ID_INFO *identity)
+{
+    HANDLE handle = CreateFileW(path, FILE_READ_ATTRIBUTES,
+                                FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
+                                OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    if (handle == INVALID_HANDLE_VALUE)
+        return 0;
+    int ok =
+        GetFileInformationByHandleEx(handle, FileIdInfo, identity, (DWORD)sizeof *identity) != 0;
+    DWORD error = ok ? ERROR_SUCCESS : GetLastError();
+    (void)CloseHandle(handle);
+    if (!ok)
+        SetLastError(error);
+    return ok;
+}
+
+static wchar_t *runner_windows_final_path(const wchar_t *path)
+{
+    HANDLE handle = CreateFileW(path, FILE_READ_ATTRIBUTES,
+                                FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
+                                OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    if (handle == INVALID_HANDLE_VALUE)
+        return NULL;
+    const DWORD capacity = 32768u;
+    wchar_t *resolved = (wchar_t *)malloc((size_t)capacity * sizeof *resolved);
+    if (resolved == NULL) {
+        (void)CloseHandle(handle);
+        return NULL;
+    }
+    DWORD length = GetFinalPathNameByHandleW(handle, resolved, capacity,
+                                             FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
+    (void)CloseHandle(handle);
+    if (length == 0u || length >= capacity) {
         free(resolved);
         return NULL;
     }
     return resolved;
 }
+
+static int runner_windows_parent_id(const wchar_t *path, FILE_ID_INFO *identity)
+{
+    wchar_t *full = runner_windows_full_path(path);
+    if (full == NULL)
+        return 0;
+    wchar_t *last_separator = NULL;
+    for (wchar_t *p = full; *p != L'\0'; p++) {
+        if (*p == L'/' || *p == L'\\')
+            last_separator = p;
+    }
+    if (last_separator == NULL) {
+        free(full);
+        return 0;
+    }
+    size_t parent_len = (size_t)(last_separator - full) + 1u;
+    wchar_t *parent = runner_wide_duplicate(full, parent_len);
+    free(full);
+    if (parent == NULL)
+        return 0;
+    int ok = runner_windows_file_id(parent, identity);
+    free(parent);
+    return ok;
+}
 #else
-typedef char trace_path_char;
+typedef char runner_path_char;
 #endif
 
-static trace_path_char *trace_normalized_path(const char *path)
+static runner_path_char *runner_normalized_target_path(const char *path)
 {
 #ifdef _WIN32
-    char *full = _fullpath(NULL, path, 0u);
+    wchar_t *wide_path = runner_path_to_wide(path);
+    if (wide_path == NULL)
+        return NULL;
+    int extended = runner_windows_extended_prefix(wide_path);
+    wchar_t *full = runner_windows_full_path(wide_path);
+    free(wide_path);
     if (full == NULL)
         return NULL;
-    const char *base = full;
-    const char *last_separator = NULL;
-    for (const char *p = full; *p != '\0'; p++) {
-        if (*p == '/' || *p == '\\') {
+    wchar_t *base = full;
+    wchar_t *last_separator = NULL;
+    for (wchar_t *p = full; *p != L'\0'; p++) {
+        if (*p == L'/' || *p == L'\\') {
             last_separator = p;
             base = p + 1;
         }
@@ -742,53 +1026,32 @@ static trace_path_char *trace_normalized_path(const char *path)
         return NULL;
     }
     size_t parent_len = (size_t)(last_separator - full) + 1u;
-    if (parent_len == SIZE_MAX) {
-        free(full);
-        return NULL;
-    }
-    char *parent = (char *)malloc(parent_len + 1u);
+    wchar_t *parent = runner_wide_duplicate(full, parent_len);
     if (parent == NULL) {
         free(full);
         return NULL;
     }
-    memcpy(parent, full, parent_len);
-    parent[parent_len] = '\0';
-    wchar_t *canonical_parent = trace_windows_final_path(parent);
+    wchar_t *canonical_parent = runner_windows_final_path(parent);
     free(parent);
     if (canonical_parent == NULL) {
         free(full);
         return NULL;
     }
 
-    const DWORD path_capacity = 32768u;
     size_t canonical_len = wcslen(canonical_parent);
-
-    int base_capacity = MultiByteToWideChar(CP_ACP, 0, base, -1, NULL, 0);
-    if (base_capacity <= 0) {
-        free(canonical_parent);
-        free(full);
-        return NULL;
-    }
     size_t parent_wide_len = canonical_len;
-    wchar_t *wide_base = (wchar_t *)malloc((size_t)base_capacity * sizeof *wide_base);
-    if (wide_base == NULL ||
-        MultiByteToWideChar(CP_ACP, 0, base, -1, wide_base, base_capacity) == 0) {
-        free(wide_base);
-        free(canonical_parent);
-        free(full);
-        return NULL;
+    size_t base_wide_len = wcslen(base);
+    if (!extended) {
+        /* Ordinary Win32 file calls discard trailing ASCII dots and spaces. */
+        while (base_wide_len != 0u &&
+               (base[base_wide_len - 1u] == L'.' || base[base_wide_len - 1u] == L' '))
+            base_wide_len--;
     }
-    size_t base_wide_len = (size_t)base_capacity - 1u;
-    /* Ordinary Win32 file calls discard trailing ASCII dots and spaces. */
-    while (base_wide_len != 0u &&
-           (wide_base[base_wide_len - 1u] == L'.' || wide_base[base_wide_len - 1u] == L' '))
-        base_wide_len--;
     int separator = parent_wide_len != 0u && canonical_parent[parent_wide_len - 1u] != L'\\' &&
                     canonical_parent[parent_wide_len - 1u] != L'/';
     size_t separator_len = (size_t)separator;
     if (parent_wide_len > SIZE_MAX - separator_len - base_wide_len - 1u ||
-        parent_wide_len + separator_len + base_wide_len >= path_capacity) {
-        free(wide_base);
+        parent_wide_len + separator_len + base_wide_len >= 32768u) {
         free(canonical_parent);
         free(full);
         return NULL;
@@ -796,7 +1059,6 @@ static trace_path_char *trace_normalized_path(const char *path)
     size_t normalized_len = parent_wide_len + separator_len + base_wide_len;
     wchar_t *normalized = (wchar_t *)malloc((normalized_len + 1u) * sizeof *normalized);
     if (normalized == NULL) {
-        free(wide_base);
         free(canonical_parent);
         free(full);
         return NULL;
@@ -804,13 +1066,13 @@ static trace_path_char *trace_normalized_path(const char *path)
     memcpy(normalized, canonical_parent, parent_wide_len * sizeof *normalized);
     if (separator != 0)
         normalized[parent_wide_len] = L'\\';
-    memcpy(normalized + parent_wide_len + separator_len, wide_base,
-           base_wide_len * sizeof *normalized);
+    memcpy(normalized + parent_wide_len + separator_len, base, base_wide_len * sizeof *normalized);
     normalized[normalized_len] = L'\0';
-    free(wide_base);
     free(canonical_parent);
     free(full);
     return normalized;
+#elif defined(__wasi__)
+    return runner_normalize_wasi_path(path);
 #else
     const char *base = path;
     const char *last_separator = NULL;
@@ -835,11 +1097,7 @@ static trace_path_char *trace_normalized_path(const char *path)
         memcpy(parent, path, parent_len);
         parent[parent_len] = '\0';
     }
-#ifdef __wasi__
-    char *canonical_parent = trace_normalize_wasi_parent(parent);
-#else
     char *canonical_parent = realpath(parent, NULL);
-#endif
     free(parent);
     if (canonical_parent == NULL)
         return NULL;
@@ -867,26 +1125,114 @@ static trace_path_char *trace_normalized_path(const char *path)
 #endif
 }
 
-static int trace_paths_equal(const char *left, const char *right)
+static int runner_paths_equal(const char *left, const char *right)
 {
-    if (same_lexical_path(left, right))
-        return 1;
     if (left == NULL || right == NULL)
         return 0;
-#ifdef _WIN32
-    struct _stat64 left_info, right_info;
-    int left_exists = _stat64(left, &left_info) == 0;
-    int right_exists = _stat64(right, &right_info) == 0;
+    if (same_lexical_path(left, right))
+        return 1;
+#ifdef __wasi__
+    /* WASI stat must receive normalized paths; raw dot aliases trap in its resolver. */
+    {
+        char *normalized_left = runner_normalized_target_path(left);
+        char *normalized_right = runner_normalized_target_path(right);
+        if (normalized_left == NULL || normalized_right == NULL) {
+            free(normalized_left);
+            free(normalized_right);
+            return -1;
+        }
+        if (strcmp(normalized_left, normalized_right) == 0) {
+            free(normalized_left);
+            free(normalized_right);
+            return 1;
+        }
+        if (runner_wasi_has_parent_component(left) || runner_wasi_has_parent_component(right)) {
+            free(normalized_left);
+            free(normalized_right);
+            return -1;
+        }
+        struct stat left_info, right_info;
+        errno = 0;
+        int left_exists = stat(normalized_left, &left_info) == 0;
+        int left_error = errno;
+        errno = 0;
+        int right_exists = stat(normalized_right, &right_info) == 0;
+        int right_error = errno;
+        if ((!left_exists && left_error != ENOENT) || (!right_exists && right_error != ENOENT)) {
+            free(normalized_left);
+            free(normalized_right);
+            return -1;
+        }
+        if (left_exists && right_exists && left_info.st_ino != 0 &&
+            left_info.st_dev == right_info.st_dev && left_info.st_ino == right_info.st_ino) {
+            free(normalized_left);
+            free(normalized_right);
+            return 1;
+        }
+        free(normalized_left);
+        free(normalized_right);
+        return 0;
+    }
+#elif defined(_WIN32)
+    wchar_t *wide_left = runner_path_to_wide(left);
+    wchar_t *wide_right = runner_path_to_wide(right);
+    if (wide_left == NULL || wide_right == NULL) {
+        free(wide_left);
+        free(wide_right);
+        return -1;
+    }
+    FILE_ID_INFO left_info, right_info;
+    int left_exists = runner_windows_file_id(wide_left, &left_info);
+    DWORD left_error = left_exists ? ERROR_SUCCESS : GetLastError();
+    int right_exists = runner_windows_file_id(wide_right, &right_info);
+    DWORD right_error = right_exists ? ERROR_SUCCESS : GetLastError();
+    int left_absent =
+        !left_exists && (left_error == ERROR_FILE_NOT_FOUND || left_error == ERROR_PATH_NOT_FOUND);
+    int right_absent = !right_exists &&
+                       (right_error == ERROR_FILE_NOT_FOUND || right_error == ERROR_PATH_NOT_FOUND);
+    if ((!left_exists && !left_absent) || (!right_exists && !right_absent)) {
+        free(wide_left);
+        free(wide_right);
+        return -1;
+    }
+    if (left_exists && right_exists) {
+        int equal = left_info.VolumeSerialNumber == right_info.VolumeSerialNumber &&
+                    memcmp(left_info.FileId.Identifier, right_info.FileId.Identifier,
+                           sizeof left_info.FileId.Identifier) == 0;
+        free(wide_left);
+        free(wide_right);
+        return equal;
+    }
+    FILE_ID_INFO left_parent, right_parent;
+    if (!runner_windows_parent_id(wide_left, &left_parent) ||
+        !runner_windows_parent_id(wide_right, &right_parent)) {
+        free(wide_left);
+        free(wide_right);
+        return -1;
+    }
+    int same_parent = left_parent.VolumeSerialNumber == right_parent.VolumeSerialNumber &&
+                      memcmp(left_parent.FileId.Identifier, right_parent.FileId.Identifier,
+                             sizeof left_parent.FileId.Identifier) == 0;
+    free(wide_left);
+    free(wide_right);
+    if (!same_parent)
+        return 0;
 #else
     struct stat left_info, right_info;
+    errno = 0;
     int left_exists = stat(left, &left_info) == 0;
+    int left_error = errno;
+    errno = 0;
     int right_exists = stat(right, &right_info) == 0;
-#endif
+    int right_error = errno;
+    if ((!left_exists && left_error != ENOENT) || (!right_exists && right_error != ENOENT))
+        return -1;
     if (left_exists && right_exists && left_info.st_ino != 0 &&
         left_info.st_dev == right_info.st_dev && left_info.st_ino == right_info.st_ino)
         return 1;
-    trace_path_char *normalized_left = trace_normalized_path(left);
-    trace_path_char *normalized_right = trace_normalized_path(right);
+#endif
+    runner_path_char *normalized_left = runner_normalized_target_path(left);
+    runner_path_char *normalized_right = runner_normalized_target_path(right);
     if (normalized_left == NULL || normalized_right == NULL) {
         free(normalized_left);
         free(normalized_right);
@@ -908,56 +1254,63 @@ static int trace_paths_equal(const char *left, const char *right)
     return equal;
 }
 
-/* save_import spells the derived destination as DIR/<ROM stem>.sav. Resolve
-   that path against trace output along with the explicit inputs and outputs. */
-static int trace_path_conflicts(const options *o)
+/* Compare all output/input and output/output pairs before a frame can run.
+   The battery destination comes from the same helper used by save I/O. */
+static int runner_invocation_path_conflicts(const options *o)
 {
-    if (o->trace_file == NULL)
-        return 0;
     const char *inputs[] = {o->rom, o->movie, o->bios, o->hsc_rom, o->load_state};
-    for (size_t i = 0u; i < sizeof inputs / sizeof inputs[0]; i++) {
-        int equal = trace_paths_equal(o->trace_file, inputs[i]);
-        if (equal != 0)
-            return equal;
-    }
-    for (uint32_t i = 0u; i < o->dump_count; i++) {
-        int equal = trace_paths_equal(o->trace_file, o->dump_paths[i]);
-        if (equal != 0)
-            return equal;
-    }
-    for (uint32_t i = 0u; i < o->state_output_count; i++) {
-        int equal = trace_paths_equal(o->trace_file, o->state_outputs[i].path);
-        if (equal != 0)
-            return equal;
-    }
+    char *battery_path = NULL;
     if (o->save_dir != NULL && o->rom != NULL) {
-        const char *base = o->rom;
-        for (const char *p = base; *p != '\0'; p++) {
-            if (*p == '/'
-#ifdef _WIN32
-                || *p == '\\'
-#endif
-            )
-                base = p + 1;
-        }
-        const char *dot = strrchr(base, '.');
-        size_t stem = dot != NULL && dot != base ? (size_t)(dot - base) : strlen(base);
-        size_t dir = strlen(o->save_dir);
-        if (stem == 0u || dir > SIZE_MAX - 6u || stem > SIZE_MAX - dir - 6u)
+        battery_path = runner_battery_path(o->save_dir, o->rom);
+        if (battery_path == NULL)
             return -1;
-        char *save_path = (char *)malloc(dir + stem + 6u);
-        if (save_path == NULL)
-            return -1;
-        memcpy(save_path, o->save_dir, dir);
-        save_path[dir] = '/';
-        memcpy(save_path + dir + 1u, base, stem);
-        memcpy(save_path + dir + stem + 1u, ".sav", 5u);
-        int equal = trace_paths_equal(o->trace_file, save_path);
-        free(save_path);
-        if (equal != 0)
-            return equal;
     }
-    return 0;
+    size_t output_count = (size_t)o->dump_count + (size_t)o->state_output_count +
+                          (o->trace_file != NULL ? 1u : 0u) + (battery_path != NULL ? 1u : 0u);
+    if (output_count > SIZE_MAX / sizeof(const char *)) {
+        free(battery_path);
+        return -1;
+    }
+    const char **outputs =
+        output_count != 0u ? (const char **)malloc(output_count * sizeof *outputs) : NULL;
+    if (output_count != 0u && outputs == NULL) {
+        free(battery_path);
+        return -1;
+    }
+    size_t out = 0u;
+    for (uint32_t i = 0u; i < o->dump_count; i++)
+        outputs[out++] = o->dump_paths[i];
+    for (uint32_t i = 0u; i < o->state_output_count; i++)
+        outputs[out++] = o->state_outputs[i].path;
+    if (o->trace_file != NULL)
+        outputs[out++] = o->trace_file;
+    if (battery_path != NULL)
+        outputs[out++] = battery_path;
+
+    int unresolved = 0;
+    for (size_t i = 0u; i < output_count; i++) {
+        for (size_t j = 0u; j < sizeof inputs / sizeof inputs[0]; j++) {
+            int equal = runner_paths_equal(outputs[i], inputs[j]);
+            if (equal > 0) {
+                free(outputs);
+                free(battery_path);
+                return 1;
+            }
+            unresolved |= equal < 0;
+        }
+        for (size_t j = 0u; j < i; j++) {
+            int equal = runner_paths_equal(outputs[i], outputs[j]);
+            if (equal > 0) {
+                free(outputs);
+                free(battery_path);
+                return 1;
+            }
+            unresolved |= equal < 0;
+        }
+    }
+    free(outputs);
+    free(battery_path);
+    return unresolved ? -1 : 0;
 }
 
 /* Returns 0 when the options are spelled right, 2 after a usage message, 1
@@ -1173,6 +1526,76 @@ static int parse_options(int argc, char **argv, options *o)
     return MUHTARI__EXIT_DONE;
 }
 
+#ifdef _WIN32
+static int runner_windows_path_supported(const char *path)
+{
+    if (path == NULL)
+        return 1;
+    wchar_t *wide = runner_path_to_wide(path);
+    if (wide == NULL)
+        return errno == ENOMEM ? -1 : 0;
+    int supported = 1;
+    if (runner_windows_extended_prefix(wide)) {
+        size_t length = wcslen(wide);
+        int drive =
+            length >= 7u &&
+            ((wide[4] >= L'A' && wide[4] <= L'Z') || (wide[4] >= L'a' && wide[4] <= L'z')) &&
+            wide[5] == L':' && wide[6] == L'\\';
+        int unc = _wcsnicmp(wide, L"\\\\?\\UNC\\", 8u) == 0;
+        if (drive) {
+            for (size_t i = 0u; i < length; i++) {
+                if (wide[i] == L'/')
+                    supported = 0;
+            }
+        } else if (unc) {
+            const wchar_t *server = wide + 8u;
+            const wchar_t *server_end = wcschr(server, L'\\');
+            const wchar_t *share = server_end != NULL ? server_end + 1u : NULL;
+            const wchar_t *share_end = share != NULL ? wcschr(share, L'\\') : NULL;
+            supported = server_end != NULL && server_end != server && share != NULL &&
+                        share[0] != L'\0' && (share_end == NULL || share_end != share);
+            for (size_t i = 0u; i < length; i++) {
+                if (wide[i] == L'/')
+                    supported = 0;
+            }
+        } else {
+            supported = 0;
+        }
+    } else if ((wide[0] == L'\\' && wide[1] == L'\\' && (wide[2] == L'?' || wide[2] == L'.')) ||
+               (wide[0] == L'\\' && wide[1] == L'?' && wide[2] == L'?' && wide[3] == L'\\')) {
+        supported = 0;
+    }
+    free(wide);
+    return supported;
+}
+#endif
+
+static int runner_path_arguments_supported(const options *opt)
+{
+#ifdef _WIN32
+    const char *paths[] = {opt->probe,   opt->rom,        opt->movie,    opt->bios,
+                           opt->hsc_rom, opt->load_state, opt->save_dir, opt->trace_file};
+    for (size_t i = 0u; i < sizeof paths / sizeof paths[0]; i++) {
+        int supported = runner_windows_path_supported(paths[i]);
+        if (supported != 1)
+            return supported;
+    }
+    for (uint32_t i = 0u; i < opt->dump_count; i++) {
+        int supported = runner_windows_path_supported(opt->dump_paths[i]);
+        if (supported != 1)
+            return supported;
+    }
+    for (uint32_t i = 0u; i < opt->state_output_count; i++) {
+        int supported = runner_windows_path_supported(opt->state_outputs[i].path);
+        if (supported != 1)
+            return supported;
+    }
+#else
+    (void)opt;
+#endif
+    return 1;
+}
+
 /* Checks the options against each other and against the movie header h,
    if any: the header wins, so an option that names another device or
    region is a usage error, and --frames defaults to the movie's frame
@@ -1310,15 +1733,13 @@ static int check_options(options *o, const muhtari__movie_header *h, uint32_t mo
                 return usage("duplicate --hash-state point");
         }
     }
-    if (o->trace_file != NULL) {
-        int conflicts = trace_path_conflicts(o);
-        if (conflicts < 0) {
-            fprintf(stderr, "muhtari-run: cannot safely validate trace destination path\n");
-            return MUHTARI__EXIT_FAILURE;
-        }
-        if (conflicts != 0)
-            return usage("trace file path conflicts with an input or output");
+    int path_conflicts = runner_invocation_path_conflicts(o);
+    if (path_conflicts < 0) {
+        fprintf(stderr, "muhtari-run: cannot safely validate output path identity\n");
+        return MUHTARI__EXIT_FAILURE;
     }
+    if (path_conflicts != 0)
+        return usage("output path conflicts with an input or another output");
     if (o->hash_state_count > 0u)
         qsort(o->hash_state_frames, o->hash_state_count, sizeof o->hash_state_frames[0],
               compare_u32);
@@ -1342,7 +1763,7 @@ static int check_options(options *o, const muhtari__movie_header *h, uint32_t mo
 static uint8_t *read_movie_file(const char *path, size_t *out_n)
 {
     const size_t cap = (size_t)MUHTARI__MOVIE_BYTES_MAX + 1u;
-    FILE *f = fopen(path, "rb");
+    FILE *f = runner_path_open(path, "rb");
     if (f == NULL) {
         fprintf(stderr, "muhtari-run: %s: cannot open\n", path);
         return NULL;
@@ -1513,8 +1934,14 @@ typedef struct save_context {
 static int save_directory(const char *path)
 {
 #ifdef _WIN32
+    wchar_t *wide_path = runner_path_to_wide(path);
+    if (wide_path == NULL)
+        return 0;
     struct _stat64 st;
-    return _stat64(path, &st) == 0 && (st.st_mode & _S_IFMT) == _S_IFDIR && _access(path, 6) == 0;
+    int accessible = _wstat64(wide_path, &st) == 0 && (st.st_mode & _S_IFMT) == _S_IFDIR &&
+                     _waccess(wide_path, 6) == 0;
+    free(wide_path);
+    return accessible;
 #else
     struct stat st;
     return stat(path, &st) == 0 && S_ISDIR(st.st_mode) && access(path, R_OK | W_OK | X_OK) == 0;
@@ -1524,21 +1951,30 @@ static int save_directory(const char *path)
 static FILE *save_read_open(const char *path)
 {
 #ifdef _WIN32
-    struct _stat64 st;
-    if (_stat64(path, &st) != 0)
+    wchar_t *wide_path = runner_path_to_wide(path);
+    if (wide_path == NULL)
         return NULL;
+    struct _stat64 st;
+    if (_wstat64(wide_path, &st) != 0) {
+        free(wide_path);
+        return NULL;
+    }
     if ((st.st_mode & _S_IFMT) != _S_IFREG) {
+        free(wide_path);
         errno = EINVAL;
         return NULL;
     }
-    int fd = _open(path, _O_RDONLY | _O_BINARY);
+    int fd = _wopen(wide_path, _O_RDONLY | _O_BINARY);
+    int error = errno;
+    free(wide_path);
+    errno = error;
     if (fd < 0)
         return NULL;
     FILE *f = _fdopen(fd, "rb");
     if (f == NULL) {
-        int error = errno;
+        int fdopen_error = errno;
         (void)_close(fd);
-        errno = error;
+        errno = fdopen_error;
     }
     return f;
 #else
@@ -1576,30 +2012,12 @@ static int save_import(save_context *save, muhtari *m, const options *opt)
         return MUHTARI__EXIT_FAILURE;
     if (battery.bytes == 0u)
         return 0;
-    const char *base = opt->rom;
-    for (const char *p = base; *p != '\0'; p++) {
-        if (*p == '/'
-#ifdef _WIN32
-            || *p == '\\'
-#endif
-        )
-            base = p + 1;
-    }
-    const char *dot = strrchr(base, '.');
-    size_t stem = dot != NULL && dot != base ? (size_t)(dot - base) : strlen(base);
-    size_t dir = strlen(opt->save_dir);
-    if (stem == 0u || dir > SIZE_MAX - 6u || stem > SIZE_MAX - dir - 6u)
-        return MUHTARI__EXIT_FAILURE;
-    save->path = (char *)malloc(dir + stem + 6u);
+    save->path = runner_battery_path(opt->save_dir, opt->rom);
     uint8_t *staging = (uint8_t *)malloc(battery.bytes + 1u);
     if (save->path == NULL || staging == NULL) {
         free(staging);
         return MUHTARI__EXIT_FAILURE;
     }
-    memcpy(save->path, opt->save_dir, dir);
-    save->path[dir] = '/';
-    memcpy(save->path + dir + 1u, base, stem);
-    memcpy(save->path + dir + stem + 1u, ".sav", 5u);
     memset(staging, 0xFF, battery.bytes + 1u);
     errno = 0;
     FILE *f = save_read_open(save->path);
@@ -1638,15 +2056,11 @@ static int save_import(save_context *save, muhtari *m, const options *opt)
 static int save_replace(const char *temporary, const char *destination)
 {
 #ifdef _WIN32
-    return MoveFileExA(temporary, destination, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)
-               ? 0
-               : -1;
+    return runner_path_replace(temporary, destination);
 #else
-    return rename(temporary, destination);
+    return runner_path_replace(temporary, destination);
 #endif
 }
-
-typedef int (*sibling_writer)(FILE *stream, void *user);
 
 typedef struct byte_span_writer {
     const void *bytes;
@@ -1678,9 +2092,10 @@ static int write_sibling_atomic_stream(const char *destination, sibling_writer w
 #endif
         (void)snprintf(temporary, len + 48u, "%s.tmp.%lu.%u", destination, pid, attempt);
 #ifdef _WIN32
-        int fd = _open(temporary, _O_CREAT | _O_EXCL | _O_WRONLY | _O_BINARY, _S_IREAD | _S_IWRITE);
+        int fd = runner_path_open_fd(temporary, _O_CREAT | _O_EXCL | _O_WRONLY | _O_BINARY,
+                                     _S_IREAD | _S_IWRITE);
 #else
-        int fd = open(temporary, O_CREAT | O_EXCL | O_WRONLY, 0600);
+        int fd = runner_path_open_fd(temporary, O_CREAT | O_EXCL | O_WRONLY, 0600);
 #endif
         if (fd < 0) {
             if (errno == EEXIST)
@@ -1716,7 +2131,7 @@ static int write_sibling_atomic_stream(const char *destination, sibling_writer w
     if (!bad && save_replace(temporary, destination) != 0)
         bad = 1;
     if (owned && bad)
-        (void)remove(temporary);
+        (void)runner_path_remove(temporary);
     free(temporary);
     return bad ? -1 : 0;
 }
@@ -2434,11 +2849,20 @@ static int run(const options *opt, replay *mv)
     return status;
 }
 
-int main(int argc, char **argv)
+static int runner_main_utf8(int argc, char **argv)
 {
     options opt;
     memset(&opt, 0, sizeof opt);
     int status = parse_options(argc, argv, &opt);
+    if (status == MUHTARI__EXIT_DONE && !opt.printed) {
+        int paths_supported = runner_path_arguments_supported(&opt);
+        if (paths_supported < 0) {
+            fprintf(stderr, "muhtari-run: out of memory validating Windows path arguments\n");
+            status = MUHTARI__EXIT_FAILURE;
+        } else if (paths_supported == 0) {
+            status = usage("unsupported or malformed Windows path namespace");
+        }
+    }
     if (status == MUHTARI__EXIT_DONE && opt.probe != NULL) {
         status = probe(opt.probe);
     } else if (status == MUHTARI__EXIT_DONE && !opt.printed) {
@@ -2482,3 +2906,64 @@ int main(int argc, char **argv)
     }
     return status;
 }
+
+#ifdef _WIN32
+#ifndef main
+static char **runner_wide_arguments_to_utf8(int argc, wchar_t **argv)
+{
+    if (argc < 0 || (size_t)argc > SIZE_MAX / sizeof(char *))
+        return NULL;
+    char **utf8 = (char **)calloc((size_t)argc + 1u, sizeof *utf8);
+    if (utf8 == NULL)
+        return NULL;
+    for (int i = 0; i < argc; i++) {
+        int capacity =
+            WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, argv[i], -1, NULL, 0, NULL, NULL);
+        if (capacity <= 0) {
+            for (int j = 0; j < i; j++)
+                free(utf8[j]);
+            free(utf8);
+            return NULL;
+        }
+        utf8[i] = (char *)malloc((size_t)capacity);
+        if (utf8[i] == NULL || WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, argv[i], -1,
+                                                   utf8[i], capacity, NULL, NULL) != capacity) {
+            for (int j = 0; j <= i; j++)
+                free(utf8[j]);
+            free(utf8);
+            return NULL;
+        }
+    }
+    return utf8;
+}
+
+static void runner_free_utf8_arguments(int argc, char **argv)
+{
+    for (int i = 0; i < argc; i++)
+        free(argv[i]);
+    free(argv);
+}
+
+int wmain(int argc, wchar_t **argv)
+{
+    char **utf8 = runner_wide_arguments_to_utf8(argc, argv);
+    if (utf8 == NULL) {
+        fputs("muhtari-run: invalid Unicode command line\n", stderr);
+        return MUHTARI__EXIT_FAILURE;
+    }
+    int status = runner_main_utf8(argc, utf8);
+    runner_free_utf8_arguments(argc, utf8);
+    return status;
+}
+#else
+int main(int argc, char **argv)
+{
+    return runner_main_utf8(argc, argv);
+}
+#endif
+#else
+int main(int argc, char **argv)
+{
+    return runner_main_utf8(argc, argv);
+}
+#endif

@@ -125,6 +125,8 @@ Status: reproduced
 | MU-AUDIO-001 | Public mono PCM can appear bipolar after the DC blocker even when the raw YM DAC path has lost negative-half polarity. Assert positive and negative signed raw values on both channels and compare before mono mixing. | Phase 20-01 first matched phase/envelope/step but failed signed seed parity (`seed −3656`, C `+4384`); phase-bit-9 polarity fix and raw-DAC controls pass the receipt-bound oracle and `ym.synthesis`, N/A-local ([evidence](milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-01-SUMMARY.md#recorded-results)). | reproduced |
 | MU-TEST-015 | Synthetic chip-clock tests must consume PCM through the real bounded renderer. Advancing clocks without rendering fills the private FIFO; Release builds can hide the existing capacity assertion. Keep test drivers on half-open frame-cadence render/discard and preserve production bounds. | Before `757d72b`, AppleClang combined ASan/UBSan `ctest` stopped at the existing FIFO assertion; after the test-only consumer fix, the four YM C tests, receipt-bound oracle, and same focused sanitizer pass, N/A-local ([commands and exits](milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-01-SUMMARY.md#recorded-results)). | reproduced |
 | MU-TEST-016 | Static libretro observer coverage does not exercise the production module's exported load/run/state lifecycle. Add a test through each actual consumer boundary, including runtime loading, independent observations, snapshot continuation and refusal controls. | Phase 22-03's static observer left the loaded-module route unproved. Plan 22-04 added `libretro.host.souper_trace`; focused Debug/Release/ASan CTest and the full native workflow (722 ordinary and 8 release tests) passed ([summary](milestones/v7.0-phases/22-complete-souper-homebrew-mapper/22-04-SUMMARY.md)). | reproduced |
+| MU-TEST-017 | A runner battery-path fixture must select the intended battery device and change its generation before expecting a `.sav` write; an attached but unchanged battery is correctly not flushed. | PR CI [run 44415248930](https://github.com/szTheory/muhtari/actions/runs/44415248930) reproduced the missing battery in both Windows lanes. Source review traced it to an HSC-only non-mutating fixture and no SaveKey port; commit `34fb56f` dirties HSC RAM, selects SaveKey and checks the combined byte size. New Windows receipts are still pending, so only the fixture lesson is reproduced. | reproduced (Phase 29; Windows correction pending) |
+| MU-TEST-018 | A runner state round-trip fixture must pass the same machine-layout options when saving and reloading; state identity correctly rejects a different selected input device. | PR CI [run 44419461114](https://github.com/szTheory/muhtari/actions/runs/44419461114) failed `runner.trace.paths` on both Windows architectures because the save process selected port-1 SaveKey and the load process did not. The follow-up pairs the load with `--port1 savekey`; [run 44422330194](https://github.com/szTheory/muhtari/actions/runs/44422330194) advanced to a later blocked-state-output check on both Windows architectures, confirming the round-trip passed. | reproduced (Phase 29; blocked-output check pending) |
 | MU-CI-019 | Qualify sanitizer runtime startup and fault controls before attributing a timeout to product code; keep an alternate local compiler result separate from the pinned CI runtime. | Homebrew Clang 21.1.8 tiny C probe: plain and UBSan exit 0 (0.261s/0.541s); ASan and combined probes timed out before `main` at 5s, including the controlled outside-sandbox boundary. AppleClang 21.0.0 with the same combined address/undefined flags started (0.455s), detected deliberate heap-OOB and signed-overflow faults, and passed focused YM `ctest` 4/4 after `757d72b`, N/A-local ([evidence](milestones/v6.0-phases/20-complete-ym2151-homebrew-sound/20-01-SUMMARY.md#recorded-results)). No kernel or sandbox root cause is claimed. | reproduced (environment-specific) |
 | MU-CI-020 | A reusable release workflow can run current step definitions against an older tagged source tree. On `workflow_dispatch`, bind legacy producer scripts to the checked-out target by clearing caller event-base data and setting `GITHUB_SHA` to the checked-out commit; make the aggregator use that target's first parent too. | Release run [43406278774](https://github.com/szTheory/muhtari/actions/runs/43406278774) produced quality artifacts based on `15a844d` because the tagged producer script used the dispatch caller's `GITHUB_SHA^1`; the release target `8d73321` has parent `77d9bec`. Replaying artifacts through `quality_join.cmake` with `15a844d` exits 0 and with `77d9bec` exits 1. `ctest --test-dir build/ci -R '^policy\\.quality\\.controls$' --output-on-failure` exits 0 with conflicting-dispatch and workflow-mutation controls. | reproduced |
 | MU-REL-001 | release-please 17.6.0: `initial-version` applies only while the manifest says `0.0.0` (default 1.0.0); `feat` bumps minor before 1.0 only with `bump-patch-for-minor-pre-major: false`; the `release-as` key is deprecated and sticky — use a `Release-As:` footer | release-please `src/versioning-strategies/default.ts`, `strategies/base.ts` at v17.6.0 | adopted (ENGINEERING 5) |
@@ -1078,3 +1080,53 @@ Run URL: N/A-local.
 **MU-GSD-029:** During v10.0 closeout, Phase 27 listed five active plans (`27-01`–`27-04` and `27-06`), but its progress line still said 4/5 after the cost-receipt plan completed. The earlier partial `27-05` plan was explicitly superseded and excluded from the active set. `query roadmap.analyze` reported five plans and five summaries; correcting the displayed count to 5/5 and rerunning the query confirmed both phases complete and eight milestone plans total. Keep superseded plans for history, but update progress from the active plan set before archiving.
 
 Evidence: `git diff --check` and `query roadmap.analyze` exited 0 before archival; the archived Phase 27 roadmap now shows 5/5. Run URL: N/A-local.
+
+## Retry transient Ubuntu archive fetches without weakening source trust (2026-11-19)
+
+**MU-CI-022:** PR CI run [44532572779](https://github.com/szTheory/muhtari/actions/runs/44532572779)
+failed before BE32 compilation when `apt-get update --error-on=any` lost its
+connection to `security.ubuntu.com`; an earlier exact-source run also lost APT
+downloads to a transient mirror/resource error. Add two `Acquire::Retries`
+attempts to both package-index refresh and install while keeping the signed
+mirror list and `--error-on=any`. The offline `policy.ubuntu_apt.controls`
+consumer verifies option forwarding and fail-on-exhaustion; it does not emulate
+an APT network retry. Exact-source c3 CI [run 44543122949](https://github.com/szTheory/muhtari/actions/runs/44543122949)
+and Release [run 44543122965](https://github.com/szTheory/muhtari/actions/runs/44543122965) both passed BE32 package
+setup with the retry option present, but neither had a transient fetch to retry. The retry branch itself remains
+unexercised; do not claim hosted retry recovery from a normal successful download.
+
+Sources: [Ubuntu `apt.conf(5)`](https://manpages.ubuntu.com/manpages/resolute/man5/apt.conf.5.html),
+[`apt-get(8)`](https://manpages.ubuntu.com/manpages/resolute/man8/apt-get.8.html).
+Status: observed; hosted retry confirmation pending.
+
+## Calibrate nested Windows path-test deadlines from completed ARM64 runs (2026-11-19)
+
+**MU-TEST-019:** On exact source `7c7f663`, three Windows ARM64
+`runner.trace.paths` runs completed in 42.49, 42.73 and 47.33 seconds, while the
+Release run reached the existing 60.02-second limit with no case output. Set
+the Windows PowerShell child limit to twice the slowest completed sample
+(95 seconds) and CTest's outer limit to 100 seconds so CMake can report its
+timeout first. On exact-source c3, Windows x64 and ARM64 CI and Release completed
+their full path matrices and cleanup assertions; CI measured `runner.trace.paths`
+at 8.68 seconds on x64 and 47.02 seconds on ARM64. Both limits remain finite,
+and the local host does not execute this Windows-only process matrix.
+
+Sources: [CMake `execute_process(TIMEOUT)`](https://cmake.org/cmake/help/latest/command/execute_process.html),
+[CTest `TIMEOUT`](https://cmake.org/cmake/help/latest/prop_test/TIMEOUT.html).
+Status: reproduced; calibrated bound passed exact-source c3 Windows CI and Release.
+
+## Schedule the slow Windows path matrix before short tests (2026-11-19)
+
+**MU-TEST-020:** In exact-source c3 Windows CI, `runner.trace.paths` had the
+default CTest cost of 1 and completed at test 729/736 on x64 (8.68 seconds) and
+735/736 on ARM64 (47.02 seconds). A prior ARM64 sample reached 47.33 seconds.
+Set Windows-only `COST 50` so CTest can schedule the measured long test earlier
+while preserving its fixtures, timeout, inventory membership and full test
+behavior. This should improve failure feedback; it cannot reduce the required
+base-comparison work, and only the next hosted run can establish the ordering
+or wall-time effect.
+
+Sources: [CTest `COST`](https://cmake.org/cmake/help/latest/prop_test/COST.html),
+[c3 CI x64 job](https://github.com/szTheory/muhtari/actions/runs/44543122949/job/135626560630),
+[c3 CI ARM64 job](https://github.com/szTheory/muhtari/actions/runs/44543122949/job/135626560798).
+Status: adopted after independent review; c4 hosted scheduling measurement pending.
