@@ -9,8 +9,8 @@ also completed successfully, including its attested artifact rehearsal, install-
 package setup jobs passed with the new retry option, though neither exercised a network retry. Earlier failures
 and superseded source results remain preserved below. The only later source change is Windows-only CTest `COST 50`
 for `runner.trace.paths`; it changes scheduling metadata, not test membership or behavior. The c3 results accept
-the product requirements. A c4 hosted run is still needed to measure whether the scheduling adjustment reports
-path failures earlier; no timing improvement is claimed yet.
+the product requirements. Exact-source c4 hosted runs measure the adjustment below: Windows path failures now
+report earlier in the test inventory, while neither the test nor overall suite runs faster.
 
 | Requirement / case group | Local | Windows x64 | Windows ARM64 |
 |---|---|---|---|
@@ -181,3 +181,37 @@ No requirement is accepted by this initial record.
 - CI BE32 [job 135626560422](https://github.com/szTheory/muhtari/actions/runs/44543122949/job/135626560422) and Release BE32 [job 135626571546](https://github.com/szTheory/muhtari/actions/runs/44543122965/job/135626571546) passed normal package setup with the new APT retry option. Neither job hit a transient transport failure, so they do not prove a retry was exercised. Nightly [run 44543123161](https://github.com/szTheory/muhtari/actions/runs/44543123161) passed in 21m21s; the Release equality job took 31m32s, so overlapping equality consumed 52m53s of runner time across Nightly and Release. This is additional runner cost but no demonstrated critical-path savings from adding a changed-file classifier; keep current coverage and record the observation.
 - The CI and Release Windows ARM64 jobs took 45m02s and 44m52s respectively; initial matrix jobs started within seconds of their run, and no c3 jobs were cancelled. On CI, the independent-base CTest matrix ran from 14:40:58 to 15:08:03 and passed. The Release rehearsal took 6m35s; its `publish.sh verify` step took 3m36s compared with 3m29s on prior successful run 44523063989. These observations support the path-test scheduling adjustment for earlier failure feedback, but do not justify changing CI topology, cache behavior, or the independent-base control.
 - The Windows test registration was configured locally with simulated `WIN32=TRUE`: `ctest --show-only=json-v1` showed a 95-second child timeout, 100-second CTest timeout and cost 50 at scale 1, with child/CTest limits 190/200 and cost 50 at scale 2. The full local `cmake --workflow --preset ci` on the same working snapshot passed 736/736 tests, generated all three macOS packages, and passed 8/8 release tests. The host did not execute Win32 APIs or the SMB matrix.
+
+## C4 ordering and delivery-efficiency follow-up (2026-11-19)
+
+- Exact source `1d418688a074c372472834a01647c378c5cbf577` passed PR CI
+  [44563687336](https://github.com/szTheory/muhtari/actions/runs/44563687336),
+  Release rehearsal
+  [44563687397](https://github.com/szTheory/muhtari/actions/runs/44563687397),
+  and Nightly
+  [44563687377](https://github.com/szTheory/muhtari/actions/runs/44563687377).
+  Windows x64 and ARM64 completed their full test and package inventories. The
+  Release attestation, artifact verification, install-line check, and temporary
+  release/tag cleanup passed. No jobs were cancelled.
+- The Windows x64 path test completed at 43/736 in 8.80 seconds; ARM64 completed
+  at 45/736 in 51.06 seconds. c3 completed it at 729/736 in 8.68 seconds and
+  735/736 in 47.02 seconds. The unchanged test, fixtures and timeout therefore
+  provide much earlier failure feedback, but did not run faster; c4's ARM64
+  sample was about four seconds slower. `COST 50` is a scheduling adjustment,
+  not a test or suite speedup.
+- Queue delays were about 0–17 seconds, with no cancelled jobs. The x64 CI job
+  took 25m15s (8m16s test/package and 16m27s independent base), compared with
+  c3's 18m32s (5m53s and 12m13s). ARM64 took 42m19s (15m50s test/package and
+  25m42s independent base), compared with c3's 45m02s (17m06s and 27m05s).
+  This small sample is variable and does not justify changing timeouts, caches,
+  runner topology, or the required inventory.
+- The c4 Release equality job took about 16m49s and Nightly equality about
+  17m29s; c3 recorded 31m32s and 21m17s respectively. This is not enough
+  independent evidence to introduce a changed-file classifier. The report-only
+  WASI child took about 4m10s in c4, as in c3, and can delay the reusable
+  workflow's completion although it is not part of `CI required`; splitting it
+  out is a candidate to revisit if more runs show material delivery delay and
+  a coverage-preserving design with low maintenance cost.
+- No safe structural CI/CD change was supported by these runs. Keep existing
+  release attestation, artifact verification, install-line checks and cleanup.
+  No cache, timeout, dependency or coverage change was made.

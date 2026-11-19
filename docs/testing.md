@@ -217,10 +217,10 @@ with its lane's inventory and labels.
 
 | Job | Runner | Runs | JUnit check |
 |---|---|---|---|
-| `changes` | `ubuntu-26.04` | `scripts/classify-changes.sh` on the pull request's paths, old and new names, and its changed-file count | none |
+| `changes` | `ubuntu-26.04` | classifier on changed paths/count and the release-please exception ([maintaining](maintaining.md#how-a-release-happens)) | none |
 | `hygiene` | `ubuntu-26.04` | preset `hygiene` | `hygiene.txt` |
 | `title` | `ubuntu-26.04` | pull requests only: `scripts/check-title.sh` on the live title and body | none |
-| `build` ×6 | `ubuntu-26.04`, `ubuntu-26.04-arm`, `macos-15`, `macos-15-intel`, `windows-2025`, `windows-11-arm` | fetches wasmtime and 7800basic, then preset `ci` (`ci-msvc` on Windows); uploads `archives-<os>-<arch>` and `hashes-<os>-<arch>`; Linux x64 also uploads the source-bound portable ZIP; `macos-15` checks the README install line | `ci.txt` without `release`, then `release` |
+| `build` ×6 | `ubuntu-26.04`, `ubuntu-26.04-arm`, `macos-15`, `macos-15-intel`, `windows-2025`, `windows-11-arm` | fetches pinned tools; runs `ci` (`ci-msvc` on Windows); uploads per-lane archives/hashes; Linux x64 also uploads the portable ZIP; macOS checks the README install line | `ci.txt` without `release`, then `release` |
 | `asan` | `ubuntu-26.04` | fetches wasmtime and 7800basic, then preset `asan` | `ci.txt` without `abi` and `release` |
 | `nofp` ×2 | `ubuntu-26.04`, `ubuntu-26.04-arm` | preset `nofp` | `nofp.txt` |
 | `be32` | `ubuntu-26.04` | preset `be32-compile`; full execution/equality runs nightly and on releases | none |
@@ -236,16 +236,17 @@ Windows loads MSVC via `vswhere` and `vcvarsall`; actions use SHA pins.
 `scripts/ubuntu-apt.sh` prefers kernel.org's signed mirror, preserving Ubuntu fallbacks and keys.
 
 **The roll-up.** The ruleset requires one check, `CI required`. It always runs and passes only when every job it
-needs succeeded, with three exceptions: the heavy jobs may be skipped when `changes` says `heavy=false`, which
-happens only when every changed path is under `.planning/`; `title` and `perf` may be skipped outside pull
+needs succeeded, with three exceptions: the heavy jobs may be skipped when `changes` says `heavy=false` for
+planning-only paths or release metadata-only PRs (see [maintaining](maintaining.md#how-a-release-happens));
+`title` and `perf` may be skipped outside pull
 requests; and `perf` may be skipped in a nested call that passes `ref`. `wasm32` stays advisory: 9 distinct
 successful main executions as of 2026-10-22; ten are required. `library` is required (18, 2026-10-29). Skips, PR/branch controls and duplicate reruns do not count.
 
 **Tests of CI itself.** The hygiene lane checks the rules above. `policy.ci_required` reads the roll-up's `jq`
 program from `ci.yml` and runs it, with the step's own arguments, on synthetic results; it also fails when a
-job other than `wasm32` is missing from `CI required`'s needs. `ci.classify` runs the classifier on mixed,
-renamed, empty and planning-only path lists, and on a planning-only list from a pull request over 3000
-files, which the files API cuts short. `hygiene.timeout_comments` requires each `timeout-minutes` to carry a
+job other than `wasm32` is missing from `CI required`'s needs. `ci.classify` covers planning-only limits and
+rejects mixed/renamed/empty input or an invalid release-please path set, branch flag or count.
+`hygiene.timeout_comments` requires each `timeout-minutes` to carry a
 run/count comment. Bounds: twice the last 40 comparable successful job/runner/workload executions' maximum,
 rounded up to minutes; network/roll-up floor 5 min. n<10 is provisional. Toolchain/image/workload changes reset
 cohorts; direct/called CI stay separate. Timeouts are censored; skips and copied rerun timestamps add no samples.

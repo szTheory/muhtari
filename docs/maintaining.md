@@ -19,7 +19,10 @@ Nobody tags or uploads by hand. `.github/workflows/release.yml` does every step:
    updates the release pull request, labelled `autorelease: pending`, which edits only `version.txt`,
    `.release-please-manifest.json` and `CHANGELOG.md`. When it creates that pull request, the same job turns on
    auto-merge for it with the App's token.
-3. The release pull request runs CI like any other. GitHub merges it, as the App, once `CI required` passes.
+3. The release pull request keeps its hygiene, title and `CI required` checks. Because the exact release-please
+   branch changes only the three generated version/changelog files, its pre-merge heavy matrix is skipped. Any
+   extra, missing or renamed path restores full CI. The subsequent release workflow still runs full CI and
+   equality on the exact release commit, and publication requires those gates to pass before attestation.
 4. That merge's push runs `release.yml` again. release-please now tags the merge commit and creates a draft release
    for it. The first release is the first minor version, whatever the commit types.
 5. `release-ci` runs the whole of CI again on the release's commit, the `sha` release-please reports, never the
@@ -75,7 +78,8 @@ GitHub permissions, OIDC, artifact or release-publication behavior. The current
 `act` parser also rejects `.github/workflows/release.yml`'s `concurrency.queue: max`,
 which GitHub accepts. Keep that control and use hosted Release runs for
 release evidence. The configured CMake workflow below is the direct local route
-for Linux lanes.
+for Linux lanes. `ci.classify` covers the narrow release-please pre-merge skip;
+the exact-source release gates remain hosted checks before anything is published.
 
 ## The rehearsal
 

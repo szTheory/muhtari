@@ -19,13 +19,33 @@ The later v10.0 audit supersedes Phase 27's earlier draft-PR wording: PR #77 and
 | Dimension | Evidence and disposition |
 |---|---|
 | Performance | No product performance change is indicated by these workflow receipts. The 24m09s quality-observation step is visible, but one timing observation does not identify safe removable work. The Phase 27 `3 Ir/frame` result measures a different source-specific workload. |
-| CI/CD | Preserve workflow structure, timeouts, caches, parallelism, resource limits, and required/advisory membership. Exact-source required CI and publication are green; the single recorded main pair does not isolate a safe pipeline change. |
+| CI/CD | A repeated release-PR pattern supports one narrow pre-merge matrix skip. Keep full exact-source release CI/equality and all publication gates; no timeout, cache, concurrency, resource, or test change is supported. |
 | Ease of use | No runner command, install flow, or user interaction change is in scope. The evidence table keeps publication, current-main CI, skipped publication work, and report-only Nightly distinct for maintainers. |
 | Architecture | No dependency or runtime change. Keep public API 8, ABI 1, existing legacy 1/6, YM 2/7, and Souper 3/8 state formats, and all three deliverables unchanged. |
 | Documentation | Add this maintainer evidence record with source identity, outcome, timing, skipped/cancelled work, and evidence limits adjacent. No user-facing documentation change is needed. |
 | Upgrade path | No migration or compatibility change is selected. Extended Windows namespace behavior remains in Phase 29; this report does not claim that behavior. |
 
-The bounded decision is no pipeline change. `MU-CI-021` requires comparable completed samples for timeout decisions; `XFER-012` and the incomplete Nightly workload do not support inferring a cause from cancellation. Revisit a cache or topology proposal only after repeated comparable completed measurements and a per-step profile identify a safe saving while preserving hash equality, artifact joins, and gate membership. GitHub's [dependency caching guidance](https://docs.github.com/en/actions/concepts/workflows-and-actions/dependency-caching) notes that cached contents are restored as-is and untrusted; no cache or audit mechanism is added here.
+The original main-run sample still supports no timeout or topology change. Four release-please PRs provide separate repeated evidence for skipping only their redundant pre-merge matrix; exact-source release gates remain intact below. `MU-CI-021`, `XFER-012` and the incomplete Nightly workload still do not support inferring a timeout or cache change.
+
+## Follow-up: release-please pre-merge CI cost
+
+Four merged release-please PRs changed exactly the same three generated files: `version.txt`, `CHANGELOG.md` and `.release-please-manifest.json`. Their Windows x64 and ARM64 jobs passed but repeated the full matrix immediately before the release workflow rebuilt the exact release source:
+
+| Release PR | CI run | Windows x64 | Windows ARM64 |
+|---|---|---:|---:|
+| [#55](https://github.com/szTheory/muhtari/pull/55) | [43308325912](https://github.com/szTheory/muhtari/actions/runs/43308325912) | 26m04s | 43m37s |
+| [#64](https://github.com/szTheory/muhtari/pull/64) | [43626073214](https://github.com/szTheory/muhtari/actions/runs/43626073214) | 26m48s | 42m58s |
+| [#72](https://github.com/szTheory/muhtari/pull/72) | [43797178106](https://github.com/szTheory/muhtari/actions/runs/43797178106) | 25m50s | 42m52s |
+| [#78](https://github.com/szTheory/muhtari/pull/78) | [44208262141](https://github.com/szTheory/muhtari/actions/runs/44208262141) | 23m47s | 43m16s |
+
+This repeats roughly 67–70 Windows runner-minutes per metadata PR and puts about 43 minutes on the pre-merge critical path. CI now skips heavy jobs only when the same-repository `release-please--branches--main` PR targets `main` and its API-listed diff and changed-file count are exactly those three unique paths. Hygiene, title and `CI required` still run; any missing, extra, duplicate, renamed or unlisted path fails closed to full CI. The release workflow runs reusable CI and equality on the exact release SHA, and `publish` requires both to pass before attestation or upload. No dependency or quality gate was removed. `ci.classify` exercises the exact-match path and mismatch controls; a workflow self-test rejects a weakened same-repository guard. The hygiene workflow passed 31/31 locally. `act -l -W .github/workflows/ci.yml` parsed the changed workflow; hosted checks remain authoritative for release evidence.
+
+| Cheap local preflight | Exit | Result | Run URL |
+|---|---:|---|---|
+| `sh -n scripts/classify-changes.sh` | 0 | Classifier shell syntax passes. | N/A-local |
+| `cmake -DROOT="$PWD" -P tests/cmake/budgets.cmake` | 0 | All 25 checked documentation files are within budget. | N/A-local |
+| `act -l -W .github/workflows/ci.yml` | 0 | Workflow and job graph parse; no container job was run. | N/A-local |
+| `cmake --workflow --preset hygiene` | 0 | All 31/31 tests pass, including classifier exact-match, path mismatch and trusted-branch fault controls; test stage 38.6s. | N/A-local |
 
 ## Register reconciliation
 

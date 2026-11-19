@@ -42,8 +42,9 @@ defaults:
     shell: bash
 
 jobs:
-  # heavy=false only for a pull request whose every changed path, old and new
-  # name, is under .planning/; then the heavy jobs are skipped.
+  # heavy=false only for planning-only PRs or the exact generated release-
+  # please metadata diff on its same-repository main release branch. The latter
+  # still gets full exact-source CI from release.yml before publication.
   changes:
     runs-on: ubuntu-26.04
     timeout-minutes: 5  # network floor; max 7 s, n=4, run 39611531779; provisional
@@ -64,6 +65,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           NUMBER: ${{ github.event.pull_request.number }}
           CHANGED: ${{ github.event.pull_request.changed_files }}
+          RELEASE_METADATA_PR: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'release-please--branches--main' && github.event.pull_request.base.ref == 'main' }}
         run: |
           if [ -z "$NUMBER" ]; then
             echo heavy=true | tee -a "$GITHUB_OUTPUT"
@@ -71,7 +73,7 @@ jobs:
           fi
           { gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$NUMBER/files" \
               --jq '.[] | .filename, (.previous_filename // empty)' || echo '(listing failed)'; } |
-            sh scripts/classify-changes.sh "$CHANGED" | tee -a "$GITHUB_OUTPUT"
+            sh scripts/classify-changes.sh "$CHANGED" "$RELEASE_METADATA_PR" | tee -a "$GITHUB_OUTPUT"
 
   # The image has clang-format-21, clang-tidy-21 and jq; configure finds them.
   hygiene:
