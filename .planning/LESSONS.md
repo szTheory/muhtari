@@ -1080,3 +1080,34 @@ Run URL: N/A-local.
 **MU-GSD-029:** During v10.0 closeout, Phase 27 listed five active plans (`27-01`–`27-04` and `27-06`), but its progress line still said 4/5 after the cost-receipt plan completed. The earlier partial `27-05` plan was explicitly superseded and excluded from the active set. `query roadmap.analyze` reported five plans and five summaries; correcting the displayed count to 5/5 and rerunning the query confirmed both phases complete and eight milestone plans total. Keep superseded plans for history, but update progress from the active plan set before archiving.
 
 Evidence: `git diff --check` and `query roadmap.analyze` exited 0 before archival; the archived Phase 27 roadmap now shows 5/5. Run URL: N/A-local.
+
+## Retry transient Ubuntu archive fetches without weakening source trust (2026-11-19)
+
+**MU-CI-022:** PR CI run [44532572779](https://github.com/szTheory/muhtari/actions/runs/44532572779)
+failed before BE32 compilation when `apt-get update --error-on=any` lost its
+connection to `security.ubuntu.com`; an earlier exact-source run also lost APT
+downloads to a transient mirror/resource error. Add two `Acquire::Retries`
+attempts to both package-index refresh and install while keeping the signed
+mirror list and `--error-on=any`. The offline `policy.ubuntu_apt.controls`
+consumer verifies option forwarding and fail-on-exhaustion; it does not emulate
+an APT network retry. A fresh hosted run must confirm the retry against the
+runner network.
+
+Sources: [Ubuntu `apt.conf(5)`](https://manpages.ubuntu.com/manpages/resolute/man5/apt.conf.5.html),
+[`apt-get(8)`](https://manpages.ubuntu.com/manpages/resolute/man8/apt-get.8.html).
+Status: observed; hosted retry confirmation pending.
+
+## Calibrate nested Windows path-test deadlines from completed ARM64 runs (2026-11-19)
+
+**MU-TEST-019:** On exact source `7c7f663`, three Windows ARM64
+`runner.trace.paths` runs completed in 42.49, 42.73 and 47.33 seconds, while the
+Release run reached the existing 60.02-second limit with no case output. Set
+the Windows PowerShell child limit to twice the slowest completed sample
+(95 seconds) and CTest's outer limit to 100 seconds so CMake can report its
+timeout first. Both limits remain finite and the full drive/SMB test matrix and
+cleanup assertions remain enabled. The new bounds await exact-source hosted
+validation; the local host does not execute this Windows-only process matrix.
+
+Sources: [CMake `execute_process(TIMEOUT)`](https://cmake.org/cmake/help/latest/command/execute_process.html),
+[CTest `TIMEOUT`](https://cmake.org/cmake/help/latest/prop_test/TIMEOUT.html).
+Status: observed; calibrated bound pending hosted confirmation.

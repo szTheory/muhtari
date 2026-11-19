@@ -565,7 +565,7 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
           -WorkDir "${DIR}" -Fixture "${DIR}/option.a78" -Simple "${WINDOWS_PATH_SIMPLE}"
           -Bios "${WINDOWS_PATH_BIOS}"
         RESULT_VARIABLE process_paths_rc OUTPUT_VARIABLE process_paths_out
-        ERROR_VARIABLE process_paths_err TIMEOUT 60)
+        ERROR_VARIABLE process_paths_err TIMEOUT "${WINDOWS_PATH_TIMEOUT}")
       if(NOT process_paths_rc STREQUAL "0")
         message(FATAL_ERROR "Windows real-process drive/SMB path acceptance failed: ${process_paths_rc}\n${process_paths_out}${process_paths_err}")
       endif()
@@ -627,7 +627,13 @@ if(WIN32)
   set(windows_path_script ${CMAKE_CURRENT_LIST_DIR}/windows_paths.ps1)
   set(windows_path_simple ${PROJECT_BINARY_DIR}/built/simple/simple.bas.a78)
   set(windows_path_bios ${PROJECT_BINARY_DIR}/built/openbios/openbios.bin)
+  # 95s = 2 x 47.33s, the slowest of 3 completed ARM64 runs on 66a1e85 and
+  # 7c7f663 (CI 44505809259, Release 44505809357, CI 44532572779).
+  math(EXPR windows_path_process_timeout "95 * ${MUHTARI_TIMEOUT_SCALE}")
+  # Leave 5s after the child-process limit for CMake to report the timeout.
+  math(EXPR windows_path_ctest_timeout "100 * ${MUHTARI_TIMEOUT_SCALE}")
   set(windows_path_args
+    "-DWINDOWS_PATH_TIMEOUT=${windows_path_process_timeout}"
     "-DWINDOWS_PATH_SCRIPT=${windows_path_script}"
     "-DWINDOWS_PATH_DRIVER=$<TARGET_FILE:muhtari-test-windows-paths>"
     "-DWINDOWS_PATH_SIMPLE=${windows_path_simple}"
@@ -656,7 +662,8 @@ foreach(case IN ITEMS arguments bounds equality filters io limits paths oracle)
 endforeach()
 if(WIN32)
   set_tests_properties(runner.trace.paths PROPERTIES
-    FIXTURES_REQUIRED "built_openbios;built_simple")
+    FIXTURES_REQUIRED "built_openbios;built_simple"
+    TIMEOUT ${windows_path_ctest_timeout})
 endif()
 muhtari_add_test(NAME runner.trace.disabled_config COMMAND ${CMAKE_COMMAND}
   "-DCMAKE_COMMAND=${CMAKE_COMMAND}" "-DCHECK=${PROJECT_SOURCE_DIR}/cmake/TraceLoopConfig.cmake"
