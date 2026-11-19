@@ -1179,8 +1179,11 @@ static int run_namespace(const wchar_t *runner, const wchar_t *work_dir, const w
                                        log_name) != 0;
     }
     if (!failed) {
-        const wchar_t *outputs[] = {state_output, trace, png, battery};
-        static const wchar_t *const output_roles[] = {L"state", L"trace", L"PNG", L"battery"};
+        const wchar_t *outputs[] = {state_output, trace,   png,         battery,
+                                    dot_state,    dot_png, space_state, space_png};
+        static const wchar_t *const output_roles[] = {L"state",       L"trace",     L"PNG",
+                                                      L"battery",     L"dot state", L"dot PNG",
+                                                      L"space state", L"space PNG"};
         for (size_t i = 0u; i < sizeof outputs / sizeof outputs[0]; i++) {
             DWORD attributes = GetFileAttributesW(outputs[i]);
             if (attributes == INVALID_FILE_ATTRIBUTES ||

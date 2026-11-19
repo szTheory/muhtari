@@ -294,3 +294,12 @@ Tests were not run during this review.
 _Follow-up reviewed: 2026-11-19T10:26:12Z_
 _Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_
+
+## Follow-up Review — 2026-11-19
+
+**Scope:** New suffix-distinct output cases in `tests/runner/windows_paths.c`.
+**Status:** clean
+
+The drive and SMB UNC cases write a state file and PNG whose extended paths differ only by a literal trailing dot or space. The test verifies both outputs exist, the PNG signature and state reload succeed, and the paths resolve to different volume/file identities. File open, identity-query, close, and cleanup failures all fail the case. No actionable issue or MSVC compatibility risk found; the file already uses `FILE_ID_INFO` and `FileIdInfo`.
+
+The exact-source Windows x64 and ARM64 CI and Release jobs subsequently passed these cases on source `c0c112e`; see `29-ACCEPTANCE.md`. The current local follow-up also includes those suffix outputs in the length measurement and checks all eight output labels, so the next source-qualified run will confirm that small test-driver extension.

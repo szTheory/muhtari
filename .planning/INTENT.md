@@ -95,6 +95,13 @@ Keep the dependency tree small when repository code, standard facilities or the
 platform meet the need. This is standing discussion guidance, not a request to
 reopen already locked phase context.
 
+Owner direction, 2026-11-19: review every CI and Release/CD run while active and
+after completion for queue time, critical path, job durations, cancelled work and
+low-effort ways to shorten feedback and iteration time. Preserve required test,
+fault and release coverage. Put cheap relevant consistency checks before long
+work, record when evidence supports no safe improvement, and require measured
+results across runs before changing workflow structure, caches or deadlines.
+
 Owner reaffirmation, 2026-11-11: use upstream scoping to keep milestone and later
 phase work directionally correct and economical. Retain the high-signal result,
 source identity, confidence, alternatives and revisit triggers in the existing

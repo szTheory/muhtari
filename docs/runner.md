@@ -215,8 +215,8 @@ signature warnings as applicable. Unknown exact-sized firmware remains accepted.
 
 Extended paths use absolute `\\?\C:\...` or `\\?\UNC\server\share\...` forms; tests cover `猫`, literal
 dot/space suffixes and paths beyond `MAX_PATH`. Ordinary paths follow Win32 rules. Unsupported forms and
-unverified identities fail closed. Windows x64/ARM64 CI reached NTFS drive/SMB outputs of 499/491 UTF-16
-units (`.sav`: 489/481); component limit 255. Temp candidates calculate to 517/509; creation is not assured.
+unverified identities fail closed. Windows x64/ARM64 CI reached NTFS drive/SMB outputs of 500/492 UTF-16
+units (`.sav`: 489/481); component limit 255. Temp candidates calculate to 518/510; creation is not assured.
 
 ## Output
 
