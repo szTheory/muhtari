@@ -805,10 +805,10 @@ static char *runner_battery_path(const char *directory, const char *image_path)
     return output;
 }
 
-/* Normalize the WASI parent spelling lexically; existing file identity is
-   still checked separately with stat where that filesystem supports it. */
+/* Normalize a WASI path lexically. Callers must fail closed when collapsing
+   `..` would make two distinct spellings appear unrelated. */
 #if defined(__wasi__)
-static char *trace_normalize_wasi_parent(const char *path)
+static char *runner_normalize_wasi_path(const char *path)
 {
     char *cwd = NULL;
     if (path[0] != '/') {
@@ -878,12 +878,26 @@ static char *trace_normalize_wasi_parent(const char *path)
     free(full);
     return normalized;
 }
+
+static int runner_wasi_has_parent_component(const char *path)
+{
+    const char *cursor = path;
+    while (*cursor != '\0') {
+        while (*cursor == '/')
+            cursor++;
+        const char *component = cursor;
+        while (*cursor != '\0' && *cursor != '/')
+            cursor++;
+        if ((size_t)(cursor - component) == 2u && component[0] == '.' && component[1] == '.')
+            return 1;
+    }
+    return 0;
+}
 #endif
 
-/* Normalize the final parent and basename. POSIX realpath resolves symlinked
-   parents even when the destination itself does not exist. Windows resolves
-   the parent through a directory handle so junction aliases also compare
-   equal; the WASI fallback normalizes dot/parent components. */
+/* Normalize a target path for comparison. POSIX resolves symlinked parents
+   even when the destination is absent; Windows resolves parents through a
+   directory handle; WASI uses a rooted lexical spelling. */
 #ifdef _WIN32
 typedef wchar_t runner_path_char;
 
@@ -1057,6 +1071,8 @@ static runner_path_char *runner_normalized_target_path(const char *path)
     free(canonical_parent);
     free(full);
     return normalized;
+#elif defined(__wasi__)
+    return runner_normalize_wasi_path(path);
 #else
     const char *base = path;
     const char *last_separator = NULL;
@@ -1081,11 +1097,7 @@ static runner_path_char *runner_normalized_target_path(const char *path)
         memcpy(parent, path, parent_len);
         parent[parent_len] = '\0';
     }
-#ifdef __wasi__
-    char *canonical_parent = trace_normalize_wasi_parent(parent);
-#else
     char *canonical_parent = realpath(parent, NULL);
-#endif
     free(parent);
     if (canonical_parent == NULL)
         return NULL;
@@ -1119,7 +1131,47 @@ static int runner_paths_equal(const char *left, const char *right)
         return 0;
     if (same_lexical_path(left, right))
         return 1;
-#ifdef _WIN32
+#ifdef __wasi__
+    /* WASI stat must receive normalized paths; raw dot aliases trap in its resolver. */
+    char *normalized_left = runner_normalized_target_path(left);
+    char *normalized_right = runner_normalized_target_path(right);
+    if (normalized_left == NULL || normalized_right == NULL) {
+        free(normalized_left);
+        free(normalized_right);
+        return -1;
+    }
+    if (strcmp(normalized_left, normalized_right) == 0) {
+        free(normalized_left);
+        free(normalized_right);
+        return 1;
+    }
+    if (runner_wasi_has_parent_component(left) || runner_wasi_has_parent_component(right)) {
+        free(normalized_left);
+        free(normalized_right);
+        return -1;
+    }
+    struct stat left_info, right_info;
+    errno = 0;
+    int left_exists = stat(normalized_left, &left_info) == 0;
+    int left_error = errno;
+    errno = 0;
+    int right_exists = stat(normalized_right, &right_info) == 0;
+    int right_error = errno;
+    if ((!left_exists && left_error != ENOENT) || (!right_exists && right_error != ENOENT)) {
+        free(normalized_left);
+        free(normalized_right);
+        return -1;
+    }
+    if (left_exists && right_exists && left_info.st_ino != 0 &&
+        left_info.st_dev == right_info.st_dev && left_info.st_ino == right_info.st_ino) {
+        free(normalized_left);
+        free(normalized_right);
+        return 1;
+    }
+    free(normalized_left);
+    free(normalized_right);
+    return 0;
+#elif defined(_WIN32)
     wchar_t *wide_left = runner_path_to_wide(left);
     wchar_t *wide_right = runner_path_to_wide(right);
     if (wide_left == NULL || wide_right == NULL) {
