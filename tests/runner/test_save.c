@@ -501,13 +501,16 @@ static int trace_file_exists(const char *path)
     struct _stat64 info;
     return _stat64(path, &info) == 0;
 #else
-    struct stat info;
 #ifdef __wasi__
-    static unsigned stat_checks;
-    (void)fprintf(stderr, "WASI trace-path snapshot stat %u: %s\n", stat_checks++, path);
-    (void)fflush(stderr);
-#endif
+    FILE *file = fopen(path, "rb");
+    if (file == NULL)
+        return 0;
+    (void)fclose(file);
+    return 1;
+#else
+    struct stat info;
     return stat(path, &info) == 0;
+#endif
 #endif
 }
 
@@ -1140,14 +1143,14 @@ static void trace_paths(const char *dir, const char *junction_alias, const char 
 
     (void)snprintf(trace, sizeof trace, "%s/./option.sav", dir);
     (void)snprintf(path, sizeof path, "%s/option.sav", dir);
-    /* Keep the alias in argv; WASI stat requires a canonical protected snapshot path. */
+    /* Keep the alias in argv while the precondition snapshot uses the canonical name. */
     TRACE_BAD_PATH(path, "--frames", "1", "--save-dir", save_dir, "--trace", trace, "--trace-frame",
                    "1", "--trace-range", "0:65535", rom);
 
     (void)snprintf(path, sizeof path, "%s/normalized-output", dir);
     (void)snprintf(alias, sizeof alias, "%s/subdir/../normalized-output", dir);
     (void)snprintf(state_point, sizeof state_point, "1:%s", path);
-    /* Snapshot the canonical names; WASI stat traps on protected paths containing `..`. */
+    /* Snapshot the canonical names while keeping the alias under test in argv. */
     TRACE_BAD_PATH(path, "--frames", "1", "--dump-frame", state_point, "--trace", alias,
                    "--trace-frame", "1", "--trace-range", "0:65535", rom);
     (void)snprintf(save_dir, sizeof save_dir, "%s/subdir/..", dir);

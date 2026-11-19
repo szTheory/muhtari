@@ -173,12 +173,12 @@ sets require HSC Off when an expansion would otherwise attach it.
 muhtari-run --frames 600 --save-dir saves --hsc on game.a78
 ```
 
-Create the directory before starting the runner. Without `--save-dir`, the runner reads and creates no save
-files. With it, a cartridge without battery storage runs without a save file after validating the directory.
+Create the directory first. Without `--save-dir`, no save files are read or created. With it, a battery-free
+cartridge runs without a save file after directory validation.
 The file name uses only the final ROM component and removes its final extension: `game.a78` becomes
 `game.sav`, `game.rev.a78` becomes `game.rev.sav`, `.hidden` becomes `.hidden.sav`, and `game` becomes
-`game.sav`. Use one writer per save path. Games with the
-same basename and concurrent sessions need separate save directories; there is no locking or identity sidecar.
+`game.sav`. Use one writer per path; concurrent same-basename sessions need separate directories. No locking
+or identity sidecar is used.
 
 The file is the library's raw layout version 1: HSC SRAM alone is 2,048 bytes, EEPROM alone is 32,768 bytes,
 and combined storage is 34,816 bytes with HSC first. Firmware is separate and never enters the save. Restore
@@ -215,7 +215,8 @@ signature warnings as applicable. Unknown exact-sized firmware remains accepted.
 
 Extended paths use absolute `\\?\C:\...` or `\\?\UNC\server\share\...` forms; tests cover `猫`, literal
 dot/space suffixes and paths beyond `MAX_PATH`. Ordinary paths follow Win32 rules. Unsupported forms and
-unverified identities fail closed. Measured full/component and derived `.sav`/temp lengths await x64/ARM64 CI.
+unverified identities fail closed. Windows x64/ARM64 CI reached NTFS drive/SMB outputs of 499/491 UTF-16
+units (`.sav`: 489/481); component limit 255. Temp candidates calculate to 517/509; creation is not assured.
 
 ## Output
 
