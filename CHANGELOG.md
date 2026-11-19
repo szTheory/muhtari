@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.18.0](https://github.com/szTheory/muhtari/compare/v0.17.0...v0.18.0) (2026-11-19)
+
+
+### Features
+
+* support Windows extended paths in runner ([#81](https://github.com/szTheory/muhtari/issues/81)) ([119e6e3](https://github.com/szTheory/muhtari/commit/119e6e30e9f29644a4c555a34172c35574cd7f67))
+
 ## [0.17.0](https://github.com/szTheory/muhtari/compare/v0.16.0...v0.17.0) (2026-11-18)
 
 
