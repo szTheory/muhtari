@@ -826,8 +826,9 @@ static int verify_blocked_outputs(const wchar_t *runner, const wchar_t *work_dir
     }
     if (!failed) {
         const wchar_t *args[] = {runner, L"--frames", L"1", L"--state-at-frame", state_arg, image};
-        failed = blocked_replace_case(runner, work_dir, log_name, state, args,
-                                      sizeof args / sizeof args[0], "cannot write output") != 0;
+        failed =
+            blocked_replace_case(runner, work_dir, log_name, state, args,
+                                 sizeof args / sizeof args[0], "cannot commit state file") != 0;
     }
     if (!failed) {
         const wchar_t *args[] = {
