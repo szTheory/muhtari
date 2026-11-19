@@ -1133,44 +1133,46 @@ static int runner_paths_equal(const char *left, const char *right)
         return 1;
 #ifdef __wasi__
     /* WASI stat must receive normalized paths; raw dot aliases trap in its resolver. */
-    char *normalized_left = runner_normalized_target_path(left);
-    char *normalized_right = runner_normalized_target_path(right);
-    if (normalized_left == NULL || normalized_right == NULL) {
+    {
+        char *normalized_left = runner_normalized_target_path(left);
+        char *normalized_right = runner_normalized_target_path(right);
+        if (normalized_left == NULL || normalized_right == NULL) {
+            free(normalized_left);
+            free(normalized_right);
+            return -1;
+        }
+        if (strcmp(normalized_left, normalized_right) == 0) {
+            free(normalized_left);
+            free(normalized_right);
+            return 1;
+        }
+        if (runner_wasi_has_parent_component(left) || runner_wasi_has_parent_component(right)) {
+            free(normalized_left);
+            free(normalized_right);
+            return -1;
+        }
+        struct stat left_info, right_info;
+        errno = 0;
+        int left_exists = stat(normalized_left, &left_info) == 0;
+        int left_error = errno;
+        errno = 0;
+        int right_exists = stat(normalized_right, &right_info) == 0;
+        int right_error = errno;
+        if ((!left_exists && left_error != ENOENT) || (!right_exists && right_error != ENOENT)) {
+            free(normalized_left);
+            free(normalized_right);
+            return -1;
+        }
+        if (left_exists && right_exists && left_info.st_ino != 0 &&
+            left_info.st_dev == right_info.st_dev && left_info.st_ino == right_info.st_ino) {
+            free(normalized_left);
+            free(normalized_right);
+            return 1;
+        }
         free(normalized_left);
         free(normalized_right);
-        return -1;
+        return 0;
     }
-    if (strcmp(normalized_left, normalized_right) == 0) {
-        free(normalized_left);
-        free(normalized_right);
-        return 1;
-    }
-    if (runner_wasi_has_parent_component(left) || runner_wasi_has_parent_component(right)) {
-        free(normalized_left);
-        free(normalized_right);
-        return -1;
-    }
-    struct stat left_info, right_info;
-    errno = 0;
-    int left_exists = stat(normalized_left, &left_info) == 0;
-    int left_error = errno;
-    errno = 0;
-    int right_exists = stat(normalized_right, &right_info) == 0;
-    int right_error = errno;
-    if ((!left_exists && left_error != ENOENT) || (!right_exists && right_error != ENOENT)) {
-        free(normalized_left);
-        free(normalized_right);
-        return -1;
-    }
-    if (left_exists && right_exists && left_info.st_ino != 0 &&
-        left_info.st_dev == right_info.st_dev && left_info.st_ino == right_info.st_ino) {
-        free(normalized_left);
-        free(normalized_right);
-        return 1;
-    }
-    free(normalized_left);
-    free(normalized_right);
-    return 0;
 #elif defined(_WIN32)
     wchar_t *wide_left = runner_path_to_wide(left);
     wchar_t *wide_right = runner_path_to_wide(right);
