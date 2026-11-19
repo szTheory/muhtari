@@ -13,6 +13,6 @@ sudo sh -eu -c '
   cat "$temporary" > "$mirror"
 ' sh /etc/apt/apt-mirrors.txt
 
-# A partial index refresh must fail instead of silently using stale indexes.
-sudo apt-get update --error-on=any
-sudo apt-get install -y --no-install-recommends "$@"
+# Retry transient mirror fetch failures, but fail if any index remains stale.
+sudo apt-get -o Acquire::Retries=2 update --error-on=any
+sudo apt-get -o Acquire::Retries=2 install -y --no-install-recommends "$@"

@@ -27,7 +27,13 @@ cat > "$work/bin/apt-get" <<'EOF'
 #!/bin/sh
 set -eu
 printf '%s\n' "$@" >> "$APT_CALLS"
-if [ "${APT_FAILURE:-}" = "$1" ]; then exit 42; fi
+command=
+for argument do
+  case "$argument" in
+    update|install) command=$argument; break ;;
+  esac
+done
+if [ "${APT_FAILURE:-}" = "$command" ]; then exit 42; fi
 EOF
 chmod +x "$work/bin/sudo" "$work/bin/apt-get"
 
@@ -51,18 +57,22 @@ reset_fixture
 expect_exit 0 sh "$driver" valgrind gcc-powerpc-linux-gnu
 printf 'https://mirrors.edge.kernel.org/ubuntu/\tpriority:0\nhttp://azure.archive.ubuntu.com/ubuntu/\tpriority:1\nhttps://archive.ubuntu.com/ubuntu/\tpriority:2\nhttps://security.ubuntu.com/ubuntu/\tpriority:3\n' > "$work/expected-mirrors"
 cmp "$APT_FIXTURE" "$work/expected-mirrors"
-printf '%s\n' update --error-on=any install -y --no-install-recommends valgrind gcc-powerpc-linux-gnu > "$work/expected-calls"
+printf '%s\n' -o Acquire::Retries=2 update --error-on=any \
+  -o Acquire::Retries=2 install -y --no-install-recommends valgrind gcc-powerpc-linux-gnu > "$work/expected-calls"
 cmp "$APT_CALLS" "$work/expected-calls"
 
 reset_fixture
 export APT_FAILURE=update
 expect_exit 42 sh "$driver" valgrind
-printf '%s\n' update --error-on=any > "$work/expected-calls"
+printf '%s\n' -o Acquire::Retries=2 update --error-on=any > "$work/expected-calls"
 cmp "$APT_CALLS" "$work/expected-calls"
 
 reset_fixture
 export APT_FAILURE=install
 expect_exit 42 sh "$driver" valgrind
+printf '%s\n' -o Acquire::Retries=2 update --error-on=any \
+  -o Acquire::Retries=2 install -y --no-install-recommends valgrind > "$work/expected-calls"
+cmp "$APT_CALLS" "$work/expected-calls"
 unset APT_FAILURE
 
 reset_fixture
