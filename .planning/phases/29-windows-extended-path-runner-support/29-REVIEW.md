@@ -174,5 +174,52 @@ No new or open findings in this follow-up.
 ---
 
 _Follow-up reviewed: 2026-11-19T00:07:21Z_
+
+_Reviewer: the agent (gsd-code-reviewer)_
+_Depth: standard_
+
+## Follow-up Review — 2026-11-19
+
+**Scope:** `tests/runner/test_save.c`, `docs/runner.md`, and Phase 29 acceptance wording.
+**Status:** clean
+
+The `..` aliases remain in the runner arguments while the harness snapshots canonical output or ROM paths, avoiding WASI `stat()` on the alias without dropping the collision cases. The public path contract distinguishes created output and `.sav` lengths from calculated temporary candidates; no actionable issue remains. No tests were run as part of this review; verification is recorded in `29-ACCEPTANCE.md`.
+
+## Follow-up Review — 2026-11-19
+
+**Scope:** Remaining `dir/./option.sav` protected snapshot in `tests/runner/test_save.c`.
+**Status:** clean
+
+No remaining WASI protected-snapshot trap risk found. The `./` trace alias and both `../` aliases remain in runner arguments, while their snapshots use canonical paths. The `subdir` fixture is a real directory, so those aliases reach the same targets; canonical existence checks and ROM snapshots still catch unintended output mutation. No coverage regression found. No tests were run during review; verification is recorded in `29-ACCEPTANCE.md`.
+
+_Follow-up reviewed: 2026-11-19_
+
+## Follow-up Review — WASI identity check normalization
+
+**Scope:** `runner/main.c` WASI path normalization and `runner_paths_equal()` branch in commit `fb53ef1`.
+**Status:** clean
+
+No actionable issue found. The branch normalizes both spellings before equality or filesystem identity checks, so raw `.`/`..` aliases do not reach wasi-libc `stat()`. Normalized equality is conservatively treated as a collision. For distinct spellings, any exact `..` component causes an unresolved result before `stat()`, avoiding false negatives where a symlink changes POSIX resolution; otherwise `stat()` receives only normalized paths and retains the device/inode hard-link check. Allocation failures are freed and fail closed. POSIX and Windows branches are unchanged. Final WASI execution remains pending the exact-source hosted receipt recorded in `29-ACCEPTANCE.md`.
+
+Tests were not run as part of this review; local and hosted verification evidence is recorded in `29-ACCEPTANCE.md`.
+
+## Follow-up Review — WASI branch local scope
+
+**Scope:** Scope-only change in `runner/main.c` commit `9cd7878`.
+**Status:** clean
+
+The added compound block separates the WASI branch's `normalized_left` and `normalized_right` locals from the shared fallback declarations that follow the preprocessor branch. All existing returns, cleanup paths, and comparisons remain inside the same branch, and the POSIX and Windows branches are unchanged. No new control-flow, warning, allocation, or safety issue found. Tests were not run during this review; evidence is in `29-ACCEPTANCE.md`.
+
+## Follow-up Review — 2026-11-19T07:23:01Z
+
+**Scope:** WASI-only `trace_file_exists()` change in `tests/runner/test_save.c`.
+**Depth:** standard
+**Status:** clean
+
+No actionable finding. On WASI the helper now probes the harness-owned regular fixture, snapshot, or temporary file with `fopen(path, "rb")` and closes a successfully opened stream. The collision cases still pass `./` and `../` aliases to the runner; only the protected snapshot path is canonicalized, so this helper change does not remove the runner alias cases. POSIX `stat()` and Windows `_stat64()` paths are unchanged.
+
+This source review does not establish that the new probe passes in the WASI runtime. The recorded WASI failures exercised the earlier `stat()` probe, and the successful Nightly WASI job builds and benchmarks the runner without running `runner.trace.paths`. The acceptance record appropriately leaves exact-source WASI and Windows rows pending; this test-only change does not itself accept the Windows path behavior. Tests were not run, as requested.
+
+_Follow-up reviewed: 2026-11-19T07:23:01Z_
 _Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_
