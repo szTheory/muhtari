@@ -10,12 +10,13 @@ relevant source links instead of scanning every historical plan.
 | What ships today and binding constraints | [PROJECT.md](PROJECT.md), [../AGENTS.md](../AGENTS.md) |
 | Public summary of what works, what is missing and what completion means | [../docs/status.md](../docs/status.md) |
 | Current position and next allowed step | [STATE.md](STATE.md) |
-| Current execution contract / requirements | [ROADMAP.md](ROADMAP.md), [v8.0 requirements](REQUIREMENTS.md), and [archived v7.0 requirements](milestones/v7.0-REQUIREMENTS.md) |
-| Immediate, next, mid-term and long-term horizons | [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md) |
+| Current execution contract / requirements | [ROADMAP.md](ROADMAP.md); active `REQUIREMENTS.md` exists only while a milestone is selected. Otherwise, see the [v11.0 requirements archive](milestones/v11.0-REQUIREMENTS.md). |
+| CI/CD iteration and release procedures | [AGENTS.md rule 9](../AGENTS.md), [owner intent](INTENT.md#retain-useful-understanding), [maintainer CI/release runbook](../docs/maintaining.md#inspecting-a-ci-run) and [testing guide](../docs/testing.md) |
+| Immediate, next, mid and long-term horizons | [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md) |
 | Where hardware/API/engineering facts live | [preparation/README.md](preparation/README.md) |
 | Settled choices and reasons | [preparation/DECISIONS.md](preparation/DECISIONS.md) |
 | Reproduced lessons versus imported hypotheses | [LESSONS.md](LESSONS.md) |
-| Current milestone recommendation, provenance, evidence confidence and revisit triggers | [2026-11-15 GameDrive qualification review](research/next-milestone/2026-11-15-game-drive-qualification.md), [rolling roadmap](PRODUCT-ROADMAP.md); [v7.0 Souper research](research/next-milestone/v7-SOUPER.md) records the completed milestone |
+| Current successor recommendation, evidence confidence and revisit triggers | [2026-11-19 successor review](research/next-milestone/2026-11-19-successor-review.md) and [rolling roadmap](PRODUCT-ROADMAP.md); the v11.0 audit records completed release/CI evidence |
 | Playstead quick route, native-host north star and pasteable handoff | [research/PLAYSTEAD-HANDOFF.md](research/PLAYSTEAD-HANDOFF.md) |
 | Reusable bounded specialist brief | [research/fan-out/prompt.txt](research/fan-out/prompt.txt) |
 | Historical browser-player idea and alternatives; reconcile with implemented LibFuturo routes in the current synthesis | [Browser-player seed](seeds/SEED-261030-tt4-browser-libretro-player.md), [bounded research](research/browser-player/RECOMMENDATION.md) |
@@ -36,10 +37,11 @@ Refresh this index, intent links and rolling horizons when a milestone begins or
 closes. Keep useful findings in ordinary project artifacts; no external memory
 service or bulk lesson export is needed. Detailed plans stay in their phase.
 
-Latest completion: [v8.0 audit](milestones/v8.0-MILESTONE-AUDIT.md) records the
-GameDrive no-go; [v7.0-SHIP.md](milestones/v7.0-SHIP.md) records the unpublished
-v0.15.0 source and its Wasm32 failure. The active v9.0 scope is to publish the
-corrected Souper source as v0.16.0; see [STATE](STATE.md) and [ROADMAP](ROADMAP.md).
+Latest completion: [v11.0 audit](milestones/v11.0-MILESTONE-AUDIT.md) records
+the shipped Windows extended-path support and measured CI/CD disposition; its
+[requirements](milestones/v11.0-REQUIREMENTS.md), [phase records](milestones/v11.0-phases/)
+and [roadmap](milestones/v11.0-ROADMAP.md) retain the evidence. No next
+milestone is selected; see [STATE](STATE.md) and the [rolling roadmap](PRODUCT-ROADMAP.md).
 Atari 2600 emulation belongs to twentysixhundo; LibFuturo owns
 the shared interface and native/browser consumer qualification. Keep those
 responsibilities distinct from Muhtari's machine behavior and release artifacts.

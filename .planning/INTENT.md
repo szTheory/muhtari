@@ -3,7 +3,7 @@
 **Source:** owner direction in the 2026-10-29 milestone/onboarding conversation,
 combined with the standing contracts linked below. These are product preferences
 and accepted instructions; technical research and observed behavior have separate
-evidence. Updated 2026-11-18.
+evidence. Updated 2026-11-19.
 
 ## Gamer value comes first
 

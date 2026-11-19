@@ -1,8 +1,8 @@
 ---
 title: "Prompt coverage: every owner ask and where it lives"
-summary: "Maps each of the owner's 68 asks (the preparation brief, all layers, plus later messages) to the file section, rule, seed or milestone that carries it, with a status and what remains."
+summary: "Maps each of the owner's 69 asks (the preparation brief, all layers, plus later messages) to the file section, rule, seed or milestone that carries it, with a status and what remains."
 read_when: "At kickoff review and at every milestone close; also before calling an owner ask done, deferred or out of scope."
-updated: 2026-11-15
+updated: 2026-11-19
 ---
 
 # Prompt coverage
@@ -103,8 +103,9 @@ at the root; LESSONS, PRODUCT-ROADMAP, SEED-NNN under `.planning/`. "v1.0 ph2" =
 | 66 | Add YM2151 homebrew sound and carry this milestone in gsd-autonomous style | INTENT; PROJECT v6.0; v6.0 REQUIREMENTS TUNE-10/YM-01–08; archived ROADMAP phases 19–20 | Documented | v6.0 shipped as v0.14.0; its evidence and later v7/v8 boundaries are preserved in their milestone records. |
 | 67 | At milestone boundaries, refresh the rolling roadmap and present a concrete recommendation with its strongest alternative; carry selected milestones through dependent work autonomously while preserving material stops | AGENTS owner direction; INTENT; research/fan-out/prompt.txt; PRODUCT-ROADMAP | Documented | Applied at v8.0 closeout: recommend holding scope until an authoritative GameDrive profile/oracle or lawful reproducible title-blocking defect appears; the strongest alternative is a narrowly scoped correction when that evidence exists. |
 | 68 | Publish at natural delivery points and finish each milestone with green main CI; inspect real queue, critical path, job durations and cancellations before proposing efficiency changes | AGENTS owner direction; INTENT; ENGINEERING; LESSONS; phase tune-up and ship receipts | Documented | Applied to v8.0 PRs #67/#68 and main run 43757444707; no safe CI topology/cache change was supported by the measured evidence. |
+| 69 | Review active and completed CI/Release runs for low-effort feedback-time gains, preserve test/fault/release evidence, use `act` for compatible local preflight, and run cheap consistency checks before long suites | AGENTS owner direction; INTENT; GSD-HANDOFF 3; `docs/maintaining.md` CI and Release runbooks | Documented | Added 2026-11-19 and applied during v11.0: measured queue, critical path, job durations and cancellations; local `act` parsing plus native hygiene; no safe workflow-structure, cache or deadline change supported by the available runs. |
 
-Totals: Documented 62, Partial 3, Later 3, Inapplicable 0.
+Totals: Documented 63, Partial 3, Later 3, Inapplicable 0.
 
 ## v8.0 closeout receipt — 2026-11-15
 

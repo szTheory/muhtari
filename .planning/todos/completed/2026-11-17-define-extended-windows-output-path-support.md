@@ -16,6 +16,8 @@ confidence: high
 audit_acknowledged:
   milestone: v10.0
   at: 2026-11-17
+completed: 2026-11-19
+status: completed
 ---
 
 ## Problem
