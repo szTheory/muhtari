@@ -20,6 +20,30 @@ The merged Phase 29 source `119e6e30e9f29644a4c555a34172c35574cd7f67` passed ful
 
 The matching main Release run [44574938682](https://github.com/szTheory/muhtari/actions/runs/44574938682) took 33s and created release PR [#82](https://github.com/szTheory/muhtari/pull/82) for v0.18.0. Release CI, equality, rehearsal, install and publication did not run because the release-please pull request was created for review; this run does not establish a published package.
 
+## v0.18.0 release gate: repeated Windows ARM64 baseline failure
+
+Release PR [#82](https://github.com/szTheory/muhtari/pull/82) has head `ebe24e48d166daf4784668329d6279d9be64bc8d` and base `119e6e30e9f29644a4c555a34172c35574cd7f67`. The completed CI run [44575006882](https://github.com/szTheory/muhtari/actions/runs/44575006882) uses the pre-change workflow and therefore does not exercise the release-metadata classifier in this branch.
+
+| Attempt | Queue and wall time | Windows ARM64 | Outcome |
+|---|---|---|---|
+| 1 | 0s queue at timestamp precision; 44m03s run | 43m52s; primary suite passed `runner.trace.paths` in 51.90s, then the independent-base quality run failed the same test during its extended UNC state save | Windows ARM64, `quality`, and `CI required` failed; all other jobs succeeded; no cancellations. |
+| 2, failed-jobs-only | 5s from run start to ARM64 job start; 42m28s run | 42m08s; primary suite passed `runner.trace.paths` in 49.72s, then the independent-base quality run failed the UNC save again | 14 successful jobs were reused; the ARM64 producer, `quality`, and `CI required` failed; three dependents were skipped; no cancellations. |
+
+Both failures report `cannot commit state file` for the same generated UNC path shape ending in `state-猫. `; the SMB create/read/write/remove preflight and the drive-path cases passed. The release metadata commit is not the failing source: the independent-base step checked the exact `119e6e3` tree, and the same path test passed earlier in that runner's primary suite. Its baseline worktree was nested at `${BUILD}/quality-base`, making that the concrete difference in checkout layout. The generic runner error does not expose whether temp creation, write, sync, close, or replacement failed, so the logs do not prove the operating-system cause.
+
+The bounded fix moves only the Windows (`ci-msvc`) independent-base worktree under `RUNNER_TEMP`; Linux and macOS keep the existing build-directory layout. It retains the baseline SHA, copied pins, five Windows preset steps, serialized CTest, test inventory, build options and deadlines. A focused path-selection control checks that Windows uses `RUNNER_TEMP` and other configurations keep their existing fallback. The independent reviewer found no path collision, stale-worktree or comparability issue. This is a supported harness correction, not yet proof that Windows SMB acceptance passes.
+
+| Local check after the change | Exit | Result |
+|---|---:|---|
+| `cmake -DQUALITY_BASE_WORKFLOW_ONLY=ON -P tests/cmake/quality_evidence.cmake` | 0 | Updated CMake producer parses. |
+| `ctest --test-dir build/ci --output-on-failure -R '^policy\.quality\.controls$'` | 0 | Policy quality control passed in 21.60s; it checks Windows temp-path selection and the unchanged non-Windows producer fallback. |
+| `cmake -DROOT="$PWD" -P tests/cmake/budgets.cmake` | 0 | All 25 documentation files are within budget. |
+| `cmake --workflow --preset hygiene` | 0 | All 31 tests passed; total test stage 39.47s. |
+| `scripts/hygiene.sh --tree` and `git diff --check` | 0 | Tree hygiene and whitespace checks passed. |
+| `cmake -DINPUT=build/ci-run-attempt-2.json -DEXPECTED_SHA=ebe24e48d166daf4784668329d6279d9be64bc8d -P tools/check_ci_run.cmake` | 1 | Exact-source audit correctly reports the failed ARM64 producer, missing quality evidence, and failed required roll-up. |
+
+The existing targeted rerun reused successful jobs instead of rerunning the full matrix. These observations support no cache, timeout, concurrency or test-removal change. The hosted release gate remains blocked until the path-layout correction is merged and a fresh exact-source CI/release run passes; no further retry was started before applying the correction.
+
 ## Maintenance disposition
 
 | Dimension | Evidence and disposition |
@@ -44,14 +68,15 @@ Four merged release-please PRs changed exactly the same three generated files: `
 | [#72](https://github.com/szTheory/muhtari/pull/72) | [43797178106](https://github.com/szTheory/muhtari/actions/runs/43797178106) | 25m50s | 42m52s |
 | [#78](https://github.com/szTheory/muhtari/pull/78) | [44208262141](https://github.com/szTheory/muhtari/actions/runs/44208262141) | 23m47s | 43m16s |
 
-This repeats roughly 67–70 Windows runner-minutes per metadata PR and puts about 43 minutes on the pre-merge critical path. CI now skips heavy jobs only when the same-repository `release-please--branches--main` PR targets `main` and its API-listed diff and changed-file count are exactly those three unique paths. Hygiene, title and `CI required` still run; any missing, extra, duplicate, renamed or unlisted path fails closed to full CI. The API filter rejects line feeds in either current or prior filenames before flattening paths into the classifier's line protocol; it emits only the failure sentinel, which keeps the heavy matrix enabled. This closes a newline-filename allowlist spoof found in review. `ci.classify` exercises exact and mismatched paths plus embedded, trailing and renamed-file newline cases; a workflow self-test rejects a weakened same-repository guard. The standard code review is clean after the correction. `cmake --workflow --preset hygiene` passed 31/31 locally in 32.46s. `act -l -W .github/workflows/ci.yml` parsed the changed workflow; hosted checks remain authoritative for release evidence.
+This repeats roughly 67–70 Windows runner-minutes per metadata PR and puts about 43 minutes on the pre-merge critical path. CI now skips heavy jobs only when the same-repository `release-please--branches--main` PR targets `main` and its API-listed diff and changed-file count are exactly those three unique paths. Hygiene, title and `CI required` still run; any missing, extra, duplicate, renamed or unlisted path fails closed to full CI. The API filter rejects line feeds in either current or prior filenames before flattening paths into the classifier's line protocol; it emits only the failure sentinel, which keeps the heavy matrix enabled. This closes a newline-filename allowlist spoof found in review. `ci.classify` exercises exact and mismatched paths plus embedded, trailing and renamed-file newline cases; a workflow self-test rejects a weakened same-repository guard. The standard code review is clean after the correction and independently simulated a partial API page followed by failure; the workflow's Bash `pipefail` emitted the sentinel and the classifier kept heavy CI enabled. `cmake --workflow --preset hygiene` passed 31/31 locally in 32.46s. `act -l -W .github/workflows/ci.yml` parsed the changed workflow; hosted checks remain authoritative for release evidence.
 
 | Cheap local preflight | Exit | Result | Run URL |
 |---|---:|---|---|
 | `sh -n scripts/classify-changes.sh` | 0 | Classifier shell syntax passes. | N/A-local |
 | `cmake -DROOT="$PWD" -P tests/cmake/budgets.cmake` | 0 | All 25 checked documentation files are within budget. | N/A-local |
 | `act -l -W .github/workflows/ci.yml` | 0 | Workflow and job graph parse; no container job was run. | N/A-local |
-| `cmake --workflow --preset hygiene` | 0 | All 31/31 tests pass, including exact release paths, newline-spoof rejection, path mismatch, partial-listing failure behavior and trusted-branch fault controls; test stage 32.46s. | N/A-local |
+| `act pull_request -j hygiene -W .github/workflows/ci.yml` | 1 | First-run image-selection prompt reached EOF before creating a container or starting a job. The equivalent native hygiene workflow passed; no image download or user-machine setting was changed. | N/A-local |
+| `cmake --workflow --preset hygiene` | 0 | All 31/31 tests pass, including exact release paths, newline-spoof rejection, path mismatch, failure-sentinel input and trusted-branch fault controls; test stage 32.46s. | N/A-local |
 | `scripts/hygiene.sh --tree` | 0 | Repository tree checks pass with the new jq filter and regression cases. | N/A-local |
 | `git diff --check` | 0 | No whitespace errors in the closeout changes. | N/A-local |
 

@@ -1,6 +1,6 @@
 ---
 phase: 29-windows-extended-path-runner-support
-verified: 2026-11-19T18:05:26Z
+verified: 2026-11-19T19:10:43Z
 status: passed
 score: 9/9 must-haves verified
 covered_files:
@@ -18,16 +18,19 @@ covered_files:
   - docs/testing.md
   - runner/main.c
   - scripts/classify-changes.sh
+  - scripts/classify-pr-paths.jq
   - scripts/ubuntu-apt.sh
+  - tests/cmake/quality_evidence.cmake
   - tests/hygiene/tests.cmake
   - tests/inventory/hygiene.txt
+  - tests/policy/quality.cmake
   - tests/policy/ubuntu_apt.sh
   - tests/runner/test_runner.c
   - tests/runner/test_save.c
   - tests/runner/trace.cmake
   - tests/runner/windows_paths.c
   - tests/runner/windows_paths.ps1
-covered_digest: "v4:sha256:6904a2f26b21b97cf6e6feb7e1f5ad23ab1370da6feb416bcd92b768ce3d6e54"
+covered_digest: "v4:sha256:1e8ec5d1483549b0d3f4d3efcf855511fb8ba73e072173203f352b4736f298d9"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
@@ -37,9 +40,9 @@ re_verification:
   gaps_remaining: []
   regressions: []
 advisory:
-  - finding: "Hosted release-please metadata-PR savings are not measured yet."
+  - finding: "Hosted confirmation of the metadata-PR skip and Windows quality-baseline temp path is pending."
     category: other
-    reason: "The exact allowlist and workflow wiring pass local tests, but no hosted run has exercised this new skip path."
+    reason: "The local classifier and quality-baseline policy checks pass, but main CI run 44574938376 predates these changes and no hosted release-please PR or Windows run has exercised them."
     evidence_status: "none provided"
 decision_coverage:
   honored: 8
@@ -50,7 +53,7 @@ decision_coverage:
 # Phase 29: Windows extended-path runner support — Verification
 
 **Phase Goal:** Windows users can use explicit absolute extended paths throughout `muhtari-run` while retaining literal names, collision protection and safe output replacement.
-**Verified:** 2026-11-19T18:05:26Z
+**Verified:** 2026-11-19T19:10:43Z
 **Status:** passed
 **Re-verification:** Yes — refreshed closeout evidence and fingerprint. No implementation gap was found.
 
@@ -117,7 +120,8 @@ This is a CLI/file-output feature; there are no rendered UI values or database q
 | Actual Windows drive and SMB UNC acceptance on x64 | CI `runner.trace.paths`; [job 135626560630](https://github.com/szTheory/muhtari/actions/runs/44543122949/job/135626560630); Release [job 135626571973](https://github.com/szTheory/muhtari/actions/runs/44543122965/job/135626571973) | Passed 8.68s / 5.25s; both namespaces and SMB cleanup reported. Full 736-test and 8-test release inventories passed. | ✓ PASS |
 | Actual Windows drive and SMB UNC acceptance on ARM64 | CI [job 135626560798](https://github.com/szTheory/muhtari/actions/runs/44543122949/job/135626560798); Release [job 135626571891](https://github.com/szTheory/muhtari/actions/runs/44543122965/job/135626571891) | Passed 47.02s / 45.78s; both namespaces and SMB cleanup reported. Full 736-test and 8-test release inventories passed. | ✓ PASS |
 | Current local portable path harness | `ctest --test-dir build/ci --output-on-failure -R '^runner[.]trace[.]paths$'` | Exit 0; 1/1 in 0.02s. This does not prove Windows behavior. | ✓ PASS |
-| Release metadata classifier and workflow guard | `ctest --test-dir build/hygiene --output-on-failure -R '^ci[.]classify($|[.]workflow_guard[.]self_test$)'` | Exit 0; 2/2 pass, covering exact paths, branch/count mismatches, fail-closed cases and a mutated workflow guard. This is local evidence, not a hosted release-PR run. | ✓ PASS |
+| Release metadata classifier and workflow guard | `ctest --test-dir build/hygiene --output-on-failure -R '^ci[.]classify($|[.]workflow_guard[.]self_test$)'` | Exit 0; 2/2 pass, covering exact paths, branch/count mismatches, LF in current/previous names, fail-closed cases and a mutated workflow guard. This is local evidence, not a hosted release-PR run. | ✓ PASS |
+| Windows quality-baseline checkout policy | `ctest --test-dir build/ci --output-on-failure -R '^policy[.]quality(\.fixture_identity\.controls|\.controls)$'` | Exit 0; 2/2 pass in 23.45s; the control asserts the worktree is under `RUNNER_TEMP` and preserves the five-step serialized Windows workflow contract. This does not confirm hosted Windows behavior. | ✓ PASS |
 | Current local configured CI and packaging | Recorded `cmake --workflow --preset ci` on snapshot `83a1709`; local JUnit and package outputs | 736 tests, 0 failures; three macOS packages and 8/8 release tests. This does not substitute for the Windows runs above. | ✓ PASS |
 
 The PR CI synthetic merge `ff5beaef5fde97d51a8858f485620669290495fe` has the same complete tree as candidate `be331d2f82666d3f5e6c1f1b307a8fb9f4aa0235`; base `f709d493e6660b3b53a98b49b693ab91a714dcb0` is an ancestor. At the C4 comparison point, the branch added a Windows-only `COST 50` scheduling property to `runner.trace.paths`; it did not change the implementation or test cases exercised by c3.
@@ -167,10 +171,11 @@ The ordinary-path state file is used only as a differential control for path-for
 | Duplicate equality work | c3 recorded 52m53s across Release and Nightly; c4 Release and Nightly equality each took about 17 minutes. | At the C4 review, no equality-work classifier was justified. The later metadata-only PR exception retains exact-source equality before publication. |
 | Windows path scheduling | c3 completed the path test at 729/736 x64 and 735/736 ARM64. Exact-source c4 CI completed it at 43/736 in 8.80s and 45/736 in 51.06s. | `COST 50` moves failure feedback earlier while preserving the test, fixtures and timeout. It does not reduce test runtime or total suite duration. |
 | Release metadata PR matrix | `ci.classify` checks the exact three generated paths, count, trusted same-repository release branch and fail-closed mismatches; its workflow guard mutation test also passes. Release `release-ci` and `release-equality` run against the release target SHA, and `publish` requires both to succeed. | Safe narrow skip is wired and locally covered. No hosted release-please PR has exercised it yet, so wall-time savings are not quantified. |
+| Windows quality-baseline checkout | The producer and focused policy test use `$RUNNER_TEMP/muhtari-quality-base`; policy controls retain the same source, five Windows workflow steps and serialized CTest. | Keeps the baseline source path short without changing test membership or order. Focused local checks pass; no hosted Windows confirmation exists for this harness/doc change. |
 
 ## Advisory (New Scope, Unevidenced)
 
-The new release-please metadata-only skip has local classifier, wiring and mutation-guard coverage, but no hosted run has exercised the exception. Its actual CI time savings remain unmeasured. This does not change Phase 29's Windows path acceptance or the Release workflow's full exact-source CI and equality requirements before publishing.
+The release-please metadata-only skip has local classifier, wiring and mutation-guard coverage, but no hosted release-please PR has exercised the exception. The quality-baseline checkout path has local policy coverage, but no hosted Windows run has confirmed this harness/doc change. Neither limits the previously verified Phase 29 product acceptance; the v11.0 milestone release gate remains separately blocked and is not cleared by this phase report.
 
 ## Human Verification Required
 
@@ -178,11 +183,11 @@ None. All phase success criteria are exercised by deterministic local or hosted 
 
 ## Gaps Summary
 
-None. Product path behavior is verified on the exact c3 and c4 product trees in both Windows architectures. At the c4 comparison point, the branch delta was Windows-only CTest scheduling metadata; c4 confirms earlier ordering while preserving membership, fixtures and timeout. The later release metadata PR classifier is a separate CI change with exact allowlist tests and full release-target CI/equality gates before publication. No total-suite speedup or hosted classifier savings are claimed.
+None. Product path behavior is verified on the exact c3 and c4 product trees in both Windows architectures. At the c4 comparison point, the branch delta was Windows-only CTest scheduling metadata; c4 confirms earlier ordering while preserving membership, fixtures and timeout. The later release metadata PR classifier and Windows quality-baseline temp-path harness are separate CI changes with local policy coverage and unchanged release-target CI/equality gates before publication. No total-suite speedup or hosted classifier savings are claimed. The milestone release gate remains a separate blocked integration check.
 
 ---
 
-_Verified: 2026-11-19T18:05:26Z_
+_Verified: 2026-11-19T19:10:43Z_
 _Verifier: the agent (gsd-verifier)_
 
 ### Re-verification evidence: C4 and current source (2026-11-19)
@@ -224,3 +229,33 @@ release target SHA, and `publish` requires both jobs to succeed. Existing C4
 hosted evidence predates this classifier change and verifies the Windows path
 behavior, not the new PR skip. No hosted release-please PR has exercised the
 exception, so this report does not claim measured CI savings.
+
+### Re-verification evidence: reject ambiguous PR paths (fabdce7)
+
+Commit `fabdce7d7fdf05e20f4c60df02942da418cdab3b` adds
+`scripts/classify-pr-paths.jq`. It emits the listing-failed sentinel if either a
+current or previous path contains a line feed, preventing the line-oriented
+shell classifier from treating an ambiguous API result as the exact three-file
+release allowlist. The targeted classifier and workflow-guard tests passed 2/2,
+including malformed current and previous names; `act -l -W .github/workflows/ci.yml`
+and `git diff --check` passed. The green main CI run
+[44574938376](https://github.com/szTheory/muhtari/actions/runs/44574938376)
+predates this commit and is not evidence for the helper. The behavior is locally
+verified, but no hosted release-please metadata PR has exercised the updated
+skip path.
+
+### Re-verification evidence: Windows quality-baseline checkout path (2026-11-19)
+
+The quality-evidence producer now uses `$RUNNER_TEMP/muhtari-quality-base` on
+Actions, with the existing build-directory fallback for local invocations. Its
+focused policy controls supply `RUNNER_TEMP` and require the independent base
+worktree to exist there. The Windows control still checks all five original
+`ci-msvc` preset steps and runs CTest serialized; the maintainer doc records
+these limits. `policy.quality.fixture_identity.controls` and
+`policy.quality.controls` passed 2/2 (23.45s); `hygiene.tree` passed 1/1
+(40.92s); docs budgets and `git diff --check` passed.
+
+No hosted Windows run has confirmed the updated policy harness/documentation.
+This is separate from Phase 29's existing hosted x64/ARM64 product-path
+acceptance, and it does not clear the v11.0 milestone's separately blocked
+release gate.
