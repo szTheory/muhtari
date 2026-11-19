@@ -39,6 +39,20 @@ evidence. The earlier [v10.0 audit](milestones/v10.0-MILESTONE-AUDIT.md) and
 [Phase 27 records](milestones/v10.0-phases/27-headless-developer-trace/) remain
 available.
 
+## Current Milestone: v12.0 First-use readiness
+
+**Goal:** Help players, runner users and C host integrators reach a first useful result from Muhtari's current release, with clear instructions and evidence-backed user jobs.
+
+**Target features:**
+- Refresh the existing persona/JTBD map against current deliverables and dated consumer evidence.
+- Document the first supported RetroArch game-loading and headless runner workflows.
+- Provide a complete minimal CMake/pkg-config consumer using the installed library package.
+- Repair stale user-facing links and claims; clean only the source and documentation debt encountered in these workflows.
+
+**Active requirements:** See [REQUIREMENTS.md](REQUIREMENTS.md) for PERSONA-01, PLAYER-01, RUNNER-01, EMBED-01 and DOCS-01.
+
+**Out of scope:** No new emulation behavior, public API/ABI or state format; no GUI, host/device code, Atari 2600 work, protected ROM/BIOS assets, universal compatibility claim, or repository-wide style sweep.
+
 ## Completed Milestone: v11.0 Windows extended-path support
 
 **Outcome:** Stable v0.18.0 shipped the runner's measured Windows extended-path support. The feature stays in the runner and preserves API 8, ABI 1, serialized state, emulated behavior and all three deliverables.
@@ -49,7 +63,7 @@ available.
 - Passed actual runner drive and SMB UNC acceptance on Windows x64 and ARM64, with collision, overlap and ordinary-path controls.
 - Completed the measured milestone tune-up and corrected the 52-entry deferred-register totals without changing any verdict.
 
-No next milestone scope is selected; see [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md).
+v12.0 first-use readiness is scoped in the [requirements](REQUIREMENTS.md) and [roadmap](ROADMAP.md); the rolling successor comparison is in [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md).
 
 ### Completion standard
 
@@ -504,4 +518,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-19 after v11.0 milestone completion*
+*Last updated: 2026-11-19 after v12.0 milestone scoping*
