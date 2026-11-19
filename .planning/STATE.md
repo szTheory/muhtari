@@ -2,18 +2,18 @@
 gsd_state_version: "1.0"
 milestone: v11.0
 current_phase: 29
-current_phase_name: Windows extended-path runner support
-status: verifying
-stopped_at: Completed 29-03-PLAN.md
-last_updated: "2026-11-19T15:41:48.305Z"
-last_activity: 2026-11-18
-last_activity_desc: Phase 29 execution started
-state_head: 0536fa280277c1d0d9b16d4fc734dd9a962faed9
+status: completed
+stopped_at: Phase 29 complete — all phases complete
+last_updated: "2026-11-19T16:05:00.272Z"
+last_activity: 2026-11-19
+last_activity_desc: Phase 29 complete
+state_head: 41943af85f83a02f5a9cc56b62e29f2bd97c25e5
 progress:
   total_phases: 2
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 5
   completed_plans: 5
+  percent: 100
 milestone_name: Windows extended-path support
 ---
 
@@ -26,19 +26,19 @@ See [PROJECT.md](PROJECT.md) (updated 2026-11-18), [ROADMAP.md](ROADMAP.md), [RE
 
 ## Current Position
 
-Phase: 29 (Windows extended-path runner support) — EXECUTING
-Plan: 3 of 3
-Status: Phase complete — ready for verification
-Last activity: 2026-11-18 — Phase 29 execution started
+Phase: 29
+Plan: Not started
+Status: All phases complete
+Last activity: 2026-11-19 — Phase 29 complete
 
-Progress: [█████░░░░░] 50%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 Phase 28 P01 completed in 39 min. This single-plan sample does not establish an execution trend.
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 28 | 2 | - | - |
-| 29 | 0/TBD | - | - |
+| 29 | 3 | - | - |
 Prior metrics and source-qualified receipts remain in the [v10.0 archive](milestones/v10.0-ROADMAP.md), [audit](milestones/v10.0-MILESTONE-AUDIT.md) and phase summaries. Stable v0.17.0 is published; the failed v0.15.0 tag and draft remain unchanged and unpublished.
 **Per-Plan Metrics:**
 
@@ -124,12 +124,12 @@ At v10.0 close, two items were newly acknowledged; 50 items acknowledged at earl
 | deferred_items | 11/deferred-items.md: Found in plan 04  - `diag.bankset_tracer` and `diag.bankset` both write `build/ci/tests/diag/bankset/32n/` and carry no resource lock, so under `ctest -j` one can read the other's `pixels.png` half written (`bankset --bankset-png ... png: chunk longer than the file`). Seen once in `cmake --workflow --preset ci`; passes alone and on rerun. Not caused by plan 04; a fix is a `RESOURCE_LOCK` or a separate output directory in `tests/diag/tests.cmake`.  Resolved in the gap round: `diag.bankset` now writes `build/<preset>/tests/diag/bankset-matrix/` and `diag.bankset_tracer` keeps `build/<preset>/tests/diag/bankset/`, so the two tests share no output file. | acknowledged; historical disposition retained | 2026-10-29 | v2.0 |
 
 ## Session Continuity
-Last session: 2026-11-19T15:41:48.289Z
-Stopped at: Completed 29-03-PLAN.md
+Last session: 2026-11-19T16:09:53Z
+Stopped at: Phase 29 complete — all phases complete
 Resume file: None
 
-Next action: $gsd-execute-phase 29. Plan 29-03 is next and ready to execute. Windows UNC acceptance remains pending actual CI evidence.
+Next action: $gsd-ship. Phase 29 verification passed; publish the final phase PR before milestone audit and archival.
 
 ## Operator Next Steps
 
-- No user action is needed. After clearing context, resume with `$gsd-execute-phase 29`; the agent owns local implementation, verification and review while preserving the Windows evidence gate.
+- No user action is needed. After clearing context, resume with `$gsd-ship`; the agent owns the final phase PR, milestone audit and closeout while preserving the verified Windows evidence.

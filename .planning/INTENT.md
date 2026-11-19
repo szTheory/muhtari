@@ -101,6 +101,9 @@ low-effort ways to shorten feedback and iteration time. Preserve required test,
 fault and release coverage. Put cheap relevant consistency checks before long
 work, record when evidence supports no safe improvement, and require measured
 results across runs before changing workflow structure, caches or deadlines.
+Use GitHub `act` for compatible local preflight when it improves feedback, while
+keeping Docker/local results distinct from hosted platform, permissions, OIDC,
+artifact and release evidence.
 
 Owner reaffirmation, 2026-11-11: use upstream scoping to keep milestone and later
 phase work directionally correct and economical. Retain the high-signal result,

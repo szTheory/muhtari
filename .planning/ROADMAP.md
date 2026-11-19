@@ -25,7 +25,7 @@ and rejected alternatives are in the [successor review](research/next-milestone/
 ## Phases
 
 - [x] **Phase 28: Measured milestone tune-up** - Qualify current delivery evidence and reconcile the Phase 27 register counts without changing verdicts. (completed 2026-11-18)
-- [ ] **Phase 29: Windows extended-path runner support** - Use explicit local and UNC extended paths across runner inputs and outputs with preserved collision and replacement safety.
+- [x] **Phase 29: Windows extended-path runner support** - Use explicit local and UNC extended paths across runner inputs and outputs with preserved collision and replacement safety. (completed 2026-11-19)
 
 ## Phase Details
 
@@ -63,7 +63,7 @@ topology, cache or deadline changes; no new audit program or quota is required.
   3. Distinct extended-namespace destinations, including suffix-distinct names, succeed; destinations naming the same file or overlapping an input or another output are refused before modification. Existing-file identity, parent-junction aliases and ordinary/extended mixed-form controls retain ordinary Windows protections.
   4. A failed create, write or replacement produces a clear error and preserves the prior destination bytes for state, frame-image, trace and battery outputs; successful writes retain safe replacement behavior.
   5. Windows CI exercises the actual runner on the supported Windows architectures with local paths longer than `MAX_PATH`, Unicode/literal suffix names and extended UNC paths through an accessible test share, alongside distinct-output, true-alias, overlap, ordinary-path and failure-preservation controls. User documentation states the supported absolute forms, measured path-length boundary and clear failure behavior for unsupported operations.
-**Plans**: 3/3 plans executed
+**Plans**: 3/3 plans complete
 
 Plans:
 - [x] 29-01-PLAN.md — Preserve Unicode and explicit namespace paths through every runner file operation and real-process test entry.
@@ -96,7 +96,7 @@ validation phase. Ship the final phase before milestone archival.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 28. Measured milestone tune-up | 2/2 | Complete    | 2026-11-18 |
-| 29. Windows extended-path runner support | 3/3 | In Progress | - |
+| 29. Windows extended-path runner support | 3/3 | Complete    | 2026-11-19 |
 
 **Coverage:** All 6 v1 requirements map to exactly one phase; none are unmapped.
 See [requirements traceability](REQUIREMENTS.md#traceability).

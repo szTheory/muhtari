@@ -1,6 +1,6 @@
 # Testing
 
-Local and CI checks.
+Local and CI checks; [`act` preflight](maintaining.md#local-github-actions-preflight).
 
 ## The entry point
 
@@ -410,7 +410,7 @@ and install evidence; fake transport supplies argument and short-circuit control
 
 ## Supported systems
 
-The oldest systems the README lists are checked from the binaries, not run. `release.floor`
+OS floors are read from binaries, not run. `release.floor`
 (`tests/cmake/floor.cmake`, floors in a table at its top) unpacks the zips under `build/ci/release/floor` and
 reads what each OS loader enforces. On every system the libretro core exports only `retro_*` names.
 
