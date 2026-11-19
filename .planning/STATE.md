@@ -3,17 +3,17 @@ gsd_state_version: "1.0"
 milestone: v11.0
 current_phase: 29
 current_phase_name: Windows extended-path runner support
-status: executing
-stopped_at: Completed 29-02-PLAN.md
-last_updated: "2026-11-18T20:29:51.441Z"
+status: verifying
+stopped_at: Completed 29-03-PLAN.md
+last_updated: "2026-11-19T15:41:48.305Z"
 last_activity: 2026-11-18
 last_activity_desc: Phase 29 execution started
-state_head: b0e65e798c41760e80010388c547cb13832c794c
+state_head: 0536fa280277c1d0d9b16d4fc734dd9a962faed9
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 5
-  completed_plans: 4
+  completed_plans: 5
 milestone_name: Windows extended-path support
 ---
 
@@ -28,7 +28,7 @@ See [PROJECT.md](PROJECT.md) (updated 2026-11-18), [ROADMAP.md](ROADMAP.md), [RE
 
 Phase: 29 (Windows extended-path runner support) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-11-18 — Phase 29 execution started
 
 Progress: [█████░░░░░] 50%
@@ -48,6 +48,7 @@ Prior metrics and source-qualified receipts remain in the [v10.0 archive](milest
 | Phase 28 P02 | 18 min | 2 tasks | 2 files |
 | Phase 29 P01 | 44m | 2 tasks | 5 files |
 | Phase 29 P02 | 43min | 2 tasks | 4 files |
+| Phase 29 P03 | 19h 8m | 2 tasks | 18 files |
 
 ## Accumulated Context
 ### Decisions
@@ -63,6 +64,9 @@ Prior metrics and source-qualified receipts remain in the [v10.0 archive](milest
 - [Phase 29]: Leave Windows and UNC acceptance pending until the actual Windows runner and SMB test run in Phase 29-03.
 - [Phase 29]: Apply one identity preflight across all runner input/output roles, using fail-closed filesystem evidence.
 - [Phase 29]: Stream frame PNGs through the existing checked sibling-temp publisher to preserve prior output on failure.
+- [Phase 29]: Accept WINPATH-01 through WINPATH-04 from c3 actual Windows x64 and ARM64 evidence; the synthetic CI merge tree matches reviewed source.
+- [Phase 29]: Treat CTest COST 50 as a scheduling-only follow-up; measure hosted ordering on the next PR run and make no timing claim yet.
+- [Phase 29]: Keep CI and Release coverage/topology intact; overlapping equality runner cost alone does not justify a changed-file classifier.
 
 ### Pending Todos
 The [Windows path follow-up](todos/pending/2026-11-17-define-extended-windows-output-path-support.md) is selected for Phase 29; its acknowledgment is retained below until verified closure. Other todos/seeds retain their dispositions. Root remains canonical and older dirty worktrees require content/ancestry reconciliation before import. See [workspace reconciliation](debug/workspace-reconciliation-2026-11-10.md).
@@ -120,8 +124,8 @@ At v10.0 close, two items were newly acknowledged; 50 items acknowledged at earl
 | deferred_items | 11/deferred-items.md: Found in plan 04  - `diag.bankset_tracer` and `diag.bankset` both write `build/ci/tests/diag/bankset/32n/` and carry no resource lock, so under `ctest -j` one can read the other's `pixels.png` half written (`bankset --bankset-png ... png: chunk longer than the file`). Seen once in `cmake --workflow --preset ci`; passes alone and on rerun. Not caused by plan 04; a fix is a `RESOURCE_LOCK` or a separate output directory in `tests/diag/tests.cmake`.  Resolved in the gap round: `diag.bankset` now writes `build/<preset>/tests/diag/bankset-matrix/` and `diag.bankset_tracer` keeps `build/<preset>/tests/diag/bankset/`, so the two tests share no output file. | acknowledged; historical disposition retained | 2026-10-29 | v2.0 |
 
 ## Session Continuity
-Last session: 2026-11-18T20:28:38.930Z
-Stopped at: Completed 29-02-PLAN.md
+Last session: 2026-11-19T15:41:48.289Z
+Stopped at: Completed 29-03-PLAN.md
 Resume file: None
 
 Next action: $gsd-execute-phase 29. Plan 29-03 is next and ready to execute. Windows UNC acceptance remains pending actual CI evidence.

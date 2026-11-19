@@ -15,10 +15,10 @@ scope limits and alternatives are in the [future-roadmap review](research/next-m
 
 ### Windows runner paths
 
-- [ ] **WINPATH-01**: Users can pass explicit local `\\?\` and extended UNC `\\?\UNC\` paths to every documented `muhtari-run` filesystem-path argument: cartridge, movie, BIOS, HSC firmware, state input, save directory, state output, frame image output and trace output. Supported absolute paths preserve Unicode names and literal extended-namespace semantics, including names ending in a dot or space and paths longer than `MAX_PATH` where the filesystem permits them.
-- [ ] **WINPATH-02**: `muhtari-run` distinguishes separate extended-namespace destinations that differ only by names preserved by that namespace, while refusing destinations that resolve to the same file or overlap an input or another output. Existing ordinary Windows alias behavior, including existing-file identity and parent-junction aliases, remains protected across ordinary and extended forms.
-- [ ] **WINPATH-03**: State, frame-image, trace and battery outputs use the runner's safe write behavior for supported extended paths; a failed create, write or replacement reports an error and does not truncate or partially replace an existing destination.
-- [ ] **WINPATH-04**: The Windows runner contract names the supported namespace forms and tested path-length boundary. Windows CI exercises the actual runner with local paths longer than `MAX_PATH`, Unicode and literal suffix names, extended UNC paths through an accessible test share, distinct outputs, true aliases, input/output overlap, ordinary-path controls and output failure preservation.
+- [x] **WINPATH-01**: Users can pass explicit local `\\?\` and extended UNC `\\?\UNC\` paths to every documented `muhtari-run` filesystem-path argument: cartridge, movie, BIOS, HSC firmware, state input, save directory, state output, frame image output and trace output. Supported absolute paths preserve Unicode names and literal extended-namespace semantics, including names ending in a dot or space and paths longer than `MAX_PATH` where the filesystem permits them.
+- [x] **WINPATH-02**: `muhtari-run` distinguishes separate extended-namespace destinations that differ only by names preserved by that namespace, while refusing destinations that resolve to the same file or overlap an input or another output. Existing ordinary Windows alias behavior, including existing-file identity and parent-junction aliases, remains protected across ordinary and extended forms.
+- [x] **WINPATH-03**: State, frame-image, trace and battery outputs use the runner's safe write behavior for supported extended paths; a failed create, write or replacement reports an error and does not truncate or partially replace an existing destination.
+- [x] **WINPATH-04**: The Windows runner contract names the supported namespace forms and tested path-length boundary. Windows CI exercises the actual runner with local paths longer than `MAX_PATH`, Unicode and literal suffix names, extended UNC paths through an accessible test share, distinct outputs, true aliases, input/output overlap, ordinary-path controls and output failure preservation.
 
 ## Future Requirements
 
@@ -47,10 +47,10 @@ support in Windows CI. All requirements remain pending until phase verification.
 |-------------|-------|--------|
 | TUNE-15 | Phase 28 | Complete |
 | TUNE-16 | Phase 28 | Complete |
-| WINPATH-01 | Phase 29 | Pending |
-| WINPATH-02 | Phase 29 | Pending |
-| WINPATH-03 | Phase 29 | Pending |
-| WINPATH-04 | Phase 29 | Pending |
+| WINPATH-01 | Phase 29 | Complete |
+| WINPATH-02 | Phase 29 | Complete |
+| WINPATH-03 | Phase 29 | Complete |
+| WINPATH-04 | Phase 29 | Complete |
 
 **Coverage:**
 - v1 requirements: 6 total
