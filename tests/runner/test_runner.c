@@ -66,7 +66,7 @@ static void movie_track(void *ptr, size_t n)
     }
     CHECK(0);
 }
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__wasi__)
 static char *movie_realpath(const char *path, char *resolved_path)
 {
     char *result = realpath(path, resolved_path);
@@ -171,7 +171,7 @@ int runner_entry(int argc, char **argv);
 #ifdef _WIN32
 #define _wfopen movie_wfopen
 #endif
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__wasi__)
 #define realpath movie_realpath
 #endif
 #define muhtari_load movie_load
@@ -181,7 +181,7 @@ int runner_entry(int argc, char **argv);
 #undef muhtari_run_frame
 #undef muhtari_set_input_ex
 #undef muhtari_load
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__wasi__)
 #undef realpath
 #endif
 #ifdef _WIN32
