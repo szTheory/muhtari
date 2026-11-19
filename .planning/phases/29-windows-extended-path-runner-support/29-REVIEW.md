@@ -1,6 +1,6 @@
 ---
 phase: 29-windows-extended-path-runner-support
-reviewed: 2026-11-18T23:28:28Z
+reviewed: 2026-11-19T00:07:21Z
 depth: standard
 files_reviewed: 1
 files_reviewed_list:
@@ -156,5 +156,23 @@ No new or open findings in this follow-up.
 ---
 
 _Follow-up reviewed: 2026-11-18T23:28:28Z_
+_Reviewer: the agent (gsd-code-reviewer)_
+_Depth: standard_
+
+## Follow-up Review — 2026-11-19T00:07:21Z
+
+**Scope:** Focused review of `tests/runner/windows_paths.c`, tracing the blocked state-output case and SaveKey state reload through `runner/main.c`.
+**Depth:** standard
+**Status:** clean
+
+No finding. `verify_blocked_outputs` expects the exact diagnostic phrase `cannot commit state file`; `state_capture` prints `muhtari-run: %s: cannot commit state file` when the atomic state write fails, and the `MUHTARI__EXIT_FAILURE` status propagates out of the runner. The blocked-output helper checks the held destination's file identity, exact sentinel length and bytes, then checks the parent directory for a `<destination-leaf>.tmp.*` sibling after the child exits. The SaveKey state-producing invocation and `load_state_with_savekey` both pass `--port1 savekey`; the load helper retains the same default machine-layout options, while the creator's `--save-dir` only selects external battery storage. The state identity includes the selected port devices and EEPROM layout. This was a source review; the Windows process case was not run here, and platform acceptance remains pending as recorded above.
+
+## Narrative Findings (AI reviewer)
+
+No new or open findings in this follow-up.
+
+---
+
+_Follow-up reviewed: 2026-11-19T00:07:21Z_
 _Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_
