@@ -14,6 +14,12 @@ These five hosted receipts are locked historical evidence from earlier delivery 
 
 The later v10.0 audit supersedes Phase 27's earlier draft-PR wording: PR #77 and release PR #78 merged, and v0.17.0 is the stable release. The failed v0.15.0 tag/draft remains historical and unpublished. These distinctions are supported by the [v10.0 audit](../../milestones/v10.0-MILESTONE-AUDIT.md#delivery-evidence) and the exact-source receipts above. The Phase 27 `3 Ir/frame` trace-cost result is source-specific CPU instrumentation evidence, not a pipeline-saving measurement.
 
+## v11.0 main delivery checks
+
+The merged Phase 29 source `119e6e30e9f29644a4c555a34172c35574cd7f67` passed full main CI in [run 44574938376](https://github.com/szTheory/muhtari/actions/runs/44574938376). The run took 45m11s with 0s queue at run timestamp precision; the Windows ARM64 job took 41m34s and the report-only WASM32 job took 3m24s. `CI required` passed at 42m32s, 2m39s before the report-only tail completed. No jobs were cancelled. The WASM32 tail extends the run's final timestamp but did not delay the required roll-up. One sample does not justify moving or removing this report-only coverage.
+
+The matching main Release run [44574938682](https://github.com/szTheory/muhtari/actions/runs/44574938682) took 33s and created release PR [#82](https://github.com/szTheory/muhtari/pull/82) for v0.18.0. Release CI, equality, rehearsal, install and publication did not run because the release-please pull request was created for review; this run does not establish a published package.
+
 ## Maintenance disposition
 
 | Dimension | Evidence and disposition |
@@ -38,14 +44,16 @@ Four merged release-please PRs changed exactly the same three generated files: `
 | [#72](https://github.com/szTheory/muhtari/pull/72) | [43797178106](https://github.com/szTheory/muhtari/actions/runs/43797178106) | 25m50s | 42m52s |
 | [#78](https://github.com/szTheory/muhtari/pull/78) | [44208262141](https://github.com/szTheory/muhtari/actions/runs/44208262141) | 23m47s | 43m16s |
 
-This repeats roughly 67–70 Windows runner-minutes per metadata PR and puts about 43 minutes on the pre-merge critical path. CI now skips heavy jobs only when the same-repository `release-please--branches--main` PR targets `main` and its API-listed diff and changed-file count are exactly those three unique paths. Hygiene, title and `CI required` still run; any missing, extra, duplicate, renamed or unlisted path fails closed to full CI. The release workflow runs reusable CI and equality on the exact release SHA, and `publish` requires both to pass before attestation or upload. No dependency or quality gate was removed. `ci.classify` exercises the exact-match path and mismatch controls; a workflow self-test rejects a weakened same-repository guard. The hygiene workflow passed 31/31 locally. `act -l -W .github/workflows/ci.yml` parsed the changed workflow; hosted checks remain authoritative for release evidence.
+This repeats roughly 67–70 Windows runner-minutes per metadata PR and puts about 43 minutes on the pre-merge critical path. CI now skips heavy jobs only when the same-repository `release-please--branches--main` PR targets `main` and its API-listed diff and changed-file count are exactly those three unique paths. Hygiene, title and `CI required` still run; any missing, extra, duplicate, renamed or unlisted path fails closed to full CI. The API filter rejects line feeds in either current or prior filenames before flattening paths into the classifier's line protocol; it emits only the failure sentinel, which keeps the heavy matrix enabled. This closes a newline-filename allowlist spoof found in review. `ci.classify` exercises exact and mismatched paths plus embedded, trailing and renamed-file newline cases; a workflow self-test rejects a weakened same-repository guard. The standard code review is clean after the correction. `cmake --workflow --preset hygiene` passed 31/31 locally in 32.46s. `act -l -W .github/workflows/ci.yml` parsed the changed workflow; hosted checks remain authoritative for release evidence.
 
 | Cheap local preflight | Exit | Result | Run URL |
 |---|---:|---|---|
 | `sh -n scripts/classify-changes.sh` | 0 | Classifier shell syntax passes. | N/A-local |
 | `cmake -DROOT="$PWD" -P tests/cmake/budgets.cmake` | 0 | All 25 checked documentation files are within budget. | N/A-local |
 | `act -l -W .github/workflows/ci.yml` | 0 | Workflow and job graph parse; no container job was run. | N/A-local |
-| `cmake --workflow --preset hygiene` | 0 | All 31/31 tests pass, including classifier exact-match, path mismatch and trusted-branch fault controls; test stage 38.6s. | N/A-local |
+| `cmake --workflow --preset hygiene` | 0 | All 31/31 tests pass, including exact release paths, newline-spoof rejection, path mismatch, partial-listing failure behavior and trusted-branch fault controls; test stage 32.46s. | N/A-local |
+| `scripts/hygiene.sh --tree` | 0 | Repository tree checks pass with the new jq filter and regression cases. | N/A-local |
+| `git diff --check` | 0 | No whitespace errors in the closeout changes. | N/A-local |
 
 ## Register reconciliation
 
