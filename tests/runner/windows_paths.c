@@ -654,6 +654,81 @@ static int file_starts_with(const wchar_t *path, const void *expected, DWORD exp
     return matches;
 }
 
+static int files_have_distinct_identity(const wchar_t *left, const wchar_t *right)
+{
+    HANDLE left_file =
+        CreateFileW(left, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                    NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    HANDLE right_file =
+        CreateFileW(right, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                    NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (left_file == INVALID_HANDLE_VALUE || right_file == INVALID_HANDLE_VALUE) {
+        if (left_file != INVALID_HANDLE_VALUE)
+            (void)CloseHandle(left_file);
+        if (right_file != INVALID_HANDLE_VALUE)
+            (void)CloseHandle(right_file);
+        return 0;
+    }
+
+    FILE_ID_INFO left_id, right_id;
+    int distinct =
+        GetFileInformationByHandleEx(left_file, FileIdInfo, &left_id, (DWORD)sizeof left_id) != 0 &&
+        GetFileInformationByHandleEx(right_file, FileIdInfo, &right_id, (DWORD)sizeof right_id) !=
+            0 &&
+        (left_id.VolumeSerialNumber != right_id.VolumeSerialNumber ||
+         memcmp(left_id.FileId.Identifier, right_id.FileId.Identifier,
+                sizeof left_id.FileId.Identifier) != 0);
+    BOOL left_closed = CloseHandle(left_file);
+    BOOL right_closed = CloseHandle(right_file);
+    return distinct && left_closed && right_closed;
+}
+
+static int verify_suffix_distinct_outputs(const wchar_t *runner, const wchar_t *work_dir,
+                                          const wchar_t *image, const wchar_t *state_path,
+                                          const wchar_t *png_path, const wchar_t *log_name,
+                                          const wchar_t *suffix_name)
+{
+    static const unsigned char png_signature[] = {0x89u, 'P', 'N', 'G', 0x0Du, 0x0Au, 0x1Au, 0x0Au};
+    wchar_t *state_arg = state_point(state_path, L'1');
+    wchar_t *png_arg = state_point(png_path, L'1');
+    int failed = state_arg == NULL || png_arg == NULL;
+    if (!failed && (!delete_file_if_present(state_path) || !delete_file_if_present(png_path))) {
+        report_last_error(L"clearing suffix-distinct output fixtures");
+        failed = 1;
+    }
+    if (!failed) {
+        const wchar_t *arguments[] = {
+            runner,    L"--frames",     L"1",    L"--port1", L"savekey", L"--state-at-frame",
+            state_arg, L"--dump-frame", png_arg, image};
+        failed = run_child(runner, work_dir, log_name, arguments,
+                           sizeof arguments / sizeof arguments[0], 0u, NULL) != 0;
+    }
+    if (!failed) {
+        DWORD state_attributes = GetFileAttributesW(state_path);
+        DWORD png_attributes = GetFileAttributesW(png_path);
+        if (state_attributes == INVALID_FILE_ATTRIBUTES ||
+            (state_attributes & FILE_ATTRIBUTE_DIRECTORY) != 0u ||
+            png_attributes == INVALID_FILE_ATTRIBUTES ||
+            (png_attributes & FILE_ATTRIBUTE_DIRECTORY) != 0u ||
+            !file_starts_with(png_path, png_signature, (DWORD)sizeof png_signature) ||
+            !files_have_distinct_identity(state_path, png_path) ||
+            load_state_with_savekey(runner, work_dir, image, state_path, log_name) != 0) {
+            fwprintf(stderr,
+                     L"windows path test: suffix-distinct extended %ls outputs were not "
+                     L"separate valid files\n",
+                     suffix_name);
+            failed = 1;
+        }
+    }
+    if (!delete_file_if_present(state_path) || !delete_file_if_present(png_path)) {
+        report_last_error(L"removing suffix-distinct output fixtures");
+        failed = 1;
+    }
+    free(state_arg);
+    free(png_arg);
+    return failed ? 1 : 0;
+}
+
 static int file_contains_bytes(const wchar_t *path, const void *expected, size_t expected_length)
 {
     if (expected_length == 0u || expected_length > 64u)
@@ -993,19 +1068,26 @@ static int run_namespace(const wchar_t *runner, const wchar_t *work_dir, const w
     wchar_t *firmware = test_dir != NULL ? wide_join(test_dir, L"firmware-\x732B.bin ") : NULL;
     wchar_t *trace = test_dir != NULL ? wide_join(test_dir, L"trace-\x732B.jsonl ") : NULL;
     wchar_t *png = test_dir != NULL ? wide_join(test_dir, L"frame-\x732B.png.") : NULL;
+    wchar_t *dot_state = test_dir != NULL ? wide_join(test_dir, L"suffix-distinct-dot") : NULL;
+    wchar_t *dot_png = test_dir != NULL ? wide_join(test_dir, L"suffix-distinct-dot.") : NULL;
+    wchar_t *space_state = test_dir != NULL ? wide_join(test_dir, L"suffix-distinct-space") : NULL;
+    wchar_t *space_png = test_dir != NULL ? wide_join(test_dir, L"suffix-distinct-space ") : NULL;
     wchar_t *battery = test_dir != NULL ? wide_join(test_dir, L"image-\x732B.sav") : NULL;
     wchar_t *battery_before = wide_join(namespace_root, L"replacement-before.sav");
     wchar_t *invalid_trace = test_dir != NULL ? wide_join(test_dir, L"invalid-trace.jsonl") : NULL;
     wchar_t *sentinel = test_dir != NULL ? wide_join(test_dir, L"sentinel.bin") : NULL;
     wchar_t *log_name = wide_concat(L"windows-paths-", name);
     wchar_t *baseline = wide_join(work_dir, L"windows-paths-baseline.state");
-    wchar_t *owned[] = {image,          state,         state_output, movie, simple,
-                        bios,           firmware,      trace,        png,   battery,
-                        battery_before, invalid_trace, sentinel};
+    wchar_t *owned[] = {image,         state,       state_output, movie,   simple,
+                        bios,          firmware,    trace,        png,     dot_state,
+                        dot_png,       space_state, space_png,    battery, battery_before,
+                        invalid_trace, sentinel};
     int failed = test_dir == NULL || image == NULL || state == NULL || state_output == NULL ||
                  movie == NULL || simple == NULL || bios == NULL || firmware == NULL ||
-                 trace == NULL || png == NULL || battery == NULL || battery_before == NULL ||
-                 invalid_trace == NULL || sentinel == NULL || log_name == NULL || baseline == NULL;
+                 trace == NULL || png == NULL || dot_state == NULL || dot_png == NULL ||
+                 space_state == NULL || space_png == NULL || battery == NULL ||
+                 battery_before == NULL || invalid_trace == NULL || sentinel == NULL ||
+                 log_name == NULL || baseline == NULL;
     if (!failed) {
         for (size_t i = 0u; i < sizeof owned / sizeof owned[0]; i++) {
             if (!delete_file_if_present(owned[i])) {
@@ -1158,6 +1240,14 @@ static int run_namespace(const wchar_t *runner, const wchar_t *work_dir, const w
         if (!failed)
             printf("windows-paths: successful replacement verified for extended %ls paths\n", name);
     }
+    if (!failed && (verify_suffix_distinct_outputs(runner, work_dir, image, dot_state, dot_png,
+                                                   log_name, L"trailing-dot") != 0 ||
+                    verify_suffix_distinct_outputs(runner, work_dir, image, space_state, space_png,
+                                                   log_name, L"trailing-space") != 0)) {
+        failed = 1;
+    }
+    if (!failed)
+        printf("windows-paths: suffix-distinct outputs verified for extended %ls paths\n", name);
     if (!failed && verify_output_aliases(runner, work_dir, namespace_root, fixture, name, log_name))
         failed = 1;
     if (!failed && verify_blocked_outputs(runner, work_dir, test_dir, image, name, log_name))
@@ -1239,6 +1329,10 @@ static int run_namespace(const wchar_t *runner, const wchar_t *work_dir, const w
     free(firmware);
     free(trace);
     free(png);
+    free(dot_state);
+    free(dot_png);
+    free(space_state);
+    free(space_png);
     free(battery);
     free(battery_before);
     free(invalid_trace);
