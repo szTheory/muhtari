@@ -1134,8 +1134,10 @@ static void trace_paths(const char *dir, const char *junction_alias, const char 
                    "--trace-frame", "1", "--trace-range", "0:65535", rom);
 
     (void)snprintf(trace, sizeof trace, "%s/./option.sav", dir);
-    TRACE_BAD_PATH(trace, "--frames", "1", "--save-dir", save_dir, "--trace", trace,
-                   "--trace-frame", "1", "--trace-range", "0:65535", rom);
+    (void)snprintf(path, sizeof path, "%s/option.sav", dir);
+    /* Keep the alias in argv; WASI stat requires a canonical protected snapshot path. */
+    TRACE_BAD_PATH(path, "--frames", "1", "--save-dir", save_dir, "--trace", trace, "--trace-frame",
+                   "1", "--trace-range", "0:65535", rom);
 
     (void)snprintf(path, sizeof path, "%s/normalized-output", dir);
     (void)snprintf(alias, sizeof alias, "%s/subdir/../normalized-output", dir);
