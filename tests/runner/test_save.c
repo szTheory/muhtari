@@ -502,6 +502,11 @@ static int trace_file_exists(const char *path)
     return _stat64(path, &info) == 0;
 #else
     struct stat info;
+#ifdef __wasi__
+    static unsigned stat_checks;
+    (void)fprintf(stderr, "WASI trace-path snapshot stat %u: %s\n", stat_checks++, path);
+    (void)fflush(stderr);
+#endif
     return stat(path, &info) == 0;
 #endif
 }
