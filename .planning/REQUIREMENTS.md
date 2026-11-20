@@ -13,7 +13,7 @@
 
 - [x] **PLAYER-01**: A player can install a supported release core and load a lawfully obtained Atari 7800 image in RetroArch using documented prerequisites, steps, expected result, controls, optional BIOS behavior, and support limits.
 - [x] **RUNNER-01**: A runner user can run the built-in test card or probe/run their own cartridge using the current release or documented local build, understand expected output and refusal status, and find the full CLI reference.
-- [ ] **EMBED-01**: A C host integrator can build and run a complete minimal example against the installed library package using CMake or pkg-config, with the required allocator, buffers, one frame, and expected result explained.
+- [x] **EMBED-01**: A C host integrator can build and run a complete minimal example against the installed library package using CMake or pkg-config, with the required allocator, buffers, one frame, and expected result explained.
 
 ### Documentation Quality
 
@@ -55,7 +55,7 @@ Deferred to future work; not part of this milestone.
 | PLAYER-01 | Phase 30 | Complete |
 | RUNNER-01 | Phase 30 | Complete |
 | DOCS-01 | Phase 30 | Complete |
-| EMBED-01 | Phase 31 | Pending |
+| EMBED-01 | Phase 31 | Complete |
 
 **Coverage:**
 - v1 requirements: 5 total

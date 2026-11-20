@@ -4,18 +4,18 @@ milestone: v12.0
 milestone_name: First-use readiness
 current_phase: 31
 current_phase_name: Installed C library quickstart
-current_plan: Not started
-status: executing
-stopped_at: Phase 31 context gathered
-last_updated: "2026-11-20T03:05:12.958Z"
+current_plan: 1
+status: verifying
+stopped_at: Completed 31-01-PLAN.md
+last_updated: "2026-11-20T03:44:20.254Z"
 last_activity: 2026-11-19
-last_activity_desc: Phase 30 complete, transitioned to Phase 31
-state_head: 147c1716d56b78640e07f1b9faa1d26dc0de364c
+last_activity_desc: Phase 31 execution started
+state_head: 27a324a3c23fb6002b3482d92e3365e01f3c3659
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 2
-  completed_plans: 1
+  completed_plans: 2
   percent: 50
 ---
 
@@ -24,15 +24,15 @@ progress:
 ## Project Reference
 See [PROJECT.md](PROJECT.md), the active [requirements](REQUIREMENTS.md) and [roadmap](ROADMAP.md), the [rolling product roadmap](PRODUCT-ROADMAP.md), and the [v12.0 scope review](research/next-milestone/2026-11-19-first-use-readiness-review.md). The completed v11.0 requirements and delivery records remain in the [archive](milestones/v11.0-REQUIREMENTS.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** v12.0 first-use readiness is scoped; Phase 30 is ready for autonomous discussion and planning.
+**Current focus:** Phase 31 — Installed C library quickstart
 
 ## Current Position
 
-Phase: 31 (Installed C library quickstart) — READY TO EXECUTE
-Current Plan: Not started
+Phase: 31 (Installed C library quickstart) — EXECUTING
+Current Plan: 1
 Total Plans in Phase: 1
-Status: Ready to execute
-Last activity: 2026-11-19 — Phase 30 complete, transitioned to Phase 31
+Status: Phase complete — ready for verification
+Last activity: 2026-11-19 — Phase 31 execution started
 
 ## Performance Metrics
 No v12.0 plan metrics exist yet. v11.0's 19h 8m Phase 29 figure is elapsed time across implementation, handoffs and hosted CI, not a test run; the longest individual final CI job was 44m04. The final main run had about 10 seconds of queue time and no cancellations. The [v11.0 audit](milestones/v11.0-MILESTONE-AUDIT.md#cicd-efficiency-review) records the measurements and why they support no safe workflow change.
@@ -41,6 +41,7 @@ No v12.0 plan metrics exist yet. v11.0's 19h 8m Phase 29 figure is elapsed time 
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 30 P01 | 34m | 3 tasks | 9 files |
+| Phase 31 P01 | 33min | 3 tasks | 9 files |
 
 ## Accumulated Context
 ### Decisions
@@ -65,6 +66,9 @@ No v12.0 plan metrics exist yet. v11.0's 19h 8m Phase 29 figure is elapsed time 
 - [Phase 30]: Keep Atari 2600 recognition and refusal; twentysixhundo owns Atari 2600 execution.
 - [Phase 30]: Keep public release references version-free and link the exact historical package receipt.
 - [Phase 30]: Use a fix squash title for the normal milestone delivery PR so release-please selects a patch.
+- [Phase 31]: One ROM-free C17 source serves the archive CMake and pkg-config routes and staged package checks.
+- [Phase 31]: Enable pkg-config archive verification only on the existing Ubuntu 26.04 x64 CI lane.
+- [Phase 31]: Require the missing-export negative control to match its specific CMake diagnostic.
 
 ### Pending Todos
 The [Windows path follow-up](todos/completed/2026-11-17-define-extended-windows-output-path-support.md) was completed in Phase 29. Other todos/seeds retain their dispositions. Root remains canonical and older dirty worktrees require content/ancestry reconciliation before import. See [workspace reconciliation](debug/workspace-reconciliation-2026-11-10.md).
@@ -122,9 +126,9 @@ At v11.0 close, no new items were acknowledged; 51 items acknowledged at earlier
 | deferred_items | 11/deferred-items.md: Found in plan 04  - `diag.bankset_tracer` and `diag.bankset` both write `build/ci/tests/diag/bankset/32n/` and carry no resource lock, so under `ctest -j` one can read the other's `pixels.png` half written (`bankset --bankset-png ... png: chunk longer than the file`). Seen once in `cmake --workflow --preset ci`; passes alone and on rerun. Not caused by plan 04; a fix is a `RESOURCE_LOCK` or a separate output directory in `tests/diag/tests.cmake`.  Resolved in the gap round: `diag.bankset` now writes `build/<preset>/tests/diag/bankset-matrix/` and `diag.bankset_tracer` keeps `build/<preset>/tests/diag/bankset/`, so the two tests share no output file. | acknowledged; historical disposition retained | 2026-10-29 | v2.0 |
 
 ## Session Continuity
-Last session: 2026-11-20T02:46:35.715Z
-Stopped at: Phase 31 context gathered
-Resume file: .planning/phases/31-installed-c-library-quickstart/31-CONTEXT.md
+Last session: 2026-11-20T03:44:20.209Z
+Stopped at: Completed 31-01-PLAN.md
+Resume file: None
 
 Next action: run $gsd-verify-work 30 from the canonical root checkout to verify Phase 30
 
