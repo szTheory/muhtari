@@ -67,10 +67,14 @@ result.
   3. The existing installed-consumer verification exercises the documented example or the same source and catches a broken package target or public header through a representative negative control.
   4. The getting-started text links to the complete API reference and states platform/package requirements and the behavior established by the example without implying gameplay compatibility.
 
-**Plans:** 1/1 plans executed
+**Plans:** 1/2 plans executed
 
 Plans:
+**Wave 1**
 - [x] 31-01-PLAN.md — Document and verify the shared installed C quickstart through both package routes
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 31-02-PLAN.md — Verify that injected quickstart failures report the error and release acquired resources
 
 ## Completed phase history
 
