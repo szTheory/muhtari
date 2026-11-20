@@ -1,8 +1,8 @@
 # Phase 31: Installed C library quickstart - Research
 
-**Researched:** 2026-11-19  
-**Repository revision:** `eb0647bdafb83e049e55055adcd571020d33b0f2`  
-**Domain:** Installed C library package consumption and first-use documentation  
+**Researched:** 2026-11-19
+**Repository revision:** `eb0647bdafb83e049e55055adcd571020d33b0f2`
+**Domain:** Installed C library package consumption and first-use documentation
 **Confidence:** MEDIUM — package layout and the current CMake consumer flow are directly verified; the official Ubuntu 26.04 image inventory lists pkg-config, but the workflow has not exercised it yet; Windows/MSVC compatibility is not established.
 
 <user_constraints>
@@ -169,10 +169,10 @@ No external runtime service, ROM, BIOS, save, or added package is needed for the
    - What we know: `.github/workflows/ci.yml` uses `ubuntu-26.04`; the official `actions/runner-images` Ubuntu 26.04 image inventory, image version `20261111.196.1`, lists `pkg-config` 2.5.1-4. The package includes `lib/pkgconfig/muhtari.pc`. [VERIFIED: workflow line 49; official [Ubuntu 26.04 image inventory](https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2604-Readme.md), checked 2026-11-19; `docs/embedding.md:12-18`; `cmake/muhtari.pc.in:1-9`.]
    - Remaining limit: the image inventory is not a receipt from this repository's hosted workflow; the new check must fail clearly if the tool is absent at runtime.
    - Recommendation: exercise pkg-config through the existing extracted-archive flow on one Ubuntu 26.04 CI lane. No new package installation is indicated by the image inventory. Run one local Apple Silicon check against the locally produced archive. Keep CMake coverage in all six current legs and do not add a pkg-config-only Windows promise.
-2. **Does any supported Windows pkg-config/compiler pair consume the current `.pc` file?**
+2. **Does any supported Windows pkg-config/compiler pair consume the current `.pc` file? Resolved for Phase 31.**
    - What we know: the Windows archive contains `lib/muhtari.lib`, while the `.pc` file emits `-L`/`-l`; existing Windows installed-consumer tests use CMake. [VERIFIED: docs/embedding.md:12-16; cmake/muhtari.pc.in:8-9; tests/install/tests.cmake:46-69.]
-   - What's unclear: whether the project's intended Windows toolchain supports this output.
-   - Recommendation: document CMake as the Windows route. Revisit only if a concrete Windows pkg-config consumer is in scope and can be tested.
+   - Phase 31 decision (D-03): document and verify CMake as the sole Windows route.
+   - Revisit when a supported Windows pkg-config/compiler pairing demonstrates that it can build and run the same example against the extracted Windows library archive.
 
 ## Sources
 
@@ -199,8 +199,8 @@ No external runtime service, ROM, BIOS, save, or added package is needed for the
 - pkg-config on configured Ubuntu CI image: MEDIUM-HIGH — official inventory lists it; this repository's hosted execution remains unverified until the normal CI run.
 - pkg-config on Windows/MSVC: LOW — no positive toolchain evidence in the repository.
 
-**Research date:** 2026-11-19  
-**Source revisions:** repository `eb0647bdafb83e049e55055adcd571020d33b0f2`; Ubuntu hosted image `20261111.196.1` (official image inventory).  
+**Research date:** 2026-11-19
+**Source revisions:** repository `eb0647bdafb83e049e55055adcd571020d33b0f2`; Ubuntu hosted image `20261111.196.1` (official image inventory).
 **Revisit triggers:** the configured Ubuntu image no longer lists `pkg-config`; a Windows pkg-config compiler pairing becomes supported; package archive layout or `.pc` flags change; or the no-content first-frame result changes.
 
 Security and Nyquist sections are omitted because the project config sets `"security_enforcement": false` and `"nyquist_validation": false`. [VERIFIED: .planning/config.json:36,60 — quotes: `"nyquist_validation": false` and `"security_enforcement": false`.]
