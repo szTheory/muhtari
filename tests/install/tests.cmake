@@ -66,7 +66,7 @@ foreach(install_crt IN ITEMS static dll)
     LABELS install TIMEOUT 120)
   set_tests_properties(${install_name} PROPERTIES
     FIXTURES_REQUIRED install_staged
-    PASS_REGULAR_EXPRESSION "consumer: one frame, 800 samples")
+    PASS_REGULAR_EXPRESSION "quickstart: one frame, 800 samples")
   muhtari_add_test(NAME ${install_name}.ym
     COMMAND ${CMAKE_CTEST_COMMAND} --build-and-test
       ${CMAKE_CURRENT_LIST_DIR}/../consumer ${PROJECT_BINARY_DIR}/${install_dir}_ym
