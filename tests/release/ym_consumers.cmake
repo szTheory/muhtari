@@ -81,6 +81,101 @@ if(NOT SUFFIX MATCHES "^windows-")
     _muhtari_bundle_hash_equal("${WORK}/source-object" "${WORK}/package-object" "archive object ${member}")
   endforeach()
 endif()
+set(quickstart_build "${WORK}/quickstart-cmake")
+file(REMOVE_RECURSE "${quickstart_build}")
+execute_process(COMMAND "${CMAKE_COMMAND}" -S "${ROOT}/examples/embedding" -B "${quickstart_build}"
+  "-DCMAKE_C_COMPILER=${CC}" -DCMAKE_BUILD_TYPE=Release
+  "-DCMAKE_PREFIX_PATH=${WORK}/library" -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF
+  -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF
+  "-Dmuhtari_DIR=${WORK}/library/lib/cmake/muhtari"
+  RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+if(NOT rc STREQUAL "0")
+  message(FATAL_ERROR "extracted quickstart CMake configure: ${rc} ${out}${err}")
+endif()
+execute_process(COMMAND "${CMAKE_COMMAND}" --build "${quickstart_build}" --config Release --parallel 2
+  RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+if(NOT rc STREQUAL "0")
+  message(FATAL_ERROR "extracted quickstart CMake build: ${rc} ${out}${err}")
+endif()
+set(quickstart "${quickstart_build}/quickstart${suffix}")
+if(NOT EXISTS "${quickstart}")
+  set(quickstart "${quickstart_build}/Release/quickstart${suffix}")
+endif()
+execute_process(COMMAND ${EMULATOR} "${quickstart}"
+  RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+string(STRIP "${out}" quickstart_output)
+if(NOT rc STREQUAL "0" OR NOT quickstart_output STREQUAL "quickstart: one frame, 800 samples")
+  message(FATAL_ERROR "extracted quickstart CMake run: ${rc}; expected one frame, 800 samples; got ${out}${err}")
+endif()
+message(STATUS "extracted quickstart CMake consumer passed: ${quickstart_output}")
+# Fault prevented: a release ZIP can contain the right library bytes while
+# omitting the exported target required by a clean CMake host project.
+set(damaged_parent "${WORK}/quickstart-damaged")
+file(REMOVE_RECURSE "${damaged_parent}")
+file(MAKE_DIRECTORY "${damaged_parent}")
+file(COPY "${WORK}/library" DESTINATION "${damaged_parent}")
+set(damaged_prefix "${damaged_parent}/library")
+set(damaged_target "${damaged_prefix}/lib/cmake/muhtari/muhtariTargets.cmake")
+if(NOT EXISTS "${damaged_target}")
+  message(FATAL_ERROR "quickstart damaged-prefix setup is missing exported target: ${damaged_target}")
+endif()
+file(REMOVE "${damaged_target}")
+set(damaged_build "${WORK}/quickstart-damaged-build")
+file(REMOVE_RECURSE "${damaged_build}")
+set(damaged_configure_command "${CMAKE_COMMAND}" -S "${ROOT}/examples/embedding" -B "${damaged_build}"
+  "-DCMAKE_C_COMPILER=${CC}" -DCMAKE_BUILD_TYPE=Release
+  "-DCMAKE_PREFIX_PATH=${damaged_prefix}" -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF
+  -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF
+  "-Dmuhtari_DIR=${damaged_prefix}/lib/cmake/muhtari")
+set(damaged_regex "include could not find requested file:[ \t\r\n]+[^ \t\r\n]*[/\\\\]muhtariTargets\\.cmake")
+execute_process(COMMAND "${CMAKE_COMMAND}" "-DCMD=${damaged_configure_command}" -DCODE=1
+    "-DREGEX=${damaged_regex}" -P "${ROOT}/tests/cmake/expect_fail.cmake"
+  RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+if(NOT rc STREQUAL "0")
+  message(FATAL_ERROR "quickstart missing-target control was not accepted: ${rc} ${out}${err}")
+endif()
+message(STATUS "quickstart missing-target control passed: ${out}${err}")
+if("$ENV{MUHTARI_RELEASE_QUICKSTART_PKG_CONFIG}" STREQUAL "1")
+  if(NOT SUFFIX MATCHES "^(linux|macos)-(x64|arm64)$")
+    message(FATAL_ERROR "extracted quickstart pkg-config route requires a POSIX native compiler lane: ${SUFFIX}")
+  endif()
+  set(pkg_config_metadata "${WORK}/library/lib/pkgconfig/muhtari.pc")
+  if(NOT EXISTS "${pkg_config_metadata}")
+    message(FATAL_ERROR "extracted quickstart pkg-config metadata is missing: ${pkg_config_metadata}")
+  endif()
+  find_program(PKG_CONFIG_EXECUTABLE NAMES pkg-config)
+  if(NOT PKG_CONFIG_EXECUTABLE)
+    message(FATAL_ERROR "extracted quickstart pkg-config route requires pkg-config, but it was not found")
+  endif()
+  execute_process(COMMAND "${CMAKE_COMMAND}" -E env
+      "PKG_CONFIG_LIBDIR=${WORK}/library/lib/pkgconfig" "PKG_CONFIG_PATH="
+      "${PKG_CONFIG_EXECUTABLE}" --cflags --libs muhtari
+    RESULT_VARIABLE rc OUTPUT_VARIABLE pkg_config_flags ERROR_VARIABLE err)
+  if(NOT rc STREQUAL "0")
+    message(FATAL_ERROR "extracted quickstart pkg-config metadata lookup failed: ${rc} ${pkg_config_flags}${err}")
+  endif()
+  if(pkg_config_flags STREQUAL "")
+    message(FATAL_ERROR "extracted quickstart pkg-config metadata lookup returned no flags")
+  endif()
+  separate_arguments(pkg_config_arguments UNIX_COMMAND "${pkg_config_flags}")
+  if(NOT pkg_config_arguments)
+    message(FATAL_ERROR "extracted quickstart pkg-config metadata produced no compiler arguments")
+  endif()
+  set(pkg_config_executable "${WORK}/quickstart-pkg-config${suffix}")
+  execute_process(COMMAND "${CC}" -std=c17 "${ROOT}/examples/embedding/quickstart.c"
+      ${pkg_config_arguments} -o "${pkg_config_executable}"
+    RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+  if(NOT rc STREQUAL "0")
+    message(FATAL_ERROR "extracted quickstart pkg-config compile failed: ${rc} ${out}${err}")
+  endif()
+  execute_process(COMMAND "${pkg_config_executable}"
+    RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+  string(STRIP "${out}" pkg_config_output)
+  if(NOT rc STREQUAL "0" OR NOT pkg_config_output STREQUAL "quickstart: one frame, 800 samples")
+    message(FATAL_ERROR "extracted quickstart pkg-config run: ${rc}; expected one frame, 800 samples; got ${out}${err}")
+  endif()
+  message(STATUS "extracted quickstart pkg-config consumer passed: ${pkg_config_output}")
+endif()
 set(fixture "${BUILD}/tests/ym2151/ym2151.a78")
 execute_process(COMMAND "${CMAKE_COMMAND}" -S "${ROOT}/tests/consumer" -B "${WORK}/consumer"
   "-DCMAKE_C_COMPILER=${CC}" "-DCMAKE_BUILD_TYPE=Release"

@@ -886,7 +886,7 @@ endfunction()
     probe(2600-4k)
     expect_keys(2600-4k 77 kind source rom_size ${hash_keys})
     probe_value(kind kind)
-    if(NOT kind STREQUAL "2600" OR NOT err MATCHES "muhtari-run: [^\n]*/2600-4k: unsupported: 2600 \\(planned\\)\n")
+    if(NOT kind STREQUAL "2600" OR NOT err MATCHES "muhtari-run: [^\n]*/2600-4k: unsupported: Atari 2600\n")
       message(FATAL_ERROR "--probe 2600-4k: kind '${kind}', standard error\n${err}")
     endif()
     expect_hashes("" "${DIR}/2600-4k")
@@ -1534,7 +1534,7 @@ endfunction()
       expect_exit(77 "${regex}" --frames 1 --hsc on --hsc-rom "${WORK}/bad-hsc.bin" "${image}")
       expect_exit(77 "${regex}" --frames 1 --hsc off --hsc-rom "${WORK}/missing.bin" "${image}")
     endfunction()
-    expect_refused("^muhtari-run: [^\n]*/2600-4k: unsupported: 2600 \\(planned\\)\n$"
+    expect_refused("^muhtari-run: [^\n]*/2600-4k: unsupported: Atari 2600\n$"
       "${DIR}/2600-4k")
     foreach(sound ym2151 covox adpcm)
       expect_refused("^muhtari-run: [^\n]*/${sound}[.]a78: unsupported device\nmuhtari-run: unavailable sound configuration: ${sound}\n$"

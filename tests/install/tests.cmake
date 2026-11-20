@@ -1,20 +1,59 @@
-# Report the actual embedding child's status even when CTest's build-and-test
-# wrapper omits its exit diagnostic. The existing success regex still applies.
-if(DEFINED EMBED_PROGRAM)
-  execute_process(COMMAND ${EMULATOR} "${EMBED_PROGRAM}"
-    RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
-  message("embed consumer exit ${rc}; output follows:\n${out}${err}")
-  if(NOT rc STREQUAL "0")
-    message(FATAL_ERROR "embed consumer exited ${rc}")
+# Report each outside consumer's actual status and output because CTest's
+# build-and-test wrapper can omit a child's exit diagnostic.
+if(DEFINED EMBED_PROGRAM OR DEFINED CONSUMER_PROGRAM OR DEFINED QUICKSTART_PROGRAM)
+  if(DEFINED EMBED_PROGRAM)
+    execute_process(COMMAND ${EMULATOR} "${EMBED_PROGRAM}"
+      RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+    message("embed consumer exit ${rc}; output follows:\n${out}${err}")
+    if(NOT rc STREQUAL "0")
+      message(FATAL_ERROR "embed consumer exited ${rc}")
+    endif()
+  endif()
+  if(DEFINED CONSUMER_PROGRAM)
+    execute_process(COMMAND ${EMULATOR} "${CONSUMER_PROGRAM}"
+      RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+    string(STRIP "${out}" consumer_output)
+    if(NOT rc STREQUAL "0" OR NOT consumer_output STREQUAL "consumer: one frame, 800 samples")
+      message(FATAL_ERROR "staged consumer: ${rc}; expected one frame, 800 samples; got ${out}${err}")
+    endif()
+    message("${consumer_output}")
+  endif()
+  if(DEFINED QUICKSTART_PROGRAM)
+    execute_process(COMMAND ${EMULATOR} "${QUICKSTART_PROGRAM}"
+      RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+    string(STRIP "${out}" quickstart_output)
+    if(NOT rc STREQUAL "0" OR NOT quickstart_output STREQUAL "quickstart: one frame, 800 samples")
+      message(FATAL_ERROR "staged quickstart: ${rc}; expected one frame, 800 samples; got ${out}${err}")
+    endif()
+
+    if(NOT DEFINED QUICKSTART_FAULTS_PROGRAM)
+      message(FATAL_ERROR "staged quickstart: QUICKSTART_FAULTS_PROGRAM is required")
+    endif()
+    function(check_quickstart_fault mode expected_diagnostic)
+      execute_process(COMMAND ${EMULATOR} "${QUICKSTART_FAULTS_PROGRAM}" "${mode}"
+        RESULT_VARIABLE fault_rc OUTPUT_VARIABLE fault_out ERROR_VARIABLE fault_err)
+      string(REGEX REPLACE "[\r\n]+$" "" fault_out "${fault_out}")
+      string(REGEX REPLACE "[\r\n]+$" "" fault_err "${fault_err}")
+      if(NOT fault_rc STREQUAL "1" OR
+         NOT fault_out STREQUAL "quickstart fault: cleanup verified" OR
+         NOT fault_err STREQUAL "${expected_diagnostic}")
+        message(FATAL_ERROR "staged quickstart ${mode} fault: exit ${fault_rc}; stdout [${fault_out}]; stderr [${fault_err}]")
+      endif()
+    endfunction()
+    check_quickstart_fault(frame "muhtari_run_frame failed with status 4")
+    check_quickstart_fault(create "muhtari_create failed with status 3")
+    check_quickstart_fault(audio_alloc "could not allocate frame buffers")
+    check_quickstart_fault(sample_count "expected 800 audio samples, got 799")
+    message("${quickstart_output}")
   endif()
   return()
 endif()
 
 # The library as an outside project consumes it.
 #
-# Fault prevented: an install tree, package file or header that only works
-# inside this build, so a program built against a release archive fails to
-# configure, compile or link.
+# Fault prevented: an install tree, package export or header that lets the
+# existing consumer work but prevents the documented quickstart from building
+# and running outside the source tree.
 #
 # install.stage installs the library component into <build>/stage. The two
 # consumer tests build tests/consumer against it with find_package and run it,
@@ -42,6 +81,7 @@ if(CMAKE_CROSSCOMPILING)
   list(APPEND install_build_options -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
     -DCMAKE_STAGING_PREFIX=${PROJECT_BINARY_DIR}/stage)
 endif()
+string(REPLACE ";" "$<SEMICOLON>" install_emulator "${CMAKE_CROSSCOMPILING_EMULATOR}")
 
 foreach(install_crt IN ITEMS static dll)
   if(install_crt STREQUAL "static")
@@ -53,6 +93,10 @@ foreach(install_crt IN ITEMS static dll)
     set(install_dir consumer_dll_crt)
     set(install_runtime "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
   endif()
+  set(install_program_dir "${PROJECT_BINARY_DIR}/${install_dir}")
+  if(install_multi_config)
+    set(install_program_dir "${install_program_dir}/$<CONFIG>")
+  endif()
   muhtari_add_test(NAME ${install_name}
     COMMAND ${CMAKE_CTEST_COMMAND} --build-and-test
       ${CMAKE_CURRENT_LIST_DIR}/../consumer ${PROJECT_BINARY_DIR}/${install_dir}
@@ -61,12 +105,18 @@ foreach(install_crt IN ITEMS static dll)
       --build-options
         -DCMAKE_PREFIX_PATH=${PROJECT_BINARY_DIR}/stage
         -DCMAKE_MSVC_RUNTIME_LIBRARY=${install_runtime}
+        -DMUHTARI_TEST_QUICKSTART_FAULTS=ON
         ${install_build_options}
-      --test-command ${CMAKE_CROSSCOMPILING_EMULATOR} consumer
+      --test-command "${CMAKE_COMMAND}"
+        "-DCONSUMER_PROGRAM=${install_program_dir}/consumer${CMAKE_EXECUTABLE_SUFFIX}"
+        "-DQUICKSTART_PROGRAM=${install_program_dir}/quickstart${CMAKE_EXECUTABLE_SUFFIX}"
+        "-DQUICKSTART_FAULTS_PROGRAM=${install_program_dir}/quickstart_faults${CMAKE_EXECUTABLE_SUFFIX}"
+        "-DEMULATOR=${install_emulator}"
+        -P ${CMAKE_CURRENT_LIST_FILE}
     LABELS install TIMEOUT 120)
   set_tests_properties(${install_name} PROPERTIES
     FIXTURES_REQUIRED install_staged
-    PASS_REGULAR_EXPRESSION "consumer: one frame, 800 samples")
+    PASS_REGULAR_EXPRESSION "quickstart: one frame, 800 samples")
   muhtari_add_test(NAME ${install_name}.ym
     COMMAND ${CMAKE_CTEST_COMMAND} --build-and-test
       ${CMAKE_CURRENT_LIST_DIR}/../consumer ${PROJECT_BINARY_DIR}/${install_dir}_ym

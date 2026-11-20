@@ -26,7 +26,7 @@ const char *muhtari__status_text(muhtari_status status)
     case MUHTARI_STATUS_ERR_UNSUPPORTED_SIZE:
         return "larger than 1 MiB plus a 128-byte header";
     case MUHTARI_STATUS_ERR_UNSUPPORTED_2600:
-        return "unsupported: 2600 (planned)";
+        return "unsupported: Atari 2600";
     case MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD:
         return "unsupported board";
     case MUHTARI_STATUS_ERR_BIOS_REJECTED_CART:

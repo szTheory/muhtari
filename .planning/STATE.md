@@ -1,51 +1,47 @@
 ---
 gsd_state_version: "1.0"
-milestone: v11.0
-status: Awaiting next milestone
-stopped_at: v11.0 shipped and archived — next milestone scope choice pending
-last_updated: "2026-11-19T21:33:31Z"
-last_activity: 2026-11-19
-last_activity_desc: Milestone v11.0 completed and archived
-state_head: ac4ee132449f82848da1db493c428f78d463d6cd
+milestone: v12.0
+milestone_name: First-use readiness
+current_phase: 31
+current_plan: Not started
+status: completed
+stopped_at: Phase 31 verified — corrected-head delivery checks pending on PR #85
+last_updated: "2026-11-20T10:25:07Z"
+last_activity: 2026-11-20
+last_activity_desc: Phase 31 verified; milestone audit refreshed; PR update pending
+state_head: 4dc038df51d15bd46038068b81670cbc510f5c35
 progress:
   total_phases: 2
   completed_phases: 2
-  total_plans: 5
-  completed_plans: 5
-milestone_name: Windows extended-path support
-current_phase: null
+  total_plans: 3
+  completed_plans: 3
+  percent: 100
 ---
 
 # Project State
 
 ## Project Reference
-See [PROJECT.md](PROJECT.md) (updated 2026-11-19), [ROADMAP.md](ROADMAP.md), the [v11.0 requirements archive](milestones/v11.0-REQUIREMENTS.md), [product roadmap](PRODUCT-ROADMAP.md), and [v11.0 scope](research/next-milestone/2026-11-18-future-roadmap-review.md) and [successor review](research/next-milestone/2026-11-19-successor-review.md).
+See [PROJECT.md](PROJECT.md), the active [requirements](REQUIREMENTS.md) and [roadmap](ROADMAP.md), the [rolling product roadmap](PRODUCT-ROADMAP.md), and the [v12.0 scope review](research/next-milestone/2026-11-19-first-use-readiness-review.md). The completed v11.0 requirements and delivery records remain in the [archive](milestones/v11.0-REQUIREMENTS.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** v11.0 is shipped and archived; choose the next milestone scope from PRODUCT-ROADMAP.md.
+**Current focus:** v12.0 phase work is complete; update PR #85 and verify corrected-head CI and Release.
 
 ## Current Position
 
-Phase: Milestone v11.0 complete
-Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-11-19 — Milestone v11.0 completed and archived
+Phase: 31 — Installed C library quickstart (complete; verification passed)
+Current Plan: None
+Total Plans in Phase: 2
+Status: Phase work complete; corrected-head delivery checks pending on PR #85
+Last activity: 2026-11-20 — Phase 31 verification and milestone audit refreshed
 
 ## Performance Metrics
-Phase 28 P01 completed in 39 min. This single-plan sample does not establish an execution trend.
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 28 | 2 | - | - |
-| 29 | 3 | - | - |
-Prior metrics remain in the [v10.0 archive](milestones/v10.0-ROADMAP.md), [audit](milestones/v10.0-MILESTONE-AUDIT.md) and phase summaries. Stable v0.18.0 is published; the failed v0.15.0 tag and draft remain unchanged and unpublished.
+The plan durations below are GSD elapsed time, not only test-run time. The local v12.0 serial CI suite took 481.59 seconds; the old-head hosted CI and Release attempts had no queue time, with Windows ARM64 the longest job at 44m20s and 42m29s. The [v12.0 audit](v12.0-MILESTONE-AUDIT.md#hosted-delivery-and-efficiency-review) records their failures and why they support no safe workflow change. For comparison, v11.0's 19h 8m Phase 29 figure spans implementation, handoffs and hosted CI, not a test run; the final main run had about 10 seconds of queue time and no cancellations. See the [v11.0 audit](milestones/v11.0-MILESTONE-AUDIT.md#cicd-efficiency-review).
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
-| Phase 28 P01 | 39 min | 2 tasks | 5 files |
-| Phase 28 P02 | 18 min | 2 tasks | 2 files |
-| Phase 29 P01 | 44m | 2 tasks | 5 files |
-| Phase 29 P02 | 43min | 2 tasks | 4 files |
-| Phase 29 P03 | 19h 8m | 2 tasks | 18 files |
+| Phase 30 P01 | 34m | 3 tasks | 9 files |
+| Phase 31 P01 | 33min | 3 tasks | 9 files |
+| Phase 31 P02 | 12min | 2 tasks | 3 files |
 
 ## Accumulated Context
 ### Decisions
@@ -64,6 +60,17 @@ Prior metrics remain in the [v10.0 archive](milestones/v10.0-ROADMAP.md), [audit
 - [Phase 29]: Accept WINPATH-01 through WINPATH-04 from c3 actual Windows x64 and ARM64 evidence; the synthetic CI merge tree matches reviewed source.
 - [Phase 29]: The final main/Release runs confirmed Windows ARM64 as the CI critical path; no case-level profile supports a safe ordering change.
 - [Phase 29]: Keep CI and Release coverage/topology intact; overlapping equality runner cost alone does not justify a changed-file classifier.
+- [v12.0]: Keep player, runner/homebrew-developer and C host-integrator jobs tied to current deliverables; mark research date, evidence type, confidence and inference.
+- [v12.0]: Improve first-use guidance for RetroArch, `muhtari-run` and the installed C package; focus cleanup on concrete journey friction and correctness debt.
+- [v12.0]: The finite gameplay replay remains next only after exact fixture rights and an independent expected gameplay result are established.
+- [Phase 30]: Keep Atari 2600 recognition and refusal; twentysixhundo owns Atari 2600 execution.
+- [Phase 30]: Keep public release references version-free and link the exact historical package receipt.
+- [Phase 30]: Use a fix squash title for the normal milestone delivery PR so release-please selects a patch.
+- [Phase 31]: One ROM-free C17 source serves the archive CMake and pkg-config routes and staged package checks.
+- [Phase 31]: Enable pkg-config archive verification only on the existing Ubuntu 26.04 x64 CI lane.
+- [Phase 31]: Require the missing-export negative control to match its specific CMake diagnostic.
+- [Phase 31]: Keep all fault injection in the staged test driver; leave the documented example and public API unchanged.
+- [Phase 31]: Require setup and result fault checks before emitting the staged quickstart success marker.
 
 ### Pending Todos
 The [Windows path follow-up](todos/completed/2026-11-17-define-extended-windows-output-path-support.md) was completed in Phase 29. Other todos/seeds retain their dispositions. Root remains canonical and older dirty worktrees require content/ancestry reconciliation before import. See [workspace reconciliation](debug/workspace-reconciliation-2026-11-10.md).
@@ -72,7 +79,7 @@ The [Windows path follow-up](todos/completed/2026-11-17-define-extended-windows-
 - GameDrive implementation remains NO-GO pending authoritative timing/framing, a lawful independent exact-profile PCM oracle and finite resource facts. Preserve the [v8.0 qualification](milestones/v8.0-phases/24-qualify-the-gamedrive-audio-contract/24-QUALIFICATION.md); no unlicensed sample/encoder source is permitted.
 - Phase 21's spec-less probe remains unresolved and nonblocking. No retail, physical hardware or owner-device acceptance is inferred. LibFuturo owns browser/host routes; Playstead owns player integration; twentysixhundo owns Atari 2600.
 - The original Phase 27 PR 77 one-push observation cap is spent; it authorizes no further update or retry. The historical source-authorization claim on `2160cfd` remains unverified. Subsequent PR 77 merge and v0.17.0 release evidence do not reopen that scope; see the [v10.0 records](milestones/v10.0-phases/27-headless-developer-trace/).
-- v11.0 shipped as stable v0.18.0 from `ac4ee132449f82848da1db493c428f78d463d6cd`; main CI [44606205865](https://github.com/szTheory/muhtari/actions/runs/44606205865), Release [44606205880](https://github.com/szTheory/muhtari/actions/runs/44606205880), all 20 assets and the latest-install check passed. No owner-device or real-host run was required or claimed.
+- v11.0 shipped as stable v0.18.0. PR #84 merged; final main CI [44627149615](https://github.com/szTheory/muhtari/actions/runs/44627149615) and Release [44627149696](https://github.com/szTheory/muhtari/actions/runs/44627149696) passed, with all 20 assets and the latest-install check. No owner-device or real-host run was required or claimed.
 
 ## Deferred Items
 At v11.0 close, no new items were acknowledged; 51 items acknowledged at earlier closes remain suppressed with their original verdicts. At v10.0 close, two items were newly acknowledged; 50 earlier items remained suppressed. At v9.0 close, no new items were acknowledged. At v8.0 close, no new items were acknowledged; at v7.0 close, one debug-session item was newly acknowledged and 49 were carried forward. Its `unknown` verdict is preserved; suppression expires if the artifact changes. Earlier disclosures from v3.0 and prior closes remain below.
@@ -121,12 +128,12 @@ At v11.0 close, no new items were acknowledged; 51 items acknowledged at earlier
 | deferred_items | 11/deferred-items.md: Found in plan 04  - `diag.bankset_tracer` and `diag.bankset` both write `build/ci/tests/diag/bankset/32n/` and carry no resource lock, so under `ctest -j` one can read the other's `pixels.png` half written (`bankset --bankset-png ... png: chunk longer than the file`). Seen once in `cmake --workflow --preset ci`; passes alone and on rerun. Not caused by plan 04; a fix is a `RESOURCE_LOCK` or a separate output directory in `tests/diag/tests.cmake`.  Resolved in the gap round: `diag.bankset` now writes `build/<preset>/tests/diag/bankset-matrix/` and `diag.bankset_tracer` keeps `build/<preset>/tests/diag/bankset/`, so the two tests share no output file. | acknowledged; historical disposition retained | 2026-10-29 | v2.0 |
 
 ## Session Continuity
-Last session: 2026-11-19T21:33:31Z
-Stopped at: v11.0 shipped and archived — next milestone scope choice pending
+Last session: 2026-11-20T10:25:07Z
+Stopped at: Phase 31 verification and audit complete; corrected-head delivery pending
 Resume file: None
 
-Next action: choose whether to promote the finite gameplay replay candidate once its fixture/oracle gate is met, or prefer a profile-first Windows ARM64 CI investigation; run $gsd-new-milestone to begin the selected scope.
+Next action: commit the reviewed correction and refreshed planning records, then update PR #85 and inspect its exact-head CI and Release results.
 
 ## Operator Next Steps
 
-- After choosing the successor scope, start it with `$gsd-new-milestone`.
+- Update the existing `$gsd-ship 31` delivery PR after committing the reviewed correction, then verify the new head's CI and Release results.

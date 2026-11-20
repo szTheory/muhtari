@@ -519,7 +519,7 @@ function(muhtari_bundle_validate archive root build work expected_sha notice_dig
   endforeach()
 
   file(READ "${extract}/info/muhtari_libretro.info" capabilities)
-  if(capabilities MATCHES "Supports the selected YM2151 digital profile")
+  if(capabilities MATCHES "selected YM2151 digital profile")
     _muhtari_bundle_ym_receipts("${native_json}")
   endif()
 

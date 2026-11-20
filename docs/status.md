@@ -5,10 +5,14 @@ runner and a libretro core. RetroArch or another host provides the window and au
 
 ## Available now
 
-The [latest published package](https://github.com/szTheory/muhtari/releases/latest) includes the corrected Souper
-mapper and selected YM2151 digital sound profile. Souper mapper checks use generated fixtures; they establish the
-tested mapper behavior, not retail-game compatibility. The [Phase 25 release receipt](../.planning/phases/25-publish-the-corrected-souper-mapper/25-RELEASE.md)
-records the exact package source and its release evidence.
+The [latest release](https://github.com/szTheory/muhtari/releases/latest) is a moving pointer to the current
+published package, which includes the corrected Souper mapper and selected YM2151 digital sound profile. At the
+2026-11-20 lookup, it resolved to a stable package published the previous day with 20 assets, including native
+libretro archives for Linux, macOS and Windows on x64 and arm64. Souper mapper checks use generated fixtures; they
+establish the tested mapper behavior, not retail-game compatibility. The
+[v11.0 delivery and verification chronology](../.planning/milestones/v11.0-MILESTONE-AUDIT.md#delivery-and-verification-chronology)
+records the exact historical tag, source and publication evidence. That receipt predates the corrections in this
+phase and does not show them in a published package.
 
 ## Compatibility
 

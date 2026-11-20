@@ -43,9 +43,8 @@ target_link_libraries(app PRIVATE muhtari::muhtari)
 
 **pkg-config.**
 
-```sh
-PKG_CONFIG_PATH=<unzipped directory>/lib/pkgconfig cc app.c $(pkg-config --cflags --libs muhtari)
-```
+For a complete C17 command sequence that selects the extracted archive's metadata and compiles a host, see the
+[pkg-config route in the C host quickstart](embedding-quickstart.md#pkg-config-on-linux-or-macos).
 
 ## Expansion selection
 
