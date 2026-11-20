@@ -1,18 +1,12 @@
 ---
 phase: 31-installed-c-library-quickstart
-reviewed: 2026-11-20T03:55:01Z
+reviewed: 2026-11-20T04:44:24Z
 depth: standard
-files_reviewed: 9
+files_reviewed: 3
 files_reviewed_list:
-  - examples/embedding/quickstart.c
-  - examples/embedding/CMakeLists.txt
-  - docs/embedding-quickstart.md
-  - docs/embedding.md
-  - README.md
+  - tests/consumer/quickstart_faults.c
   - tests/consumer/CMakeLists.txt
   - tests/install/tests.cmake
-  - tests/release/ym_consumers.cmake
-  - .github/workflows/ci.yml
 findings:
   critical: 0
   warning: 0
@@ -24,19 +18,21 @@ status: clean
 
 # Phase 31: Code Review Report
 
-**Reviewed:** 2026-11-20T03:55:01Z
+**Reviewed:** 2026-11-20T04:44:24Z
 **Depth:** standard
-**Files Reviewed:** 9
+**Files Reviewed:** 3
 **Status:** clean
 
 ## Summary
 
-The focused follow-up reviewed the full `docs/embedding-quickstart.md` and its change from `4fa0486^`. The earlier warning is resolved: the instructions distinguish the single-config executable at `consumer/build/quickstart` from the multi-config executable at `consumer/build/Release/quickstart`. These paths match CMake's default output layout for the example project. The orchestrator also reports that the extracted Apple Silicon archive built and ran through Ninja Multi-Config, producing the expected success line with exit 0. No other issue was introduced by the edit.
+Reviewed the new fault driver and its staged-package build and run wiring. The scoped aliases affect calls in the included quickstart, while the wrappers call the real installed library. The frame case reaches the public buffer-size rejection after checking the instance and both buffers; the setup and wrong-count cases likewise require their injected step before accepting the example's failure. The tracker checks every recorded pointer independently and rejects unknown or repeated frees. The CMake observer requires the exact child status and separate stdout and stderr, and emits the normal success marker only after the fault cases pass. No issue found.
 
-All nine Phase 31 files from the original review were considered; no outstanding issues remain.
+## Narrative Findings (AI reviewer)
+
+No findings.
 
 ---
 
-_Reviewed: 2026-11-20T03:55:01Z_
+_Reviewed: 2026-11-20T04:44:24Z_
 _Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_
