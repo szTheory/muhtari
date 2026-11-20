@@ -36,7 +36,7 @@ maintained user-job context.
 
 | Phase | Name | Goal | Requirements | Status |
 |-------|------|------|--------------|--------|
-| 30 | User jobs and player/runner first use | Current user jobs and concise player/runner paths match the released product; stale first-use docs are corrected. | PERSONA-01, PLAYER-01, RUNNER-01, DOCS-01 | Not started |
+| 30 | User jobs and player/runner first use | Current user jobs and concise player/runner paths match the released product; stale first-use docs are corrected. | PERSONA-01, PLAYER-01, RUNNER-01, DOCS-01 | In Progress |
 | 31 | Installed C library quickstart | A fresh installed-package consumer builds and runs the documented minimal C example. | EMBED-01 | Not started |
 
 ### Phase 30: User jobs and player/runner first use

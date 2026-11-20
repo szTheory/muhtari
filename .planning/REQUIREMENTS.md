@@ -7,17 +7,17 @@
 
 ### Personas and Jobs
 
-- [ ] **PERSONA-01**: A maintainer can trace the primary player, runner/homebrew developer, and C host integrator jobs to current Muhtari deliverables using dated evidence, while distinguishing direct feedback, source-backed needs, and hypotheses.
+- [x] **PERSONA-01**: A maintainer can trace the primary player, runner/homebrew developer, and C host integrator jobs to current Muhtari deliverables using dated evidence, while distinguishing direct feedback, source-backed needs, and hypotheses.
 
 ### Getting Started
 
-- [ ] **PLAYER-01**: A player can install a supported release core and load a lawfully obtained Atari 7800 image in RetroArch using documented prerequisites, steps, expected result, controls, optional BIOS behavior, and support limits.
-- [ ] **RUNNER-01**: A runner user can run the built-in test card or probe/run their own cartridge using the current release or documented local build, understand expected output and refusal status, and find the full CLI reference.
+- [x] **PLAYER-01**: A player can install a supported release core and load a lawfully obtained Atari 7800 image in RetroArch using documented prerequisites, steps, expected result, controls, optional BIOS behavior, and support limits.
+- [x] **RUNNER-01**: A runner user can run the built-in test card or probe/run their own cartridge using the current release or documented local build, understand expected output and refusal status, and find the full CLI reference.
 - [ ] **EMBED-01**: A C host integrator can build and run a complete minimal example against the installed library package using CMake or pkg-config, with the required allocator, buffers, one frame, and expected result explained.
 
 ### Documentation Quality
 
-- [ ] **DOCS-01**: Users can navigate current first-use and status documentation whose local links, release references, package/API claims, and commands match the shipped artifacts and source; touched comments explain intent without redundant narration and hardware claims remain sourced.
+- [x] **DOCS-01**: Users can navigate current first-use and status documentation whose local links, release references, package/API claims, and commands match the shipped artifacts and source; touched comments explain intent without redundant narration and hardware claims remain sourced.
 
 ## v2 Requirements
 
@@ -51,10 +51,10 @@ Deferred to future work; not part of this milestone.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PERSONA-01 | Phase 30 | Pending |
-| PLAYER-01 | Phase 30 | Pending |
-| RUNNER-01 | Phase 30 | Pending |
-| DOCS-01 | Phase 30 | Pending |
+| PERSONA-01 | Phase 30 | Complete |
+| PLAYER-01 | Phase 30 | Complete |
+| RUNNER-01 | Phase 30 | Complete |
+| DOCS-01 | Phase 30 | Complete |
 | EMBED-01 | Phase 31 | Pending |
 
 **Coverage:**

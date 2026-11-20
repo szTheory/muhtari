@@ -3,18 +3,19 @@ gsd_state_version: "1.0"
 milestone: v12.0
 milestone_name: First-use readiness
 current_phase: 30
-current_phase_name: User jobs and player/runner first use
-status: In Progress
-stopped_at: v12.0 scoped — Phase 30 ready for autonomous execution
-last_updated: "2026-11-20T00:49:24.423Z"
+current_phase_name: READY FOR VERIFICATION
+current_plan: 1
+status: verifying
+stopped_at: Completed 30-01-PLAN.md
+last_updated: "2026-11-20T01:43:08.977Z"
 last_activity: 2026-11-19
 last_activity_desc: v12.0 scope reconciled into the canonical root checkout
-state_head: 231592086bc61b13a5b390e997ce9488c75913f3
+state_head: 1768e45a10e1f0c51a880f2547e8c1c000d56690
 progress:
   total_phases: 2
   completed_phases: 0
   total_plans: 1
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
 ---
 
@@ -27,13 +28,19 @@ See [PROJECT.md](PROJECT.md), the active [requirements](REQUIREMENTS.md) and [ro
 
 ## Current Position
 
-Phase: 30 (User jobs and player/runner first use) — READY TO EXECUTE
-Plan: —
-Status: Ready for Phase 30
+Phase: 30 (User jobs and player/runner first use) — READY FOR VERIFICATION
+Current Plan: 1
+Total Plans in Phase: 1
+Status: Phase complete — ready for verification
 Last activity: 2026-11-19 — v12.0 scope reconciled into the canonical root checkout
 
 ## Performance Metrics
 No v12.0 plan metrics exist yet. v11.0's 19h 8m Phase 29 figure is elapsed time across implementation, handoffs and hosted CI, not a test run; the longest individual final CI job was 44m04. The final main run had about 10 seconds of queue time and no cancellations. The [v11.0 audit](milestones/v11.0-MILESTONE-AUDIT.md#cicd-efficiency-review) records the measurements and why they support no safe workflow change.
+**Per-Plan Metrics:**
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 30 P01 | 34m | 3 tasks | 9 files |
 
 ## Accumulated Context
 ### Decisions
@@ -55,6 +62,9 @@ No v12.0 plan metrics exist yet. v11.0's 19h 8m Phase 29 figure is elapsed time 
 - [v12.0]: Keep player, runner/homebrew-developer and C host-integrator jobs tied to current deliverables; mark research date, evidence type, confidence and inference.
 - [v12.0]: Improve first-use guidance for RetroArch, `muhtari-run` and the installed C package; focus cleanup on concrete journey friction and correctness debt.
 - [v12.0]: The finite gameplay replay remains next only after exact fixture rights and an independent expected gameplay result are established.
+- [Phase 30]: Keep Atari 2600 recognition and refusal; twentysixhundo owns Atari 2600 execution.
+- [Phase 30]: Keep public release references version-free and link the exact historical package receipt.
+- [Phase 30]: Use a fix squash title for the normal milestone delivery PR so release-please selects a patch.
 
 ### Pending Todos
 The [Windows path follow-up](todos/completed/2026-11-17-define-extended-windows-output-path-support.md) was completed in Phase 29. Other todos/seeds retain their dispositions. Root remains canonical and older dirty worktrees require content/ancestry reconciliation before import. See [workspace reconciliation](debug/workspace-reconciliation-2026-11-10.md).
@@ -112,11 +122,11 @@ At v11.0 close, no new items were acknowledged; 51 items acknowledged at earlier
 | deferred_items | 11/deferred-items.md: Found in plan 04  - `diag.bankset_tracer` and `diag.bankset` both write `build/ci/tests/diag/bankset/32n/` and carry no resource lock, so under `ctest -j` one can read the other's `pixels.png` half written (`bankset --bankset-png ... png: chunk longer than the file`). Seen once in `cmake --workflow --preset ci`; passes alone and on rerun. Not caused by plan 04; a fix is a `RESOURCE_LOCK` or a separate output directory in `tests/diag/tests.cmake`.  Resolved in the gap round: `diag.bankset` now writes `build/<preset>/tests/diag/bankset-matrix/` and `diag.bankset_tracer` keeps `build/<preset>/tests/diag/bankset/`, so the two tests share no output file. | acknowledged; historical disposition retained | 2026-10-29 | v2.0 |
 
 ## Session Continuity
-Last session: 2026-11-19T23:57:45Z
-Stopped at: v12.0 first-use readiness scoped — Phase 30 ready for autonomous execution
+Last session: 2026-11-20T01:36:50.624Z
+Stopped at: Completed 30-01-PLAN.md
 Resume file: None
 
-Next action: run `$gsd-autonomous` from the canonical root checkout to discuss, plan, execute and close out the selected scope within its documented boundaries.
+Next action: run $gsd-verify-work 30 from the canonical root checkout to verify Phase 30
 
 ## Operator Next Steps
 
