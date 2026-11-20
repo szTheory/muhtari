@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.18.1](https://github.com/szTheory/muhtari/compare/v0.18.0...v0.18.1) (2026-11-20)
+
+
+### Bug Fixes
+
+* improve Muhtari first-use readiness ([#85](https://github.com/szTheory/muhtari/issues/85)) ([3686819](https://github.com/szTheory/muhtari/commit/3686819bfea5a71e748df12aa65bf17ab87a9942))
+
 ## [0.18.0](https://github.com/szTheory/muhtari/compare/v0.17.0...v0.18.0) (2026-11-19)
 
 
