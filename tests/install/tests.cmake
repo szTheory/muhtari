@@ -25,6 +25,19 @@ if(DEFINED EMBED_PROGRAM OR DEFINED CONSUMER_PROGRAM OR DEFINED QUICKSTART_PROGR
     if(NOT rc STREQUAL "0" OR NOT quickstart_output STREQUAL "quickstart: one frame, 800 samples")
       message(FATAL_ERROR "staged quickstart: ${rc}; expected one frame, 800 samples; got ${out}${err}")
     endif()
+
+    if(NOT DEFINED QUICKSTART_FAULTS_PROGRAM)
+      message(FATAL_ERROR "staged quickstart: QUICKSTART_FAULTS_PROGRAM is required")
+    endif()
+    execute_process(COMMAND ${EMULATOR} "${QUICKSTART_FAULTS_PROGRAM}" frame
+      RESULT_VARIABLE fault_rc OUTPUT_VARIABLE fault_out ERROR_VARIABLE fault_err)
+    string(REGEX REPLACE "[\r\n]+$" "" fault_out "${fault_out}")
+    string(REGEX REPLACE "[\r\n]+$" "" fault_err "${fault_err}")
+    if(NOT fault_rc STREQUAL "1" OR
+       NOT fault_out STREQUAL "quickstart fault: cleanup verified" OR
+       NOT fault_err STREQUAL "muhtari_run_frame failed with status 4")
+      message(FATAL_ERROR "staged quickstart frame fault: exit ${fault_rc}; stdout [${fault_out}]; stderr [${fault_err}]")
+    endif()
     message("${quickstart_output}")
   endif()
   return()
@@ -86,10 +99,12 @@ foreach(install_crt IN ITEMS static dll)
       --build-options
         -DCMAKE_PREFIX_PATH=${PROJECT_BINARY_DIR}/stage
         -DCMAKE_MSVC_RUNTIME_LIBRARY=${install_runtime}
+        -DMUHTARI_TEST_QUICKSTART_FAULTS=ON
         ${install_build_options}
       --test-command "${CMAKE_COMMAND}"
         "-DCONSUMER_PROGRAM=${install_program_dir}/consumer${CMAKE_EXECUTABLE_SUFFIX}"
         "-DQUICKSTART_PROGRAM=${install_program_dir}/quickstart${CMAKE_EXECUTABLE_SUFFIX}"
+        "-DQUICKSTART_FAULTS_PROGRAM=${install_program_dir}/quickstart_faults${CMAKE_EXECUTABLE_SUFFIX}"
         "-DEMULATOR=${install_emulator}"
         -P ${CMAKE_CURRENT_LIST_FILE}
     LABELS install TIMEOUT 120)
