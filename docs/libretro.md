@@ -2,8 +2,10 @@
 
 `muhtari_libretro` runs Atari 7800 cartridges in RetroArch or any other libretro frontend. It loads `.a78` images
 and headerless `.bin` images from memory, including automatically selected PAL. Started with no content, it shows
-the built-in test card ([docs/runner.md](runner.md#test-card)). A refused image leaves a line in the frontend's
-log naming the reason, such as `muhtari: content refused: unsupported board: bankset`.
+the built-in test card ([runner reference](runner.md#test-card)). The 52 KiB BankSet configuration with HSC
+attached is refused with a line in the frontend's log such as
+`muhtari: content refused: unsupported board: bankset`; see the [BankSet diagnostic](bankset-tests.md) for
+the tested configurations and evidence limits.
 
 ## Controls
 

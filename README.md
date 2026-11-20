@@ -7,20 +7,24 @@ the window and audio and input devices.
 
 The latest published package includes the corrected Souper mapper and selected YM2151 digital sound profile.
 Download it from the [latest release](https://github.com/szTheory/muhtari/releases/latest). Souper checks use generated fixtures, not retail games. Evidence covers the rows listed; there is no claim of universal title compatibility.
-See the [project status](docs/status.md), [compatibility evidence](docs/compatibility.md), and [Phase 25 release receipt](.planning/phases/25-publish-the-corrected-souper-mapper/25-RELEASE.md).
+See the [project status](docs/status.md), [compatibility evidence](docs/compatibility.md), and [RetroArch setup](docs/libretro.md).
 
 ## Install in RetroArch (macOS, Apple Silicon)
 
-Paste this line into Terminal. It puts the core and its information file into RetroArch's folders:
+On Apple Silicon, this command assumes RetroArch is installed in its usual location and the running RetroArch
+process is native arm64. It puts the core and its information file into RetroArch's configured folders:
 
 ```sh
 mkdir -p ~/Library/Application\ Support/RetroArch && curl -fsSL https://github.com/szTheory/muhtari/releases/latest/download/muhtari-libretro-macos-arm64.zip | tar -xf - -C ~/Library/Application\ Support/RetroArch cores info
 ```
 
-On other systems, download `muhtari-libretro-<os>-<arch>.zip` from the
-[latest release](https://github.com/szTheory/muhtari/releases/latest) (`<os>` is `linux`, `macos` or `windows`;
-`<arch>` is `x64` or `arm64`) and copy its `cores` and `info` folders into the folders RetroArch lists under
-Settings → Directory → Cores and Core Info.
+For other installations, choose the native archive for the operating system and architecture of the running
+RetroArch process. The latest release provides `muhtari-libretro-linux-arm64.zip`,
+`muhtari-libretro-linux-x64.zip`, `muhtari-libretro-macos-arm64.zip`, `muhtari-libretro-macos-x64.zip`,
+`muhtari-libretro-windows-arm64.zip` and `muhtari-libretro-windows-x64.zip`. Copy the core module and `.info`
+file into the configured Cores and Core Info directories shown under Settings → Directory. See RetroArch's
+[core installation guide](https://docs.libretro.com/guides/download-cores/) and
+[directory configuration guide](https://docs.libretro.com/guides/change-directories/) for its current menu terms.
 
 The architecture-independent Emscripten libretro ZIP has a
 [version-free download URL](https://github.com/szTheory/muhtari/releases/latest/download/muhtari-libretro-emscripten.zip)
@@ -38,6 +42,17 @@ and [portable host instructions](docs/libretro.md#portable-emscripten-bundle).
 2. Main Menu → **Start Core**.
 3. The test card appears: a white border, a 16×16 colour chart, a red band at the top and a green band at the
    bottom. [docs/runner.md](docs/runner.md#test-card) explains what each part checks.
+
+To try a lawfully obtained Atari 7800 image, keep Muhtari selected and choose Main Menu → Load Content, then
+select an `.a78` or headerless `.bin` file. A supported cartridge shows its own startup screen. Fast boot is the
+default and starts without a console BIOS; users choosing BIOS boot can follow the
+[BIOS file guide](docs/libretro.md#bios-files). The RetroPad uses D-pad, B for button 1, A for button 2, Start
+for Pause and X for Reset; keyboard bindings are set by the frontend. See the
+[complete controls reference](docs/libretro.md#controls).
+
+Compatibility evidence is scoped: the pinned list has 204 titles, with 201 unevaluated and 3 skipped; no title
+has a verified pass in that baseline. Unevaluated means not tested, not a failure. See the generated
+[compatibility ledger](docs/compatibility.md) for per-title evidence and limits.
 
 ## Quick start: runner
 
