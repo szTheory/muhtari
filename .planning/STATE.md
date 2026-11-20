@@ -5,11 +5,11 @@ milestone_name: First-use readiness
 current_phase: 31
 current_plan: Not started
 status: completed
-stopped_at: Phase 31 complete — all phases complete
-last_updated: "2026-11-20T05:28:41.988Z"
+stopped_at: v12.0 milestone audit complete — ship pending
+last_updated: "2026-11-20T05:59:12Z"
 last_activity: 2026-11-20
-last_activity_desc: Phase 31 complete
-state_head: fcfbdddaa561a2b56624cf5da474ac60253d5d3e
+last_activity_desc: v12.0 milestone audit complete
+state_head: 4c52bbdb13a5087d9728a11165369d9d4111337e
 progress:
   total_phases: 2
   completed_phases: 2
@@ -23,15 +23,15 @@ progress:
 ## Project Reference
 See [PROJECT.md](PROJECT.md), the active [requirements](REQUIREMENTS.md) and [roadmap](ROADMAP.md), the [rolling product roadmap](PRODUCT-ROADMAP.md), and the [v12.0 scope review](research/next-milestone/2026-11-19-first-use-readiness-review.md). The completed v11.0 requirements and delivery records remain in the [archive](milestones/v11.0-REQUIREMENTS.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** Phase 31 — Installed C library quickstart
+**Current focus:** v12.0 milestone audit complete; final ship pending
 
 ## Current Position
 
-Phase: 31
+Phase: 31 (last phase)
 Current Plan: Not started
 Total Plans in Phase: 2
-Status: All phases complete
-Last activity: 2026-11-20 — Phase 31 complete
+Status: Phase work and milestone audit complete; ship is pending
+Last activity: 2026-11-20 — v12.0 milestone audit complete
 
 ## Performance Metrics
 No v12.0 plan metrics exist yet. v11.0's 19h 8m Phase 29 figure is elapsed time across implementation, handoffs and hosted CI, not a test run; the longest individual final CI job was 44m04. The final main run had about 10 seconds of queue time and no cancellations. The [v11.0 audit](milestones/v11.0-MILESTONE-AUDIT.md#cicd-efficiency-review) records the measurements and why they support no safe workflow change.
@@ -128,12 +128,12 @@ At v11.0 close, no new items were acknowledged; 51 items acknowledged at earlier
 | deferred_items | 11/deferred-items.md: Found in plan 04  - `diag.bankset_tracer` and `diag.bankset` both write `build/ci/tests/diag/bankset/32n/` and carry no resource lock, so under `ctest -j` one can read the other's `pixels.png` half written (`bankset --bankset-png ... png: chunk longer than the file`). Seen once in `cmake --workflow --preset ci`; passes alone and on rerun. Not caused by plan 04; a fix is a `RESOURCE_LOCK` or a separate output directory in `tests/diag/tests.cmake`.  Resolved in the gap round: `diag.bankset` now writes `build/<preset>/tests/diag/bankset-matrix/` and `diag.bankset_tracer` keeps `build/<preset>/tests/diag/bankset/`, so the two tests share no output file. | acknowledged; historical disposition retained | 2026-10-29 | v2.0 |
 
 ## Session Continuity
-Last session: 2026-11-20T04:39:39.998Z
-Stopped at: Phase 31 complete — all phases complete
+Last session: 2026-11-20T05:59:12Z
+Stopped at: v12.0 milestone audit complete — ship pending
 Resume file: None
 
-Next action: complete the v12.0 milestone audit from the canonical root checkout
+Next action: run $gsd-ship v12.0 from the canonical root checkout
 
 ## Operator Next Steps
 
-- Continue the active milestone audit with `$gsd-audit-milestone v12.0` from the canonical root checkout.
+- Run `$gsd-ship v12.0` from the canonical root checkout.
