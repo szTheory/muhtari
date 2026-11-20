@@ -1,5 +1,20 @@
 # Project Milestones: muhtari
 
+## v12.0 First-use readiness (Shipped: 2026-11-20)
+
+**Phases completed:** 2 phases, 3 plans, 8 tasks
+
+**Closeout type:** `override_closeout`; all five requirements and both phase verification reports passed. Known verification overrides: 1 newly acknowledged, 51 carried forward from prior closes (see STATE.md Deferred Items).
+
+**Delivery:** PR [#85](https://github.com/szTheory/muhtari/pull/85) merged as `3686819b`, then release PR [#86](https://github.com/szTheory/muhtari/pull/86) published stable [v0.18.1](https://github.com/szTheory/muhtari/releases/tag/v0.18.1). Main CI [44726104022](https://github.com/szTheory/muhtari/actions/runs/44726104022), Release [44726103946](https://github.com/szTheory/muhtari/actions/runs/44726103946) and the latest-install check passed. See the [v12.0 audit](milestones/v12.0-MILESTONE-AUDIT.md).
+
+**Key accomplishments:**
+- The README now guides players from the release package to a test card or supported cartridge, while runner and package claims match tested behavior.
+- A ROM-free C17 host quickstart now builds from the installed release ZIP through CMake and pkg-config and checks the 800-sample first frame.
+- The staged quickstart checks now prove error reporting and one-time cleanup across create, allocation, frame and result failures.
+
+---
+
 ## v11.0 Windows extended-path support (Shipped: 2026-11-19)
 
 **Phases completed:** 2 phases, 5 plans, 10 tasks

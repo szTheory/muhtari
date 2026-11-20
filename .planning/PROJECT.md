@@ -18,40 +18,42 @@ that any host can embed.
 
 Muhtari is not finished as a universal Atari 7800 compatibility project. It has
 three deliverables: a C library, a headless runner and a libretro core. Stable
-v0.18.0 is the latest published package; it includes the selected XM/YM2151
+v0.18.1 is the latest published package; it includes the selected XM/YM2151
 profile, Souper mapper, v10.0 headless trace and v11.0 Windows extended-path
-runner support. The unpublished v0.15.0 draft and tag remain unchanged at the
-source that failed its Wasm32 test.
+runner support. v12.0 improved player, runner and C-host first-use guidance and
+added a tested installed-package quickstart without changing emulation behavior,
+API or ABI. The unpublished v0.15.0 draft and tag remain unchanged at the source
+that failed its Wasm32 test.
 
 The pinned title list has 204 entries: 201 are untested and 3 are skipped. Nine
 older Playstead/frontend requirements remain unresolved. GameDrive and BupChip
 streamed audio are not implemented. The public [status page](../docs/status.md)
 summarizes these limits.
 
-v11.0 shipped from main source `ac4ee132449f82848da1db493c428f78d463d6cd`.
-Stable [v0.18.0](https://github.com/szTheory/muhtari/releases/tag/v0.18.0)
-contains 20 verified assets. Exact-source main CI
-[44606205865](https://github.com/szTheory/muhtari/actions/runs/44606205865),
-Release [44606205880](https://github.com/szTheory/muhtari/actions/runs/44606205880)
-and its latest-install check passed. The [v11.0 audit](milestones/v11.0-MILESTONE-AUDIT.md)
-and [archived phase records](milestones/v11.0-phases/) retain the acceptance
-evidence. The earlier [v10.0 audit](milestones/v10.0-MILESTONE-AUDIT.md) and
-[Phase 27 records](milestones/v10.0-phases/27-headless-developer-trace/) remain
-available.
+v12.0 shipped from main source `a051a3b3e3da1464c92d1e8084465411cb1f228d`.
+Stable [v0.18.1](https://github.com/szTheory/muhtari/releases/tag/v0.18.1)
+contains 20 verified assets. Main CI
+[44726104022](https://github.com/szTheory/muhtari/actions/runs/44726104022),
+Release [44726103946](https://github.com/szTheory/muhtari/actions/runs/44726103946)
+and its latest-install check passed. The [v12.0 audit](milestones/v12.0-MILESTONE-AUDIT.md)
+and [archived phase records](milestones/v12.0-phases/) retain the acceptance
+evidence. The earlier [v11.0 audit](milestones/v11.0-MILESTONE-AUDIT.md) and
+[phase records](milestones/v11.0-phases/) remain available.
 
-## Current Milestone: v12.0 First-use readiness
+## Completed Milestone: v12.0 First-use readiness
 
-**Goal:** Help players, runner users and C host integrators reach a first useful result from Muhtari's current release, with clear instructions and evidence-backed user jobs.
+**Outcome:** Stable v0.18.1 now has accurate first-use paths for players, `muhtari-run` users and C host integrators. The milestone updates docs and test coverage without changing emulation behavior, public API/ABI or package format.
 
-**Target features:**
-- Refresh the existing persona/JTBD map against current deliverables and dated consumer evidence.
-- Document the first supported RetroArch game-loading and headless runner workflows.
-- Provide a complete minimal CMake/pkg-config consumer using the installed library package.
-- Repair stale user-facing links and claims; clean only the source and documentation debt encountered in these workflows.
+**Delivered:**
+- Refreshed the evidence-labeled player, runner/homebrew and C-host job map; documented supported RetroArch and runner first-use paths and their compatibility limits.
+- Added a ROM-free C17 quickstart that builds and runs from the installed release archive through CMake and pkg-config, with staged error and cleanup controls.
+- Corrected stale user-facing links and package metadata while preserving Atari 2600 image refusal and sibling ownership.
 
-**Active requirements:** See [REQUIREMENTS.md](REQUIREMENTS.md) for PERSONA-01, PLAYER-01, RUNNER-01, EMBED-01 and DOCS-01.
+**Delivery:** PR [#85](https://github.com/szTheory/muhtari/pull/85) merged as `3686819b`; release PR [#86](https://github.com/szTheory/muhtari/pull/86) published [v0.18.1](https://github.com/szTheory/muhtari/releases/tag/v0.18.1). Main CI and Release passed, including the latest-install check. See the [v12.0 audit](milestones/v12.0-MILESTONE-AUDIT.md) for exact run receipts and the CI efficiency review.
 
-**Out of scope:** No new emulation behavior, public API/ABI or state format; no GUI, host/device code, Atari 2600 work, protected ROM/BIOS assets, universal compatibility claim, or repository-wide style sweep.
+**Closeout:** `override_closeout`; all five requirements and both phase verifications pass. Four non-blocking follow-ups remain visible in the audit. One pre-existing Phase 30 whitespace item was acknowledged, with 51 earlier acknowledgments carried forward; see [STATE.md](STATE.md). No owner-device or RetroArch host run is claimed. Requirements, roadmap and phases are in the [v12.0 archive](milestones/v12.0-ROADMAP.md).
+
+**Next recommendation:** qualify one exact lawful fixture and independent in-game result for a finite gameplay replay. The strongest alternative is bounded Windows ARM64 CI profiling, but the latest measurements still do not identify a safe optimization. The [rolling product roadmap](PRODUCT-ROADMAP.md) records the gates and comparison; no next milestone has been selected.
 
 ## Completed Milestone: v11.0 Windows extended-path support
 
@@ -63,7 +65,7 @@ available.
 - Passed actual runner drive and SMB UNC acceptance on Windows x64 and ARM64, with collision, overlap and ordinary-path controls.
 - Completed the measured milestone tune-up and corrected the 52-entry deferred-register totals without changing any verdict.
 
-v12.0 first-use readiness is scoped in the [requirements](REQUIREMENTS.md) and [roadmap](ROADMAP.md); the rolling successor comparison is in [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md).
+v12.0 first-use readiness is shipped and archived in [the v12.0 roadmap](milestones/v12.0-ROADMAP.md), [requirements](milestones/v12.0-REQUIREMENTS.md), [audit](milestones/v12.0-MILESTONE-AUDIT.md) and [phase records](milestones/v12.0-phases/). The rolling successor comparison is in [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md).
 
 ### Completion standard
 
@@ -307,6 +309,7 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 ### Validated
 
+- ✓ PERSONA-01, PLAYER-01, RUNNER-01, EMBED-01, DOCS-01: evidence-backed user jobs, player/runner setup, installed CMake/pkg-config quickstart, and accurate first-use documentation — v12.0; shipped in v0.18.1; [audit](milestones/v12.0-MILESTONE-AUDIT.md).
 - ✓ TUNE-15, TUNE-16: source-qualified delivery/maintenance review and corrected 52-entry deferred register, preserving every entry verdict — v11.0, Phase 28; [audit](milestones/v11.0-MILESTONE-AUDIT.md).
 - ✓ WINPATH-01–04: explicit Windows drive/extended UNC paths, invocation-wide identity checks, safe output replacement and measured Windows acceptance — v11.0, Phase 29; shipped in v0.18.0, [verification](milestones/v11.0-phases/29-windows-extended-path-runner-support/29-VERIFICATION.md).
 - ✓ TUNE-14: source-qualified release/CI evidence review, cheap preflights and a bounded no-change efficiency disposition — Phase 26; [tune-up report](milestones/v10.0-phases/26-measured-milestone-tune-up/26-TUNEUP.md).
@@ -449,6 +452,9 @@ remain deferred with their original evidence and stops; see the
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
+| Keep player, runner/homebrew and C-host journeys tied to current deliverables and evidence | Clear first-use guidance must not overstate compatibility or transfer sibling responsibilities | ✓ v12.0: all five requirements passed; shipped as v0.18.1; see [audit](milestones/v12.0-MILESTONE-AUDIT.md) |
+| Use one ROM-free C17 example across extracted CMake/pkg-config archives and staged consumers | A host quickstart should prove the installed package route and failure cleanup without test media or a dependency | ✓ v12.0 Phase 31: both routes and four injected failure cases passed; public API and package format unchanged |
+| Review active and completed CI/Release runs for measured efficiency while preserving coverage | Queue, critical path, job time and cancellations reveal bottlenecks; one timing sample cannot justify structural changes | ✓ v12.0: six runs reviewed; no safe topology, cache or deadline change; checklist documented in `docs/maintaining.md` |
 | Support explicit Windows extended drive and UNC paths through existing runner APIs with invocation-wide identity checks and sibling-temp publication | Fixes the carried compatibility limitation while preserving literal names, safe failure and the three-deliverable/API contract | ✓ v11.0: WINPATH-01–04 passed on Windows x64/ARM64 and shipped in v0.18.0; see the [audit](milestones/v11.0-MILESTONE-AUDIT.md) |
 | Keep full CI inventories, independent-base quality checks, exact-source release equality, attestation and latest-install gates after the v11.0 timing review | Current durations identify Windows ARM64 as the critical path but do not identify a coverage-preserving shortcut; queue delay is negligible | ✓ v11.0: required coverage stayed intact; no topology, cache or deadline change was supported by the measured runs |
 | Keep the headless trace runner-only and accept its cost claim only from an exact-source Linux receipt | Preserves API 8/state compatibility and prevents local comparator controls from standing in for Cachegrind evidence | ✓ v10.0: TRACE-01–07 passed; receipt delta 900/9,600 on run 44123425194; compiler fixes merged and stable v0.17.0 passed exact-source CI/Release |
@@ -518,4 +524,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-19 after v12.0 milestone scoping*
+*Last updated: 2026-11-20 after v12.0 milestone closeout*

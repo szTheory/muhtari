@@ -273,6 +273,14 @@ required gates. A passing audit establishes the required verdict, not that every
 every listed failure and its job log before claiming which checks failed. Keep prior attempts as failed evidence;
 retry only a classified transient failure at the same source, using the existing targeted job rerun.
 
+While CI or Release is running, and again after it completes, inspect queue delay,
+the critical path, job durations and cancelled work. Run cheap relevant checks
+before long suites. Keep required test, fault and release coverage intact; record
+when the measurements support no safe improvement, and require comparable
+evidence across runs before changing workflow structure, caches or deadlines.
+See [Local GitHub Actions preflight](#local-github-actions-preflight) for when
+`act` can shorten feedback and which hosted results it cannot establish.
+
 Final source acceptance uses the pull request's genuine stable `main` base. Await the push, verify the
 advertised branch SHA, and retain the run attempt, source head, tested merge commit and base separately.
 A dispatch that repeats one source does not establish phase-versus-base performance. Complete tracked
