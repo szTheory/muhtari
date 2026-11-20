@@ -2,21 +2,21 @@
 gsd_state_version: "1.0"
 milestone: v12.0
 milestone_name: First-use readiness
-current_phase: 30
-current_phase_name: READY FOR VERIFICATION
-current_plan: 1
-status: verifying
-stopped_at: Completed 30-01-PLAN.md
-last_updated: "2026-11-20T01:43:08.977Z"
+current_phase: 31
+current_phase_name: Installed C library quickstart
+current_plan: Not started
+status: planning
+stopped_at: Phase 30 complete, ready to plan Phase 31
+last_updated: "2026-11-20T02:14:57.733Z"
 last_activity: 2026-11-19
-last_activity_desc: v12.0 scope reconciled into the canonical root checkout
-state_head: 1768e45a10e1f0c51a880f2547e8c1c000d56690
+last_activity_desc: Phase 30 complete, transitioned to Phase 31
+state_head: 85ba1e986a4727bb704f34228c132945d4553bd2
 progress:
   total_phases: 2
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 1
   completed_plans: 1
-  percent: 0
+  percent: 50
 ---
 
 # Project State
@@ -28,11 +28,11 @@ See [PROJECT.md](PROJECT.md), the active [requirements](REQUIREMENTS.md) and [ro
 
 ## Current Position
 
-Phase: 30 (User jobs and player/runner first use) — READY FOR VERIFICATION
-Current Plan: 1
+Phase: 31 — Installed C library quickstart
+Current Plan: Not started
 Total Plans in Phase: 1
-Status: Phase complete — ready for verification
-Last activity: 2026-11-19 — v12.0 scope reconciled into the canonical root checkout
+Status: Ready to plan
+Last activity: 2026-11-19 — Phase 30 complete, transitioned to Phase 31
 
 ## Performance Metrics
 No v12.0 plan metrics exist yet. v11.0's 19h 8m Phase 29 figure is elapsed time across implementation, handoffs and hosted CI, not a test run; the longest individual final CI job was 44m04. The final main run had about 10 seconds of queue time and no cancellations. The [v11.0 audit](milestones/v11.0-MILESTONE-AUDIT.md#cicd-efficiency-review) records the measurements and why they support no safe workflow change.
@@ -123,7 +123,7 @@ At v11.0 close, no new items were acknowledged; 51 items acknowledged at earlier
 
 ## Session Continuity
 Last session: 2026-11-20T01:36:50.624Z
-Stopped at: Completed 30-01-PLAN.md
+Stopped at: Phase 30 complete, ready to plan Phase 31
 Resume file: None
 
 Next action: run $gsd-verify-work 30 from the canonical root checkout to verify Phase 30
