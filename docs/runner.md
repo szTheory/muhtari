@@ -1,38 +1,19 @@
 # muhtari-run
 
-`muhtari-run` is the headless runner. It runs the emulator for a fixed number of frames with no window, sound
-device or input device, and prints hashes, writes PNG images or reports frame times. Scripts and CI use it to
-check that a build produces the expected picture.
+`muhtari-run` runs a fixed frame count without a window, audio or input device. It prints hashes, writes PNGs or
+reports frame times for scripts and CI.
 
-Given a cartridge image FILE, it loads the image and starts it from the fast-boot hand-off, the state the
-console's BIOS leaves as it jumps to the cartridge, or, with `--boot bios --bios FILE`, through a BIOS image from
-power-on. Without one, every run shows the built-in test card (see
-[Test card](#test-card)). `--movie` replays recorded controller and console-switch input, one line per frame
-(see [Movies](#movies)). `--probe` reads a cartridge image and reports what it is, without running it (see
-[Probing an image](#probing-an-image)).
+Cartridges start at the fast-boot hand-off, where the BIOS jumps to them, or through a BIOS at power-on with
+`--boot bios --bios FILE`. Without content, the runner shows its built-in [test card](#test-card).
+`--movie` replays recorded controller and console-switch input, one line per frame (see [Movies](#movies));
+`--probe` reports image metadata and hashes without running it (see [Probing an image](#probing-an-image)).
+Identification does not establish execution support. Atari 2600 images can be identified but are not supported;
+emulation belongs to the sibling project
+[`twentysixhundo`](https://github.com/szTheory/twentysixhundo).
 
-Automatic header/hash-selected PAL and explicit `--region pal` use successful-load info for output allocation.
-Native hashes cover 93440 bytes, PNGs are 320×292, and audio has 960 samples in the
-fast first call then 961/962 per full frame. PNG presentation uses the selected region's warm palette.
-Embedding callers must likewise requery info after every successful content load.
-
-## Identification and execution support
-
-`--probe FILE` identifies an image and reports its metadata and hashes. It does not show that Muhtari can run the
-image's board, devices or requested sound configuration. To check execution, run a finite sample separately:
-
-```sh
-muhtari-run --probe game.a78
-muhtari-run --frames 120 --hash-frame 120 --rom game.a78
-```
-
-A successful sample prints a content-dependent `frame 120 sha256` value; the digest depends on the image and run
-configuration. Unsupported images or configurations exit 77, malformed or unreadable input or another failure
-exits 1, and invalid command usage exits 2. The exit status does not change when refusal wording changes.
-
-Atari 2600 emulation is outside Muhtari and belongs to the sibling project
-[`twentysixhundo`](https://github.com/szTheory/twentysixhundo). Muhtari can identify an Atari 2600 image but refuses
-to run it; this is not planned Muhtari support.
+Header/hash-selected PAL and `--region pal` allocate output from successful-load info. Native hashes cover 93440
+bytes; PNGs are 320×292. Audio has 960 samples in the fast first call and 961/962 per full frame. PNGs use the
+selected region's warm palette. Embedding callers must requery info after each successful load.
 
 ## Synopsis
 
