@@ -50,33 +50,33 @@ coverage:
     description: "Player, runner/homebrew developer and C host-integrator jobs are mapped to deliverables and evidence limits."
     requirement: PERSONA-01
     verification:
-      - kind: other
-        ref: ".planning/preparation/A7800-ECOSYSTEM-AND-USERS.md#31-current-jobs-and-evidence; dated lesson, release receipt and source references checked"
-        status: pass
+      kind: other
+      ref: ".planning/preparation/A7800-ECOSYSTEM-AND-USERS.md#31-current-jobs-and-evidence; dated lesson, release receipt and source references checked"
+      status: pass
     human_judgment: false
   - id: PLAYER-01
     description: "A player can follow release selection, RetroArch installation, test-card and lawful content-load steps with controls and support limits."
     requirement: PLAYER-01
     verification:
-      - kind: integration
-        ref: "cmake --workflow --preset ci (exit 0); local install_line consumer against packaged arm64 core (exit 0); simulated libretro tests and linked anchors pass"
-        status: pass
+      kind: integration
+      ref: "cmake --workflow --preset ci (exit 0); local install_line consumer against packaged arm64 core (exit 0); simulated libretro tests and linked anchors pass"
+      status: pass
     human_judgment: false
   - id: RUNNER-01
     description: "A runner user can identify an image, run a finite sample, interpret output and refusal codes, and find the CLI reference."
     requirement: RUNNER-01
     verification:
-      - kind: integration
-        ref: "runner process CTest selection (10/10); packaged runner test-card command exit 0 with the documented SHA-256; full CI workflow exit 0"
-        status: pass
+      kind: integration
+      ref: "runner process CTest selection (10/10); packaged runner test-card command exit 0 with the documented SHA-256; full CI workflow exit 0"
+      status: pass
     human_judgment: false
   - id: DOCS-01
     description: "First-use, status, package metadata and user-job evidence agree with source, checks and historical release records."
     requirement: DOCS-01
     verification:
-      - kind: other
-        ref: "single_version, docs.budgets, install_line portable links, claims_wording and compat_doc_fresh pass; full CI has 736/736 tests and 8/8 release checks"
-        status: pass
+      kind: other
+      ref: "single_version, docs.budgets, install_line portable links, claims_wording and compat_doc_fresh pass; full CI has 736/736 tests and 8/8 release checks"
+      status: pass
     human_judgment: false
 duration: 34min
 completed: 2026-11-20
