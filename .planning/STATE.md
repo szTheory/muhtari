@@ -2,39 +2,37 @@
 gsd_state_version: "1.0"
 milestone: v12.0
 milestone_name: First-use readiness
-current_phase: 31
-current_plan: Not started
-status: completed
-stopped_at: Phase 31 verified — corrected-head delivery checks pending on PR #85
-last_updated: "2026-11-20T10:25:07Z"
+status: Awaiting next milestone
+stopped_at: v12.0 archived; awaiting successor scope choice
+last_updated: "2026-11-20T12:19:14.892Z"
 last_activity: 2026-11-20
-last_activity_desc: Phase 31 verified; milestone audit refreshed; PR update pending
-state_head: 4dc038df51d15bd46038068b81670cbc510f5c35
+last_activity_desc: Milestone v12.0 completed and archived
+state_head: a051a3b3e3da1464c92d1e8084465411cb1f228d
 progress:
   total_phases: 2
   completed_phases: 2
   total_plans: 3
   completed_plans: 3
   percent: 100
+current_phase: 31
 ---
 
 # Project State
 
 ## Project Reference
-See [PROJECT.md](PROJECT.md), the active [requirements](REQUIREMENTS.md) and [roadmap](ROADMAP.md), the [rolling product roadmap](PRODUCT-ROADMAP.md), and the [v12.0 scope review](research/next-milestone/2026-11-19-first-use-readiness-review.md). The completed v11.0 requirements and delivery records remain in the [archive](milestones/v11.0-REQUIREMENTS.md).
+See [PROJECT.md](PROJECT.md), the grouped [roadmap](ROADMAP.md), the [rolling product roadmap](PRODUCT-ROADMAP.md), and the [v12.0 archive](milestones/v12.0-ROADMAP.md). The completed v12.0 requirements and delivery records remain in the archive.
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** v12.0 phase work is complete; update PR #85 and verify corrected-head CI and Release.
+**Current focus:** v12.0 shipped and archived; no successor scope is selected. The recommendation and strongest alternative are in the rolling product roadmap.
 
 ## Current Position
 
-Phase: 31 — Installed C library quickstart (complete; verification passed)
-Current Plan: None
-Total Plans in Phase: 2
-Status: Phase work complete; corrected-head delivery checks pending on PR #85
-Last activity: 2026-11-20 — Phase 31 verification and milestone audit refreshed
+Phase: Milestone v12.0 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-11-20 — Milestone v12.0 completed and archived
 
 ## Performance Metrics
-The plan durations below are GSD elapsed time, not only test-run time. The local v12.0 serial CI suite took 481.59 seconds; the old-head hosted CI and Release attempts had no queue time, with Windows ARM64 the longest job at 44m20s and 42m29s. The [v12.0 audit](v12.0-MILESTONE-AUDIT.md#hosted-delivery-and-efficiency-review) records their failures and why they support no safe workflow change. For comparison, v11.0's 19h 8m Phase 29 figure spans implementation, handoffs and hosted CI, not a test run; the final main run had about 10 seconds of queue time and no cancellations. See the [v11.0 audit](milestones/v11.0-MILESTONE-AUDIT.md#cicd-efficiency-review).
+The plan durations below are GSD elapsed time, not only test-run time. The local v12.0 serial CI suite took 481.59 seconds. Corrected-source CI and Release passed; queue was zero at one-second precision and no reviewed job was cancelled. Windows ARM64 remained the critical path because independent-base evidence took about 25–27 minutes. The [v12.0 audit](v12.0-MILESTONE-AUDIT.md#hosted-delivery-and-efficiency-review) records receipts and why they support no safe workflow change. See the [v11.0 audit](milestones/v11.0-MILESTONE-AUDIT.md#cicd-efficiency-review) for the prior comparison.
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
@@ -80,12 +78,14 @@ The [Windows path follow-up](todos/completed/2026-11-17-define-extended-windows-
 - Phase 21's spec-less probe remains unresolved and nonblocking. No retail, physical hardware or owner-device acceptance is inferred. LibFuturo owns browser/host routes; Playstead owns player integration; twentysixhundo owns Atari 2600.
 - The original Phase 27 PR 77 one-push observation cap is spent; it authorizes no further update or retry. The historical source-authorization claim on `2160cfd` remains unverified. Subsequent PR 77 merge and v0.17.0 release evidence do not reopen that scope; see the [v10.0 records](milestones/v10.0-phases/27-headless-developer-trace/).
 - v11.0 shipped as stable v0.18.0. PR #84 merged; final main CI [44627149615](https://github.com/szTheory/muhtari/actions/runs/44627149615) and Release [44627149696](https://github.com/szTheory/muhtari/actions/runs/44627149696) passed, with all 20 assets and the latest-install check. No owner-device or real-host run was required or claimed.
+- v12.0 shipped as stable v0.18.1. PR #85 merged as `3686819b`; release PR #86 merged as `a051a3b3`. Main CI [44726104022](https://github.com/szTheory/muhtari/actions/runs/44726104022), Release [44726103946](https://github.com/szTheory/muhtari/actions/runs/44726103946) and its latest-install check passed. The [v12.0 audit](v12.0-MILESTONE-AUDIT.md) retains the evidence and four non-blocking follow-ups; no owner-device or real-host run was required or claimed.
 
 ## Deferred Items
-At v11.0 close, no new items were acknowledged; 51 items acknowledged at earlier closes remain suppressed with their original verdicts. At v10.0 close, two items were newly acknowledged; 50 earlier items remained suppressed. At v9.0 close, no new items were acknowledged. At v8.0 close, no new items were acknowledged; at v7.0 close, one debug-session item was newly acknowledged and 49 were carried forward. Its `unknown` verdict is preserved; suppression expires if the artifact changes. Earlier disclosures from v3.0 and prior closes remain below.
+At v12.0 close, one pre-existing Phase 30 whitespace item was newly acknowledged; 51 earlier items remain suppressed with their original verdicts. Suppression expires if the artifact changes. At v11.0 close, no new items were acknowledged; at v10.0 close, two items were newly acknowledged; 50 earlier items remained suppressed. At v9.0 close, no new items were acknowledged. At v8.0 close, no new items were acknowledged; at v7.0 close, one debug-session item was newly acknowledged and 49 were carried forward. Its `unknown` verdict is preserved. Earlier disclosures from v3.0 and prior closes remain below.
 
 | Category | Item | Status | Deferred At | Milestone |
 |----------|------|--------|-------------|-----------|
+| deferred_items | 30/deferred-items.md: pre-existing trailing whitespace outside Phase 30 plan scope | acknowledged | 2026-11-20 | v12.0 |
 | todos | 2026-11-17-define-extended-windows-output-path-support.md (presence-only) | acknowledged | 2026-11-17 | v10.0 |
 | deferred_items | 27/deferred-items.md: - The optional GSD WINDOWS deviation append was rejected because the existing register's frontmatter counts disagree with its entries: frontmatter reports 17 open, 0 waived, 35 fixed, 52 total; entries count 16 open, 0 waived, 36 fixed, 52 total. Reconcile the shared register before the next append. No repair was attempted because the count mismatch predates and is outside this plan. | acknowledged | 2026-11-17 | v10.0 |
 | debug_sessions | workspace-reconciliation-2026-11-13 | unknown | 2026-11-14 | v7.0 |
@@ -136,4 +136,5 @@ Next action: commit the reviewed correction and refreshed planning records, then
 
 ## Operator Next Steps
 
-- Update the existing `$gsd-ship 31` delivery PR after committing the reviewed correction, then verify the new head's CI and Release results.
+
+- Start the next milestone with $gsd-new-milestone
