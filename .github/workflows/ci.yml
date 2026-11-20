@@ -190,6 +190,8 @@ jobs:
           scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios
           scripts/fetch-pin.sh rcheevos build/pins/rcheevos
       - name: Build, test, package
+        env:
+          MUHTARI_RELEASE_QUICKSTART_PKG_CONFIG: ${{ matrix.runner == 'ubuntu-26.04' && '1' || '0' }}
         run: cmake --workflow --preset ${{ matrix.preset }}
       - name: Windows path measurements
         if: runner.os == 'Windows'

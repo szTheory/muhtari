@@ -108,6 +108,47 @@ if(NOT rc STREQUAL "0" OR NOT quickstart_output STREQUAL "quickstart: one frame,
   message(FATAL_ERROR "extracted quickstart CMake run: ${rc}; expected one frame, 800 samples; got ${out}${err}")
 endif()
 message(STATUS "extracted quickstart CMake consumer passed: ${quickstart_output}")
+if("$ENV{MUHTARI_RELEASE_QUICKSTART_PKG_CONFIG}" STREQUAL "1")
+  if(NOT SUFFIX MATCHES "^(linux|macos)-(x64|arm64)$")
+    message(FATAL_ERROR "extracted quickstart pkg-config route requires a POSIX native compiler lane: ${SUFFIX}")
+  endif()
+  set(pkg_config_metadata "${WORK}/library/lib/pkgconfig/muhtari.pc")
+  if(NOT EXISTS "${pkg_config_metadata}")
+    message(FATAL_ERROR "extracted quickstart pkg-config metadata is missing: ${pkg_config_metadata}")
+  endif()
+  find_program(PKG_CONFIG_EXECUTABLE NAMES pkg-config)
+  if(NOT PKG_CONFIG_EXECUTABLE)
+    message(FATAL_ERROR "extracted quickstart pkg-config route requires pkg-config, but it was not found")
+  endif()
+  execute_process(COMMAND "${CMAKE_COMMAND}" -E env
+      "PKG_CONFIG_LIBDIR=${WORK}/library/lib/pkgconfig" "PKG_CONFIG_PATH="
+      "${PKG_CONFIG_EXECUTABLE}" --cflags --libs muhtari
+    RESULT_VARIABLE rc OUTPUT_VARIABLE pkg_config_flags ERROR_VARIABLE err)
+  if(NOT rc STREQUAL "0")
+    message(FATAL_ERROR "extracted quickstart pkg-config metadata lookup failed: ${rc} ${pkg_config_flags}${err}")
+  endif()
+  if(pkg_config_flags STREQUAL "")
+    message(FATAL_ERROR "extracted quickstart pkg-config metadata lookup returned no flags")
+  endif()
+  separate_arguments(pkg_config_arguments UNIX_COMMAND "${pkg_config_flags}")
+  if(NOT pkg_config_arguments)
+    message(FATAL_ERROR "extracted quickstart pkg-config metadata produced no compiler arguments")
+  endif()
+  set(pkg_config_executable "${WORK}/quickstart-pkg-config${suffix}")
+  execute_process(COMMAND "${CC}" -std=c17 "${ROOT}/examples/embedding/quickstart.c"
+      ${pkg_config_arguments} -o "${pkg_config_executable}"
+    RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+  if(NOT rc STREQUAL "0")
+    message(FATAL_ERROR "extracted quickstart pkg-config compile failed: ${rc} ${out}${err}")
+  endif()
+  execute_process(COMMAND "${pkg_config_executable}"
+    RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+  string(STRIP "${out}" pkg_config_output)
+  if(NOT rc STREQUAL "0" OR NOT pkg_config_output STREQUAL "quickstart: one frame, 800 samples")
+    message(FATAL_ERROR "extracted quickstart pkg-config run: ${rc}; expected one frame, 800 samples; got ${out}${err}")
+  endif()
+  message(STATUS "extracted quickstart pkg-config consumer passed: ${pkg_config_output}")
+endif()
 set(fixture "${BUILD}/tests/ym2151/ym2151.a78")
 execute_process(COMMAND "${CMAKE_COMMAND}" -S "${ROOT}/tests/consumer" -B "${WORK}/consumer"
   "-DCMAKE_C_COMPILER=${CC}" "-DCMAKE_BUILD_TYPE=Release"

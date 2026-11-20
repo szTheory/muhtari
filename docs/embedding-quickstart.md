@@ -43,6 +43,29 @@ cmake --build consumer/build --config Release
 The CMake package resolves the imported `muhtari::muhtari` target from the extracted prefix. The same commands
 work with the Linux or macOS archive that matches the compiler.
 
+## pkg-config on Linux or macOS
+
+Install `pkg-config` and run from a fresh working directory with a path that contains no spaces (for example
+`/tmp/muhtari-quickstart`). Keep the extraction prefix as the literal relative directory `library`; its
+`muhtari.pc` supplies the include and link flags. After saving the linked files into `consumer/`:
+
+```sh
+set -eu
+if ! pkg_flags=$(PKG_CONFIG_LIBDIR=library/lib/pkgconfig PKG_CONFIG_PATH= pkg-config --cflags --libs muhtari); then
+    echo "could not read muhtari flags from the extracted package" >&2
+    exit 1
+fi
+printf '%s\n' "$pkg_flags" | xargs cc -std=c17 consumer/quickstart.c -o consumer/quickstart
+./consumer/quickstart
+```
+
+The environment is applied to the `pkg-config` lookup itself, isolating it from system packages. The compiler
+then receives those flags after the source file so the static library links. Both routes must print:
+
+```text
+quickstart: one frame, 800 samples
+```
+
 ## CMake on Windows
 
 Run these commands in a Visual Studio Developer PowerShell or another shell where the C17 MSVC compiler is
