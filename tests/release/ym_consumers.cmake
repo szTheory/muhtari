@@ -108,6 +108,33 @@ if(NOT rc STREQUAL "0" OR NOT quickstart_output STREQUAL "quickstart: one frame,
   message(FATAL_ERROR "extracted quickstart CMake run: ${rc}; expected one frame, 800 samples; got ${out}${err}")
 endif()
 message(STATUS "extracted quickstart CMake consumer passed: ${quickstart_output}")
+# Fault prevented: a release ZIP can contain the right library bytes while
+# omitting the exported target required by a clean CMake host project.
+set(damaged_parent "${WORK}/quickstart-damaged")
+file(REMOVE_RECURSE "${damaged_parent}")
+file(MAKE_DIRECTORY "${damaged_parent}")
+file(COPY "${WORK}/library" DESTINATION "${damaged_parent}")
+set(damaged_prefix "${damaged_parent}/library")
+set(damaged_target "${damaged_prefix}/lib/cmake/muhtari/muhtariTargets.cmake")
+if(NOT EXISTS "${damaged_target}")
+  message(FATAL_ERROR "quickstart damaged-prefix setup is missing exported target: ${damaged_target}")
+endif()
+file(REMOVE "${damaged_target}")
+set(damaged_build "${WORK}/quickstart-damaged-build")
+file(REMOVE_RECURSE "${damaged_build}")
+set(damaged_configure_command "${CMAKE_COMMAND}" -S "${ROOT}/examples/embedding" -B "${damaged_build}"
+  "-DCMAKE_C_COMPILER=${CC}" -DCMAKE_BUILD_TYPE=Release
+  "-DCMAKE_PREFIX_PATH=${damaged_prefix}" -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF
+  -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF
+  "-Dmuhtari_DIR=${damaged_prefix}/lib/cmake/muhtari")
+set(damaged_regex "include could not find requested file:[ \t\r\n]+[^ \t\r\n]*[/\\\\]muhtariTargets\\.cmake")
+execute_process(COMMAND "${CMAKE_COMMAND}" "-DCMD=${damaged_configure_command}" -DCODE=1
+    "-DREGEX=${damaged_regex}" -P "${ROOT}/tests/cmake/expect_fail.cmake"
+  RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+if(NOT rc STREQUAL "0")
+  message(FATAL_ERROR "quickstart missing-target control was not accepted: ${rc} ${out}${err}")
+endif()
+message(STATUS "quickstart missing-target control passed: ${out}${err}")
 if("$ENV{MUHTARI_RELEASE_QUICKSTART_PKG_CONFIG}" STREQUAL "1")
   if(NOT SUFFIX MATCHES "^(linux|macos)-(x64|arm64)$")
     message(FATAL_ERROR "extracted quickstart pkg-config route requires a POSIX native compiler lane: ${SUFFIX}")

@@ -13,3 +13,6 @@ find_package(muhtari CONFIG REQUIRED)
 
 add_executable(consumer main.c)
 target_link_libraries(consumer PRIVATE muhtari::muhtari)
+
+add_executable(quickstart ../../examples/embedding/quickstart.c)
+target_link_libraries(quickstart PRIVATE muhtari::muhtari)
