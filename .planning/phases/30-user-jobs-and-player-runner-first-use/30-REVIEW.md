@@ -1,10 +1,13 @@
 ---
 phase: 30-user-jobs-and-player-runner-first-use
-reviewed: 2026-11-20T05:07:27Z
+reviewed: 2026-11-20T09:38:28Z
 depth: standard
-files_reviewed: 1
+files_reviewed: 4
 files_reviewed_list:
   - README.md
+  - tests/consumer/quickstart_faults.c
+  - tests/emscripten/bundle.cmake
+  - tests/policy/publish.cmake
 findings:
   critical: 0
   warning: 0
@@ -16,14 +19,21 @@ status: clean
 
 # Phase 30: Code Review Report
 
-**Reviewed:** 2026-11-20T05:07:27Z
+**Reviewed:** 2026-11-20T09:38:28Z
 **Depth:** standard
-**Files Reviewed:** 1
+**Files Reviewed:** 4
 **Status:** clean
 
 ## Summary
 
-This incremental refresh reviewed the new C host entry in `README.md` against Phase 30's player and runner first-use claims. Its links resolve to the installed-library quickstart, example source, and full API guide. The quickstart scopes its result to one ROM-free frame and explains package/platform selection and the limits of that check. The README makes no game-compatibility claim for this path. No bug, security issue, quality defect, or provable necessity issue was found.
+The earlier README review remains current. This incremental review covers the
+CI correction connected to Phase 30's packaged metadata claim and its required
+Emscripten checks. The C change only reflows existing conditions and
+assertions. The new CMake substring matches both the current `.info`
+description and its previous description prefix, so fixture preparation and
+extracted-package validation continue to require the exact-source YM receipts.
+This does not change emulator behavior, the API, or the phase's stated
+compatibility claims. No issue found.
 
 ## Narrative Findings (AI reviewer)
 
@@ -31,6 +41,6 @@ No findings.
 
 ---
 
-_Reviewed: 2026-11-20T05:07:27Z_
-_Reviewer: the agent (gsd-code-reviewer)_  
+_Reviewed: 2026-11-20T09:38:28Z_
+_Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_

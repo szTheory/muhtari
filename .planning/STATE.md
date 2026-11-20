@@ -5,11 +5,11 @@ milestone_name: First-use readiness
 current_phase: 31
 current_plan: Not started
 status: completed
-stopped_at: v12.0 milestone audit complete — ship pending
-last_updated: "2026-11-20T06:00:56Z"
+stopped_at: Phase 31 verified — corrected-head delivery checks pending on PR #85
+last_updated: "2026-11-20T10:25:07Z"
 last_activity: 2026-11-20
-last_activity_desc: v12.0 milestone audit complete
-state_head: 49adcef4582a70eecb1331cde8abf9d5dfc0a45c
+last_activity_desc: Phase 31 verified; milestone audit refreshed; PR update pending
+state_head: 4dc038df51d15bd46038068b81670cbc510f5c35
 progress:
   total_phases: 2
   completed_phases: 2
@@ -23,18 +23,18 @@ progress:
 ## Project Reference
 See [PROJECT.md](PROJECT.md), the active [requirements](REQUIREMENTS.md) and [roadmap](ROADMAP.md), the [rolling product roadmap](PRODUCT-ROADMAP.md), and the [v12.0 scope review](research/next-milestone/2026-11-19-first-use-readiness-review.md). The completed v11.0 requirements and delivery records remain in the [archive](milestones/v11.0-REQUIREMENTS.md).
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** v12.0 milestone audit complete; final ship pending
+**Current focus:** v12.0 phase work is complete; update PR #85 and verify corrected-head CI and Release.
 
 ## Current Position
 
-Phase: 31 (last phase)
-Current Plan: Not started
+Phase: 31 — Installed C library quickstart (complete; verification passed)
+Current Plan: None
 Total Plans in Phase: 2
-Status: Phase work and milestone audit complete; ship is pending
-Last activity: 2026-11-20 — v12.0 milestone audit complete
+Status: Phase work complete; corrected-head delivery checks pending on PR #85
+Last activity: 2026-11-20 — Phase 31 verification and milestone audit refreshed
 
 ## Performance Metrics
-No v12.0 plan metrics exist yet. v11.0's 19h 8m Phase 29 figure is elapsed time across implementation, handoffs and hosted CI, not a test run; the longest individual final CI job was 44m04. The final main run had about 10 seconds of queue time and no cancellations. The [v11.0 audit](milestones/v11.0-MILESTONE-AUDIT.md#cicd-efficiency-review) records the measurements and why they support no safe workflow change.
+The plan durations below are GSD elapsed time, not only test-run time. The local v12.0 serial CI suite took 481.59 seconds; the old-head hosted CI and Release attempts had no queue time, with Windows ARM64 the longest job at 44m20s and 42m29s. The [v12.0 audit](v12.0-MILESTONE-AUDIT.md#hosted-delivery-and-efficiency-review) records their failures and why they support no safe workflow change. For comparison, v11.0's 19h 8m Phase 29 figure spans implementation, handoffs and hosted CI, not a test run; the final main run had about 10 seconds of queue time and no cancellations. See the [v11.0 audit](milestones/v11.0-MILESTONE-AUDIT.md#cicd-efficiency-review).
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
@@ -128,12 +128,12 @@ At v11.0 close, no new items were acknowledged; 51 items acknowledged at earlier
 | deferred_items | 11/deferred-items.md: Found in plan 04  - `diag.bankset_tracer` and `diag.bankset` both write `build/ci/tests/diag/bankset/32n/` and carry no resource lock, so under `ctest -j` one can read the other's `pixels.png` half written (`bankset --bankset-png ... png: chunk longer than the file`). Seen once in `cmake --workflow --preset ci`; passes alone and on rerun. Not caused by plan 04; a fix is a `RESOURCE_LOCK` or a separate output directory in `tests/diag/tests.cmake`.  Resolved in the gap round: `diag.bankset` now writes `build/<preset>/tests/diag/bankset-matrix/` and `diag.bankset_tracer` keeps `build/<preset>/tests/diag/bankset/`, so the two tests share no output file. | acknowledged; historical disposition retained | 2026-10-29 | v2.0 |
 
 ## Session Continuity
-Last session: 2026-11-20T06:00:56Z
-Stopped at: v12.0 milestone audit complete — ship pending
+Last session: 2026-11-20T10:25:07Z
+Stopped at: Phase 31 verification and audit complete; corrected-head delivery pending
 Resume file: None
 
-Next action: run $gsd-ship 31 from the canonical root checkout
+Next action: commit the reviewed correction and refreshed planning records, then update PR #85 and inspect its exact-head CI and Release results.
 
 ## Operator Next Steps
 
-- Run `$gsd-ship 31` from the canonical root checkout.
+- Update the existing `$gsd-ship 31` delivery PR after committing the reviewed correction, then verify the new head's CI and Release results.

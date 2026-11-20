@@ -1,12 +1,12 @@
 ---
 phase: 31-installed-c-library-quickstart
-reviewed: 2026-11-20T04:44:24Z
+reviewed: 2026-11-20T09:18:29Z
 depth: standard
 files_reviewed: 3
 files_reviewed_list:
   - tests/consumer/quickstart_faults.c
-  - tests/consumer/CMakeLists.txt
-  - tests/install/tests.cmake
+  - tests/emscripten/bundle.cmake
+  - tests/policy/publish.cmake
 findings:
   critical: 0
   warning: 0
@@ -18,14 +18,18 @@ status: clean
 
 # Phase 31: Code Review Report
 
-**Reviewed:** 2026-11-20T04:44:24Z
+**Reviewed:** 2026-11-20T09:18:29Z
 **Depth:** standard
 **Files Reviewed:** 3
 **Status:** clean
 
 ## Summary
 
-Reviewed the new fault driver and its staged-package build and run wiring. The scoped aliases affect calls in the included quickstart, while the wrappers call the real installed library. The frame case reaches the public buffer-size rejection after checking the instance and both buffers; the setup and wrong-count cases likewise require their injected step before accepting the example's failure. The tracker checks every recorded pointer independently and rejects unknown or repeated frees. The CMake observer requires the exact child status and separate stdout and stderr, and emits the normal success marker only after the fault cases pass. No issue found.
+Reviewed the incremental CI correction. The C change only reflows existing
+conditions and assertions. The new CMake substring is present in the current
+`.info` description and in the previous description prefix, so both publisher
+fixture preparation and extracted-package validation recognize the YM claim
+without weakening its receipt checks. No issue found.
 
 ## Narrative Findings (AI reviewer)
 
@@ -33,6 +37,6 @@ No findings.
 
 ---
 
-_Reviewed: 2026-11-20T04:44:24Z_
+_Reviewed: 2026-11-20T09:18:29Z_
 _Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_
