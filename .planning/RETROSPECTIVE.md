@@ -339,6 +339,38 @@ Keep superseded partial plans as history, but derive completion counts from the 
 
 Main CI and Release each began about one second after creation. Windows ARM64 was longest at 43.2 and 41.7 minutes respectively; neither run had failures or cancellations. Local session, model and monetary costs are not reliably recorded.
 
+## Milestone: v12.0 — First-use readiness
+
+**Shipped:** 2026-11-20 | **Phases:** 2 | **Plans:** 3 | **Tasks:** 8
+
+### What Was Built
+
+- Updated evidence-backed player, runner and C-host journeys against current shipped behavior.
+- Added first-use RetroArch and `muhtari-run` guidance, plus a ROM-free installed C quickstart using CMake and pkg-config.
+- Added staged error and cleanup fault controls for the example without changing the public API, emulation behavior or package format.
+
+### What Worked
+
+Cheap formatter, package-metadata, documentation-budget and focused consumer checks isolated issues before the full local suite. The exact-source hosted CI and Release rehearsal tied the corrected first-use changes to a current base; post-merge main CI and stable v0.18.1's latest-install check confirmed delivery. A read-only integration check found all five requirement paths wired and no blockers.
+
+### What Was Inefficient
+
+The old local build tree contained generated `.info` text that hid a clean-checkout publisher mismatch; the first hosted CI and Release attempts exposed it. Check generated metadata in a clean or refreshed tree before relying on local controls. The default-parallel full local workflow also timed out under this host's resource contention, while the serial full suite passed; one local run did not support changing test deadlines or workflow topology.
+
+### Patterns Established
+
+Keep user-facing release references version-free and link exact package evidence in planning records. Use the same small C source in the docs, extracted archive routes and staged consumers. Require representative failures to prove both the diagnostic and cleanup, and emit success only after those checks.
+
+### Key Lessons
+
+1. A generated artifact in a stale build tree can make a publisher control pass against text that a clean checkout no longer produces; refresh or source-check generated metadata before trusting the local result.
+2. Cheap consistency checks narrow feedback, but full CI and the exact-source Release gates still establish the supported matrix, provenance, publication and latest-install behavior.
+3. Review CI and Release while active and after completion. These runs had no meaningful queue delay or cancellations; Windows ARM64 independent-base evidence dominated wall time, but parallelizing it would change runner cost and evidence provenance. Preserve coverage and require comparable measurements before changing structure, cache or deadlines.
+
+### Cost Observations
+
+The six reviewed corrected-source and main runs passed without failed or cancelled jobs; workflow queue was zero at one-second precision. Corrected PR CI took 47m09s, Release rehearsal 53m57s, Nightly 22m33s, merge-commit CI 46m18s, current-main CI 48m26s and production Release 51m05s. Windows ARM64 independent-base evidence took about 25–27 minutes. The local serial CI suite took 481.59 seconds. The detailed job paths and `act` limits are in the [v12.0 audit](milestones/v12.0-MILESTONE-AUDIT.md#hosted-delivery-and-efficiency-review). Session, model and monetary costs are not recorded.
+
 ## Cross-Milestone Trends
 
 | Milestone | Phases | Plans | Requirements | Test evidence | Closeout |
@@ -360,3 +392,5 @@ output paths and measured calibration; aggregate record counts never prove accep
 | v8.0 | 2 | 2 plans, 4 tasks | 5/5 scoped | Local 723/723 CI + 8/8 release; final exact-main CI and Release passed; audit passed | Closed locally with override for stale Phase 23 fingerprint; 0 new acknowledgments, 50 carried; GameDrive implementation NO-GO |
 | v9.0 | 1 | 1 plan, 2 tasks | 4/4 scoped | Exact-source release/install passed; final main CI and audit passed | Shipped v0.16.0; 0 new acknowledgments, 50 carried; v0.15.0 unchanged |
 | v10.0 | 2 | 8 plans, 16 tasks | 8/8 scoped | Source-qualified trace, compatibility, CI and Release passed; integration audit has one non-blocking warning | Shipped v0.17.0; override closeout with 2 new acknowledgments and 50 carried |
+| v11.0 | 2 | 5 plans, 10 tasks | 6/6 scoped | Windows x64/ARM64 path acceptance; exact-source CI, Release, 20 assets and latest install passed | Shipped v0.18.0; 0 new acknowledgments, 51 carried |
+| v12.0 | 2 | 3 plans, 8 tasks | 5/5 scoped | Local 736 CI + 8 release checks; exact-source CI/Release rehearsal; post-merge CI, v0.18.1 publication and latest install passed | Shipped v0.18.1; override closeout with 1 new acknowledgment and 51 carried |

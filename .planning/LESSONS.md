@@ -1171,4 +1171,17 @@ out at its 30-second local limit under the amd64 Docker image on this arm64
 host; its production validator passed inside the publisher controls. Keep
 these results local and leave the deadlines and workflow structure unchanged.
 
-Status: reproduced; exact-source CI and Release confirmation pending.
+The corrected PR #85 head passed CI [44719377317](https://github.com/szTheory/muhtari/actions/runs/44719377317),
+Release rehearsal [44719377473](https://github.com/szTheory/muhtari/actions/runs/44719377473)
+and Nightly [44719377336](https://github.com/szTheory/muhtari/actions/runs/44719377336).
+After merge, main CI [44725660837](https://github.com/szTheory/muhtari/actions/runs/44725660837)
+passed; PR #86 published v0.18.1, and main CI
+[44726104022](https://github.com/szTheory/muhtari/actions/runs/44726104022),
+Release [44726103946](https://github.com/szTheory/muhtari/actions/runs/44726103946)
+and its latest-install check passed. Reviewed runs had zero workflow queue at
+one-second precision and no cancelled jobs. Windows ARM64 independent-base
+evidence remains the measured long path; changing its parallelism would alter
+cost and provenance, so no safe workflow change was justified. The active-run
+and completed-run efficiency checklist is now in `docs/maintaining.md`.
+
+Status: reproduced; v12 exact-source CI and Release confirmed.

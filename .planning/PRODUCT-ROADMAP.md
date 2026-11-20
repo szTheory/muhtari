@@ -2,7 +2,7 @@
 title: "Product roadmap (rolling)"
 summary: "Completed / Immediate / Next / Mid / Long direction for muhtari with evidence and promotion triggers."
 read_when: "At every new-milestone and complete-milestone step, and when a finding changes priorities."
-updated: 2026-11-19
+updated: 2026-11-20
 ---
 
 # Product roadmap (rolling)
@@ -150,50 +150,46 @@ scripting, AI/TAS and browser/player work remain deferred or sibling-owned.
 Preserve the nine v3.0 requirements and the original Phase 12/14 host and
 remote stops.
 
-## Immediate — v12.0 first-use readiness
+## Completed — v12.0 first-use readiness
 
-Owner direction at the v11.0 close moved the next milestone toward a mature,
-approachable product. Recommend **v12.0 — First-use readiness**: maintain a
-current, evidence-labeled map of the people Muhtari serves and their jobs, then
-make the first successful use clear for its three deliverables: play a lawfully
-obtained game through RetroArch, run a cartridge with `muhtari-run`, and build a
-small C host against the library package. Keep the README concise, repair stale
-archive links, and verify examples against current source/package behavior.
-Clean comments and documentation debt in the files touched by these paths; do
-not turn this into an unbounded style rewrite or compatibility sweep.
+v12.0 shipped in stable [v0.18.1](https://github.com/szTheory/muhtari/releases/tag/v0.18.1)
+on 2026-11-20. Player, runner and C-host first-use paths now match the current
+release; the installed C quickstart builds from the release archive through
+CMake and pkg-config and checks a known frame/audio result. The work preserves
+the three deliverables, public API/ABI, package format and emulation behavior.
+PR #85 and release PR #86 merged; current-main CI, Release and latest-install
+verification passed. The [v12.0 audit](milestones/v12.0-MILESTONE-AUDIT.md)
+records exact-source receipts, remaining follow-ups and the measured CI/CD
+review. No owner-device or RetroArch host result is claimed.
 
-The strongest alternative is the finite gameplay replay candidate below. It has
-direct player value and reuses the movie and runner support, but no exact fixture
-with confirmed rights and an independent expected gameplay result is recorded.
-That is a promotion gate, not a reason to guess or acquire protected assets.
-Profile-first Windows ARM64 CI investigation remains lower priority: existing
-samples show duration but do not attribute it to a safe optimization.
+## Immediate recommendation — qualify one finite gameplay replay
 
-Preserve v11.0's receipts and the existing stops: do not reopen the nine v3.0
-owner-host gaps, denied Phase 12 request, spent Phase 14 host scope, GameDrive
-NO-GO, or sibling-owned browser work. See the [2026-11-19 first-use review](research/next-milestone/2026-11-19-first-use-readiness-review.md).
+Recommend a bounded qualification milestone for one named, player-visible
+gameplay scenario using existing movie and runner support. First identify an
+exact fixture with documented distribution/use rights and an independent
+expected in-game state or event; record region, device and bounded input. If
+those prerequisites cannot be met, return NO-GO without implementing a replay
+or turning the 201 unevaluated compatibility rows into presumed defects. A
+successful emulator recording alone is not an independent oracle, and frame or
+audio hashes do not establish broad gameplay compatibility. The [2026-11-19
+successor review](research/next-milestone/2026-11-19-successor-review.md)
+contains the earlier evidence and reopen conditions.
 
-## Next — one finite gameplay replay scenario
+**Strongest alternative — bounded Windows ARM64 CI profiling.** Latest main CI
+and Release still show independent-base evidence as the longest measured step
+(about 26 minutes), with zero workflow queue and no cancelled jobs. The v12
+review found no safe change: parallelizing that work could increase runner
+cost and would alter evidence provenance. Select profiling only if comparable
+runs or existing stage data can isolate a repeatable cost, and preserve all
+current test, fault, source-identity, Release and install checks. Use compatible
+`act` or cheap local checks for feedback where useful; see the [v12.0 audit](milestones/v12.0-MILESTONE-AUDIT.md#hosted-delivery-and-efficiency-review)
+and [maintainer preflight](../docs/maintaining.md#local-github-actions-preflight).
 
-After v12.0, prefer a small, scenario-level gameplay replay using existing
-movie and runner support. It should catch a player-visible regression in an
-actual in-game state or event while staying inside Muhtari's core/runner
-responsibilities. Do not turn the 201 unevaluated titles into a bug queue or use
-frame/audio hashes alone to claim broad compatibility.
-
-Promote it only when one exact named fixture has documented distribution/use
-rights and an independent expected gameplay result, with region, device and
-bounded movie inputs. Acceptance must include pass/fault controls and run
-without owner-host or real-hardware authority. The [2026-11-19 successor
-review](research/next-milestone/2026-11-19-successor-review.md) records why that
-gate is currently open.
-
-The profile-first Windows ARM64 comparison remains a later candidate. Keep
-reviewing every CI/Release run and using compatible `act` preflight as
-documented; do not schedule another general CI tune-up or change workflow
-structure until comparable measurements isolate a safe, repeatable target. The
-[v11.0 audit](milestones/v11.0-MILESTONE-AUDIT.md#cicd-efficiency-review) has
-the current timings and coverage-preserving no-change result.
+These are recommendations, not a selected scope. The owner selects the next
+milestone; no next-milestone requirements are active. Existing exclusions and
+stops remain: nine deferred v3.0 requirements, the denied Phase 12 request, the
+spent Phase 14 host scope, GameDrive NO-GO, and sibling-owned browser/player
+work.
 
 ## Qualification gates and standing exclusions
 
