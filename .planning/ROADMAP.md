@@ -37,7 +37,7 @@ maintained user-job context.
 | Phase | Name | Goal | Requirements | Status |
 |-------|------|------|--------------|--------|
 | 30 | User jobs and player/runner first use | Current user jobs and concise player/runner paths match the released product; stale first-use docs are corrected. | PERSONA-01, PLAYER-01, RUNNER-01, DOCS-01 | Complete    |
-| 31 | Installed C library quickstart | A fresh installed-package consumer builds and runs the documented minimal C example. | EMBED-01 | In Progress |
+| 31 | Installed C library quickstart | A fresh installed-package consumer builds and runs the documented minimal C example. | EMBED-01 | Complete    |
 
 ### Phase 30: User jobs and player/runner first use
 
@@ -67,7 +67,7 @@ result.
   3. The existing installed-consumer verification exercises the documented example or the same source and catches a broken package target or public header through a representative negative control.
   4. The getting-started text links to the complete API reference and states platform/package requirements and the behavior established by the example without implying gameplay compatibility.
 
-**Plans:** 2/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 **Wave 1**
