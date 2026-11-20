@@ -382,7 +382,7 @@ When the image is refused, standard error gets `muhtari-run: FILE: <message>`, a
 
 | Image | Message | Lines printed | Exit status |
 |---|---|---|---|
-| a 2600 cartridge | Source: `unsupported: Atari 2600`; published v0.18.0: `unsupported: 2600 (planned)` | `kind source rom_size` and the hashes | 77 |
+| a 2600 cartridge | Source: `unsupported: Atari 2600`; prior published package: `unsupported: 2600 (planned)` ([receipt](status.md)) | `kind source rom_size` and the hashes | 77 |
 | a 7800 board this version does not emulate | `unsupported board: <board>` | all the lines above | 77 |
 | not a cartridge image, or a header that fits no board | `not a 7800 or 2600 cartridge image` | the hashes | 1 |
 | shorter than its header says | `the image ends before the size its header gives` | the hashes | 1 |
