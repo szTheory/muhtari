@@ -4,18 +4,18 @@ milestone: v12.0
 milestone_name: First-use readiness
 current_phase: 31
 current_phase_name: Installed C library quickstart
-current_plan: 1
+current_plan: 2
 status: executing
-stopped_at: Completed 31-01-PLAN.md
-last_updated: "2026-11-20T04:25:28.884Z"
+stopped_at: Completed 31-02-PLAN.md
+last_updated: "2026-11-20T04:39:40.076Z"
 last_activity: 2026-11-19
 last_activity_desc: Phase 31 execution started
-state_head: bf89cde60675ec3bb44e48805cb6199e0159fd30
+state_head: 2aa05586ea4761e56b10a209013c32aa46e463ff
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 3
-  completed_plans: 2
+  completed_plans: 3
   percent: 50
 ---
 
@@ -29,7 +29,7 @@ See [PROJECT.md](PROJECT.md), the active [requirements](REQUIREMENTS.md) and [ro
 ## Current Position
 
 Phase: 31 (Installed C library quickstart) — READY TO EXECUTE
-Current Plan: 1
+Current Plan: 2
 Total Plans in Phase: 2
 Status: Ready to execute
 Last activity: 2026-11-19 — Phase 31 execution started
@@ -42,6 +42,7 @@ No v12.0 plan metrics exist yet. v11.0's 19h 8m Phase 29 figure is elapsed time 
 |------|----------|-------|-------|
 | Phase 30 P01 | 34m | 3 tasks | 9 files |
 | Phase 31 P01 | 33min | 3 tasks | 9 files |
+| Phase 31 P02 | 12min | 2 tasks | 3 files |
 
 ## Accumulated Context
 ### Decisions
@@ -69,6 +70,8 @@ No v12.0 plan metrics exist yet. v11.0's 19h 8m Phase 29 figure is elapsed time 
 - [Phase 31]: One ROM-free C17 source serves the archive CMake and pkg-config routes and staged package checks.
 - [Phase 31]: Enable pkg-config archive verification only on the existing Ubuntu 26.04 x64 CI lane.
 - [Phase 31]: Require the missing-export negative control to match its specific CMake diagnostic.
+- [Phase 31]: Keep all fault injection in the staged test driver; leave the documented example and public API unchanged.
+- [Phase 31]: Require setup and result fault checks before emitting the staged quickstart success marker.
 
 ### Pending Todos
 The [Windows path follow-up](todos/completed/2026-11-17-define-extended-windows-output-path-support.md) was completed in Phase 29. Other todos/seeds retain their dispositions. Root remains canonical and older dirty worktrees require content/ancestry reconciliation before import. See [workspace reconciliation](debug/workspace-reconciliation-2026-11-10.md).
@@ -126,8 +129,8 @@ At v11.0 close, no new items were acknowledged; 51 items acknowledged at earlier
 | deferred_items | 11/deferred-items.md: Found in plan 04  - `diag.bankset_tracer` and `diag.bankset` both write `build/ci/tests/diag/bankset/32n/` and carry no resource lock, so under `ctest -j` one can read the other's `pixels.png` half written (`bankset --bankset-png ... png: chunk longer than the file`). Seen once in `cmake --workflow --preset ci`; passes alone and on rerun. Not caused by plan 04; a fix is a `RESOURCE_LOCK` or a separate output directory in `tests/diag/tests.cmake`.  Resolved in the gap round: `diag.bankset` now writes `build/<preset>/tests/diag/bankset-matrix/` and `diag.bankset_tracer` keeps `build/<preset>/tests/diag/bankset/`, so the two tests share no output file. | acknowledged; historical disposition retained | 2026-10-29 | v2.0 |
 
 ## Session Continuity
-Last session: 2026-11-20T03:44:20.209Z
-Stopped at: Completed 31-01-PLAN.md
+Last session: 2026-11-20T04:39:39.998Z
+Stopped at: Completed 31-02-PLAN.md
 Resume file: None
 
 Next action: run $gsd-verify-work 30 from the canonical root checkout to verify Phase 30
