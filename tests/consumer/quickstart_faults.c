@@ -69,8 +69,7 @@ static void *quickstart_fault_malloc(size_t size)
     } else if (quickstart_fault_created && !quickstart_fault_in_frame) {
         quickstart_fault_buffer_attempts++;
         name = quickstart_fault_buffer_successes == 0u ? "video" : "audio";
-        if (quickstart_fault_is_mode("audio_alloc") &&
-            quickstart_fault_buffer_attempts == 2u) {
+        if (quickstart_fault_is_mode("audio_alloc") && quickstart_fault_buffer_attempts == 2u) {
             quickstart_fault_injected = 1;
             return NULL;
         }
@@ -141,8 +140,7 @@ static muhtari_status quickstart_fault_run_frame(muhtari *instance, muhtari_fram
     status = muhtari_run_frame(instance, &injected);
     quickstart_fault_in_frame = 0;
 
-    if (quickstart_fault_is_mode("frame") &&
-        status == MUHTARI_STATUS_ERR_BUFFER_TOO_SMALL) {
+    if (quickstart_fault_is_mode("frame") && status == MUHTARI_STATUS_ERR_BUFFER_TOO_SMALL) {
         quickstart_fault_injected = 1;
         quickstart_fault_frame_rejected = 1;
     }
@@ -192,33 +190,33 @@ int main(int argc, char **argv)
 
     if (quickstart_fault_is_mode("create")) {
         checks_ok &= quickstart_fault_require(quickstart_fault_created == 0 &&
-                                              quickstart_fault_create_allocator_attempts == 1u,
+                                                  quickstart_fault_create_allocator_attempts == 1u,
                                               "create fault did not reject the first allocation");
     } else {
         checks_ok &= quickstart_fault_require(quickstart_fault_created != 0,
                                               "instance creation did not complete");
     }
     if (quickstart_fault_is_mode("audio_alloc")) {
-        checks_ok &= quickstart_fault_require(quickstart_fault_buffer_attempts == 2u &&
-                                              quickstart_fault_buffer_successes == 1u,
-                                              "audio allocation fault did not follow video allocation");
+        checks_ok &= quickstart_fault_require(
+            quickstart_fault_buffer_attempts == 2u && quickstart_fault_buffer_successes == 1u,
+            "audio allocation fault did not follow video allocation");
     }
     if (quickstart_fault_is_mode("frame")) {
         checks_ok &= quickstart_fault_require(quickstart_fault_frame_rejected != 0 &&
-                                              quickstart_fault_frame_call_count == 1,
+                                                  quickstart_fault_frame_call_count == 1,
                                               "real frame call did not reject zero audio capacity");
     }
     if (quickstart_fault_is_mode("sample_count")) {
-        checks_ok &= quickstart_fault_require(quickstart_fault_frame_succeeded != 0 &&
-                                              quickstart_fault_sample_count_changed != 0 &&
-                                              quickstart_fault_frame_call_count == 1,
-                                              "sample count fault did not follow a successful frame");
+        checks_ok &= quickstart_fault_require(
+            quickstart_fault_frame_succeeded != 0 && quickstart_fault_sample_count_changed != 0 &&
+                quickstart_fault_frame_call_count == 1,
+            "sample count fault did not follow a successful frame");
     }
     checks_ok &= quickstart_fault_require(quickstart_fault_harness_error == 0,
                                           "allocator tracking reported an invalid operation");
-    checks_ok &= quickstart_fault_require(quickstart_fault_nonnull_free_count ==
-                                          quickstart_fault_allocation_count,
-                                          "not every acquired allocation was released exactly once");
+    checks_ok &= quickstart_fault_require(
+        quickstart_fault_nonnull_free_count == quickstart_fault_allocation_count,
+        "not every acquired allocation was released exactly once");
     for (i = 0u; i < quickstart_fault_allocation_count; i++) {
         if (quickstart_fault_allocations[i].released == 0) {
             fprintf(stderr, "quickstart fault harness: %s allocation was not released\n",

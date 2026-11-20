@@ -1135,3 +1135,40 @@ Sources: [CTest `COST`](https://cmake.org/cmake/help/latest/prop_test/COST.html)
 [c4 CI x64 job](https://github.com/szTheory/muhtari/actions/runs/44563687336/job/135699641191),
 [c4 CI ARM64 job](https://github.com/szTheory/muhtari/actions/runs/44563687336/job/135699641153).
 Status: adopted after independent review; c4 confirms earlier failure feedback with no suite-time claim.
+
+## Match package validation to the semantic metadata claim (2026-11-20)
+
+The `.info` description changed from `Supports the selected YM2151 digital
+profile` to `Supports the Souper mapper and selected YM2151 digital profile on
+XM`. Two publisher checks still matched the old full prefix. On a clean PR
+checkout, the publisher fixture therefore skipped the six transported YM
+receipts and failed when its missing-receipt control tried to move one. CI and
+Release both reproduced the failure on PR #85:
+[CI run 44685195779](https://github.com/szTheory/muhtari/actions/runs/44685195779)
+and [Release run 44685195947](https://github.com/szTheory/muhtari/actions/runs/44685195947).
+The root build tree still held older generated `.info` text, which let the same
+local control pass and hid the clean-checkout defect. Match the stable semantic
+claim substring in both the package validator and producer fixture, and run
+`hygiene.format` separately from the ordinary `ci` preset; the latter does not
+include formatting. The formatting issue and semantic matcher were corrected
+before the next hosted attempt. The local full hygiene workflow hit its tree
+and analyzer timeouts in this sandbox, where process-list access is denied;
+that result is not a hosted or source-fix pass.
+
+In the same local environment, the full `MUHTARI_RELEASE_QUICKSTART_PKG_CONFIG=1
+cmake --workflow --preset ci` run exited 8 with four timeouts while CTest used
+its default parallelism. Running those four tests serially with
+`ctest --test-dir build/ci --output-on-failure --parallel 1 -R
+'^(title[.]pal[.]bios|diag[.]rebuild|fuzz[.]regress[.]run|input[.]lightgun)$'`
+passed all five tests, including the `built.openbios` fixture setup (exit 0).
+The serial run points to local resource contention; it does not justify changing
+a test deadline from one local run. A full `ctest --preset ci --parallel 1`
+runs the 736 tests with exit 0 in 481.59 seconds; `cmake --build --preset ci
+--target package` exits 0; and `ctest --preset ci-release --parallel 1` passes
+all eight release checks. The publisher production controls also pass against
+the fresh Emscripten archive. The Emscripten bundle-control CTest itself timed
+out at its 30-second local limit under the amd64 Docker image on this arm64
+host; its production validator passed inside the publisher controls. Keep
+these results local and leave the deadlines and workflow structure unchanged.
+
+Status: reproduced; exact-source CI and Release confirmation pending.

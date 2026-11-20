@@ -135,7 +135,7 @@ function(publish_make_prepare_fixture destination portable_archive expected_sha 
   file(COPY_FILE "${native}"
     "${destination}/emscripten-evidence/ci/tests/emscripten/native.json")
   file(READ "${evidence_build}/libretro/muhtari_libretro.info" info)
-  if(info MATCHES "Supports the selected YM2151 digital profile")
+  if(info MATCHES "selected YM2151 digital profile")
     foreach(path IN LISTS ym_evidence_files)
       string(REPLACE "build/ci/tests/" "" relative "${path}")
       get_filename_component(parent "${destination}/emscripten-evidence/ci/tests/${relative}" DIRECTORY)
