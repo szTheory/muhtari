@@ -81,6 +81,33 @@ if(NOT SUFFIX MATCHES "^windows-")
     _muhtari_bundle_hash_equal("${WORK}/source-object" "${WORK}/package-object" "archive object ${member}")
   endforeach()
 endif()
+set(quickstart_build "${WORK}/quickstart-cmake")
+file(REMOVE_RECURSE "${quickstart_build}")
+execute_process(COMMAND "${CMAKE_COMMAND}" -S "${ROOT}/examples/embedding" -B "${quickstart_build}"
+  "-DCMAKE_C_COMPILER=${CC}" -DCMAKE_BUILD_TYPE=Release
+  "-DCMAKE_PREFIX_PATH=${WORK}/library" -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF
+  -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF
+  "-Dmuhtari_DIR=${WORK}/library/lib/cmake/muhtari"
+  RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+if(NOT rc STREQUAL "0")
+  message(FATAL_ERROR "extracted quickstart CMake configure: ${rc} ${out}${err}")
+endif()
+execute_process(COMMAND "${CMAKE_COMMAND}" --build "${quickstart_build}" --config Release --parallel 2
+  RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+if(NOT rc STREQUAL "0")
+  message(FATAL_ERROR "extracted quickstart CMake build: ${rc} ${out}${err}")
+endif()
+set(quickstart "${quickstart_build}/quickstart${suffix}")
+if(NOT EXISTS "${quickstart}")
+  set(quickstart "${quickstart_build}/Release/quickstart${suffix}")
+endif()
+execute_process(COMMAND ${EMULATOR} "${quickstart}"
+  RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+string(STRIP "${out}" quickstart_output)
+if(NOT rc STREQUAL "0" OR NOT quickstart_output STREQUAL "quickstart: one frame, 800 samples")
+  message(FATAL_ERROR "extracted quickstart CMake run: ${rc}; expected one frame, 800 samples; got ${out}${err}")
+endif()
+message(STATUS "extracted quickstart CMake consumer passed: ${quickstart_output}")
 set(fixture "${BUILD}/tests/ym2151/ym2151.a78")
 execute_process(COMMAND "${CMAKE_COMMAND}" -S "${ROOT}/tests/consumer" -B "${WORK}/consumer"
   "-DCMAKE_C_COMPILER=${CC}" "-DCMAKE_BUILD_TYPE=Release"
