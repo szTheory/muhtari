@@ -37,11 +37,15 @@ From `quickstart-work`, after saving the linked files into `consumer/`:
 ```sh
 cmake -S consumer -B consumer/build -DCMAKE_PREFIX_PATH="$PWD/library" -DCMAKE_BUILD_TYPE=Release
 cmake --build consumer/build --config Release
+# Single-config generators, such as Unix Makefiles or Ninja:
 ./consumer/build/quickstart
+# Multi-config generators, such as Xcode:
+./consumer/build/Release/quickstart
 ```
 
 The CMake package resolves the imported `muhtari::muhtari` target from the extracted prefix. The same commands
-work with the Linux or macOS archive that matches the compiler.
+work with the Linux or macOS archive that matches the compiler. Run only the executable path for the generator
+you selected.
 
 ## pkg-config on Linux or macOS
 
