@@ -16,6 +16,24 @@ Native hashes cover 93440 bytes, PNGs are 320×292, and audio has 960 samples in
 fast first call then 961/962 per full frame. PNG presentation uses the selected region's warm palette.
 Embedding callers must likewise requery info after every successful content load.
 
+## Identification and execution support
+
+`--probe FILE` identifies an image and reports its metadata and hashes. It does not show that Muhtari can run the
+image's board, devices or requested sound configuration. To check execution, run a finite sample separately:
+
+```sh
+muhtari-run --probe game.a78
+muhtari-run --frames 120 --hash-frame 120 --rom game.a78
+```
+
+A successful sample prints a content-dependent `frame 120 sha256` value; the digest depends on the image and run
+configuration. Unsupported images or configurations exit 77, malformed or unreadable input or another failure
+exits 1, and invalid command usage exits 2. The exit status does not change when refusal wording changes.
+
+Atari 2600 emulation is outside Muhtari and belongs to the sibling project
+[`twentysixhundo`](https://github.com/szTheory/twentysixhundo). Muhtari can identify an Atari 2600 image but refuses
+to run it; this is not planned Muhtari support.
+
 ## Synopsis
 
 ```text
@@ -383,7 +401,7 @@ When the image is refused, standard error gets `muhtari-run: FILE: <message>`, a
 
 | Image | Message | Lines printed | Exit status |
 |---|---|---|---|
-| a 2600 cartridge | `unsupported: 2600 (planned)` | `kind source rom_size` and the hashes | 77 |
+| a 2600 cartridge | Source: `unsupported: Atari 2600`; published v0.18.0: `unsupported: 2600 (planned)` | `kind source rom_size` and the hashes | 77 |
 | a 7800 board this version does not emulate | `unsupported board: <board>` | all the lines above | 77 |
 | not a cartridge image, or a header that fits no board | `not a 7800 or 2600 cartridge image` | the hashes | 1 |
 | shorter than its header says | `the image ends before the size its header gives` | the hashes | 1 |

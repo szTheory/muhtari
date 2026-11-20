@@ -47,11 +47,26 @@ Download `muhtari-runner-<os>-<arch>.zip` from the same release, unzip it, and r
 bin/muhtari-run --frames 1 --hash-frame 1
 ```
 
+On Windows, the executable is `bin/muhtari-run.exe`. To build the runner from source, see the
+[local build instructions](docs/testing.md#the-entry-point).
+
 It prints the SHA-256 of the frame's picture, the same on every platform:
 
 ```text
 frame 1 sha256 9eb011e22feb3f48da2c0abf3dd8d5236d4d0f5c0e67a732eb2172259e0a05c4
 ```
+
+For a lawfully obtained Atari 7800 image, you can identify it and then try a finite run:
+
+```sh
+bin/muhtari-run --probe "game.a78"
+bin/muhtari-run --frames 120 --hash-frame 120 --rom "game.a78"
+```
+
+`--probe` prints image metadata and hashes; identification does not establish that the board, devices or sound
+configuration can run. A successful run prints a content-dependent `frame 120 sha256` value. Unsupported images
+or configurations exit 77, malformed or unreadable input or another failure exits 1, and invalid command usage
+exits 2. See the [full runner reference](docs/runner.md) for output and refusal details.
 
 ## Documentation
 
