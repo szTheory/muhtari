@@ -6,11 +6,11 @@ current_phase: 31
 current_phase_name: Installed C library quickstart
 current_plan: Not started
 status: planning
-stopped_at: Phase 30 complete, ready to plan Phase 31
-last_updated: "2026-11-20T02:14:57.733Z"
+stopped_at: Phase 31 context gathered
+last_updated: "2026-11-20T02:46:35.738Z"
 last_activity: 2026-11-19
 last_activity_desc: Phase 30 complete, transitioned to Phase 31
-state_head: 85ba1e986a4727bb704f34228c132945d4553bd2
+state_head: 4b670b67d370c0f1d92154dacd519d90c90d545f
 progress:
   total_phases: 2
   completed_phases: 1
@@ -122,9 +122,9 @@ At v11.0 close, no new items were acknowledged; 51 items acknowledged at earlier
 | deferred_items | 11/deferred-items.md: Found in plan 04  - `diag.bankset_tracer` and `diag.bankset` both write `build/ci/tests/diag/bankset/32n/` and carry no resource lock, so under `ctest -j` one can read the other's `pixels.png` half written (`bankset --bankset-png ... png: chunk longer than the file`). Seen once in `cmake --workflow --preset ci`; passes alone and on rerun. Not caused by plan 04; a fix is a `RESOURCE_LOCK` or a separate output directory in `tests/diag/tests.cmake`.  Resolved in the gap round: `diag.bankset` now writes `build/<preset>/tests/diag/bankset-matrix/` and `diag.bankset_tracer` keeps `build/<preset>/tests/diag/bankset/`, so the two tests share no output file. | acknowledged; historical disposition retained | 2026-10-29 | v2.0 |
 
 ## Session Continuity
-Last session: 2026-11-20T01:36:50.624Z
-Stopped at: Phase 30 complete, ready to plan Phase 31
-Resume file: None
+Last session: 2026-11-20T02:46:35.715Z
+Stopped at: Phase 31 context gathered
+Resume file: .planning/phases/31-installed-c-library-quickstart/31-CONTEXT.md
 
 Next action: run $gsd-verify-work 30 from the canonical root checkout to verify Phase 30
 
