@@ -10,6 +10,7 @@ enum { QUICKSTART_FAULT_MAX_ALLOCS = 64 };
 
 typedef struct quickstart_fault_allocation {
     void *pointer;
+    const char *name;
     int released;
 } quickstart_fault_allocation;
 
@@ -27,6 +28,7 @@ static int quickstart_fault_injected;
 static int quickstart_fault_frame_rejected;
 static int quickstart_fault_frame_succeeded;
 static int quickstart_fault_sample_count_changed;
+static int quickstart_fault_frame_call_count;
 static const char *quickstart_fault_mode;
 
 static void *quickstart_fault_malloc(size_t size);
@@ -54,8 +56,10 @@ static int quickstart_fault_is_mode(const char *mode)
 static void *quickstart_fault_malloc(size_t size)
 {
     void *pointer;
+    const char *name = "core";
 
     if (quickstart_fault_in_create) {
+        name = "instance";
         quickstart_fault_create_allocator_attempts++;
         if (quickstart_fault_is_mode("create") &&
             quickstart_fault_create_allocator_attempts == 1u) {
@@ -64,6 +68,7 @@ static void *quickstart_fault_malloc(size_t size)
         }
     } else if (quickstart_fault_created && !quickstart_fault_in_frame) {
         quickstart_fault_buffer_attempts++;
+        name = quickstart_fault_buffer_successes == 0u ? "video" : "audio";
         if (quickstart_fault_is_mode("audio_alloc") &&
             quickstart_fault_buffer_attempts == 2u) {
             quickstart_fault_injected = 1;
@@ -79,6 +84,7 @@ static void *quickstart_fault_malloc(size_t size)
     pointer = malloc(size);
     if (pointer != NULL) {
         quickstart_fault_allocations[quickstart_fault_allocation_count].pointer = pointer;
+        quickstart_fault_allocations[quickstart_fault_allocation_count].name = name;
         quickstart_fault_allocations[quickstart_fault_allocation_count].released = 0;
         quickstart_fault_allocation_count++;
         if (quickstart_fault_created && !quickstart_fault_in_frame)
@@ -123,6 +129,7 @@ static muhtari_status quickstart_fault_run_frame(muhtari *instance, muhtari_fram
     muhtari_frame injected = *frame;
     muhtari_status status;
 
+    quickstart_fault_frame_call_count++;
     if (quickstart_fault_created == 0 || frame->video == NULL || frame->audio == NULL ||
         quickstart_fault_buffer_successes != 2u) {
         quickstart_fault_harness_error = 1;
@@ -197,12 +204,14 @@ int main(int argc, char **argv)
                                               "audio allocation fault did not follow video allocation");
     }
     if (quickstart_fault_is_mode("frame")) {
-        checks_ok &= quickstart_fault_require(quickstart_fault_frame_rejected != 0,
+        checks_ok &= quickstart_fault_require(quickstart_fault_frame_rejected != 0 &&
+                                              quickstart_fault_frame_call_count == 1,
                                               "real frame call did not reject zero audio capacity");
     }
     if (quickstart_fault_is_mode("sample_count")) {
         checks_ok &= quickstart_fault_require(quickstart_fault_frame_succeeded != 0 &&
-                                              quickstart_fault_sample_count_changed != 0,
+                                              quickstart_fault_sample_count_changed != 0 &&
+                                              quickstart_fault_frame_call_count == 1,
                                               "sample count fault did not follow a successful frame");
     }
     checks_ok &= quickstart_fault_require(quickstart_fault_harness_error == 0,
@@ -212,7 +221,9 @@ int main(int argc, char **argv)
                                           "not every acquired allocation was released exactly once");
     for (i = 0u; i < quickstart_fault_allocation_count; i++) {
         if (quickstart_fault_allocations[i].released == 0) {
-            checks_ok &= quickstart_fault_require(0, "an acquired allocation was not released");
+            fprintf(stderr, "quickstart fault harness: %s allocation was not released\n",
+                    quickstart_fault_allocations[i].name);
+            checks_ok = 0;
         }
         free(quickstart_fault_allocations[i].pointer);
         quickstart_fault_allocations[i].pointer = NULL;

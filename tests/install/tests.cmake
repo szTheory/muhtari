@@ -29,15 +29,21 @@ if(DEFINED EMBED_PROGRAM OR DEFINED CONSUMER_PROGRAM OR DEFINED QUICKSTART_PROGR
     if(NOT DEFINED QUICKSTART_FAULTS_PROGRAM)
       message(FATAL_ERROR "staged quickstart: QUICKSTART_FAULTS_PROGRAM is required")
     endif()
-    execute_process(COMMAND ${EMULATOR} "${QUICKSTART_FAULTS_PROGRAM}" frame
-      RESULT_VARIABLE fault_rc OUTPUT_VARIABLE fault_out ERROR_VARIABLE fault_err)
-    string(REGEX REPLACE "[\r\n]+$" "" fault_out "${fault_out}")
-    string(REGEX REPLACE "[\r\n]+$" "" fault_err "${fault_err}")
-    if(NOT fault_rc STREQUAL "1" OR
-       NOT fault_out STREQUAL "quickstart fault: cleanup verified" OR
-       NOT fault_err STREQUAL "muhtari_run_frame failed with status 4")
-      message(FATAL_ERROR "staged quickstart frame fault: exit ${fault_rc}; stdout [${fault_out}]; stderr [${fault_err}]")
-    endif()
+    function(check_quickstart_fault mode expected_diagnostic)
+      execute_process(COMMAND ${EMULATOR} "${QUICKSTART_FAULTS_PROGRAM}" "${mode}"
+        RESULT_VARIABLE fault_rc OUTPUT_VARIABLE fault_out ERROR_VARIABLE fault_err)
+      string(REGEX REPLACE "[\r\n]+$" "" fault_out "${fault_out}")
+      string(REGEX REPLACE "[\r\n]+$" "" fault_err "${fault_err}")
+      if(NOT fault_rc STREQUAL "1" OR
+         NOT fault_out STREQUAL "quickstart fault: cleanup verified" OR
+         NOT fault_err STREQUAL "${expected_diagnostic}")
+        message(FATAL_ERROR "staged quickstart ${mode} fault: exit ${fault_rc}; stdout [${fault_out}]; stderr [${fault_err}]")
+      endif()
+    endfunction()
+    check_quickstart_fault(frame "muhtari_run_frame failed with status 4")
+    check_quickstart_fault(create "muhtari_create failed with status 3")
+    check_quickstart_fault(audio_alloc "could not allocate frame buffers")
+    check_quickstart_fault(sample_count "expected 800 audio samples, got 799")
     message("${quickstart_output}")
   endif()
   return()
