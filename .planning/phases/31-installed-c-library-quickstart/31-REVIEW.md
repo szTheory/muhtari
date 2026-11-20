@@ -24,9 +24,9 @@ status: clean
 
 # Phase 31: Code Review Report
 
-**Reviewed:** 2026-11-20T03:55:01Z  
-**Depth:** standard  
-**Files Reviewed:** 9  
+**Reviewed:** 2026-11-20T03:55:01Z
+**Depth:** standard
+**Files Reviewed:** 9
 **Status:** clean
 
 ## Summary
@@ -37,6 +37,6 @@ All nine Phase 31 files from the original review were considered; no outstanding
 
 ---
 
-_Reviewed: 2026-11-20T03:55:01Z_  
-_Reviewer: the agent (gsd-code-reviewer)_  
+_Reviewed: 2026-11-20T03:55:01Z_
+_Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_

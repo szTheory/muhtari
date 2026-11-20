@@ -21,4 +21,3 @@ recorded: 2026-11-20T03:55:01Z
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 
 WR-01 was corrected by documenting the single-config and multi-config executable paths. The focused re-review found no remaining issue; the extracted Apple Silicon archive built and ran through Ninja Multi-Config with the expected output and exit 0.
-
