@@ -1,19 +1,21 @@
 ---
 gsd_state_version: "1.0"
 milestone: v12.0
+milestone_name: First-use readiness
+current_phase: 30
+current_phase_name: User jobs and player/runner first use
 status: In Progress
 stopped_at: v12.0 scoped — Phase 30 ready for autonomous execution
-last_updated: "2026-11-19T23:57:45Z"
+last_updated: "2026-11-20T00:49:24.423Z"
 last_activity: 2026-11-19
 last_activity_desc: v12.0 scope reconciled into the canonical root checkout
-state_head: cd7ce9e792b452647e0d438ee6d188ff778c4641
+state_head: 231592086bc61b13a5b390e997ce9488c75913f3
 progress:
   total_phases: 2
   completed_phases: 0
-  total_plans: 0
+  total_plans: 1
   completed_plans: 0
-milestone_name: First-use readiness
-current_phase: 30
+  percent: 0
 ---
 
 # Project State
@@ -25,7 +27,7 @@ See [PROJECT.md](PROJECT.md), the active [requirements](REQUIREMENTS.md) and [ro
 
 ## Current Position
 
-Phase: Milestone v12.0 scoped
+Phase: 30 (User jobs and player/runner first use) — READY TO EXECUTE
 Plan: —
 Status: Ready for Phase 30
 Last activity: 2026-11-19 — v12.0 scope reconciled into the canonical root checkout
