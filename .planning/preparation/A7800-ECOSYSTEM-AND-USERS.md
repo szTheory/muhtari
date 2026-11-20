@@ -2,7 +2,7 @@
 title: "Atari 7800 emulators, users and personas"
 summary: "Every 7800 emulator's licence, timing model, record on the wiki's known-problem list, features and status; what players and developers complain about, mapped to muhtari responses; persona needs by horizon; low-power budgets; the slot muhtari fills."
 read_when: "Before ranking features or horizons, choosing an accuracy oracle, writing persona or frontend requirements, planning a port, or answering 'why not emulator X'."
-updated: 2026-10-15
+updated: 2026-11-20
 ---
 
 # Atari 7800 emulators, users and personas
@@ -12,8 +12,9 @@ updated: 2026-10-15
 | Which 7800 emulators exist: licence, timing model, features, status, speed? | 1.1 |
 | Which handle the wiki's known-problem games, and which is the accuracy reference? | 1.2, 1.3 |
 | What do players and developers dislike or wish for, and what does muhtari do about each? | 2 |
-| What does each persona need, by horizon? | 3.1 |
-| Speedrun and TAS rules, movie format, lag frames, an ALE-like AI interface, frontends | 3.2–3.5 |
+| What are the current first-use jobs and evidence? | 3.1 |
+| What did the historical persona and horizon research recommend? | 3.2 |
+| Historical speedrun and TAS rules, AI interface, and frontend leads | 3.3–3.6 |
 | Can a cycle-accurate core hold full speed on PSP, DS, 3DS, Wii, Vita, Raspberry Pi, handhelds? | 4 |
 | What combination does nobody offer today? | 5 |
 
@@ -99,7 +100,7 @@ Who: P player, D developer, H ROM hacker, T TASer or speedrunner, F frontend or 
 | C.24 | Crashes: SRAM carts crash RetroArch's MAME core; ProSystem on archive paths, ARM unsigned `char`, big-endian MD5 (P, F) | [ECO.07][ECO.14] | **v1.0** fuzzed loader, failures are statuses, instance unchanged; big-endian nightly |
 | C.25 | A polished all-in-one ("hopes that Stella would be an all-in-one…but nope"); hotkeys, drag-and-drop, autofire (P) | [ECO.24][ECO.20] | **won't** — no GUI in this repo (owner decision); RetroArch or Playstead host |
 | C.26 | Plus consoles fail PETSCII Robots, Rikki & Vikki, trak-ball; a toggle for old POKEY demos silent since a7800 matched hardware reset (P) | [ECO.12][ECO.07][ECO.10] | **won't** — another product; hardware-exact default (demos were patched), listed as not-a-bug |
-| C.27 | 2600 mode (P) | [ECO.14][ECO.22] | after the 7800 library (owner decision) |
+| C.27 | 2600 mode (P) | [ECO.14][ECO.22] | **won't** in Muhtari: it recognizes 2600 images for identification and refuses to run them; emulation belongs to sibling `twentysixhundo` (owner scope decision; see [sibling boundary](../INTENT.md#shared-emulator-family-learning)) |
 | G.01 | Input latency: an NES core showed 3 frames against 2 until a one-line frame-boundary fix (P, T) | [ECO.39] | **v1.0** as C.19, measured in the RetroArch session test |
 | G.02 | Stutter and audio-pacing regressions (P) | [ECO.41] | **v1.0** rational fps and audio ratio, frame-time percentiles; nightly p99.999 trends from v1.0 |
 | G.03 | States lost on update: "No one wants to choose between losing all their save states or never updating" (P) | [ECO.39] | **v3.0** versioned state format; refused states return a status; battery saves never versioned away |
@@ -116,7 +117,81 @@ a7800's "tons of controls, very accurate", MiSTer's latency, BupSystem's "great 
 ProSystem-style hint table. **Would change if:** a hardware-verified title needs state no header or hash list can express.
 
 ## 3. Personas and jobs to be done
-### 3.1 Needs by horizon
+### 3.1 Current jobs and evidence
+
+The product serves three current first-use jobs. The release and source evidence below establishes available
+capabilities; only the player has a recorded user observation. Runner and C-integrator demand remain inferences,
+not interviews, adoption or validated customer segments. The stable v0.18.0 release was published on 2026-11-19
+from [source commit `ac4ee132449f82848da1db493c428f78d463d6cd`](https://github.com/szTheory/muhtari/commit/ac4ee132449f82848da1db493c428f78d463d6cd);
+the official latest-release lookup on 2026-11-20 found it remained the latest stable package. See the
+[v11.0 delivery receipt](../milestones/v11.0-MILESTONE-AUDIT.md#delivery-and-verification-chronology).
+
+**Player — load a lawfully obtained Atari 7800 image through the libretro core.**
+
+- **Deliverable:** Native RetroArch core archives and `.info` metadata; Load Core, Start Core, Load Content,
+  controls, fast boot and optional BIOS guidance. The expected no-content result is the test card; supported
+  cartridges show their own startup.
+- **Evidence (release capability, 2026-11-19):** v0.18.0 package/source above; libretro module, BIOS handling,
+  and simulated host tests in [`libretro.c`](../../libretro/libretro.c) and
+  [`tests/libretro/tests.cmake`](../../tests/libretro/tests.cmake). **Direct observation (2026-10-29):** one local
+  owner session on Apple Silicon with RetroArch 1.22.2 and the v0.10.0 arm64 core. The owner loaded Choplifter
+  through the GUI and reported graphics, sound and speed looked good during casual play. In the same session,
+  Ninja Golf was reported as “played great.” See the [dated onboarding record](../LESSONS.md#local-player-onboarding-2026-10-29).
+- **Confidence and limits:** High that the released setup and those two positive reports exist; low for
+  representative demand or general compatibility. Choplifter's duration and progress were not recorded. Ninja
+  Golf's controls, duration, progress, exact image and separate playthrough were not specified. These are two
+  reports from one owner session, not two users or compatibility verdicts; the title ledger remains unchanged.
+- **Ownership:** Muhtari owns the Atari 7800 core and package. RetroArch provides the host UI and keyboard
+  bindings. LibFuturo owns its independent native/browser consumers; Playstead owns its host and continuation
+  flow. Atari 2600 emulation belongs to `twentysixhundo`.
+- **Revisit when:** A new dated consumer report changes the first-use path, or a shipped core/install interface
+  changes the steps. A title's compatibility status still requires its own evidence.
+
+**Runner / homebrew developer — identify a build's image and obtain finite, reproducible results with `muhtari-run`.**
+
+- **Deliverable:** The release/local runner, `--probe` identification, finite `--frames` runs and hashes, and
+  documented refusal/error/usage statuses. Identification does not establish that a board or configuration can
+  execute; a finite run supplies the separate result. See [the runner reference](../../docs/runner.md) and
+  [process tests](../../tests/runner/tests.cmake).
+- **Evidence (shipped capability and automated process tests, checked 2026-11-20):** v0.18.0 runner package
+  and source commit above, plus the checked-in runner contract tests. **Need class: inference** from these
+  capabilities and the 2026-10-15 ecosystem research; no external runner interview, adoption report or
+  third-party CI result is recorded.
+- **Confidence and limits:** High that developers can identify, run and compare bounded samples; low that an
+  external developer needs this workflow or uses it in CI. The output is deterministic for the specified build,
+  image and configuration; no retail-game compatibility is implied.
+- **Ownership:** Muhtari owns the runner and CLI contract. Playstead owns its consumer adapter and continuation
+  protocol; LibFuturo owns separate native/browser consumers. `twentysixhundo` owns 2600 execution.
+- **Revisit when:** A dated external developer report or reproducible consumer workflow identifies a gap, or a
+  shipped CLI/output contract changes.
+
+**C host integrator — build against the installed C library and drive frames through its public interface.**
+
+- **Deliverable:** The library archive, public header, `muhtari::muhtari` CMake package and `muhtari.pc`
+  pkg-config route, with an instance-based public API. See [the embedding guide](../../docs/embedding.md).
+  The complete installed-package one-frame example is covered by Phase 31.
+- **Evidence (package capability, checked 2026-11-20):** v0.18.0 library package/source commit above and the
+  CMake/pkg-config instructions and public API reference. **Need class: inference** from the shipped interface
+  and 2026-10-15 ecosystem research; there is no direct external integrator interview or adoption evidence.
+- **Confidence and limits:** High that the published package routes and interface exist; low on downstream
+  integrator demand. The documented API does not establish that a third-party app or host has integrated it.
+- **Ownership:** Muhtari owns its library, ABI and package routes. LibFuturo owns its independent host contract
+  and reference consumers; Playstead owns its adapter and host. Neither sibling boundary implies adoption or
+  shared release responsibility.
+- **Revisit when:** The Phase 31 installed example changes or a dated external integration report identifies a
+  concrete package/API gap.
+
+These ownership boundaries follow the [2026-11-11 sibling inspection](../INTENT.md#shared-emulator-family-learning):
+Muhtari owns its machine, public API, runner and libretro artifacts; LibFuturo owns its separate core/host contract
+and browser/native consumers; Playstead owns its host and continuation contract; `twentysixhundo` owns Atari 2600
+emulation. Revisit the map when a sibling changes its shipped interface or new consumer evidence changes a seam.
+
+### 3.2 Needs by horizon (historical, directional; source updated 2026-10-15)
+
+The following horizon table and sections 3.3–3.6 preserve dated ecosystem research, with evidence pins in §7.
+They are historical directional leads, not current user reports, validated segments or active commitments. Revisit
+them when a fresh consumer report or a shipped interface change could alter a recommendation.
+
 Horizons [ECO.44]: v1.0 games + sound in RetroArch · v2.0 whole library · v3.0 states and movies · v4.0 measured accuracy · v5.0 tools and AI · v6.0 everywhere.
 
 | Persona | Job | Table stakes [horizon] | Differentiators [horizon] |
@@ -134,7 +209,7 @@ Horizons [ECO.44]: v1.0 games + sound in RetroArch · v2.0 whole library · v3.0
 tools and AI (v5.0), ports (v6.0). **Strongest alternative:** pull the DMA overlay into v2.0 — the stats exist from v1.0 and
 `a7800dev`'s bar is what developers use [ECO.20]. **Would change if:** developers adopt the runner early and ask for it.
 
-### 3.2 Speedrunners
+### 3.3 Speedrunners (historical directional lead)
 - speedrun.com platform `gde33gek`: 46 games, 7 native to the 7800; all allow emulators and require video; 43 are real-time.
   179 runs: 155 emulated, 24 console; comments name ProSystem 22, EMU7800 21, a7800 14, BizHawk 11, BupSystem 2, JS7800 1 [ECO.30].
 - Desert Falcon: "A7800, BupSystem, MAME, and JS7800 emulators are allowed. Bizhawk and RetroArch are banned"; Pac-Man bans
@@ -147,7 +222,7 @@ emulated time printed by the runner, console-time constants in docs [v1.0]; movi
 alternative:** a standalone player for boards that ban RetroArch — **won't** (no GUI here; Playstead is the other route).
 **Would change if:** boards publish allow-lists based on accuracy evidence; then submit the ledger.
 
-### 3.3 TASers
+### 3.4 TASers (historical directional lead)
 - TASVideos: 13 publications (11 current), all BizHawk; "Atari 7800 BizHawk BK2" is preferred; A7800Hawk replaced EMU7800 in
   2017 ("not a very accurate emulator and is quite outdated"); rules say "Use the most accurate emulator available", custom RAM
   only if "proven to be possible on console", BIOS unmodified and region-matched [ECO.31].
@@ -162,7 +237,7 @@ whole-game sync tests [seed v3.0]; real-BIOS boot for TASVideos' rules [v1.0]. *
 port — BizHawk hosts native C cores (gpgx, snes9x, stella, melonDS …) [ECO.22] and brings TAStudio, Lua, RAM search and
 acceptance. **Would change if:** TASVideos accepts a standalone runner, or BizHawk declines a second 7800 core.
 
-### 3.4 AI agents (ALE docs and papers only; ALE is GPL-2)
+### 3.5 AI agents (ALE docs and papers only; ALE is GPL-2; historical directional lead)
 - No 7800 RL environment exists: ALE is Stella (2600 only); stable-retro has no 7800 core; GymBizHawk (MIT) is a generic
   bridge [ECO.32][ECO.33].
 - ALE conventions: v5 frame-skip 4, sticky actions 0.25 ("the highest value for which human play-testers were unable to detect
@@ -179,7 +254,7 @@ unchanged; ≥ 5,000 emulated frames/s per thread on an Apple-Silicon-class host
 aarch64 host that ran the NES sibling's ~25 M Ir/frame at ~1 ms/frame [ECO.39]). **Strongest alternative:** add the libretro core to stable-retro (MIT)
 and reuse its tooling — least code, Python-speed stepping. **Would change if:** the native env cannot beat that by about 3×.
 
-### 3.5 Frontends
+### 3.6 Frontends (historical directional lead)
 - **libretro:** ProSystem is the only 7800 core; its `.info` lists `7800 BIOS (U).rom` (md5 0763f1ffb006ddbe32e52d497ee848ae,
   optional), Recalbox the (E) BIOS (md5 397bb566584be7b9764e7a68974c4263); it reports 60/50 fps, 320×223, 32,640 Hz; 41 cheat
   files exist for the 7800 [ECO.15][ECO.19]. rcheevos (console 51) maps the 64 KiB bus: system RAM $1800–$27FF, three virtual
