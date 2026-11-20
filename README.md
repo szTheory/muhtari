@@ -83,6 +83,12 @@ configuration can run. A successful run prints a content-dependent `frame 120 sh
 or configurations exit 77, malformed or unreadable input or another failure exits 1, and invalid command usage
 exits 2. See the [full runner reference](docs/runner.md) for output and refusal details.
 
+## Quick start: C host
+
+Build a ROM-free first frame from the matching installed library ZIP with the
+[C host quickstart](docs/embedding-quickstart.md), its [example source](examples/embedding/quickstart.c), and
+the [complete embedding API guide](docs/embedding.md).
+
 ## Documentation
 
 - [docs/status.md](docs/status.md): what is available, what is missing and how completion is judged.
