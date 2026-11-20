@@ -6,10 +6,10 @@ current_phase: 31
 current_plan: Not started
 status: completed
 stopped_at: v12.0 milestone audit complete — ship pending
-last_updated: "2026-11-20T05:59:12Z"
+last_updated: "2026-11-20T06:00:56Z"
 last_activity: 2026-11-20
 last_activity_desc: v12.0 milestone audit complete
-state_head: 4c52bbdb13a5087d9728a11165369d9d4111337e
+state_head: 49adcef4582a70eecb1331cde8abf9d5dfc0a45c
 progress:
   total_phases: 2
   completed_phases: 2
@@ -128,12 +128,12 @@ At v11.0 close, no new items were acknowledged; 51 items acknowledged at earlier
 | deferred_items | 11/deferred-items.md: Found in plan 04  - `diag.bankset_tracer` and `diag.bankset` both write `build/ci/tests/diag/bankset/32n/` and carry no resource lock, so under `ctest -j` one can read the other's `pixels.png` half written (`bankset --bankset-png ... png: chunk longer than the file`). Seen once in `cmake --workflow --preset ci`; passes alone and on rerun. Not caused by plan 04; a fix is a `RESOURCE_LOCK` or a separate output directory in `tests/diag/tests.cmake`.  Resolved in the gap round: `diag.bankset` now writes `build/<preset>/tests/diag/bankset-matrix/` and `diag.bankset_tracer` keeps `build/<preset>/tests/diag/bankset/`, so the two tests share no output file. | acknowledged; historical disposition retained | 2026-10-29 | v2.0 |
 
 ## Session Continuity
-Last session: 2026-11-20T05:59:12Z
+Last session: 2026-11-20T06:00:56Z
 Stopped at: v12.0 milestone audit complete — ship pending
 Resume file: None
 
-Next action: run $gsd-ship v12.0 from the canonical root checkout
+Next action: run $gsd-ship 31 from the canonical root checkout
 
 ## Operator Next Steps
 
-- Run `$gsd-ship v12.0` from the canonical root checkout.
+- Run `$gsd-ship 31` from the canonical root checkout.
